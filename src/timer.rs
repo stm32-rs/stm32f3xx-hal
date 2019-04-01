@@ -2,9 +2,9 @@
 
 use crate::hal::timer::{CountDown, Periodic};
 use crate::stm32::{TIM2, TIM6};
-#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373"))]
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378"))]
 use crate::stm32::{TIM3, TIM4, TIM7};
-#[cfg(feature = "stm32f373")]
+#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 use crate::stm32::{TIM5, TIM12, TIM13, TIM14, TIM18};
 use cast::{u16, u32};
 use nb;
@@ -142,7 +142,7 @@ hal! {
     TIM7: (tim7, tim7en, tim7rst),
 }
 
-#[cfg(feature = "stm32f373")]
+#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 hal! {
     TIM2: (tim2, tim2en, tim2rst),
     TIM3: (tim3, tim3en, tim3rst),

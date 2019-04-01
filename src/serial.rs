@@ -12,7 +12,7 @@ use crate::gpio::gpioa::{PA10, PA2, PA3, PA9};
 use crate::gpio::gpiob::{PB10, PB11, PB6, PB7};
 use crate::gpio::gpioc::{PC10, PC11, PC4, PC5};
 use crate::gpio::gpiod::{PD5, PD6, PD8, PD9};
-#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373"))]
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378"))]
 use crate::gpio::gpioe::{PE0, PE1, PE15};
 
 use crate::gpio::AF7;
@@ -52,13 +52,13 @@ pub unsafe trait RxPin<USART> {}
 unsafe impl TxPin<USART1> for PA9<AF7> {}
 unsafe impl TxPin<USART1> for PB6<AF7> {}
 unsafe impl TxPin<USART1> for PC4<AF7> {}
-#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373"))]
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378"))]
 unsafe impl TxPin<USART1> for PE0<AF7> {}
 
 unsafe impl RxPin<USART1> for PA10<AF7> {}
 unsafe impl RxPin<USART1> for PB7<AF7> {}
 unsafe impl RxPin<USART1> for PC5<AF7> {}
-#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373"))]
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378"))]
 unsafe impl RxPin<USART1> for PE1<AF7> {}
 
 unsafe impl TxPin<USART2> for PA2<AF7> {}
@@ -78,7 +78,7 @@ unsafe impl TxPin<USART3> for PD8<AF7> {}
 unsafe impl RxPin<USART3> for PB11<AF7> {}
 unsafe impl RxPin<USART3> for PC11<AF7> {}
 unsafe impl RxPin<USART3> for PD9<AF7> {}
-#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373"))]
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378"))]
 unsafe impl RxPin<USART3> for PE15<AF7> {}
 
 /// Serial abstraction
@@ -244,7 +244,7 @@ macro_rules! hal {
     }
 }
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f303", feature = "stm32f373"))]
+#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378"))]
 hal! {
     USART1: (usart1, APB2, usart1en, usart1rst, pclk2),
     USART2: (usart2, APB1, usart2en, usart2rst, pclk1),
