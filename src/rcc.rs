@@ -2,8 +2,8 @@
 
 use core::cmp;
 
-use cast::u32;
 use crate::stm32::{rcc, RCC};
+use cast::u32;
 
 use crate::flash::ACR;
 use crate::time::Hertz;
@@ -154,7 +154,8 @@ impl CFGR {
 
         assert!(sysclk <= 72_000_000);
 
-        let hpre_bits = self.hclk
+        let hpre_bits = self
+            .hclk
             .map(|hclk| match sysclk / hclk {
                 0 => unreachable!(),
                 1 => 0b0111,
@@ -173,7 +174,8 @@ impl CFGR {
 
         assert!(hclk <= 72_000_000);
 
-        let ppre1_bits = self.pclk1
+        let ppre1_bits = self
+            .pclk1
             .map(|pclk1| match hclk / pclk1 {
                 0 => unreachable!(),
                 1 => 0b011,
@@ -189,7 +191,8 @@ impl CFGR {
 
         assert!(pclk1 <= 36_000_000);
 
-        let ppre2_bits = self.pclk2
+        let ppre2_bits = self
+            .pclk2
             .map(|pclk2| match hclk / pclk2 {
                 0 => unreachable!(),
                 1 => 0b011,

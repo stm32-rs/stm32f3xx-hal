@@ -1,12 +1,12 @@
 //! Timers
 
-use cast::{u16, u32};
 use crate::hal::timer::{CountDown, Periodic};
-use nb;
 use crate::stm32::{TIM2, TIM3, TIM4, TIM6, TIM7};
+use cast::{u16, u32};
+use nb;
 use void::Void;
 
-use crate::rcc::{APB1, Clocks};
+use crate::rcc::{Clocks, APB1};
 use crate::time::Hertz;
 
 /// Hardware timers

@@ -3,14 +3,14 @@
 use core::ptr;
 
 use crate::hal::spi::{FullDuplex, Mode, Phase, Polarity};
-use nb;
 use crate::stm32::{SPI1, SPI2, SPI3};
+use nb;
 
 use crate::gpio::gpioa::{PA5, PA6, PA7};
 use crate::gpio::gpiob::{PB13, PB14, PB15, PB5};
 use crate::gpio::gpioc::{PC10, PC11, PC12};
 use crate::gpio::{AF5, AF6};
-use crate::rcc::{APB1, APB2, Clocks};
+use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::Hertz;
 
 /// SPI error

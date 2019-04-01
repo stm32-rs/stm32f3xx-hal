@@ -4,8 +4,8 @@ use core::marker::PhantomData;
 use core::ptr;
 
 use crate::hal::serial;
-use nb;
 use crate::stm32::{USART1, USART2, USART3};
+use nb;
 use void::Void;
 
 use crate::gpio::gpioa::{PA10, PA2, PA3, PA9};
@@ -14,7 +14,7 @@ use crate::gpio::gpioc::{PC10, PC11, PC4, PC5};
 use crate::gpio::gpiod::{PD5, PD6, PD8, PD9};
 use crate::gpio::gpioe::{PE0, PE1, PE15};
 use crate::gpio::AF7;
-use crate::rcc::{APB1, APB2, Clocks};
+use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::Bps;
 
 /// Interrupt event

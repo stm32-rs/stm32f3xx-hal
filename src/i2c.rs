@@ -1,14 +1,14 @@
 //! Inter-Integrated Circuit (I2C) bus
 
-use cast::u8;
 use crate::stm32::{I2C1, I2C2};
+use cast::u8;
 
 use crate::gpio::gpioa::{PA10, PA9};
 use crate::gpio::gpiob::{PB6, PB7, PB8, PB9};
 use crate::gpio::gpiof::{PF0, PF1, PF6};
 use crate::gpio::AF4;
 use crate::hal::blocking::i2c::{Write, WriteRead};
-use crate::rcc::{APB1, Clocks};
+use crate::rcc::{Clocks, APB1};
 use crate::time::Hertz;
 
 /// I2C error
