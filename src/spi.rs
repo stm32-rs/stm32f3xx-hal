@@ -10,7 +10,12 @@ use crate::gpio::gpioa::{PA5, PA6, PA7};
 use crate::gpio::gpiob::{PB13, PB14, PB15, PB5};
 use crate::gpio::gpioc::{PC10, PC11, PC12};
 use crate::gpio::{AF5, AF6};
-#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(any(
+    feature = "stm32f302",
+    feature = "stm32f303",
+    feature = "stm32f373",
+    feature = "stm32f378"
+))]
 use crate::rcc::APB2;
 use crate::rcc::{Clocks, APB1};
 use crate::time::Hertz;
@@ -214,7 +219,12 @@ hal! {
     SPI3: (spi3, APB1, spi3en, spi3rst, pclk1),
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(any(
+    feature = "stm32f302",
+    feature = "stm32f303",
+    feature = "stm32f373",
+    feature = "stm32f378"
+))]
 hal! {
     SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
     SPI2: (spi2, APB1, spi2en, spi2rst, pclk1),
