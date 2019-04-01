@@ -3,19 +3,19 @@
 use core::marker::PhantomData;
 use core::ptr;
 
-use hal::serial;
+use crate::hal::serial;
 use nb;
 use stm32f30x::{USART1, USART2, USART3};
 use void::Void;
 
-use gpio::gpioa::{PA10, PA2, PA3, PA9};
-use gpio::gpiob::{PB10, PB11, PB6, PB7};
-use gpio::gpioc::{PC10, PC11, PC4, PC5};
-use gpio::gpiod::{PD5, PD6, PD8, PD9};
-use gpio::gpioe::{PE0, PE1, PE15};
-use gpio::AF7;
-use rcc::{APB1, APB2, Clocks};
-use time::Bps;
+use crate::gpio::gpioa::{PA10, PA2, PA3, PA9};
+use crate::gpio::gpiob::{PB10, PB11, PB6, PB7};
+use crate::gpio::gpioc::{PC10, PC11, PC4, PC5};
+use crate::gpio::gpiod::{PD5, PD6, PD8, PD9};
+use crate::gpio::gpioe::{PE0, PE1, PE15};
+use crate::gpio::AF7;
+use crate::rcc::{APB1, APB2, Clocks};
+use crate::time::Bps;
 
 /// Interrupt event
 pub enum Event {
