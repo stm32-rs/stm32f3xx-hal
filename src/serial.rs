@@ -239,6 +239,13 @@ macro_rules! hal {
     }
 }
 
+#[cfg(feature = "stm32f302")]
+hal! {
+    USART1: (usart1, APB2, usart1en, usart1rst, pclk2),
+    USART2: (usart2, APB1, usart2en, usart2rst, pclk1),
+}
+
+#[cfg(feature = "stm32f303")]
 hal! {
     USART1: (usart1, APB2, usart1en, usart1rst, pclk2),
     USART2: (usart2, APB1, usart2en, usart2rst, pclk1),
