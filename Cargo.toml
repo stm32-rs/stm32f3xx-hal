@@ -1,12 +1,12 @@
 [package]
 edition = "2018"
-authors = ["Jorge Aparicio <jorge@japaric.io>", "Dylan Frankland <dylan@frankland.io"]
+authors = ["Jorge Aparicio <jorge@japaric.io>", "Dylan Frankland <dylan@frankland.io>"]
 categories = ["embedded", "hardware-support", "no-std"]
 description = "Peripheral access API for STM32F3 series microcontrollers"
 keywords = ["arm", "cortex-m", "stm32f3xx", "hal"]
 license = "0BSD"
 name = "stm32f3xx-hal"
-repository = "https://github.com/dfrankalnd/stm32f3xx-hal"
+repository = "https://github.com/dfrankland/stm32f3xx-hal"
 documentation = "https://docs.rs/stm32f3xx-hal"
 version = "0.1.0"
 
