@@ -1,6 +1,6 @@
 # stm32f3xx-hal
 
-`stm32f4xx-hal` contains a multi device hardware abstraction on top of the
+`stm32f3xx-hal` contains a multi device hardware abstraction on top of the
 peripheral access API for the STMicro STM32F3 series microcontrollers. The
 selection of the MCU is done by feature gates, typically specified by board
 support crates. Currently supported configurations are:
