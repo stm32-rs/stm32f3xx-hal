@@ -2,7 +2,8 @@
 #![allow(non_camel_case_types)]
 
 #[cfg(not(feature = "device-selected"))]
-compile_error!("This crate requires one of the following device features enabled:
+compile_error!(
+    "This crate requires one of the following device features enabled:
         stm32f301
         stm32f318
         stm32f302
@@ -12,7 +13,8 @@ compile_error!("This crate requires one of the following device features enabled
         stm32f334
         stm32f328
         stm32f358
-        stm32f398");
+        stm32f398"
+);
 
 pub use embedded_hal as hal;
 

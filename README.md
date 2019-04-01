@@ -5,8 +5,8 @@ peripheral access API for the STMicro STM32F3 series microcontrollers. The
 selection of the MCU is done by feature gates, typically specified by board
 support crates. Currently supported configurations are:
 
-*   stm32f301 ❌ Not yet...
-*   stm32f318 ❌ Not yet...
+*   stm32f301 ✔️ YES!
+*   stm32f318 ✔️ YES!
 *   stm32f302 ✔️ YES!
 *   stm32f303 ✔️ YES!
 *   stm32f373 ❌ Not yet...
