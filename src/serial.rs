@@ -16,7 +16,10 @@ use crate::gpio::gpiod::{PD5, PD6, PD8, PD9};
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f373",
-    feature = "stm32f378"
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 use crate::gpio::gpioe::{PE0, PE1, PE15};
 
@@ -61,7 +64,10 @@ unsafe impl TxPin<USART1> for PC4<AF7> {}
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f373",
-    feature = "stm32f378"
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 unsafe impl TxPin<USART1> for PE0<AF7> {}
 
@@ -72,7 +78,10 @@ unsafe impl RxPin<USART1> for PC5<AF7> {}
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f373",
-    feature = "stm32f378"
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 unsafe impl RxPin<USART1> for PE1<AF7> {}
 
@@ -97,7 +106,10 @@ unsafe impl RxPin<USART3> for PD9<AF7> {}
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f373",
-    feature = "stm32f378"
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 unsafe impl RxPin<USART3> for PE15<AF7> {}
 
@@ -269,7 +281,10 @@ macro_rules! hal {
     feature = "stm32f318",
     feature = "stm32f303",
     feature = "stm32f373",
-    feature = "stm32f378"
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 hal! {
     USART1: (usart1, APB2, usart1en, usart1rst, pclk2),

@@ -476,7 +476,10 @@ macro_rules! gpio {
     feature = "stm32f303",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334"
+    feature = "stm32f334",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 gpio!(GPIOA, gpioa, gpioa, iopaen, ioparst, PAx, [
     PA0: (pa0, 0, Input<Floating>, AFRL),
@@ -505,7 +508,10 @@ gpio!(GPIOA, gpioa, gpioa, iopaen, ioparst, PAx, [
     feature = "stm32f303",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334"
+    feature = "stm32f334",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
     PB0: (pb0, 0, Input<Floating>, AFRL),
@@ -532,7 +538,10 @@ gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
     feature = "stm32f318",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334"
+    feature = "stm32f334",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 gpio!(GPIOC, gpioc, gpioc, iopcen, iopcrst, PCx, [
     PC0: (pc0, 0, Input<Floating>, AFRL),
@@ -597,7 +606,10 @@ gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f373",
-    feature = "stm32f378"
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 gpio!(GPIOD, gpiod, gpiob, iopden, iopdrst, PDx, [
     PD0: (pd0, 0, Input<Floating>, AFRL),
@@ -638,7 +650,13 @@ gpio!(GPIOE, gpioe, gpiob, iopeen, ioperst, PEx, [
     PE15: (pe15, 15, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(any(
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
+))]
 gpio!(GPIOE, gpioe, gpioc, iopeen, ioperst, PEx, [
     PE0: (pe0, 0, Input<Floating>, AFRL),
     PE1: (pe1, 1, Input<Floating>, AFRL),
@@ -663,7 +681,10 @@ gpio!(GPIOE, gpioe, gpioc, iopeen, ioperst, PEx, [
     feature = "stm32f318",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334"
+    feature = "stm32f334",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
     PF0: (pf0, 0, Input<Floating>, AFRL),
@@ -685,3 +706,7 @@ gpio!(GPIOF, gpiof, gpiob, iopfen, iopfrst, PFx, [
     PF9: (pf9, 9, Input<Floating>, AFRH),
     PF10: (pf10, 10, Input<Floating>, AFRH),
 ]);
+
+// TODO:
+// GPIOG -> gpioc, GPIOH -> gpioa
+// For stm32f328, stm32f358, stm32f398

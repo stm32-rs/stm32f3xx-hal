@@ -15,7 +15,10 @@ use crate::gpio::{AF5, AF6};
     feature = "stm32f303",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334"
+    feature = "stm32f334",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 use crate::rcc::APB2;
 use crate::rcc::{Clocks, APB1};
@@ -225,7 +228,10 @@ hal! {
     feature = "stm32f303",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334"
+    feature = "stm32f334",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 hal! {
     SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),

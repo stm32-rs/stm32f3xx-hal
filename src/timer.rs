@@ -5,10 +5,19 @@ use crate::hal::timer::{CountDown, Periodic};
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f373",
-    feature = "stm32f378"
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 use crate::stm32::TIM4;
-#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(any(
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
+))]
 use crate::stm32::{TIM12, TIM13, TIM14, TIM18, TIM5};
 use crate::stm32::{TIM2, TIM6};
 #[cfg(any(
@@ -16,7 +25,10 @@ use crate::stm32::{TIM2, TIM6};
     feature = "stm32f303",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334"
+    feature = "stm32f334",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 use crate::stm32::{TIM3, TIM7};
 
@@ -164,7 +176,13 @@ hal! {
     TIM7: (tim7, tim7en, tim7rst),
 }
 
-#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(any(
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
+))]
 hal! {
     TIM2: (tim2, tim2en, tim2rst),
     TIM3: (tim3, tim3en, tim3rst),

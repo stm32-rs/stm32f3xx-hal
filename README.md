@@ -12,9 +12,9 @@ support crates. Currently supported configurations are:
 *   stm32f373 ✔️ YES!
 *   stm32f378 ✔️ YES!
 *   stm32f334 ✔️ YES!
-*   stm32f328 ❌ Not yet...
-*   stm32f358 ❌ Not yet...
-*   stm32f398 ❌ Not yet...
+*   stm32f328 ❌ Almost (missing GPIOG and GPIOH)
+*   stm32f358 ❌ Almost (missing GPIOG and GPIOH)
+*   stm32f398 ❌ Almost (missing GPIOG and GPIOH)
 
 The idea behind this crate is to gloss over the slight differences in the
 various peripherals available on those MCUs so a HAL can be written for all
