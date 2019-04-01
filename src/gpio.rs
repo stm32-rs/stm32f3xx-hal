@@ -95,7 +95,7 @@ macro_rules! gpio {
             use core::marker::PhantomData;
 
             use crate::hal::digital::OutputPin;
-            use stm32f30x::{$gpioy, $GPIOX};
+            use crate::stm32::{$gpioy, $GPIOX};
 
             use crate::rcc::AHB;
             use super::{
@@ -125,7 +125,7 @@ macro_rules! gpio {
                 type Parts = Parts;
 
                 fn split(self, ahb: &mut AHB) -> Parts {
-                    ahb.enr().modify(|_, w| w.$iopxenr().enabled());
+                    ahb.enr().modify(|_, w| w.$iopxenr().set_bit());
                     ahb.rstr().modify(|_, w| w.$iopxrst().set_bit());
                     ahb.rstr().modify(|_, w| w.$iopxrst().clear_bit());
 
@@ -509,7 +509,7 @@ gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
     PB15: (pb15, 15, Input<Floating>, AFRH),
 ]);
 
-gpio!(GPIOC, gpioc, gpioc, iopcen, iopcrst, PCx, [
+gpio!(GPIOC, gpioc, gpiob, iopcen, iopcrst, PCx, [
     PC0: (pc0, 0, Input<Floating>, AFRL),
     PC1: (pc1, 1, Input<Floating>, AFRL),
     PC2: (pc2, 2, Input<Floating>, AFRL),
@@ -528,7 +528,7 @@ gpio!(GPIOC, gpioc, gpioc, iopcen, iopcrst, PCx, [
     PC15: (pc15, 15, Input<Floating>, AFRH),
 ]);
 
-gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
+gpio!(GPIOD, gpiod, gpiob, iopden, iopdrst, PDx, [
     PD0: (pd0, 0, Input<Floating>, AFRL),
     PD1: (pd1, 1, Input<Floating>, AFRL),
     PD2: (pd2, 2, Input<Floating>, AFRL),
@@ -547,7 +547,7 @@ gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
     PD15: (pd15, 15, Input<Floating>, AFRH),
 ]);
 
-gpio!(GPIOE, gpioe, gpioc, iopeen, ioperst, PEx, [
+gpio!(GPIOE, gpioe, gpiob, iopeen, ioperst, PEx, [
     PE0: (pe0, 0, Input<Floating>, AFRL),
     PE1: (pe1, 1, Input<Floating>, AFRL),
     PE2: (pe2, 2, Input<Floating>, AFRL),
@@ -566,7 +566,7 @@ gpio!(GPIOE, gpioe, gpioc, iopeen, ioperst, PEx, [
     PE15: (pe15, 15, Input<Floating>, AFRH),
 ]);
 
-gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
+gpio!(GPIOF, gpiof, gpiob, iopfen, iopfrst, PFx, [
     PF0: (pf0, 0, Input<Floating>, AFRL),
     PF1: (pf1, 1, Input<Floating>, AFRL),
     PF2: (pf2, 2, Input<Floating>, AFRL),

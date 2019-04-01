@@ -5,7 +5,7 @@ use core::ptr;
 
 use crate::hal::serial;
 use nb;
-use stm32f30x::{USART1, USART2, USART3};
+use crate::stm32::{USART1, USART2, USART3};
 use void::Void;
 
 use crate::gpio::gpioa::{PA10, PA2, PA3, PA9};
@@ -111,7 +111,7 @@ macro_rules! hal {
                     RX: RxPin<$USARTX>,
                 {
                     // enable or reset $USARTX
-                    apb.enr().modify(|_, w| w.$usartXen().enabled());
+                    apb.enr().modify(|_, w| w.$usartXen().set_bit());
                     apb.rstr().modify(|_, w| w.$usartXrst().set_bit());
                     apb.rstr().modify(|_, w| w.$usartXrst().clear_bit());
 

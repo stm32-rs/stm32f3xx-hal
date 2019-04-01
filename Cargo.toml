@@ -9,19 +9,50 @@ name = "stm32f3xx-hal"
 repository = "https://github.com/dfrankalnd/stm32f3xx-hal"
 version = "0.1.0"
 
-[dependencies]
-cortex-m = "0.5.0"
-embedded-hal = "0.2.0"
-nb = "0.1.0"
-stm32f30x = "0.7.0"
+[package.metadata.docs.rs]
+features = ["stm32f303", "rt"]
 
-[dependencies.void]
-default-features = false
-version = "1.0.2"
+[dependencies]
+cortex-m = "0.5.8"
+cortex-m-rt = "0.6.7"
+nb = "0.1.1"
+stm32f3 = "0.6.0"
+
+[dependencies.bare-metal]
+version = "0.2.4"
+features = ["const-fn"]
 
 [dependencies.cast]
 default-features = false
 version = "0.2.2"
 
+[dependencies.void]
+default-features = false
+version = "1.0.2"
+
+[dependencies.embedded-hal]
+features = ["unproven"]
+version = "0.2.2"
+
 [features]
-rt = ["stm32f30x/rt"]
+device-selected = []
+rt = ["stm32f3/rt"]
+stm32f301 = ["stm32f3/stm32f301", "device-selected"]
+stm32f318 = ["stm32f3/stm32f301", "device-selected"]
+stm32f302 = ["stm32f3/stm32f302", "device-selected"]
+stm32f303 = ["stm32f3/stm32f303", "device-selected"]
+stm32f373 = ["stm32f3/stm32f373", "device-selected"]
+stm32f378 = ["stm32f3/stm32f373", "device-selected"]
+stm32f334 = ["stm32f3/stm32f3x4", "device-selected"]
+stm32f328 = ["stm32f3/stm32f3x8", "device-selected"]
+stm32f358 = ["stm32f3/stm32f3x8", "device-selected"]
+stm32f398 = ["stm32f3/stm32f3x8", "device-selected"]
+
+[profile.dev]
+debug = true
+lto = true
+
+[profile.release]
+debug = true
+lto = true
+opt-level = "s"

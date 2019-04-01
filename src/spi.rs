@@ -4,7 +4,7 @@ use core::ptr;
 
 use crate::hal::spi::{FullDuplex, Mode, Phase, Polarity};
 use nb;
-use stm32f30x::{SPI1, SPI2, SPI3};
+use crate::stm32::{SPI1, SPI2, SPI3};
 
 use crate::gpio::gpioa::{PA5, PA6, PA7};
 use crate::gpio::gpiob::{PB13, PB14, PB15, PB5};
@@ -86,7 +86,7 @@ macro_rules! hal {
                     MOSI: MosiPin<$SPIX>,
                 {
                     // enable or reset $SPIX
-                    apb2.enr().modify(|_, w| w.$spiXen().enabled());
+                    apb2.enr().modify(|_, w| w.$spiXen().set_bit());
                     apb2.rstr().modify(|_, w| w.$spiXrst().set_bit());
                     apb2.rstr().modify(|_, w| w.$spiXrst().clear_bit());
 
@@ -121,7 +121,7 @@ macro_rules! hal {
                     // SSI: set nss high = master mode
                     // CRCEN: hardware CRC calculation disabled
                     // BIDIMODE: 2 line unidirectional (full duplex)
-                    spi.cr1.write(|w| unsafe {
+                    spi.cr1.write(|w| {
                         w.cpha()
                             .bit(mode.phase == Phase::CaptureOnSecondTransition)
                             .cpol()

@@ -1,7 +1,7 @@
 //! Inter-Integrated Circuit (I2C) bus
 
 use cast::u8;
-use stm32f30x::{I2C1, I2C2};
+use crate::stm32::{I2C1, I2C2};
 
 use crate::gpio::gpioa::{PA10, PA9};
 use crate::gpio::gpiob::{PB6, PB7, PB8, PB9};
@@ -88,7 +88,7 @@ macro_rules! hal {
                     SCL: SclPin<$I2CX>,
                     SDA: SdaPin<$I2CX>,
                 {
-                    apb1.enr().modify(|_, w| w.$i2cXen().enabled());
+                    apb1.enr().modify(|_, w| w.$i2cXen().set_bit());
                     apb1.rstr().modify(|_, w| w.$i2cXrst().set_bit());
                     apb1.rstr().modify(|_, w| w.$i2cXrst().clear_bit());
 
@@ -153,7 +153,7 @@ macro_rules! hal {
                     let scll = u8(scll).unwrap();
 
                     // Configure for "fast mode" (400 KHz)
-                    i2c.timingr.write(|w| unsafe {
+                    i2c.timingr.write(|w| {
                         w.presc()
                             .bits(presc)
                             .scll()
@@ -187,8 +187,8 @@ macro_rules! hal {
 
                     // START and prepare to send `bytes`
                     self.i2c.cr2.write(|w| {
-                        w.sadd1()
-                            .bits(addr)
+                        w.sadd()
+                            .bits(u16::from(addr))
                             .rd_wrn()
                             .clear_bit()
                             .nbytes()
@@ -235,8 +235,8 @@ macro_rules! hal {
 
                     // START and prepare to send `bytes`
                     self.i2c.cr2.write(|w| {
-                        w.sadd1()
-                            .bits(addr)
+                        w.sadd()
+                            .bits(u16::from(addr))
                             .rd_wrn()
                             .clear_bit()
                             .nbytes()
@@ -261,8 +261,8 @@ macro_rules! hal {
 
                     // reSTART and prepare to receive bytes into `buffer`
                     self.i2c.cr2.write(|w| {
-                        w.sadd1()
-                            .bits(addr)
+                        w.sadd()
+                            .bits(u16::from(addr))
                             .rd_wrn()
                             .set_bit()
                             .nbytes()
