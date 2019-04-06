@@ -5,7 +5,18 @@ use cast::u8;
 
 use crate::gpio::gpioa::{PA10, PA9};
 use crate::gpio::gpiob::{PB6, PB7, PB8, PB9};
-use crate::gpio::gpiof::{PF0, PF1, PF6};
+#[cfg(any(
+    feature = "stm32f302",
+    feature = "stm32f334",
+    feature = "stm32f303",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398",
+    feature = "stm32f373",
+    feature = "stm32f378"
+))]
+use crate::gpio::gpiof::PF6;
+use crate::gpio::gpiof::{PF0, PF1};
 use crate::gpio::AF4;
 use crate::hal::blocking::i2c::{Write, WriteRead};
 use crate::rcc::{Clocks, APB1};
@@ -39,6 +50,16 @@ unsafe impl SclPin<I2C1> for PB8<AF4> {}
 
 unsafe impl SclPin<I2C2> for PA9<AF4> {}
 unsafe impl SclPin<I2C2> for PF1<AF4> {}
+#[cfg(any(
+    feature = "stm32f302",
+    feature = "stm32f334",
+    feature = "stm32f303",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398",
+    feature = "stm32f373",
+    feature = "stm32f378"
+))]
 unsafe impl SclPin<I2C2> for PF6<AF4> {}
 
 // unsafe impl SdaPin<I2C1> for PA14<AF4> {}
