@@ -504,8 +504,6 @@ gpio!(GPIOA, gpioa, gpioa, iopaen, ioparst, PAx, [
     feature = "stm32f318",
     feature = "stm32f302",
     feature = "stm32f303",
-    feature = "stm32f373",
-    feature = "stm32f378",
     feature = "stm32f334",
     feature = "stm32f328",
     feature = "stm32f358",
@@ -526,6 +524,23 @@ gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
     PB11: (pb11, 11, Input<Floating>, AFRH),
     PB12: (pb12, 12, Input<Floating>, AFRH),
     PB13: (pb13, 13, Input<Floating>, AFRH),
+    PB14: (pb14, 14, Input<Floating>, AFRH),
+    PB15: (pb15, 15, Input<Floating>, AFRH),
+]);
+
+#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
+    PB0: (pb0, 0, Input<Floating>, AFRL),
+    PB1: (pb1, 1, Input<Floating>, AFRL),
+    PB2: (pb2, 2, Input<Floating>, AFRL),
+    PB3: (pb3, 3, Input<Floating>, AFRL),
+    PB4: (pb4, 4, Input<Floating>, AFRL),
+    PB5: (pb5, 5, Input<Floating>, AFRL),
+    PB6: (pb6, 6, Input<Floating>, AFRL),
+    PB7: (pb7, 7, Input<Floating>, AFRL),
+    PB8: (pb8, 8, Input<Floating>, AFRH),
+    PB9: (pb9, 9, Input<Floating>, AFRH),
+    PB10: (pb10, 10, Input<Floating>, AFRH),
     PB14: (pb14, 14, Input<Floating>, AFRH),
     PB15: (pb15, 15, Input<Floating>, AFRH),
 ]);
