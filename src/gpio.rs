@@ -579,7 +579,12 @@ gpio!(GPIOC, gpioc, gpiob, iopcen, iopcrst, PCx, [
     PC15: (pc15, 15, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f334"))]
+#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
+    PD2: (pd2, 2, Input<Floating>, AFRL),
+]);
+
+#[cfg(feature = "stm32f334")]
 gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
     PD0: (pd0, 0, Input<Floating>, AFRL),
     PD1: (pd1, 1, Input<Floating>, AFRL),
