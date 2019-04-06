@@ -1,8 +1,5 @@
 //! General Purpose Input / Output
 
-// TODO the pins here currently correspond to the LQFP-100 package. There should be Cargo features
-// that let you select different microcontroller packages
-
 use core::marker::PhantomData;
 
 use crate::rcc::AHB;
@@ -497,10 +494,9 @@ gpio!(GPIOA, gpioa, gpioa, iopaen, ioparst, PAx, [
     PA10: (pa10, 10, Input<Floating>, AFRH),
     PA11: (pa11, 11, Input<Floating>, AFRH),
     PA12: (pa12, 12, Input<Floating>, AFRH),
-    // TODO these are configured as JTAG pins
-    // PA13: (13, Input<Floating>),
-    // PA14: (14, Input<Floating>),
-    // PA15: (15, Input<Floating>),
+    PA13: (pa13, 13, Input<Floating>, AFRH),
+    PA14: (pa14, 14, Input<Floating>, AFRH),
+    PA15: (pa15, 15, Input<Floating>, AFRH),
 ]);
 
 #[cfg(any(
@@ -519,9 +515,8 @@ gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
     PB0: (pb0, 0, Input<Floating>, AFRL),
     PB1: (pb1, 1, Input<Floating>, AFRL),
     PB2: (pb2, 2, Input<Floating>, AFRL),
-    // TODO these are configured as JTAG pins
-    // PB3: (3, Input<Floating>),
-    // PB4: (4, Input<Floating>),
+    PB3: (pb3, 3, Input<Floating>, AFRL),
+    PB4: (pb4, 4, Input<Floating>, AFRL),
     PB5: (pb5, 5, Input<Floating>, AFRL),
     PB6: (pb6, 6, Input<Floating>, AFRL),
     PB7: (pb7, 7, Input<Floating>, AFRL),
@@ -740,11 +735,7 @@ gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
     PF10: (pf10, 10, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
+#[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
 gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
     PF0: (pf0, 0, Input<Floating>, AFRL),
     PF1: (pf1, 1, Input<Floating>, AFRL),
