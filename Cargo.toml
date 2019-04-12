@@ -32,10 +32,10 @@ default-features = false
 version = "1.0.2"
 
 [dependencies.embedded-hal]
-features = ["unproven"]
 version = "0.2.2"
 
 [features]
+default = ["unproven"]
 device-selected = []
 rt = ["stm32f3/rt"]
 stm32f301 = ["stm32f3/stm32f301", "device-selected"]
@@ -48,6 +48,7 @@ stm32f334 = ["stm32f3/stm32f3x4", "device-selected"]
 stm32f328 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f358 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f398 = ["stm32f3/stm32f3x8", "device-selected"]
+unproven = ["embedded-hal/unproven"]
 
 [profile.dev]
 debug = true

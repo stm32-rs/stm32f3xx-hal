@@ -92,6 +92,8 @@ macro_rules! gpio {
             use core::marker::PhantomData;
 
             use crate::hal::digital::OutputPin;
+            #[cfg(feature = "unproven")]
+            use crate::hal::digital::InputPin;
             use crate::stm32::{$gpioy, $GPIOX};
 
             use crate::rcc::AHB;
@@ -211,6 +213,18 @@ macro_rules! gpio {
                 fn set_low(&mut self) {
                     // NOTE(unsafe) atomic write to a stateless register
                     unsafe { (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + self.i))) }
+                }
+            }
+
+            #[cfg(feature = "unproven")]
+            impl<MODE> InputPin for $PXx<Input<MODE>> {
+                fn is_high(&self) -> bool {
+                    !self.is_low()
+                }
+
+                 fn is_low(&self) -> bool {
+                    // NOTE(unsafe) atomic read with no side effects
+                    unsafe { (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0 }
                 }
             }
 
@@ -452,6 +466,19 @@ macro_rules! gpio {
                     }
                 }
 
+                impl<MODE> $PXi<Input<MODE>> {
+                    /// Erases the pin number from the type
+                    ///
+                    /// This is useful when you want to collect the pins into an array where you
+                    /// need all the elements to have the same type
+                    pub fn downgrade(self) -> $PXx<Input<MODE>> {
+                        $PXx {
+                            i: $i,
+                            _mode: self._mode,
+                        }
+                    }
+                }
+
                 impl<MODE> OutputPin for $PXi<Output<MODE>> {
                     fn set_high(&mut self) {
                         // NOTE(unsafe) atomic write to a stateless register
@@ -461,6 +488,18 @@ macro_rules! gpio {
                     fn set_low(&mut self) {
                         // NOTE(unsafe) atomic write to a stateless register
                         unsafe { (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + $i))) }
+                    }
+                }
+
+                #[cfg(feature = "unproven")]
+                impl<MODE> InputPin for $PXi<Input<MODE>> {
+                    fn is_high(&self) -> bool {
+                        !self.is_low()
+                    }
+
+                     fn is_low(&self) -> bool {
+                        // NOTE(unsafe) atomic read with no side effects
+                        unsafe { (*$GPIOX::ptr()).idr.read().bits() & (1 << $i) == 0 }
                     }
                 }
             )+
