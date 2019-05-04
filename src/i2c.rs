@@ -209,7 +209,7 @@ macro_rules! hal {
                     // START and prepare to send `bytes`
                     self.i2c.cr2.write(|w| {
                         w.sadd()
-                            .bits(u16::from(addr))
+                            .bits(u16::from(addr << 1))
                             .rd_wrn()
                             .clear_bit()
                             .nbytes()
@@ -257,7 +257,7 @@ macro_rules! hal {
                     // START and prepare to send `bytes`
                     self.i2c.cr2.write(|w| {
                         w.sadd()
-                            .bits(u16::from(addr))
+                            .bits(u16::from(addr << 1))
                             .rd_wrn()
                             .clear_bit()
                             .nbytes()
@@ -283,7 +283,7 @@ macro_rules! hal {
                     // reSTART and prepare to receive bytes into `buffer`
                     self.i2c.cr2.write(|w| {
                         w.sadd()
-                            .bits(u16::from(addr))
+                            .bits(u16::from(addr << 1))
                             .rd_wrn()
                             .set_bit()
                             .nbytes()
