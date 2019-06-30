@@ -581,6 +581,7 @@ gpio!(GPIOA, gpioa, gpioa, iopaen, ioparst, PAx, [
     feature = "stm32f334",
     feature = "stm32f328",
     feature = "stm32f358",
+    feature = "stm32f378",
     feature = "stm32f398"
 ))]
 gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
@@ -602,7 +603,7 @@ gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
     PB15: (pb15, 15, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(feature = "stm32f373")]
 gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
     PB0: (pb0, 0, Input<Floating>, AFRL),
     PB1: (pb1, 1, Input<Floating>, AFRL),
@@ -668,7 +669,7 @@ gpio!(GPIOC, gpioc, gpiob, iopcen, iopcrst, PCx, [
     PC15: (pc15, 15, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+#[cfg(feature = "stm32f301")]
 gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
     PD2: (pd2, 2, Input<Floating>, AFRL),
 ]);
@@ -696,6 +697,7 @@ gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303",
+    feature = "stm32f318",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f328",
@@ -741,13 +743,7 @@ gpio!(GPIOE, gpioe, gpiob, iopeen, ioperst, PEx, [
     PE15: (pe15, 15, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
+#[cfg(any(feature = "stm32f318", feature = "stm32f328", feature = "stm32f358", feature = "stm32f373", feature = "stm32f378", feature = "stm32f398"))]
 gpio!(GPIOE, gpioe, gpioc, iopeen, ioperst, PEx, [
     PE0: (pe0, 0, Input<Floating>, AFRL),
     PE1: (pe1, 1, Input<Floating>, AFRL),
@@ -767,7 +763,7 @@ gpio!(GPIOE, gpioe, gpioc, iopeen, ioperst, PEx, [
     PE15: (pe15, 15, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+#[cfg(feature = "stm32f301")]
 gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
     PF0: (pf0, 0, Input<Floating>, AFRL),
     PF1: (pf1, 1, Input<Floating>, AFRL),
@@ -817,7 +813,7 @@ gpio!(GPIOF, gpiof, gpiob, iopfen, iopfrst, PFx, [
     PF15: (pf15, 15, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(feature = "stm32f373")]
 gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
     PF0: (pf0, 0, Input<Floating>, AFRL),
     PF1: (pf1, 1, Input<Floating>, AFRL),
@@ -829,7 +825,7 @@ gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
     PF10: (pf10, 10, Input<Floating>, AFRH),
 ]);
 
-#[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+#[cfg(any(feature = "stm32f318", feature = "stm32f328", feature = "stm32f358", feature = "stm32f378", feature = "stm32f398"))]
 gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
     PF0: (pf0, 0, Input<Floating>, AFRL),
     PF1: (pf1, 1, Input<Floating>, AFRL),

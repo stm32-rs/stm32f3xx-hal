@@ -5,59 +5,22 @@ use crate::hal::timer::{CountDown, Periodic};
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f334",
+    feature = "stm32f318", feature = "stm32f328", feature = "stm32f358", feature = "stm32f378", feature = "stm32f398",
 ))]
 use crate::stm32::TIM1;
+#[cfg(any(feature = "stm32f318", feature = "stm32f328", feature = "stm32f358", feature = "stm32f373", feature = "stm32f378", feature = "stm32f398"))]
+use crate::stm32::TIM4;
+#[cfg(any(feature = "stm32f318", feature = "stm32f328", feature = "stm32f334", feature = "stm32f358", feature = "stm32f373", feature = "stm32f378", feature = "stm32f398"))]
+use crate::stm32::{TIM3, TIM7};
 #[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f301",
-    feature = "stm32f318",
-    feature = "stm32f334",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::stm32::{TIM15, TIM16, TIM17};
-#[cfg(any(
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::stm32::TIM19;
-#[cfg(any(
-    feature = "stm32f303",
+    feature = "stm32f303", feature = "stm32f318", feature = "stm32f328", feature = "stm32f358", feature = "stm32f378", feature = "stm32f398",
 ))]
 use crate::stm32::TIM8;
-#[cfg(any(
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::stm32::TIM4;
-#[cfg(any(
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::stm32::{TIM12, TIM13, TIM14, TIM18, TIM5};
-use crate::stm32::{TIM2, TIM6};
-#[cfg(any(
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::stm32::{TIM3, TIM7};
+use crate::stm32::{TIM2, TIM6, TIM15, TIM16, TIM17};
+#[cfg(feature = "stm32f373")]
+use crate::stm32::{TIM5, TIM12, TIM13, TIM14, TIM18, TIM19};
+#[cfg(any(feature = "stm32f318", feature = "stm32f328", feature = "stm32f358", feature = "stm32f378", feature = "stm32f398"))]
+use crate::stm32::TIM20;
 
 use cast::{u16, u32};
 use nb;
@@ -183,7 +146,7 @@ macro_rules! hal {
     }
 }
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+#[cfg(feature = "stm32f301")]
 hal! {
     {
         TIM2: (tim2, tim2en, tim2rst),
@@ -303,13 +266,7 @@ hal! {
     },
 }
 
-#[cfg(any(
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
+#[cfg(feature = "stm32f373")]
 hal! {
     {
         TIM2: (tim2, tim2en, tim2rst),
@@ -365,6 +322,54 @@ hal! {
     },
     {
         TIM19: (tim19, tim19en, tim19rst),
+        APB2: (apb2),
+    },
+}
+
+#[cfg(any(feature = "stm32f318", feature = "stm32f328", feature = "stm32f358", feature = "stm32f378", feature = "stm32f398"))]
+hal! {
+    {
+        TIM1: (tim1, tim1en, tim1rst),
+        APB2: (apb2),
+    },
+    {
+        TIM2: (tim2, tim2en, tim2rst),
+        APB1: (apb1),
+    },
+    {
+        TIM3: (tim3, tim3en, tim3rst),
+        APB1: (apb1),
+    },
+    {
+        TIM4: (tim4, tim4en, tim4rst),
+        APB1: (apb1),
+    },
+    {
+        TIM6: (tim6, tim6en, tim6rst),
+        APB1: (apb1),
+    },
+    {
+        TIM7: (tim7, tim7en, tim7rst),
+        APB1: (apb1),
+    },
+    {
+        TIM8: (tim8, tim8en, tim8rst),
+        APB2: (apb2),
+    },
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2),
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2),
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2),
+    },
+    {
+        TIM20: (tim20, tim20en, tim20rst),
         APB2: (apb2),
     },
 }
