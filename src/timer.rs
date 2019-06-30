@@ -13,8 +13,21 @@ use crate::stm32::TIM1;
     feature = "stm32f301",
     feature = "stm32f318",
     feature = "stm32f334",
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 use crate::stm32::{TIM15, TIM16, TIM17};
+#[cfg(any(
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
+))]
+use crate::stm32::TIM19;
 #[cfg(any(
     feature = "stm32f303",
 ))]
@@ -298,14 +311,60 @@ hal! {
     feature = "stm32f398"
 ))]
 hal! {
-    TIM2: (tim2, tim2en, tim2rst),
-    TIM3: (tim3, tim3en, tim3rst),
-    TIM4: (tim4, tim4en, tim4rst),
-    TIM5: (tim5, tim5en, tim5rst),
-    TIM6: (tim6, tim6en, tim6rst),
-    TIM7: (tim7, tim7en, tim7rst),
-    TIM12: (tim12, tim12en, tim12rst),
-    TIM13: (tim13, tim13en, tim13rst),
-    TIM14: (tim14, tim14en, tim14rst),
-    TIM18: (tim18, tim18en, tim18rst),
+    {
+        TIM2: (tim2, tim2en, tim2rst),
+        APB1: (apb1),
+    },
+    {
+        TIM3: (tim3, tim3en, tim3rst),
+        APB1: (apb1),
+    },
+    {
+        TIM4: (tim4, tim4en, tim4rst),
+        APB1: (apb1),
+    },
+    {
+        TIM5: (tim5, tim5en, tim5rst),
+        APB1: (apb1),
+    },
+    {
+        TIM6: (tim6, tim6en, tim6rst),
+        APB1: (apb1),
+    },
+    {
+        TIM7: (tim7, tim7en, tim7rst),
+        APB1: (apb1),
+    },
+    {
+        TIM12: (tim12, tim12en, tim12rst),
+        APB1: (apb1),
+    },
+    {
+        TIM13: (tim13, tim13en, tim13rst),
+        APB1: (apb1),
+    },
+    {
+        TIM14: (tim14, tim14en, tim14rst),
+        APB1: (apb1),
+    },
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2),
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2),
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2),
+    },
+    {
+        TIM18: (tim18, tim18en, tim18rst),
+        APB1: (apb1),
+    },
+    {
+        TIM19: (tim19, tim19en, tim19rst),
+        APB2: (apb2),
+    },
 }
