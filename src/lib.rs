@@ -36,7 +36,13 @@ pub use stm32f3::stm32f373 as stm32;
 #[cfg(feature = "stm32f334")]
 pub use stm32f3::stm32f3x4 as stm32;
 
-#[cfg(any(feature = "stm32f318", feature = "stm32f328", feature = "stm32f358", feature = "stm32f378", feature = "stm32f398"))]
+#[cfg(any(
+    feature = "stm32f318",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f378",
+    feature = "stm32f398"
+))]
 pub use stm32f3::stm32f3x8 as stm32;
 
 // Enable use of interrupt macro

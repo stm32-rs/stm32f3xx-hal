@@ -9,7 +9,6 @@ use nb;
 use void::Void;
 
 use crate::gpio::gpioa::{PA10, PA2, PA3, PA9};
-use crate::gpio::gpiob::{PB10, PB6, PB7};
 #[cfg(any(
     feature = "stm32f301",
     feature = "stm32f318",
@@ -21,6 +20,7 @@ use crate::gpio::gpiob::{PB10, PB6, PB7};
     feature = "stm32f398"
 ))]
 use crate::gpio::gpiob::PB11;
+use crate::gpio::gpiob::{PB10, PB6, PB7};
 use crate::gpio::gpioc::{PC10, PC11, PC4, PC5};
 #[cfg(any(
     feature = "stm32f302",

@@ -328,9 +328,7 @@ hal! {
     I2C2: (i2c2, i2c2en, i2c2rst),
 }
 
-#[cfg(any(
-    feature = "stm32f334",
-))]
+#[cfg(feature = "stm32f334")]
 hal! {
     I2C1: (i2c1, i2c1en, i2c1rst),
 }
