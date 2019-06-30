@@ -32,7 +32,19 @@ use crate::gpio::{AF5, AF6};
     feature = "stm32f398"
 ))]
 use crate::rcc::APB2;
-use crate::rcc::{Clocks, APB1};
+#[cfg(any(
+    feature = "stm32f301",
+    feature = "stm32f318",
+    feature = "stm32f302",
+    feature = "stm32f303",
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398",
+))]
+use crate::rcc::APB1;
+use crate::rcc::Clocks;
 use crate::time::Hertz;
 
 /// SPI error
@@ -238,6 +250,13 @@ macro_rules! hal {
     }
 }
 
+#[cfg(any(
+    feature = "stm32f334",
+))]
+hal! {
+    SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
+}
+
 #[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
 hal! {
     SPI2: (spi2, APB1, spi2en, spi2rst, pclk1),
@@ -249,7 +268,6 @@ hal! {
     feature = "stm32f303",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334",
     feature = "stm32f328",
     feature = "stm32f358",
     feature = "stm32f398"
