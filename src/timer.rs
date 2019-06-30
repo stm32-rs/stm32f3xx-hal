@@ -4,6 +4,13 @@ use crate::hal::timer::{CountDown, Periodic};
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303",
+))]
+use crate::stm32::{TIM1, TIM15, TIM16, TIM17};
+#[cfg(any(
+    feature = "stm32f303",
+))]
+use crate::stm32::TIM8;
+#[cfg(any(
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f328",
@@ -21,8 +28,6 @@ use crate::stm32::TIM4;
 use crate::stm32::{TIM12, TIM13, TIM14, TIM18, TIM5};
 use crate::stm32::{TIM2, TIM6};
 #[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f334",
@@ -36,7 +41,7 @@ use cast::{u16, u32};
 use nb;
 use void::Void;
 
-use crate::rcc::{Clocks, APB1};
+use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::Hertz;
 
 /// Hardware timers
@@ -53,7 +58,10 @@ pub enum Event {
 }
 
 macro_rules! hal {
-    ($($TIM:ident: ($tim:ident, $timXen:ident, $timXrst:ident),)+) => {
+    ($({
+        $TIM:ident: ($tim:ident, $timXen:ident, $timXrst:ident),
+        $APB:ident: ($apb:ident),
+    },)+) => {
         $(
             impl Periodic for Timer<$TIM> {}
 
@@ -103,14 +111,14 @@ macro_rules! hal {
                 // even if the `$TIM` are non overlapping (compare to the `free` function below
                 // which just works)
                 /// Configures a TIM peripheral as a periodic count down timer
-                pub fn $tim<T>(tim: $TIM, timeout: T, clocks: Clocks, apb1: &mut APB1) -> Self
+                pub fn $tim<T>(tim: $TIM, timeout: T, clocks: Clocks, $apb: &mut $APB) -> Self
                 where
                     T: Into<Hertz>,
                 {
                     // enable and reset peripheral to a clean slate state
-                    apb1.enr().modify(|_, w| w.$timXen().set_bit());
-                    apb1.rstr().modify(|_, w| w.$timXrst().set_bit());
-                    apb1.rstr().modify(|_, w| w.$timXrst().clear_bit());
+                    $apb.enr().modify(|_, w| w.$timXen().set_bit());
+                    $apb.rstr().modify(|_, w| w.$timXrst().set_bit());
+                    $apb.rstr().modify(|_, w| w.$timXrst().clear_bit());
 
                     let mut timer = Timer {
                         clocks,
@@ -159,13 +167,64 @@ hal! {
     TIM6: (tim6, tim6en, tim6rst),
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+#[cfg(feature = "stm32f302")]
 hal! {
-    TIM2: (tim2, tim2en, tim2rst),
-    TIM3: (tim3, tim3en, tim3rst),
-    TIM4: (tim4, tim4en, tim4rst),
-    TIM6: (tim6, tim6en, tim6rst),
-    TIM7: (tim7, tim7en, tim7rst),
+    {
+        TIM1: (tim1, tim1en, tim1rst),
+        APB2: (apb2),
+    },
+    {
+        TIM2: (tim2, tim2en, tim2rst),
+        APB1: (apb1),
+    },
+    {
+        TIM6: (tim6, tim6en, tim6rst),
+        APB1: (apb1),
+    },
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2),
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2),
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2),
+    },
+}
+
+#[cfg(feature = "stm32f303")]
+hal! {
+    {
+        TIM1: (tim1, tim1en, tim1rst),
+        APB2: (apb2),
+    },
+    {
+        TIM2: (tim2, tim2en, tim2rst),
+        APB1: (apb1),
+    },
+    {
+        TIM6: (tim6, tim6en, tim6rst),
+        APB1: (apb1),
+    },
+    {
+        TIM8: (tim8, tim8en, tim8rst),
+        APB2: (apb2),
+    },
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2),
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2),
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2),
+    },
 }
 
 #[cfg(feature = "stm32f334")]
