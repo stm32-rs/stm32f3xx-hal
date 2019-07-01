@@ -7,32 +7,46 @@ use crate::stm32::{SPI1, SPI2, SPI3};
 use nb;
 
 use crate::gpio::gpioa::{PA5, PA6, PA7};
-use crate::gpio::gpiob::{PB14, PB15, PB5};
 #[cfg(any(
     feature = "stm32f301",
-    feature = "stm32f318",
     feature = "stm32f302",
     feature = "stm32f303",
-    feature = "stm32f334",
+    feature = "stm32f318",
     feature = "stm32f328",
+    feature = "stm32f334",
     feature = "stm32f358",
+    feature = "stm32f378",
     feature = "stm32f398"
 ))]
 use crate::gpio::gpiob::PB13;
+use crate::gpio::gpiob::{PB14, PB15, PB5};
 use crate::gpio::gpioc::{PC10, PC11, PC12};
 use crate::gpio::{AF5, AF6};
+use crate::rcc::Clocks;
+#[cfg(any(
+    feature = "stm32f301",
+    feature = "stm32f302",
+    feature = "stm32f303",
+    feature = "stm32f318",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f398"
+))]
+use crate::rcc::APB1;
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303",
+    feature = "stm32f318",
+    feature = "stm32f328",
+    feature = "stm32f334",
+    feature = "stm32f358",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
     feature = "stm32f398"
 ))]
 use crate::rcc::APB2;
-use crate::rcc::{Clocks, APB1};
 use crate::time::Hertz;
 
 /// SPI error
@@ -63,12 +77,13 @@ unsafe impl SckPin<SPI1> for PA5<AF5> {}
 
 #[cfg(any(
     feature = "stm32f301",
-    feature = "stm32f318",
     feature = "stm32f302",
     feature = "stm32f303",
-    feature = "stm32f334",
+    feature = "stm32f318",
     feature = "stm32f328",
+    feature = "stm32f334",
     feature = "stm32f358",
+    feature = "stm32f378",
     feature = "stm32f398"
 ))]
 unsafe impl SckPin<SPI2> for PB13<AF5> {}
@@ -238,7 +253,12 @@ macro_rules! hal {
     }
 }
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+#[cfg(feature = "stm32f334")]
+hal! {
+    SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
+}
+
+#[cfg(feature = "stm32f301")]
 hal! {
     SPI2: (spi2, APB1, spi2en, spi2rst, pclk1),
     SPI3: (spi3, APB1, spi3en, spi3rst, pclk1),
@@ -247,11 +267,11 @@ hal! {
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
+    feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f358",
+    feature = "stm32f373",
+    feature = "stm32f378",
     feature = "stm32f398"
 ))]
 hal! {

@@ -21,7 +21,7 @@ pub use embedded_hal as hal;
 pub use nb;
 pub use nb::block;
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+#[cfg(feature = "stm32f301")]
 pub use stm32f3::stm32f301 as stm32;
 
 #[cfg(feature = "stm32f302")]
@@ -30,13 +30,19 @@ pub use stm32f3::stm32f302 as stm32;
 #[cfg(feature = "stm32f303")]
 pub use stm32f3::stm32f303 as stm32;
 
-#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(feature = "stm32f373")]
 pub use stm32f3::stm32f373 as stm32;
 
 #[cfg(feature = "stm32f334")]
 pub use stm32f3::stm32f3x4 as stm32;
 
-#[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+#[cfg(any(
+    feature = "stm32f318",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f378",
+    feature = "stm32f398"
+))]
 pub use stm32f3::stm32f3x8 as stm32;
 
 // Enable use of interrupt macro
