@@ -3,6 +3,9 @@
 use core::marker::PhantomData;
 
 use crate::rcc::AHB;
+use crate::hal::digital::v2::OutputPin;
+#[cfg(feature = "unproven")]
+use crate::hal::digital::v2::InputPin;
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers
 pub trait GpioExt {
@@ -99,6 +102,86 @@ macro_rules! gpio {
         },)+
     ]) => {
         $(
+            #[cfg(any(
+                $(feature = $device,)+
+            ))]
+            use crate::stm32::$GPIOX;
+        )+
+
+        pub enum Gpio {
+            $(
+                #[cfg(any(
+                    $(feature = $device,)+
+                ))]
+                $GPIOX,
+            )+
+        }
+
+        /// Fully erased pin
+        pub struct PXx<MODE> {
+            i: u8,
+            gpio: Gpio,
+            _mode: PhantomData<MODE>,
+        }
+
+        impl<MODE> OutputPin for PXx<Output<MODE>> {
+            type Error = ();
+
+            fn set_high(&mut self) -> Result<(), Self::Error> {
+                // NOTE(unsafe) atomic write to a stateless register
+                unsafe {
+                    match self.gpio {
+                        $(
+                            #[cfg(any(
+                                $(feature = $device,)+
+                            ))]
+                            $GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << self.i)),
+                        )+
+                    }
+                }
+                Ok(())
+            }
+
+            fn set_low(&mut self) -> Result<(), Self::Error> {
+                // NOTE(unsafe) atomic write to a stateless register
+                unsafe {
+                    match self.gpio {
+                        $(
+                            #[cfg(any(
+                                $(feature = $device,)+
+                            ))]
+                            $GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + self.i))),
+                        )+
+                    }
+                }
+                Ok(())
+            }
+        }
+
+        #[cfg(feature = "unproven")]
+        impl<MODE> InputPin for PXx<Input<MODE>> {
+            type Error = ();
+
+            fn is_high(&self) -> Result<bool, Self::Error> {
+                Ok(!self.is_low()?)
+            }
+
+             fn is_low(&self) -> Result<bool, Self::Error> {
+                // NOTE(unsafe) atomic read with no side effects
+                Ok(unsafe {
+                    match self.gpio {
+                        $(
+                            #[cfg(any(
+                                $(feature = $device,)+
+                            ))]
+                            $GPIOX => (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0,
+                        )+
+                    }
+                })
+            }
+        }
+
+        $(
             /// GPIO
             #[cfg(any(
                 $(feature = $device,)+
@@ -115,6 +198,7 @@ macro_rules! gpio {
                 use super::{
                     AF4, AF5, AF6, AF7, AF14, Floating, GpioExt, Input, OpenDrain, Output,
                     PullDown, PullUp, PushPull,
+                    PXx, Gpio,
                 };
 
                 /// GPIO parts
@@ -217,6 +301,16 @@ macro_rules! gpio {
                 pub struct $PXx<MODE> {
                     i: u8,
                     _mode: PhantomData<MODE>,
+                }
+
+                impl<MODE> $PXx<MODE> {
+                    pub fn downgrade(self) -> PXx<MODE> {
+                        PXx {
+                            i: self.i,
+                            gpio: Gpio::$GPIOX,
+                            _mode: self.mode,
+                        }
+                    }
                 }
 
                 impl<MODE> OutputPin for $PXx<Output<MODE>> {
