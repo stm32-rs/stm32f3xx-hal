@@ -13,6 +13,7 @@ use crate::hal::timer::{CountDown, Periodic};
 ))]
 use crate::stm32::TIM1;
 #[cfg(any(
+    feature = "stm32f303",
     feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f358",
@@ -21,6 +22,7 @@ use crate::stm32::TIM1;
 ))]
 use crate::stm32::TIM20;
 #[cfg(any(
+    feature = "stm32f303",
     feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f358",
@@ -42,6 +44,7 @@ use crate::stm32::TIM8;
 use crate::stm32::{TIM12, TIM13, TIM14, TIM18, TIM19, TIM5};
 use crate::stm32::{TIM15, TIM16, TIM17, TIM2, TIM6};
 #[cfg(any(
+    feature = "stm32f303",
     feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f334",
@@ -239,7 +242,19 @@ hal! {
         APB1: (apb1),
     },
     {
+        TIM3: (tim3, tim3en, tim3rst),
+        APB1: (apb1),
+    },
+    {
+        TIM4: (tim4, tim4en, tim4rst),
+        APB1: (apb1),
+    },
+    {
         TIM6: (tim6, tim6en, tim6rst),
+        APB1: (apb1),
+    },
+    {
+        TIM7: (tim7, tim7en, tim7rst),
         APB1: (apb1),
     },
     {
@@ -256,6 +271,10 @@ hal! {
     },
     {
         TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2),
+    },
+    {
+        TIM20: (tim20, tim20en, tim20rst),
         APB2: (apb2),
     },
 }
