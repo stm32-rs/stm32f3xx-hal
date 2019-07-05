@@ -304,11 +304,15 @@ macro_rules! gpio {
                 }
 
                 impl<MODE> $PXx<MODE> {
+                    /// Erases the port letter from the type
+                    ///
+                    /// This is useful when you want to collect the pins into an array where you
+                    /// need all the elements to have the same type
                     pub fn downgrade(self) -> PXx<MODE> {
                         PXx {
                             i: self.i,
                             gpio: Gpio::$GPIOX,
-                            _mode: self.mode,
+                            _mode: self._mode,
                         }
                     }
                 }
