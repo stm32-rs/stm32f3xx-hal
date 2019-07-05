@@ -135,7 +135,7 @@ macro_rules! gpio {
                             #[cfg(any(
                                 $(feature = $device,)+
                             ))]
-                            $GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << self.i)),
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << self.i)),
                         )+
                     }
                 }
@@ -150,7 +150,7 @@ macro_rules! gpio {
                             #[cfg(any(
                                 $(feature = $device,)+
                             ))]
-                            $GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + self.i))),
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + self.i))),
                         )+
                     }
                 }
@@ -174,7 +174,7 @@ macro_rules! gpio {
                             #[cfg(any(
                                 $(feature = $device,)+
                             ))]
-                            $GPIOX => (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0,
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0,
                         )+
                     }
                 })
