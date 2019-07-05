@@ -84,10 +84,22 @@ pub struct AF14;
 pub struct AF15;
 
 macro_rules! gpio {
-    ($GPIOX:ident, $gpiox:ident, $gpioy:ident, $iopxenr:ident, $iopxrst:ident, $PXx:ident, [
-        $($PXi:ident: ($pxi:ident, $i:expr, $MODE:ty, $AFR:ident),)+
-    ]) => {
+    ({
+        devices: [$($device:expr,)+],
+        GPIO: $GPIOX:ident,
+        gpio: $gpiox:ident,
+        gpio_mapped: $gpioy:ident,
+        gpio_mapped_ioenr: $iopxenr:ident,
+        gpio_mapped_iorst: $iopxrst:ident,
+        partially_erased_pin: $PXx:ident,
+        pins: [
+            $($PXi:ident: ($pxi:ident, $i:expr, $MODE:ty, $AFR:ident),)+
+        ],
+    }) => {
         /// GPIO
+        #[cfg(any(
+            $(feature = $device,)+
+        ))]
         pub mod $gpiox {
             use core::marker::PhantomData;
 
@@ -542,358 +554,529 @@ macro_rules! gpio {
     }
 }
 
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f318",
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-gpio!(GPIOA, gpioa, gpioa, iopaen, ioparst, PAx, [
-    PA0: (pa0, 0, Input<Floating>, AFRL),
-    PA1: (pa1, 1, Input<Floating>, AFRL),
-    PA2: (pa2, 2, Input<Floating>, AFRL),
-    PA3: (pa3, 3, Input<Floating>, AFRL),
-    PA4: (pa4, 4, Input<Floating>, AFRL),
-    PA5: (pa5, 5, Input<Floating>, AFRL),
-    PA6: (pa6, 6, Input<Floating>, AFRL),
-    PA7: (pa7, 7, Input<Floating>, AFRL),
-    PA8: (pa8, 8, Input<Floating>, AFRH),
-    PA9: (pa9, 9, Input<Floating>, AFRH),
-    PA10: (pa10, 10, Input<Floating>, AFRH),
-    PA11: (pa11, 11, Input<Floating>, AFRH),
-    PA12: (pa12, 12, Input<Floating>, AFRH),
-    PA13: (pa13, 13, Input<Floating>, AFRH),
-    PA14: (pa14, 14, Input<Floating>, AFRH),
-    PA15: (pa15, 15, Input<Floating>, AFRH),
-]);
 
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f318",
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f378",
-    feature = "stm32f398"
-))]
-gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
-    PB0: (pb0, 0, Input<Floating>, AFRL),
-    PB1: (pb1, 1, Input<Floating>, AFRL),
-    PB2: (pb2, 2, Input<Floating>, AFRL),
-    PB3: (pb3, 3, Input<Floating>, AFRL),
-    PB4: (pb4, 4, Input<Floating>, AFRL),
-    PB5: (pb5, 5, Input<Floating>, AFRL),
-    PB6: (pb6, 6, Input<Floating>, AFRL),
-    PB7: (pb7, 7, Input<Floating>, AFRL),
-    PB8: (pb8, 8, Input<Floating>, AFRH),
-    PB9: (pb9, 9, Input<Floating>, AFRH),
-    PB10: (pb10, 10, Input<Floating>, AFRH),
-    PB11: (pb11, 11, Input<Floating>, AFRH),
-    PB12: (pb12, 12, Input<Floating>, AFRH),
-    PB13: (pb13, 13, Input<Floating>, AFRH),
-    PB14: (pb14, 14, Input<Floating>, AFRH),
-    PB15: (pb15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f301",
+        "stm32f318",
+        "stm32f302",
+        "stm32f303",
+        "stm32f373",
+        "stm32f378",
+        "stm32f334",
+        "stm32f328",
+        "stm32f358",
+        "stm32f398",
+    ],
+    GPIO: GPIOA,
+    gpio: gpioa,
+    gpio_mapped: gpioa,
+    gpio_mapped_ioenr: iopaen,
+    gpio_mapped_iorst: ioparst,
+    partially_erased_pin: PAx,
+    pins: [
+        PA0: (pa0, 0, Input<Floating>, AFRL),
+        PA1: (pa1, 1, Input<Floating>, AFRL),
+        PA2: (pa2, 2, Input<Floating>, AFRL),
+        PA3: (pa3, 3, Input<Floating>, AFRL),
+        PA4: (pa4, 4, Input<Floating>, AFRL),
+        PA5: (pa5, 5, Input<Floating>, AFRL),
+        PA6: (pa6, 6, Input<Floating>, AFRL),
+        PA7: (pa7, 7, Input<Floating>, AFRL),
+        PA8: (pa8, 8, Input<Floating>, AFRH),
+        PA9: (pa9, 9, Input<Floating>, AFRH),
+        PA10: (pa10, 10, Input<Floating>, AFRH),
+        PA11: (pa11, 11, Input<Floating>, AFRH),
+        PA12: (pa12, 12, Input<Floating>, AFRH),
+        PA13: (pa13, 13, Input<Floating>, AFRH),
+        PA14: (pa14, 14, Input<Floating>, AFRH),
+        PA15: (pa15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f373")]
-gpio!(GPIOB, gpiob, gpiob, iopben, iopbrst, PBx, [
-    PB0: (pb0, 0, Input<Floating>, AFRL),
-    PB1: (pb1, 1, Input<Floating>, AFRL),
-    PB2: (pb2, 2, Input<Floating>, AFRL),
-    PB3: (pb3, 3, Input<Floating>, AFRL),
-    PB4: (pb4, 4, Input<Floating>, AFRL),
-    PB5: (pb5, 5, Input<Floating>, AFRL),
-    PB6: (pb6, 6, Input<Floating>, AFRL),
-    PB7: (pb7, 7, Input<Floating>, AFRL),
-    PB8: (pb8, 8, Input<Floating>, AFRH),
-    PB9: (pb9, 9, Input<Floating>, AFRH),
-    PB10: (pb10, 10, Input<Floating>, AFRH),
-    PB14: (pb14, 14, Input<Floating>, AFRH),
-    PB15: (pb15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f301",
+        "stm32f318",
+        "stm32f302",
+        "stm32f303",
+        "stm32f334",
+        "stm32f328",
+        "stm32f358",
+        "stm32f378",
+        "stm32f398",
+    ],
+    GPIO: GPIOB,
+    gpio: gpiob,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iopben,
+    gpio_mapped_iorst: iopbrst,
+    partially_erased_pin: PBx,
+    pins: [
+        PB0: (pb0, 0, Input<Floating>, AFRL),
+        PB1: (pb1, 1, Input<Floating>, AFRL),
+        PB2: (pb2, 2, Input<Floating>, AFRL),
+        PB3: (pb3, 3, Input<Floating>, AFRL),
+        PB4: (pb4, 4, Input<Floating>, AFRL),
+        PB5: (pb5, 5, Input<Floating>, AFRL),
+        PB6: (pb6, 6, Input<Floating>, AFRL),
+        PB7: (pb7, 7, Input<Floating>, AFRL),
+        PB8: (pb8, 8, Input<Floating>, AFRH),
+        PB9: (pb9, 9, Input<Floating>, AFRH),
+        PB10: (pb10, 10, Input<Floating>, AFRH),
+        PB11: (pb11, 11, Input<Floating>, AFRH),
+        PB12: (pb12, 12, Input<Floating>, AFRH),
+        PB13: (pb13, 13, Input<Floating>, AFRH),
+        PB14: (pb14, 14, Input<Floating>, AFRH),
+        PB15: (pb15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f318",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-gpio!(GPIOC, gpioc, gpioc, iopcen, iopcrst, PCx, [
-    PC0: (pc0, 0, Input<Floating>, AFRL),
-    PC1: (pc1, 1, Input<Floating>, AFRL),
-    PC2: (pc2, 2, Input<Floating>, AFRL),
-    PC3: (pc3, 3, Input<Floating>, AFRL),
-    PC4: (pc4, 4, Input<Floating>, AFRL),
-    PC5: (pc5, 5, Input<Floating>, AFRL),
-    PC6: (pc6, 6, Input<Floating>, AFRL),
-    PC7: (pc7, 7, Input<Floating>, AFRL),
-    PC8: (pc8, 8, Input<Floating>, AFRH),
-    PC9: (pc9, 9, Input<Floating>, AFRH),
-    PC10: (pc10, 10, Input<Floating>, AFRH),
-    PC11: (pc11, 11, Input<Floating>, AFRH),
-    PC12: (pc12, 12, Input<Floating>, AFRH),
-    PC13: (pc13, 13, Input<Floating>, AFRH),
-    PC14: (pc14, 14, Input<Floating>, AFRH),
-    PC15: (pc15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f373",
+    ],
+    GPIO: GPIOB,
+    gpio: gpiob,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iopben,
+    gpio_mapped_iorst: iopbrst,
+    partially_erased_pin: PBx,
+    pins: [
+        PB0: (pb0, 0, Input<Floating>, AFRL),
+        PB1: (pb1, 1, Input<Floating>, AFRL),
+        PB2: (pb2, 2, Input<Floating>, AFRL),
+        PB3: (pb3, 3, Input<Floating>, AFRL),
+        PB4: (pb4, 4, Input<Floating>, AFRL),
+        PB5: (pb5, 5, Input<Floating>, AFRL),
+        PB6: (pb6, 6, Input<Floating>, AFRL),
+        PB7: (pb7, 7, Input<Floating>, AFRL),
+        PB8: (pb8, 8, Input<Floating>, AFRH),
+        PB9: (pb9, 9, Input<Floating>, AFRH),
+        PB10: (pb10, 10, Input<Floating>, AFRH),
+        PB14: (pb14, 14, Input<Floating>, AFRH),
+        PB15: (pb15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-gpio!(GPIOC, gpioc, gpiob, iopcen, iopcrst, PCx, [
-    PC0: (pc0, 0, Input<Floating>, AFRL),
-    PC1: (pc1, 1, Input<Floating>, AFRL),
-    PC2: (pc2, 2, Input<Floating>, AFRL),
-    PC3: (pc3, 3, Input<Floating>, AFRL),
-    PC4: (pc4, 4, Input<Floating>, AFRL),
-    PC5: (pc5, 5, Input<Floating>, AFRL),
-    PC6: (pc6, 6, Input<Floating>, AFRL),
-    PC7: (pc7, 7, Input<Floating>, AFRL),
-    PC8: (pc8, 8, Input<Floating>, AFRH),
-    PC9: (pc9, 9, Input<Floating>, AFRH),
-    PC10: (pc10, 10, Input<Floating>, AFRH),
-    PC11: (pc11, 11, Input<Floating>, AFRH),
-    PC12: (pc12, 12, Input<Floating>, AFRH),
-    PC13: (pc13, 13, Input<Floating>, AFRH),
-    PC14: (pc14, 14, Input<Floating>, AFRH),
-    PC15: (pc15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f301",
+        "stm32f318",
+        "stm32f373",
+        "stm32f378",
+        "stm32f334",
+        "stm32f328",
+        "stm32f358",
+        "stm32f398",
+    ],
+    GPIO: GPIOC,
+    gpio: gpioc,
+    gpio_mapped: gpioc,
+    gpio_mapped_ioenr: iopcen,
+    gpio_mapped_iorst: iopcrst,
+    partially_erased_pin: PCx,
+    pins: [
+        PC0: (pc0, 0, Input<Floating>, AFRL),
+        PC1: (pc1, 1, Input<Floating>, AFRL),
+        PC2: (pc2, 2, Input<Floating>, AFRL),
+        PC3: (pc3, 3, Input<Floating>, AFRL),
+        PC4: (pc4, 4, Input<Floating>, AFRL),
+        PC5: (pc5, 5, Input<Floating>, AFRL),
+        PC6: (pc6, 6, Input<Floating>, AFRL),
+        PC7: (pc7, 7, Input<Floating>, AFRL),
+        PC8: (pc8, 8, Input<Floating>, AFRH),
+        PC9: (pc9, 9, Input<Floating>, AFRH),
+        PC10: (pc10, 10, Input<Floating>, AFRH),
+        PC11: (pc11, 11, Input<Floating>, AFRH),
+        PC12: (pc12, 12, Input<Floating>, AFRH),
+        PC13: (pc13, 13, Input<Floating>, AFRH),
+        PC14: (pc14, 14, Input<Floating>, AFRH),
+        PC15: (pc15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f301")]
-gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
-    PD2: (pd2, 2, Input<Floating>, AFRL),
-]);
+gpio!({
+    devices: [
+        "stm32f302",
+        "stm32f303",
+    ],
+    GPIO: GPIOC,
+    gpio: gpioc,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iopcen,
+    gpio_mapped_iorst: iopcrst,
+    partially_erased_pin: PCx,
+    pins: [
+        PC0: (pc0, 0, Input<Floating>, AFRL),
+        PC1: (pc1, 1, Input<Floating>, AFRL),
+        PC2: (pc2, 2, Input<Floating>, AFRL),
+        PC3: (pc3, 3, Input<Floating>, AFRL),
+        PC4: (pc4, 4, Input<Floating>, AFRL),
+        PC5: (pc5, 5, Input<Floating>, AFRL),
+        PC6: (pc6, 6, Input<Floating>, AFRL),
+        PC7: (pc7, 7, Input<Floating>, AFRL),
+        PC8: (pc8, 8, Input<Floating>, AFRH),
+        PC9: (pc9, 9, Input<Floating>, AFRH),
+        PC10: (pc10, 10, Input<Floating>, AFRH),
+        PC11: (pc11, 11, Input<Floating>, AFRH),
+        PC12: (pc12, 12, Input<Floating>, AFRH),
+        PC13: (pc13, 13, Input<Floating>, AFRH),
+        PC14: (pc14, 14, Input<Floating>, AFRH),
+        PC15: (pc15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f334")]
-gpio!(GPIOD, gpiod, gpioc, iopden, iopdrst, PDx, [
-    PD0: (pd0, 0, Input<Floating>, AFRL),
-    PD1: (pd1, 1, Input<Floating>, AFRL),
-    PD2: (pd2, 2, Input<Floating>, AFRL),
-    PD3: (pd3, 3, Input<Floating>, AFRL),
-    PD4: (pd4, 4, Input<Floating>, AFRL),
-    PD5: (pd5, 5, Input<Floating>, AFRL),
-    PD6: (pd6, 6, Input<Floating>, AFRL),
-    PD7: (pd7, 7, Input<Floating>, AFRL),
-    PD8: (pd8, 8, Input<Floating>, AFRH),
-    PD9: (pd9, 9, Input<Floating>, AFRH),
-    PD10: (pd10, 10, Input<Floating>, AFRH),
-    PD11: (pd11, 11, Input<Floating>, AFRH),
-    PD12: (pd12, 12, Input<Floating>, AFRH),
-    PD13: (pd13, 13, Input<Floating>, AFRH),
-    PD14: (pd14, 14, Input<Floating>, AFRH),
-    PD15: (pd15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f301",
+    ],
+    GPIO: GPIOD,
+    gpio: gpiod,
+    gpio_mapped: gpioc,
+    gpio_mapped_ioenr: iopden,
+    gpio_mapped_iorst: iopdrst,
+    partially_erased_pin: PDx,
+    pins: [
+        PD2: (pd2, 2, Input<Floating>, AFRL),
+    ],
+});
 
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f318",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-gpio!(GPIOD, gpiod, gpiob, iopden, iopdrst, PDx, [
-    PD0: (pd0, 0, Input<Floating>, AFRL),
-    PD1: (pd1, 1, Input<Floating>, AFRL),
-    PD2: (pd2, 2, Input<Floating>, AFRL),
-    PD3: (pd3, 3, Input<Floating>, AFRL),
-    PD4: (pd4, 4, Input<Floating>, AFRL),
-    PD5: (pd5, 5, Input<Floating>, AFRL),
-    PD6: (pd6, 6, Input<Floating>, AFRL),
-    PD7: (pd7, 7, Input<Floating>, AFRL),
-    PD8: (pd8, 8, Input<Floating>, AFRH),
-    PD9: (pd9, 9, Input<Floating>, AFRH),
-    PD10: (pd10, 10, Input<Floating>, AFRH),
-    PD11: (pd11, 11, Input<Floating>, AFRH),
-    PD12: (pd12, 12, Input<Floating>, AFRH),
-    PD13: (pd13, 13, Input<Floating>, AFRH),
-    PD14: (pd14, 14, Input<Floating>, AFRH),
-    PD15: (pd15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f334",
+    ],
+    GPIO: GPIOD,
+    gpio: gpiod,
+    gpio_mapped: gpioc,
+    gpio_mapped_ioenr: iopden,
+    gpio_mapped_iorst: iopdrst,
+    partially_erased_pin: PDx,
+    pins: [
+        PD0: (pd0, 0, Input<Floating>, AFRL),
+        PD1: (pd1, 1, Input<Floating>, AFRL),
+        PD2: (pd2, 2, Input<Floating>, AFRL),
+        PD3: (pd3, 3, Input<Floating>, AFRL),
+        PD4: (pd4, 4, Input<Floating>, AFRL),
+        PD5: (pd5, 5, Input<Floating>, AFRL),
+        PD6: (pd6, 6, Input<Floating>, AFRL),
+        PD7: (pd7, 7, Input<Floating>, AFRL),
+        PD8: (pd8, 8, Input<Floating>, AFRH),
+        PD9: (pd9, 9, Input<Floating>, AFRH),
+        PD10: (pd10, 10, Input<Floating>, AFRH),
+        PD11: (pd11, 11, Input<Floating>, AFRH),
+        PD12: (pd12, 12, Input<Floating>, AFRH),
+        PD13: (pd13, 13, Input<Floating>, AFRH),
+        PD14: (pd14, 14, Input<Floating>, AFRH),
+        PD15: (pd15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-gpio!(GPIOE, gpioe, gpiob, iopeen, ioperst, PEx, [
-    PE0: (pe0, 0, Input<Floating>, AFRL),
-    PE1: (pe1, 1, Input<Floating>, AFRL),
-    PE2: (pe2, 2, Input<Floating>, AFRL),
-    PE3: (pe3, 3, Input<Floating>, AFRL),
-    PE4: (pe4, 4, Input<Floating>, AFRL),
-    PE5: (pe5, 5, Input<Floating>, AFRL),
-    PE6: (pe6, 6, Input<Floating>, AFRL),
-    PE7: (pe7, 7, Input<Floating>, AFRL),
-    PE8: (pe8, 8, Input<Floating>, AFRH),
-    PE9: (pe9, 9, Input<Floating>, AFRH),
-    PE10: (pe10, 10, Input<Floating>, AFRH),
-    PE11: (pe11, 11, Input<Floating>, AFRH),
-    PE12: (pe12, 12, Input<Floating>, AFRH),
-    PE13: (pe13, 13, Input<Floating>, AFRH),
-    PE14: (pe14, 14, Input<Floating>, AFRH),
-    PE15: (pe15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f302",
+        "stm32f303",
+        "stm32f318",
+        "stm32f373",
+        "stm32f378",
+        "stm32f328",
+        "stm32f358",
+        "stm32f398",
+    ],
+    GPIO: GPIOD,
+    gpio: gpiod,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iopden,
+    gpio_mapped_iorst: iopdrst,
+    partially_erased_pin: PDx,
+    pins: [
+        PD0: (pd0, 0, Input<Floating>, AFRL),
+        PD1: (pd1, 1, Input<Floating>, AFRL),
+        PD2: (pd2, 2, Input<Floating>, AFRL),
+        PD3: (pd3, 3, Input<Floating>, AFRL),
+        PD4: (pd4, 4, Input<Floating>, AFRL),
+        PD5: (pd5, 5, Input<Floating>, AFRL),
+        PD6: (pd6, 6, Input<Floating>, AFRL),
+        PD7: (pd7, 7, Input<Floating>, AFRL),
+        PD8: (pd8, 8, Input<Floating>, AFRH),
+        PD9: (pd9, 9, Input<Floating>, AFRH),
+        PD10: (pd10, 10, Input<Floating>, AFRH),
+        PD11: (pd11, 11, Input<Floating>, AFRH),
+        PD12: (pd12, 12, Input<Floating>, AFRH),
+        PD13: (pd13, 13, Input<Floating>, AFRH),
+        PD14: (pd14, 14, Input<Floating>, AFRH),
+        PD15: (pd15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(any(
-    feature = "stm32f318",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f398"
-))]
-gpio!(GPIOE, gpioe, gpioc, iopeen, ioperst, PEx, [
-    PE0: (pe0, 0, Input<Floating>, AFRL),
-    PE1: (pe1, 1, Input<Floating>, AFRL),
-    PE2: (pe2, 2, Input<Floating>, AFRL),
-    PE3: (pe3, 3, Input<Floating>, AFRL),
-    PE4: (pe4, 4, Input<Floating>, AFRL),
-    PE5: (pe5, 5, Input<Floating>, AFRL),
-    PE6: (pe6, 6, Input<Floating>, AFRL),
-    PE7: (pe7, 7, Input<Floating>, AFRL),
-    PE8: (pe8, 8, Input<Floating>, AFRH),
-    PE9: (pe9, 9, Input<Floating>, AFRH),
-    PE10: (pe10, 10, Input<Floating>, AFRH),
-    PE11: (pe11, 11, Input<Floating>, AFRH),
-    PE12: (pe12, 12, Input<Floating>, AFRH),
-    PE13: (pe13, 13, Input<Floating>, AFRH),
-    PE14: (pe14, 14, Input<Floating>, AFRH),
-    PE15: (pe15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f302",
+        "stm32f303",
+    ],
+    GPIO: GPIOE,
+    gpio: gpioe,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iopeen,
+    gpio_mapped_iorst: ioperst,
+    partially_erased_pin: PEx,
+    pins: [
+        PE0: (pe0, 0, Input<Floating>, AFRL),
+        PE1: (pe1, 1, Input<Floating>, AFRL),
+        PE2: (pe2, 2, Input<Floating>, AFRL),
+        PE3: (pe3, 3, Input<Floating>, AFRL),
+        PE4: (pe4, 4, Input<Floating>, AFRL),
+        PE5: (pe5, 5, Input<Floating>, AFRL),
+        PE6: (pe6, 6, Input<Floating>, AFRL),
+        PE7: (pe7, 7, Input<Floating>, AFRL),
+        PE8: (pe8, 8, Input<Floating>, AFRH),
+        PE9: (pe9, 9, Input<Floating>, AFRH),
+        PE10: (pe10, 10, Input<Floating>, AFRH),
+        PE11: (pe11, 11, Input<Floating>, AFRH),
+        PE12: (pe12, 12, Input<Floating>, AFRH),
+        PE13: (pe13, 13, Input<Floating>, AFRH),
+        PE14: (pe14, 14, Input<Floating>, AFRH),
+        PE15: (pe15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f301")]
-gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
-    PF0: (pf0, 0, Input<Floating>, AFRL),
-    PF1: (pf1, 1, Input<Floating>, AFRL),
-]);
+gpio!({
+    devices: [
+        "stm32f318",
+        "stm32f328",
+        "stm32f358",
+        "stm32f373",
+        "stm32f378",
+        "stm32f398",
+    ],
+    GPIO: GPIOE,
+    gpio: gpioe,
+    gpio_mapped: gpioc,
+    gpio_mapped_ioenr: iopeen,
+    gpio_mapped_iorst: ioperst,
+    partially_erased_pin: PEx,
+    pins: [
+        PE0: (pe0, 0, Input<Floating>, AFRL),
+        PE1: (pe1, 1, Input<Floating>, AFRL),
+        PE2: (pe2, 2, Input<Floating>, AFRL),
+        PE3: (pe3, 3, Input<Floating>, AFRL),
+        PE4: (pe4, 4, Input<Floating>, AFRL),
+        PE5: (pe5, 5, Input<Floating>, AFRL),
+        PE6: (pe6, 6, Input<Floating>, AFRL),
+        PE7: (pe7, 7, Input<Floating>, AFRL),
+        PE8: (pe8, 8, Input<Floating>, AFRH),
+        PE9: (pe9, 9, Input<Floating>, AFRH),
+        PE10: (pe10, 10, Input<Floating>, AFRH),
+        PE11: (pe11, 11, Input<Floating>, AFRH),
+        PE12: (pe12, 12, Input<Floating>, AFRH),
+        PE13: (pe13, 13, Input<Floating>, AFRH),
+        PE14: (pe14, 14, Input<Floating>, AFRH),
+        PE15: (pe15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f302")]
-gpio!(GPIOF, gpiof, gpiob, iopfen, iopfrst, PFx, [
-    PF0: (pf0, 0, Input<Floating>, AFRL),
-    PF1: (pf1, 1, Input<Floating>, AFRL),
-    PF2: (pf2, 2, Input<Floating>, AFRL),
-    PF4: (pf4, 4, Input<Floating>, AFRL),
-    PF5: (pf5, 5, Input<Floating>, AFRL),
-    PF6: (pf6, 6, Input<Floating>, AFRL),
-    PF9: (pf9, 9, Input<Floating>, AFRH),
-    PF10: (pf10, 10, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f301",
+    ],
+    GPIO: GPIOF,
+    gpio: gpiof,
+    gpio_mapped: gpioc,
+    gpio_mapped_ioenr: iopfen,
+    gpio_mapped_iorst: iopfrst,
+    partially_erased_pin: PFx,
+    pins: [
+        PF0: (pf0, 0, Input<Floating>, AFRL),
+        PF1: (pf1, 1, Input<Floating>, AFRL),
+    ],
+});
 
-#[cfg(feature = "stm32f334")]
-gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
-    PF0: (pf0, 0, Input<Floating>, AFRL),
-    PF1: (pf1, 1, Input<Floating>, AFRL),
-    PF2: (pf2, 2, Input<Floating>, AFRL),
-    PF4: (pf4, 4, Input<Floating>, AFRL),
-    PF5: (pf5, 5, Input<Floating>, AFRL),
-    PF6: (pf6, 6, Input<Floating>, AFRL),
-    PF9: (pf9, 9, Input<Floating>, AFRH),
-    PF10: (pf10, 10, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f302",
+    ],
+    GPIO: GPIOF,
+    gpio: gpiof,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iopfen,
+    gpio_mapped_iorst: iopfrst,
+    partially_erased_pin: PFx,
+    pins: [
+        PF0: (pf0, 0, Input<Floating>, AFRL),
+        PF1: (pf1, 1, Input<Floating>, AFRL),
+        PF2: (pf2, 2, Input<Floating>, AFRL),
+        PF4: (pf4, 4, Input<Floating>, AFRL),
+        PF5: (pf5, 5, Input<Floating>, AFRL),
+        PF6: (pf6, 6, Input<Floating>, AFRL),
+        PF9: (pf9, 9, Input<Floating>, AFRH),
+        PF10: (pf10, 10, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f303")]
-gpio!(GPIOF, gpiof, gpiob, iopfen, iopfrst, PFx, [
-    PF0: (pf0, 0, Input<Floating>, AFRL),
-    PF1: (pf1, 1, Input<Floating>, AFRL),
-    PF2: (pf2, 2, Input<Floating>, AFRL),
-    PF3: (pf3, 3, Input<Floating>, AFRL),
-    PF4: (pf4, 4, Input<Floating>, AFRL),
-    PF5: (pf5, 5, Input<Floating>, AFRL),
-    PF6: (pf6, 6, Input<Floating>, AFRL),
-    PF7: (pf7, 7, Input<Floating>, AFRL),
-    PF8: (pf8, 8, Input<Floating>, AFRH),
-    PF9: (pf9, 9, Input<Floating>, AFRH),
-    PF10: (pf10, 10, Input<Floating>, AFRH),
-    PF11: (pf11, 11, Input<Floating>, AFRH),
-    PF12: (pf12, 12, Input<Floating>, AFRH),
-    PF13: (pf13, 13, Input<Floating>, AFRH),
-    PF14: (pf14, 14, Input<Floating>, AFRH),
-    PF15: (pf15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f334",
+    ],
+    GPIO: GPIOF,
+    gpio: gpiof,
+    gpio_mapped: gpioc,
+    gpio_mapped_ioenr: iopfen,
+    gpio_mapped_iorst: iopfrst,
+    partially_erased_pin: PFx,
+    pins: [
+        PF0: (pf0, 0, Input<Floating>, AFRL),
+        PF1: (pf1, 1, Input<Floating>, AFRL),
+        PF2: (pf2, 2, Input<Floating>, AFRL),
+        PF4: (pf4, 4, Input<Floating>, AFRL),
+        PF5: (pf5, 5, Input<Floating>, AFRL),
+        PF6: (pf6, 6, Input<Floating>, AFRL),
+        PF9: (pf9, 9, Input<Floating>, AFRH),
+        PF10: (pf10, 10, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f373")]
-gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
-    PF0: (pf0, 0, Input<Floating>, AFRL),
-    PF1: (pf1, 1, Input<Floating>, AFRL),
-    PF2: (pf2, 2, Input<Floating>, AFRL),
-    PF4: (pf4, 4, Input<Floating>, AFRL),
-    PF6: (pf6, 6, Input<Floating>, AFRL),
-    PF7: (pf7, 7, Input<Floating>, AFRL),
-    PF9: (pf9, 9, Input<Floating>, AFRH),
-    PF10: (pf10, 10, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f303",
+    ],
+    GPIO: GPIOF,
+    gpio: gpiof,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iopfen,
+    gpio_mapped_iorst: iopfrst,
+    partially_erased_pin: PFx,
+    pins: [
+        PF0: (pf0, 0, Input<Floating>, AFRL),
+        PF1: (pf1, 1, Input<Floating>, AFRL),
+        PF2: (pf2, 2, Input<Floating>, AFRL),
+        PF3: (pf3, 3, Input<Floating>, AFRL),
+        PF4: (pf4, 4, Input<Floating>, AFRL),
+        PF5: (pf5, 5, Input<Floating>, AFRL),
+        PF6: (pf6, 6, Input<Floating>, AFRL),
+        PF7: (pf7, 7, Input<Floating>, AFRL),
+        PF8: (pf8, 8, Input<Floating>, AFRH),
+        PF9: (pf9, 9, Input<Floating>, AFRH),
+        PF10: (pf10, 10, Input<Floating>, AFRH),
+        PF11: (pf11, 11, Input<Floating>, AFRH),
+        PF12: (pf12, 12, Input<Floating>, AFRH),
+        PF13: (pf13, 13, Input<Floating>, AFRH),
+        PF14: (pf14, 14, Input<Floating>, AFRH),
+        PF15: (pf15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(any(
-    feature = "stm32f318",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f378",
-    feature = "stm32f398"
-))]
-gpio!(GPIOF, gpiof, gpioc, iopfen, iopfrst, PFx, [
-    PF0: (pf0, 0, Input<Floating>, AFRL),
-    PF1: (pf1, 1, Input<Floating>, AFRL),
-    PF2: (pf2, 2, Input<Floating>, AFRL),
-    PF3: (pf3, 3, Input<Floating>, AFRL),
-    PF4: (pf4, 4, Input<Floating>, AFRL),
-    PF5: (pf5, 5, Input<Floating>, AFRL),
-    PF6: (pf6, 6, Input<Floating>, AFRL),
-    PF7: (pf7, 7, Input<Floating>, AFRL),
-    PF8: (pf8, 8, Input<Floating>, AFRH),
-    PF9: (pf9, 9, Input<Floating>, AFRH),
-    PF10: (pf10, 10, Input<Floating>, AFRH),
-    PF11: (pf11, 11, Input<Floating>, AFRH),
-    PF12: (pf12, 12, Input<Floating>, AFRH),
-    PF13: (pf13, 13, Input<Floating>, AFRH),
-    PF14: (pf14, 14, Input<Floating>, AFRH),
-    PF15: (pf15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f373",
+    ],
+    GPIO: GPIOF,
+    gpio: gpiof,
+    gpio_mapped: gpioc,
+    gpio_mapped_ioenr: iopfen,
+    gpio_mapped_iorst: iopfrst,
+    partially_erased_pin: PFx,
+    pins: [
+        PF0: (pf0, 0, Input<Floating>, AFRL),
+        PF1: (pf1, 1, Input<Floating>, AFRL),
+        PF2: (pf2, 2, Input<Floating>, AFRL),
+        PF4: (pf4, 4, Input<Floating>, AFRL),
+        PF6: (pf6, 6, Input<Floating>, AFRL),
+        PF7: (pf7, 7, Input<Floating>, AFRL),
+        PF9: (pf9, 9, Input<Floating>, AFRH),
+        PF10: (pf10, 10, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f303")]
-gpio!(GPIOG, gpiog, gpiob, iopgen, iopgrst, PGx, [
-    PG0: (pg0, 0, Input<Floating>, AFRL),
-    PG1: (pg1, 1, Input<Floating>, AFRL),
-    PG2: (pg2, 2, Input<Floating>, AFRL),
-    PG3: (pg3, 3, Input<Floating>, AFRL),
-    PG4: (pg4, 4, Input<Floating>, AFRL),
-    PG5: (pg5, 5, Input<Floating>, AFRL),
-    PG6: (pg6, 6, Input<Floating>, AFRL),
-    PG7: (pg7, 7, Input<Floating>, AFRL),
-    PG8: (pg8, 8, Input<Floating>, AFRH),
-    PG9: (pg9, 9, Input<Floating>, AFRH),
-    PG10: (pg10, 10, Input<Floating>, AFRH),
-    PG11: (pg11, 11, Input<Floating>, AFRH),
-    PG12: (pg12, 12, Input<Floating>, AFRH),
-    PG13: (pg13, 13, Input<Floating>, AFRH),
-    PG14: (pg14, 14, Input<Floating>, AFRH),
-    PG15: (pg15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f318",
+        "stm32f328",
+        "stm32f358",
+        "stm32f378",
+        "stm32f398",
+    ],
+    GPIO: GPIOF,
+    gpio: gpiof,
+    gpio_mapped: gpioc,
+    gpio_mapped_ioenr: iopfen,
+    gpio_mapped_iorst: iopfrst,
+    partially_erased_pin: PFx,
+    pins: [
+        PF0: (pf0, 0, Input<Floating>, AFRL),
+        PF1: (pf1, 1, Input<Floating>, AFRL),
+        PF2: (pf2, 2, Input<Floating>, AFRL),
+        PF3: (pf3, 3, Input<Floating>, AFRL),
+        PF4: (pf4, 4, Input<Floating>, AFRL),
+        PF5: (pf5, 5, Input<Floating>, AFRL),
+        PF6: (pf6, 6, Input<Floating>, AFRL),
+        PF7: (pf7, 7, Input<Floating>, AFRL),
+        PF8: (pf8, 8, Input<Floating>, AFRH),
+        PF9: (pf9, 9, Input<Floating>, AFRH),
+        PF10: (pf10, 10, Input<Floating>, AFRH),
+        PF11: (pf11, 11, Input<Floating>, AFRH),
+        PF12: (pf12, 12, Input<Floating>, AFRH),
+        PF13: (pf13, 13, Input<Floating>, AFRH),
+        PF14: (pf14, 14, Input<Floating>, AFRH),
+        PF15: (pf15, 15, Input<Floating>, AFRH),
+    ],
+});
 
-#[cfg(feature = "stm32f303")]
-gpio!(GPIOH, gpioh, gpiob, iophen, iophrst, PHx, [
-    PH0: (ph0, 0, Input<Floating>, AFRL),
-    PH1: (ph1, 1, Input<Floating>, AFRL),
-    PH2: (ph2, 2, Input<Floating>, AFRL),
-    PH3: (ph3, 3, Input<Floating>, AFRL),
-    PH4: (ph4, 4, Input<Floating>, AFRL),
-    PH5: (ph5, 5, Input<Floating>, AFRL),
-    PH6: (ph6, 6, Input<Floating>, AFRL),
-    PH7: (ph7, 7, Input<Floating>, AFRL),
-    PH8: (ph8, 8, Input<Floating>, AFRH),
-    PH9: (ph9, 9, Input<Floating>, AFRH),
-    PH10: (ph10, 10, Input<Floating>, AFRH),
-    PH11: (ph11, 11, Input<Floating>, AFRH),
-    PH12: (ph12, 12, Input<Floating>, AFRH),
-    PH13: (ph13, 13, Input<Floating>, AFRH),
-    PH14: (ph14, 14, Input<Floating>, AFRH),
-    PH15: (ph15, 15, Input<Floating>, AFRH),
-]);
+gpio!({
+    devices: [
+        "stm32f303",
+    ],
+    GPIO: GPIOG,
+    gpio: gpiog,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iopgen,
+    gpio_mapped_iorst: iopgrst,
+    partially_erased_pin: PGx,
+    pins: [
+        PG0: (pg0, 0, Input<Floating>, AFRL),
+        PG1: (pg1, 1, Input<Floating>, AFRL),
+        PG2: (pg2, 2, Input<Floating>, AFRL),
+        PG3: (pg3, 3, Input<Floating>, AFRL),
+        PG4: (pg4, 4, Input<Floating>, AFRL),
+        PG5: (pg5, 5, Input<Floating>, AFRL),
+        PG6: (pg6, 6, Input<Floating>, AFRL),
+        PG7: (pg7, 7, Input<Floating>, AFRL),
+        PG8: (pg8, 8, Input<Floating>, AFRH),
+        PG9: (pg9, 9, Input<Floating>, AFRH),
+        PG10: (pg10, 10, Input<Floating>, AFRH),
+        PG11: (pg11, 11, Input<Floating>, AFRH),
+        PG12: (pg12, 12, Input<Floating>, AFRH),
+        PG13: (pg13, 13, Input<Floating>, AFRH),
+        PG14: (pg14, 14, Input<Floating>, AFRH),
+        PG15: (pg15, 15, Input<Floating>, AFRH),
+    ],
+});
+
+gpio!({
+    devices: [
+        "stm32f303",
+    ],
+    GPIO: GPIOH,
+    gpio: gpioh,
+    gpio_mapped: gpiob,
+    gpio_mapped_ioenr: iophen,
+    gpio_mapped_iorst: iophrst,
+    partially_erased_pin: PHx,
+    pins: [
+        PH0: (ph0, 0, Input<Floating>, AFRL),
+        PH1: (ph1, 1, Input<Floating>, AFRL),
+        PH2: (ph2, 2, Input<Floating>, AFRL),
+        PH3: (ph3, 3, Input<Floating>, AFRL),
+        PH4: (ph4, 4, Input<Floating>, AFRL),
+        PH5: (ph5, 5, Input<Floating>, AFRL),
+        PH6: (ph6, 6, Input<Floating>, AFRL),
+        PH7: (ph7, 7, Input<Floating>, AFRL),
+        PH8: (ph8, 8, Input<Floating>, AFRH),
+        PH9: (ph9, 9, Input<Floating>, AFRH),
+        PH10: (ph10, 10, Input<Floating>, AFRH),
+        PH11: (ph11, 11, Input<Floating>, AFRH),
+        PH12: (ph12, 12, Input<Floating>, AFRH),
+        PH13: (ph13, 13, Input<Floating>, AFRH),
+        PH14: (ph14, 14, Input<Floating>, AFRH),
+        PH15: (ph15, 15, Input<Floating>, AFRH),
+    ],
+});
