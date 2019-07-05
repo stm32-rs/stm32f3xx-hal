@@ -2,10 +2,10 @@
 
 use core::marker::PhantomData;
 
-use crate::rcc::AHB;
-use crate::hal::digital::v2::OutputPin;
 #[cfg(feature = "unproven")]
 use crate::hal::digital::v2::InputPin;
+use crate::hal::digital::v2::OutputPin;
+use crate::rcc::AHB;
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers
 pub trait GpioExt {
