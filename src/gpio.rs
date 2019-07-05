@@ -130,7 +130,7 @@ macro_rules! gpio {
             fn set_high(&mut self) -> Result<(), Self::Error> {
                 // NOTE(unsafe) atomic write to a stateless register
                 unsafe {
-                    match self.gpio {
+                    match &self.gpio {
                         $(
                             #[cfg(any(
                                 $(feature = $device,)+
@@ -145,7 +145,7 @@ macro_rules! gpio {
             fn set_low(&mut self) -> Result<(), Self::Error> {
                 // NOTE(unsafe) atomic write to a stateless register
                 unsafe {
-                    match self.gpio {
+                    match &self.gpio {
                         $(
                             #[cfg(any(
                                 $(feature = $device,)+
@@ -169,7 +169,7 @@ macro_rules! gpio {
              fn is_low(&self) -> Result<bool, Self::Error> {
                 // NOTE(unsafe) atomic read with no side effects
                 Ok(unsafe {
-                    match self.gpio {
+                    match &self.gpio {
                         $(
                             #[cfg(any(
                                 $(feature = $device,)+
