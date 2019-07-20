@@ -235,6 +235,15 @@ impl CFGR {
             })
         }
 
+        // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
+        // PLL output frequency is a supported one.
+        // usbpre == false: divide clock by 1.5, otherwise no division
+        let (usbpre, usbclk_valid) = match (self.hse, pllmul_bits, sysclk) {
+            (Some(_), Some(_), 72_000_000) => (false, true),
+            (Some(_), Some(_), 48_000_000) => (true, true),
+            _ => (true, false),
+        };
+
         let rcc = unsafe { &*RCC::ptr() };
 
         if self.hse.is_some() {
@@ -263,6 +272,8 @@ impl CFGR {
                 .bits(ppre1_bits)
                 .hpre()
                 .bits(hpre_bits)
+                .usbpre()
+                .bit(usbpre)
                 .sw()
                 .bits(if pllmul_bits.is_some() {
                     // PLL
@@ -284,6 +295,7 @@ impl CFGR {
             ppre1,
             ppre2,
             sysclk: Hertz(sysclk),
+            usbclk_valid,
         }
     }
 }
@@ -301,6 +313,7 @@ pub struct Clocks {
     #[allow(dead_code)]
     ppre2: u8,
     sysclk: Hertz,
+    usbclk_valid: bool,
 }
 
 impl Clocks {
@@ -332,5 +345,10 @@ impl Clocks {
     /// Returns the system (core) frequency
     pub fn sysclk(&self) -> Hertz {
         self.sysclk
+    }
+
+    /// Returns whether the USBCLK clock frequency is valid for the USB peripheral
+    pub fn usbclk_valid(&self) -> bool {
+        self.usbclk_valid
     }
 }
