@@ -96,6 +96,45 @@ impl APB2 {
 
 const HSI: u32 = 8_000_000; // Hz
 
+// some microcontrollers do not have USB
+#[cfg(any(
+    feature = "stm32f301",
+    feature = "stm32f334",
+))]
+mod usb_clocking {
+    pub fn has_usb() -> bool {
+        false
+    }
+
+    pub fn set_usbpre<W>(w: &mut W, _: bool) -> &mut W {
+        w
+    }
+}
+
+#[cfg(any(
+    feature = "stm32f318",
+    feature = "stm32f302",
+    feature = "stm32f303",
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398",
+))]
+mod usb_clocking {
+    use crate::stm32::rcc;
+
+    pub fn has_usb() -> bool {
+        true
+    }
+
+    pub fn set_usbpre(w: &mut rcc::cfgr::W, bit: bool) -> &mut rcc::cfgr::W {
+        w.usbpre().bit(bit)
+    }
+}
+
+use self::usb_clocking::{has_usb, set_usbpre};
+
 /// Clock configuration
 pub struct CFGR {
     hse: Option<u32>,
@@ -235,12 +274,14 @@ impl CFGR {
             })
         }
 
+
         // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
         // PLL output frequency is a supported one.
         // usbpre == false: divide clock by 1.5, otherwise no division
-        let (usbpre, usbclk_valid) = match (self.hse, pllmul_bits, sysclk) {
-            (Some(_), Some(_), 72_000_000) => (false, true),
-            (Some(_), Some(_), 48_000_000) => (true, true),
+        let usb_ok = has_usb() && self.hse.is_some() && pllmul_bits.is_some();
+        let (usbpre, usbclk_valid) = match (usb_ok, sysclk) {
+            (true, 72_000_000) => (false, true),
+            (true, 48_000_000) => (true, true),
             _ => (true, false),
         };
 
@@ -266,14 +307,13 @@ impl CFGR {
 
         // set prescalers and clock source
         rcc.cfgr.modify(|_, w| unsafe {
-            w.ppre2()
+            set_usbpre(w, usbpre)
+                .ppre2()
                 .bits(ppre2_bits)
                 .ppre1()
                 .bits(ppre1_bits)
                 .hpre()
                 .bits(hpre_bits)
-                .usbpre()
-                .bit(usbpre)
                 .sw()
                 .bits(if pllmul_bits.is_some() {
                     // PLL
@@ -298,6 +338,8 @@ impl CFGR {
             usbclk_valid,
         }
     }
+
+
 }
 
 /// Frozen clock frequencies
