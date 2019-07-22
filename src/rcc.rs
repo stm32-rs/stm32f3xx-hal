@@ -21,6 +21,7 @@ impl RccExt for RCC {
             apb1: APB1 { _0: () },
             apb2: APB2 { _0: () },
             cfgr: CFGR {
+                hse: None,
                 hclk: None,
                 pclk1: None,
                 pclk2: None,
@@ -95,8 +96,48 @@ impl APB2 {
 
 const HSI: u32 = 8_000_000; // Hz
 
+// some microcontrollers do not have USB
+#[cfg(any(
+    feature = "stm32f301",
+    feature = "stm32f334",
+))]
+mod usb_clocking {
+    pub fn has_usb() -> bool {
+        false
+    }
+
+    pub fn set_usbpre<W>(w: &mut W, _: bool) -> &mut W {
+        w
+    }
+}
+
+#[cfg(any(
+    feature = "stm32f318",
+    feature = "stm32f302",
+    feature = "stm32f303",
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398",
+))]
+mod usb_clocking {
+    use crate::stm32::rcc;
+
+    pub fn has_usb() -> bool {
+        true
+    }
+
+    pub fn set_usbpre(w: &mut rcc::cfgr::W, bit: bool) -> &mut rcc::cfgr::W {
+        w.usbpre().bit(bit)
+    }
+}
+
+use self::usb_clocking::{has_usb, set_usbpre};
+
 /// Clock configuration
 pub struct CFGR {
+    hse: Option<u32>,
     hclk: Option<u32>,
     pclk1: Option<u32>,
     pclk2: Option<u32>,
@@ -104,6 +145,16 @@ pub struct CFGR {
 }
 
 impl CFGR {
+    /// Uses HSE (external oscillator) instead of HSI (internal RC oscillator) as the clock source.
+    /// Will result in a hang if an external oscillator is not connected or it fails to start.
+    pub fn use_hse<F>(mut self, freq: F) -> Self
+    where
+        F: Into<Hertz>,
+    {
+        self.hse = Some(freq.into().0);
+        self
+    }
+
     /// Sets a frequency for the AHB bus
     pub fn hclk<F>(mut self, freq: F) -> Self
     where
@@ -142,7 +193,9 @@ impl CFGR {
 
     /// Freezes the clock configuration, making it effective
     pub fn freeze(self, acr: &mut ACR) -> Clocks {
-        let pllmul = (2 * self.sysclk.unwrap_or(HSI)) / HSI;
+        let pllsrcclk = self.hse.unwrap_or(HSI / 2);
+
+        let pllmul = (2 * self.sysclk.unwrap_or(pllsrcclk)) / pllsrcclk;
         let pllmul = cmp::min(cmp::max(pllmul, 2), 16);
         let pllmul_bits = if pllmul == 2 {
             None
@@ -150,7 +203,7 @@ impl CFGR {
             Some(pllmul as u8 - 2)
         };
 
-        let sysclk = pllmul * HSI / 2;
+        let sysclk = pllmul * self.hse.unwrap_or(HSI) / 2;
 
         assert!(sysclk <= 72_000_000);
 
@@ -221,42 +274,59 @@ impl CFGR {
             })
         }
 
+
+        // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
+        // PLL output frequency is a supported one.
+        // usbpre == false: divide clock by 1.5, otherwise no division
+        let usb_ok = has_usb() && self.hse.is_some() && pllmul_bits.is_some();
+        let (usbpre, usbclk_valid) = match (usb_ok, sysclk) {
+            (true, 72_000_000) => (false, true),
+            (true, 48_000_000) => (true, true),
+            _ => (true, false),
+        };
+
         let rcc = unsafe { &*RCC::ptr() };
+
+        if self.hse.is_some() {
+            // enable HSE and wait for it to be ready
+
+            rcc.cr.modify(|_, w| w.hseon().set_bit());
+
+            while rcc.cr.read().hserdy().bit_is_clear() {}
+        }
+
         if let Some(pllmul_bits) = pllmul_bits {
-            // use PLL as source
+            // enable PLL and wait for it to be ready
 
             rcc.cfgr.write(|w| unsafe { w.pllmul().bits(pllmul_bits) });
 
             rcc.cr.write(|w| w.pllon().set_bit());
 
             while rcc.cr.read().pllrdy().bit_is_clear() {}
-
-            // SW: PLL selected as system clock
-            rcc.cfgr.modify(|_, w| unsafe {
-                w.ppre2()
-                    .bits(ppre2_bits)
-                    .ppre1()
-                    .bits(ppre1_bits)
-                    .hpre()
-                    .bits(hpre_bits)
-                    .sw()
-                    .bits(0b10)
-            });
-        } else {
-            // use HSI as source
-
-            // SW: HSI selected as system clock
-            rcc.cfgr.write(|w| unsafe {
-                w.ppre2()
-                    .bits(ppre2_bits)
-                    .ppre1()
-                    .bits(ppre1_bits)
-                    .hpre()
-                    .bits(hpre_bits)
-                    .sw()
-                    .bits(0b00)
-            });
         }
+
+        // set prescalers and clock source
+        rcc.cfgr.modify(|_, w| unsafe {
+            set_usbpre(w, usbpre)
+                .ppre2()
+                .bits(ppre2_bits)
+                .ppre1()
+                .bits(ppre1_bits)
+                .hpre()
+                .bits(hpre_bits)
+                .sw()
+                .bits(if pllmul_bits.is_some() {
+                    // PLL
+                    0b10
+                } else if self.hse.is_some() {
+                    // HSE
+                    0b01
+                } else {
+                    // HSI
+                    0b00
+                })
+        });
+
 
         Clocks {
             hclk: Hertz(hclk),
@@ -265,8 +335,11 @@ impl CFGR {
             ppre1,
             ppre2,
             sysclk: Hertz(sysclk),
+            usbclk_valid,
         }
     }
+
+
 }
 
 /// Frozen clock frequencies
@@ -282,6 +355,7 @@ pub struct Clocks {
     #[allow(dead_code)]
     ppre2: u8,
     sysclk: Hertz,
+    usbclk_valid: bool,
 }
 
 impl Clocks {
@@ -313,5 +387,10 @@ impl Clocks {
     /// Returns the system (core) frequency
     pub fn sysclk(&self) -> Hertz {
         self.sysclk
+    }
+
+    /// Returns whether the USBCLK clock frequency is valid for the USB peripheral
+    pub fn usbclk_valid(&self) -> bool {
+        self.usbclk_valid
     }
 }
