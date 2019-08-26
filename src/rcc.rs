@@ -298,7 +298,7 @@ impl CFGR {
         if let Some(pllmul_bits) = pllmul_bits {
             // enable PLL and wait for it to be ready
 
-            rcc.cfgr.write(|w| unsafe { w.pllmul().bits(pllmul_bits) });
+            rcc.cfgr.write(|w| w.pllmul().bits(pllmul_bits));
 
             rcc.cr.write(|w| w.pllon().set_bit());
 
