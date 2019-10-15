@@ -97,7 +97,9 @@ macro_rules! gpio {
             gpio_mapped_iorst: $iopxrst:ident,
             partially_erased_pin: $PXx:ident,
             pins: [
-                $($PXi:ident: ($pxi:ident, $i:expr, $MODE:ty, $AFR:ident),)+
+                $($PXi:ident: ($pxi:ident, $i:expr, $MODE:ty, $AFR:ident, [
+                    $($AFi:ty: ($into_afi:ident, $afi:expr,),)+
+                ]),)+
             ],
         },)+
     ]) => {
@@ -354,142 +356,29 @@ macro_rules! gpio {
                     }
 
                     impl<MODE> $PXi<MODE> {
-                        /// Configures the pin to serve as alternate function 4 (AF4)
-                        pub fn into_af4(
-                            self,
-                            moder: &mut MODER,
-                            afr: &mut $AFR,
-                        ) -> $PXi<AF4> {
-                            let offset = 2 * $i;
+                        $(
+                            /// Configures the pin to serve as alternate function 4 ($AFx)
+                            pub fn $into_afi(
+                                self,
+                                moder: &mut MODER,
+                                afr: &mut $AFR,
+                            ) -> $PXi<$AFi> {
+                                let offset = 2 * $i;
 
-                            // alternate function mode
-                            let mode = 0b10;
-                            moder.moder().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b11 << offset)) | (mode << offset))
-                            });
+                                // alternate function mode
+                                let mode = 0b10;
+                                moder.moder().modify(|r, w| unsafe {
+                                    w.bits((r.bits() & !(0b11 << offset)) | (mode << offset))
+                                });
 
-                            let af = 4;
-                            let offset = 4 * ($i % 8);
-                            afr.afr().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b1111 << offset)) | (af << offset))
-                            });
+                                let offset = 4 * ($i % 8);
+                                afr.afr().modify(|r, w| unsafe {
+                                    w.bits((r.bits() & !(0b1111 << offset)) | ($afi << offset))
+                                });
 
-                            $PXi { _mode: PhantomData }
-                        }
-
-                        /// Configures the pin to serve as alternate function 5 (AF5)
-                        pub fn into_af5(
-                            self,
-                            moder: &mut MODER,
-                            afr: &mut $AFR,
-                        ) -> $PXi<AF5> {
-                            let offset = 2 * $i;
-
-                            // alternate function mode
-                            let mode = 0b10;
-                            moder.moder().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b11 << offset)) | (mode << offset))
-                            });
-
-                            let af = 5;
-                            let offset = 4 * ($i % 8);
-                            afr.afr().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b1111 << offset)) | (af << offset))
-                            });
-
-                            $PXi { _mode: PhantomData }
-                        }
-
-                        /// Configures the pin to serve as alternate function 6 (AF6)
-                        pub fn into_af6(
-                            self,
-                            moder: &mut MODER,
-                            afr: &mut $AFR,
-                        ) -> $PXi<AF6> {
-                            let offset = 2 * $i;
-
-                            // alternate function mode
-                            let mode = 0b10;
-                            moder.moder().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b11 << offset)) | (mode << offset))
-                            });
-
-                            let af = 6;
-                            let offset = 4 * ($i % 8);
-                            afr.afr().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b1111 << offset)) | (af << offset))
-                            });
-
-                            $PXi { _mode: PhantomData }
-                        }
-
-                        /// Configures the pin to serve as alternate function 7 (AF7)
-                        pub fn into_af7(
-                            self,
-                            moder: &mut MODER,
-                            afr: &mut $AFR,
-                        ) -> $PXi<AF7> {
-                            let offset = 2 * $i;
-
-                            // alternate function mode
-                            let mode = 0b10;
-                            moder.moder().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b11 << offset)) | (mode << offset))
-                            });
-
-                            let af = 7;
-                            let offset = 4 * ($i % 8);
-
-                            afr.afr().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b1111 << offset)) | (af << offset))
-                            });
-
-                            $PXi { _mode: PhantomData }
-                        }
-
-                        /// Configures the pin to serve as alternate function 14 (AF14)
-                        pub fn into_af14(
-                            self,
-                            moder: &mut MODER,
-                            afr: &mut $AFR,
-                        ) -> $PXi<AF14> {
-                            let offset = 2 * $i;
-
-                            // alternate function mode
-                            let mode = 0b10;
-                            moder.moder().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b11 << offset)) | (mode << offset))
-                            });
-
-                            let af = 14;
-                            let offset = 4 * ($i % 8);
-                            afr.afr().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b1111 << offset)) | (af << offset))
-                            });
-
-                            $PXi { _mode: PhantomData }
-                        }
-
-                        /// Configures the pin to operate as a floating input pin
-                        pub fn into_floating_input(
-                            self,
-                            moder: &mut MODER,
-                            pupdr: &mut PUPDR,
-                        ) -> $PXi<Input<Floating>> {
-                            let offset = 2 * $i;
-
-                            // input mode
-                            moder
-                                .moder()
-                                .modify(|r, w| unsafe { w.bits(r.bits() & !(0b11 << offset)) });
-
-                            // no pull-up or pull-down
-                            pupdr
-                                .pupdr()
-                                .modify(|r, w| unsafe { w.bits(r.bits() & !(0b11 << offset)) });
-
-                            $PXi { _mode: PhantomData }
-                        }
+                                $PXi { _mode: PhantomData }
+                            }
+                        )+
 
                         /// Configures the pin to operate as a pulled down input pin
                         pub fn into_pull_down_input(
@@ -677,22 +566,118 @@ gpio!([
         gpio_mapped_iorst: ioparst,
         partially_erased_pin: PAx,
         pins: [
-            PA0: (pa0, 0, Input<Floating>, AFRL),
-            PA1: (pa1, 1, Input<Floating>, AFRL),
-            PA2: (pa2, 2, Input<Floating>, AFRL),
-            PA3: (pa3, 3, Input<Floating>, AFRL),
-            PA4: (pa4, 4, Input<Floating>, AFRL),
-            PA5: (pa5, 5, Input<Floating>, AFRL),
-            PA6: (pa6, 6, Input<Floating>, AFRL),
-            PA7: (pa7, 7, Input<Floating>, AFRL),
-            PA8: (pa8, 8, Input<Floating>, AFRH),
-            PA9: (pa9, 9, Input<Floating>, AFRH),
-            PA10: (pa10, 10, Input<Floating>, AFRH),
-            PA11: (pa11, 11, Input<Floating>, AFRH),
-            PA12: (pa12, 12, Input<Floating>, AFRH),
-            PA13: (pa13, 13, Input<Floating>, AFRH),
-            PA14: (pa14, 14, Input<Floating>, AFRH),
-            PA15: (pa15, 15, Input<Floating>, AFRH),
+            PA0: (pa0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA1: (pa1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA2: (pa2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA3: (pa3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA4: (pa4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA5: (pa5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA6: (pa6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA7: (pa7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA8: (pa8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA9: (pa9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA10: (pa10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA11: (pa11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA12: (pa12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA13: (pa13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA14: (pa14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PA15: (pa15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -714,22 +699,118 @@ gpio!([
         gpio_mapped_iorst: iopbrst,
         partially_erased_pin: PBx,
         pins: [
-            PB0: (pb0, 0, Input<Floating>, AFRL),
-            PB1: (pb1, 1, Input<Floating>, AFRL),
-            PB2: (pb2, 2, Input<Floating>, AFRL),
-            PB3: (pb3, 3, Input<Floating>, AFRL),
-            PB4: (pb4, 4, Input<Floating>, AFRL),
-            PB5: (pb5, 5, Input<Floating>, AFRL),
-            PB6: (pb6, 6, Input<Floating>, AFRL),
-            PB7: (pb7, 7, Input<Floating>, AFRL),
-            PB8: (pb8, 8, Input<Floating>, AFRH),
-            PB9: (pb9, 9, Input<Floating>, AFRH),
-            PB10: (pb10, 10, Input<Floating>, AFRH),
-            PB11: (pb11, 11, Input<Floating>, AFRH),
-            PB12: (pb12, 12, Input<Floating>, AFRH),
-            PB13: (pb13, 13, Input<Floating>, AFRH),
-            PB14: (pb14, 14, Input<Floating>, AFRH),
-            PB15: (pb15, 15, Input<Floating>, AFRH),
+            PB0: (pb0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB1: (pb1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB2: (pb2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB3: (pb3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB4: (pb4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB5: (pb5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB6: (pb6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB7: (pb7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB8: (pb8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB9: (pb9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB10: (pb10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB11: (pb11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB12: (pb12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB13: (pb13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB14: (pb14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB15: (pb15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -743,19 +824,97 @@ gpio!([
         gpio_mapped_iorst: iopbrst,
         partially_erased_pin: PBx,
         pins: [
-            PB0: (pb0, 0, Input<Floating>, AFRL),
-            PB1: (pb1, 1, Input<Floating>, AFRL),
-            PB2: (pb2, 2, Input<Floating>, AFRL),
-            PB3: (pb3, 3, Input<Floating>, AFRL),
-            PB4: (pb4, 4, Input<Floating>, AFRL),
-            PB5: (pb5, 5, Input<Floating>, AFRL),
-            PB6: (pb6, 6, Input<Floating>, AFRL),
-            PB7: (pb7, 7, Input<Floating>, AFRL),
-            PB8: (pb8, 8, Input<Floating>, AFRH),
-            PB9: (pb9, 9, Input<Floating>, AFRH),
-            PB10: (pb10, 10, Input<Floating>, AFRH),
-            PB14: (pb14, 14, Input<Floating>, AFRH),
-            PB15: (pb15, 15, Input<Floating>, AFRH),
+            PB0: (pb0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB1: (pb1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB2: (pb2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB3: (pb3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB4: (pb4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB5: (pb5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB6: (pb6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB7: (pb7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB8: (pb8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB9: (pb9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB10: (pb10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB14: (pb14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PB15: (pb15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -776,22 +935,118 @@ gpio!([
         gpio_mapped_iorst: iopcrst,
         partially_erased_pin: PCx,
         pins: [
-            PC0: (pc0, 0, Input<Floating>, AFRL),
-            PC1: (pc1, 1, Input<Floating>, AFRL),
-            PC2: (pc2, 2, Input<Floating>, AFRL),
-            PC3: (pc3, 3, Input<Floating>, AFRL),
-            PC4: (pc4, 4, Input<Floating>, AFRL),
-            PC5: (pc5, 5, Input<Floating>, AFRL),
-            PC6: (pc6, 6, Input<Floating>, AFRL),
-            PC7: (pc7, 7, Input<Floating>, AFRL),
-            PC8: (pc8, 8, Input<Floating>, AFRH),
-            PC9: (pc9, 9, Input<Floating>, AFRH),
-            PC10: (pc10, 10, Input<Floating>, AFRH),
-            PC11: (pc11, 11, Input<Floating>, AFRH),
-            PC12: (pc12, 12, Input<Floating>, AFRH),
-            PC13: (pc13, 13, Input<Floating>, AFRH),
-            PC14: (pc14, 14, Input<Floating>, AFRH),
-            PC15: (pc15, 15, Input<Floating>, AFRH),
+            PC0: (pc0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC1: (pc1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC2: (pc2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC3: (pc3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC4: (pc4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC5: (pc5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC6: (pc6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC7: (pc7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC8: (pc8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC9: (pc9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC10: (pc10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC11: (pc11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC12: (pc12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC13: (pc13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC14: (pc14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC15: (pc15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -806,22 +1061,118 @@ gpio!([
         gpio_mapped_iorst: iopcrst,
         partially_erased_pin: PCx,
         pins: [
-            PC0: (pc0, 0, Input<Floating>, AFRL),
-            PC1: (pc1, 1, Input<Floating>, AFRL),
-            PC2: (pc2, 2, Input<Floating>, AFRL),
-            PC3: (pc3, 3, Input<Floating>, AFRL),
-            PC4: (pc4, 4, Input<Floating>, AFRL),
-            PC5: (pc5, 5, Input<Floating>, AFRL),
-            PC6: (pc6, 6, Input<Floating>, AFRL),
-            PC7: (pc7, 7, Input<Floating>, AFRL),
-            PC8: (pc8, 8, Input<Floating>, AFRH),
-            PC9: (pc9, 9, Input<Floating>, AFRH),
-            PC10: (pc10, 10, Input<Floating>, AFRH),
-            PC11: (pc11, 11, Input<Floating>, AFRH),
-            PC12: (pc12, 12, Input<Floating>, AFRH),
-            PC13: (pc13, 13, Input<Floating>, AFRH),
-            PC14: (pc14, 14, Input<Floating>, AFRH),
-            PC15: (pc15, 15, Input<Floating>, AFRH),
+            PC0: (pc0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC1: (pc1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC2: (pc2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC3: (pc3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC4: (pc4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC5: (pc5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC6: (pc6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC7: (pc7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC8: (pc8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC9: (pc9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC10: (pc10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC11: (pc11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC12: (pc12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC13: (pc13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC14: (pc14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PC15: (pc15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -835,7 +1186,13 @@ gpio!([
         gpio_mapped_iorst: iopdrst,
         partially_erased_pin: PDx,
         pins: [
-            PD2: (pd2, 2, Input<Floating>, AFRL),
+            PD2: (pd2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -849,22 +1206,118 @@ gpio!([
         gpio_mapped_iorst: iopdrst,
         partially_erased_pin: PDx,
         pins: [
-            PD0: (pd0, 0, Input<Floating>, AFRL),
-            PD1: (pd1, 1, Input<Floating>, AFRL),
-            PD2: (pd2, 2, Input<Floating>, AFRL),
-            PD3: (pd3, 3, Input<Floating>, AFRL),
-            PD4: (pd4, 4, Input<Floating>, AFRL),
-            PD5: (pd5, 5, Input<Floating>, AFRL),
-            PD6: (pd6, 6, Input<Floating>, AFRL),
-            PD7: (pd7, 7, Input<Floating>, AFRL),
-            PD8: (pd8, 8, Input<Floating>, AFRH),
-            PD9: (pd9, 9, Input<Floating>, AFRH),
-            PD10: (pd10, 10, Input<Floating>, AFRH),
-            PD11: (pd11, 11, Input<Floating>, AFRH),
-            PD12: (pd12, 12, Input<Floating>, AFRH),
-            PD13: (pd13, 13, Input<Floating>, AFRH),
-            PD14: (pd14, 14, Input<Floating>, AFRH),
-            PD15: (pd15, 15, Input<Floating>, AFRH),
+            PD0: (pd0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD1: (pd1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD2: (pd2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD3: (pd3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD4: (pd4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD5: (pd5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD6: (pd6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD7: (pd7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD8: (pd8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD9: (pd9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD10: (pd10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD11: (pd11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD12: (pd12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD13: (pd13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD14: (pd14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD15: (pd15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -885,22 +1338,118 @@ gpio!([
         gpio_mapped_iorst: iopdrst,
         partially_erased_pin: PDx,
         pins: [
-            PD0: (pd0, 0, Input<Floating>, AFRL),
-            PD1: (pd1, 1, Input<Floating>, AFRL),
-            PD2: (pd2, 2, Input<Floating>, AFRL),
-            PD3: (pd3, 3, Input<Floating>, AFRL),
-            PD4: (pd4, 4, Input<Floating>, AFRL),
-            PD5: (pd5, 5, Input<Floating>, AFRL),
-            PD6: (pd6, 6, Input<Floating>, AFRL),
-            PD7: (pd7, 7, Input<Floating>, AFRL),
-            PD8: (pd8, 8, Input<Floating>, AFRH),
-            PD9: (pd9, 9, Input<Floating>, AFRH),
-            PD10: (pd10, 10, Input<Floating>, AFRH),
-            PD11: (pd11, 11, Input<Floating>, AFRH),
-            PD12: (pd12, 12, Input<Floating>, AFRH),
-            PD13: (pd13, 13, Input<Floating>, AFRH),
-            PD14: (pd14, 14, Input<Floating>, AFRH),
-            PD15: (pd15, 15, Input<Floating>, AFRH),
+            PD0: (pd0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD1: (pd1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD2: (pd2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD3: (pd3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD4: (pd4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD5: (pd5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD6: (pd6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD7: (pd7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD8: (pd8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD9: (pd9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD10: (pd10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD11: (pd11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD12: (pd12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD13: (pd13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD14: (pd14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PD15: (pd15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -915,22 +1464,118 @@ gpio!([
         gpio_mapped_iorst: ioperst,
         partially_erased_pin: PEx,
         pins: [
-            PE0: (pe0, 0, Input<Floating>, AFRL),
-            PE1: (pe1, 1, Input<Floating>, AFRL),
-            PE2: (pe2, 2, Input<Floating>, AFRL),
-            PE3: (pe3, 3, Input<Floating>, AFRL),
-            PE4: (pe4, 4, Input<Floating>, AFRL),
-            PE5: (pe5, 5, Input<Floating>, AFRL),
-            PE6: (pe6, 6, Input<Floating>, AFRL),
-            PE7: (pe7, 7, Input<Floating>, AFRL),
-            PE8: (pe8, 8, Input<Floating>, AFRH),
-            PE9: (pe9, 9, Input<Floating>, AFRH),
-            PE10: (pe10, 10, Input<Floating>, AFRH),
-            PE11: (pe11, 11, Input<Floating>, AFRH),
-            PE12: (pe12, 12, Input<Floating>, AFRH),
-            PE13: (pe13, 13, Input<Floating>, AFRH),
-            PE14: (pe14, 14, Input<Floating>, AFRH),
-            PE15: (pe15, 15, Input<Floating>, AFRH),
+            PE0: (pe0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE1: (pe1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE2: (pe2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE3: (pe3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE4: (pe4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE5: (pe5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE6: (pe6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE7: (pe7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE8: (pe8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE9: (pe9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE10: (pe10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE11: (pe11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE12: (pe12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE13: (pe13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE14: (pe14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE15: (pe15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -949,22 +1594,118 @@ gpio!([
         gpio_mapped_iorst: ioperst,
         partially_erased_pin: PEx,
         pins: [
-            PE0: (pe0, 0, Input<Floating>, AFRL),
-            PE1: (pe1, 1, Input<Floating>, AFRL),
-            PE2: (pe2, 2, Input<Floating>, AFRL),
-            PE3: (pe3, 3, Input<Floating>, AFRL),
-            PE4: (pe4, 4, Input<Floating>, AFRL),
-            PE5: (pe5, 5, Input<Floating>, AFRL),
-            PE6: (pe6, 6, Input<Floating>, AFRL),
-            PE7: (pe7, 7, Input<Floating>, AFRL),
-            PE8: (pe8, 8, Input<Floating>, AFRH),
-            PE9: (pe9, 9, Input<Floating>, AFRH),
-            PE10: (pe10, 10, Input<Floating>, AFRH),
-            PE11: (pe11, 11, Input<Floating>, AFRH),
-            PE12: (pe12, 12, Input<Floating>, AFRH),
-            PE13: (pe13, 13, Input<Floating>, AFRH),
-            PE14: (pe14, 14, Input<Floating>, AFRH),
-            PE15: (pe15, 15, Input<Floating>, AFRH),
+            PE0: (pe0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE1: (pe1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE2: (pe2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE3: (pe3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE4: (pe4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE5: (pe5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE6: (pe6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE7: (pe7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE8: (pe8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE9: (pe9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE10: (pe10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE11: (pe11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE12: (pe12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE13: (pe13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE14: (pe14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PE15: (pe15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -978,8 +1719,20 @@ gpio!([
         gpio_mapped_iorst: iopfrst,
         partially_erased_pin: PFx,
         pins: [
-            PF0: (pf0, 0, Input<Floating>, AFRL),
-            PF1: (pf1, 1, Input<Floating>, AFRL),
+            PF0: (pf0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF1: (pf1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -993,14 +1746,62 @@ gpio!([
         gpio_mapped_iorst: iopfrst,
         partially_erased_pin: PFx,
         pins: [
-            PF0: (pf0, 0, Input<Floating>, AFRL),
-            PF1: (pf1, 1, Input<Floating>, AFRL),
-            PF2: (pf2, 2, Input<Floating>, AFRL),
-            PF4: (pf4, 4, Input<Floating>, AFRL),
-            PF5: (pf5, 5, Input<Floating>, AFRL),
-            PF6: (pf6, 6, Input<Floating>, AFRL),
-            PF9: (pf9, 9, Input<Floating>, AFRH),
-            PF10: (pf10, 10, Input<Floating>, AFRH),
+            PF0: (pf0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF1: (pf1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF2: (pf2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF4: (pf4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF5: (pf5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF6: (pf6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF9: (pf9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF10: (pf10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -1014,14 +1815,62 @@ gpio!([
         gpio_mapped_iorst: iopfrst,
         partially_erased_pin: PFx,
         pins: [
-            PF0: (pf0, 0, Input<Floating>, AFRL),
-            PF1: (pf1, 1, Input<Floating>, AFRL),
-            PF2: (pf2, 2, Input<Floating>, AFRL),
-            PF4: (pf4, 4, Input<Floating>, AFRL),
-            PF5: (pf5, 5, Input<Floating>, AFRL),
-            PF6: (pf6, 6, Input<Floating>, AFRL),
-            PF9: (pf9, 9, Input<Floating>, AFRH),
-            PF10: (pf10, 10, Input<Floating>, AFRH),
+            PF0: (pf0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF1: (pf1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF2: (pf2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF4: (pf4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF5: (pf5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF6: (pf6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF9: (pf9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF10: (pf10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -1035,22 +1884,118 @@ gpio!([
         gpio_mapped_iorst: iopfrst,
         partially_erased_pin: PFx,
         pins: [
-            PF0: (pf0, 0, Input<Floating>, AFRL),
-            PF1: (pf1, 1, Input<Floating>, AFRL),
-            PF2: (pf2, 2, Input<Floating>, AFRL),
-            PF3: (pf3, 3, Input<Floating>, AFRL),
-            PF4: (pf4, 4, Input<Floating>, AFRL),
-            PF5: (pf5, 5, Input<Floating>, AFRL),
-            PF6: (pf6, 6, Input<Floating>, AFRL),
-            PF7: (pf7, 7, Input<Floating>, AFRL),
-            PF8: (pf8, 8, Input<Floating>, AFRH),
-            PF9: (pf9, 9, Input<Floating>, AFRH),
-            PF10: (pf10, 10, Input<Floating>, AFRH),
-            PF11: (pf11, 11, Input<Floating>, AFRH),
-            PF12: (pf12, 12, Input<Floating>, AFRH),
-            PF13: (pf13, 13, Input<Floating>, AFRH),
-            PF14: (pf14, 14, Input<Floating>, AFRH),
-            PF15: (pf15, 15, Input<Floating>, AFRH),
+            PF0: (pf0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF1: (pf1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF2: (pf2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF3: (pf3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF4: (pf4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF5: (pf5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF6: (pf6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF7: (pf7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF8: (pf8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF9: (pf9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF10: (pf10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF11: (pf11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF12: (pf12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF13: (pf13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF14: (pf14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF15: (pf15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -1064,14 +2009,62 @@ gpio!([
         gpio_mapped_iorst: iopfrst,
         partially_erased_pin: PFx,
         pins: [
-            PF0: (pf0, 0, Input<Floating>, AFRL),
-            PF1: (pf1, 1, Input<Floating>, AFRL),
-            PF2: (pf2, 2, Input<Floating>, AFRL),
-            PF4: (pf4, 4, Input<Floating>, AFRL),
-            PF6: (pf6, 6, Input<Floating>, AFRL),
-            PF7: (pf7, 7, Input<Floating>, AFRL),
-            PF9: (pf9, 9, Input<Floating>, AFRH),
-            PF10: (pf10, 10, Input<Floating>, AFRH),
+            PF0: (pf0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF1: (pf1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF2: (pf2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF4: (pf4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF6: (pf6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF7: (pf7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF9: (pf9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF10: (pf10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -1089,22 +2082,118 @@ gpio!([
         gpio_mapped_iorst: iopfrst,
         partially_erased_pin: PFx,
         pins: [
-            PF0: (pf0, 0, Input<Floating>, AFRL),
-            PF1: (pf1, 1, Input<Floating>, AFRL),
-            PF2: (pf2, 2, Input<Floating>, AFRL),
-            PF3: (pf3, 3, Input<Floating>, AFRL),
-            PF4: (pf4, 4, Input<Floating>, AFRL),
-            PF5: (pf5, 5, Input<Floating>, AFRL),
-            PF6: (pf6, 6, Input<Floating>, AFRL),
-            PF7: (pf7, 7, Input<Floating>, AFRL),
-            PF8: (pf8, 8, Input<Floating>, AFRH),
-            PF9: (pf9, 9, Input<Floating>, AFRH),
-            PF10: (pf10, 10, Input<Floating>, AFRH),
-            PF11: (pf11, 11, Input<Floating>, AFRH),
-            PF12: (pf12, 12, Input<Floating>, AFRH),
-            PF13: (pf13, 13, Input<Floating>, AFRH),
-            PF14: (pf14, 14, Input<Floating>, AFRH),
-            PF15: (pf15, 15, Input<Floating>, AFRH),
+            PF0: (pf0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF1: (pf1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF2: (pf2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF3: (pf3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF4: (pf4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF5: (pf5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF6: (pf6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF7: (pf7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF8: (pf8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF9: (pf9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF10: (pf10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF11: (pf11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF12: (pf12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF13: (pf13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF14: (pf14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PF15: (pf15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -1118,22 +2207,118 @@ gpio!([
         gpio_mapped_iorst: iopgrst,
         partially_erased_pin: PGx,
         pins: [
-            PG0: (pg0, 0, Input<Floating>, AFRL),
-            PG1: (pg1, 1, Input<Floating>, AFRL),
-            PG2: (pg2, 2, Input<Floating>, AFRL),
-            PG3: (pg3, 3, Input<Floating>, AFRL),
-            PG4: (pg4, 4, Input<Floating>, AFRL),
-            PG5: (pg5, 5, Input<Floating>, AFRL),
-            PG6: (pg6, 6, Input<Floating>, AFRL),
-            PG7: (pg7, 7, Input<Floating>, AFRL),
-            PG8: (pg8, 8, Input<Floating>, AFRH),
-            PG9: (pg9, 9, Input<Floating>, AFRH),
-            PG10: (pg10, 10, Input<Floating>, AFRH),
-            PG11: (pg11, 11, Input<Floating>, AFRH),
-            PG12: (pg12, 12, Input<Floating>, AFRH),
-            PG13: (pg13, 13, Input<Floating>, AFRH),
-            PG14: (pg14, 14, Input<Floating>, AFRH),
-            PG15: (pg15, 15, Input<Floating>, AFRH),
+            PG0: (pg0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG1: (pg1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG2: (pg2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG3: (pg3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG4: (pg4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG5: (pg5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG6: (pg6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG7: (pg7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG8: (pg8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG9: (pg9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG10: (pg10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG11: (pg11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG12: (pg12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG13: (pg13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG14: (pg14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PG15: (pg15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
     {
@@ -1147,22 +2332,118 @@ gpio!([
         gpio_mapped_iorst: iophrst,
         partially_erased_pin: PHx,
         pins: [
-            PH0: (ph0, 0, Input<Floating>, AFRL),
-            PH1: (ph1, 1, Input<Floating>, AFRL),
-            PH2: (ph2, 2, Input<Floating>, AFRL),
-            PH3: (ph3, 3, Input<Floating>, AFRL),
-            PH4: (ph4, 4, Input<Floating>, AFRL),
-            PH5: (ph5, 5, Input<Floating>, AFRL),
-            PH6: (ph6, 6, Input<Floating>, AFRL),
-            PH7: (ph7, 7, Input<Floating>, AFRL),
-            PH8: (ph8, 8, Input<Floating>, AFRH),
-            PH9: (ph9, 9, Input<Floating>, AFRH),
-            PH10: (ph10, 10, Input<Floating>, AFRH),
-            PH11: (ph11, 11, Input<Floating>, AFRH),
-            PH12: (ph12, 12, Input<Floating>, AFRH),
-            PH13: (ph13, 13, Input<Floating>, AFRH),
-            PH14: (ph14, 14, Input<Floating>, AFRH),
-            PH15: (ph15, 15, Input<Floating>, AFRH),
+            PH0: (ph0, 0, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH1: (ph1, 1, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH2: (ph2, 2, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH3: (ph3, 3, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH4: (ph4, 4, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH5: (ph5, 5, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH6: (ph6, 6, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH7: (ph7, 7, Input<Floating>, AFRL, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH8: (ph8, 8, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH9: (ph9, 9, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH10: (ph10, 10, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH11: (ph11, 11, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH12: (ph12, 12, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH13: (ph13, 13, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH14: (ph14, 14, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
+            PH15: (ph15, 15, Input<Floating>, AFRH, [
+              AF4: (into_af4, 4,),
+              AF5: (into_af5, 5,),
+              AF6: (into_af6, 6,),
+              AF7: (into_af7, 7,),
+              AF14: (into_af14, 14,),
+            ]),
         ],
     },
 ]);
