@@ -200,7 +200,7 @@ macro_rules! gpio {
 
                 use crate::rcc::AHB;
                 #[allow(unused_imports)]
-                use super::{AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF9, AF14, AF15};
+                use super::{AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF14, AF15};
                 use super::{
                     Floating, GpioExt, Input, OpenDrain, Output,
                     PullDown, PullUp, PushPull,
@@ -657,12 +657,26 @@ gpio!([
                     "stm32f378",
                 ],),
             ]),
-            PA2: (pa2, 2, Input<Floating>, AFRL, [], [
-              AF4: (into_af4, 4, [],),
-              AF5: (into_af5, 5, [],),
-              AF6: (into_af6, 6, [],),
-              AF7: (into_af7, 7, [],),
-              AF14: (into_af14, 14, [],),
+            PA2: (pa2, 2, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF3: (into_af3, 3,),
+                AF7: (into_af7, 7,),
+                AF8: (into_af8, 8,),
+                AF9: (into_af9, 9,),
+                AF15: (into_af15, 15,),
+            ], [
+                AF2: (into_af2, 2, [
+                    "stm32f373",
+                    "stm32f378",
+                ],),
+                AF6: (into_af6, 6, [
+                    "stm32f373",
+                    "stm32f378",
+                ],),
+                AF11: (into_af11, 11, [
+                    "stm32f373",
+                    "stm32f378",
+                ],),
             ]),
             PA3: (pa3, 3, Input<Floating>, AFRL, [], [
               AF4: (into_af4, 4, [],),
