@@ -200,7 +200,7 @@ macro_rules! gpio {
 
                 use crate::rcc::AHB;
                 #[allow(unused_imports)]
-                use super::{AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF14, AF15};
+                use super::{AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF13, AF14, AF15};
                 use super::{
                     Floating, GpioExt, Input, OpenDrain, Output,
                     PullDown, PullUp, PushPull,
