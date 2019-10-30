@@ -652,7 +652,6 @@ gpio!([
                 AF5: (into_af5, 5, ["stm32f302", "stm32f303", "stm32f373", "stm32f378", "stm32f334", "stm32f328", "stm32f358", "stm32f398",],),
                 AF6: (into_af6, 6, ["stm32f301", "stm32f318", "stm32f302", "stm32f303", "stm32f373", "stm32f378", "stm32f358", "stm32f398",],),
                 AF7: (into_af7, 7, ["stm32f301", "stm32f318", "stm32f303", "stm32f373", "stm32f378", "stm32f334", "stm32f328", "stm32f358", "stm32f398",],),
-                AF9: (into_af9, 9, ["stm32f301", "stm32f318",],),
                 AF10: (into_af10, 10, ["stm32f373", "stm32f378",],),
             ]),
             PA5: (pa5, 5, Input<Floating>, AFRL, [
