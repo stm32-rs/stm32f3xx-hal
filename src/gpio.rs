@@ -361,7 +361,7 @@ macro_rules! gpio {
 
                     impl<MODE> $PXi<MODE> {
                         $(
-                            /// Configures the pin to serve as alternate function $afi_common ($AFx_common)
+                            /// Configures the pin to serve as a specific alternate function
                             pub fn $into_afi_common(
                                 self,
                                 moder: &mut MODER,
@@ -385,7 +385,7 @@ macro_rules! gpio {
                         )*
 
                         $(
-                            /// Configures the pin to serve as alternate function $afi ($AFx)
+                            /// Configures the pin to serve as a specific alternate function
                             #[cfg(any(
                                 $(feature = $afi_devices,)*
                             ))]
