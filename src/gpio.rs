@@ -1399,11 +1399,7 @@ gpio!([
         partially_erased_pin: PDx,
         pins: [
             PD2: (pd2, 2, Input<Floating>, AFRL, [
-              AF4: (into_af4, 4,),
-              AF5: (into_af5, 5,),
-              AF6: (into_af6, 6,),
-              AF7: (into_af7, 7,),
-              AF14: (into_af14, 14,),
+                AF1: (into_af1, 1,),
             ], []),
         ],
     },
