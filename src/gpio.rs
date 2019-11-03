@@ -1554,12 +1554,12 @@ gpio!([
                 AF1: (into_af1, 1,),
                 AF2: (into_af2, 2,),
                 AF4: (into_af4, 4,),
-                AF6: (into_af6, 6,),
+                AF7: (into_af7, 7,),
             ], []),
             PE1: (pe1, 1, Input<Floating>, AFRL, [
                 AF1: (into_af1, 1,),
                 AF4: (into_af4, 4,),
-                AF6: (into_af6, 6,),
+                AF7: (into_af7, 7,),
             ], []),
             PE2: (pe2, 2, Input<Floating>, AFRL, [
                 AF0: (into_af0, 0,),
@@ -1620,12 +1620,12 @@ gpio!([
             PE14: (pe14, 14, Input<Floating>, AFRH, [
                 AF1: (into_af1, 1,),
                 AF2: (into_af2, 2,),
-                AF5: (into_af5, 5,),
+                AF6: (into_af6, 6,),
             ], []),
             PE15: (pe15, 15, Input<Floating>, AFRH, [
                 AF1: (into_af1, 1,),
                 AF2: (into_af2, 2,),
-                AF6: (into_af6, 6,),
+                AF7: (into_af7, 7,),
             ], []),
         ],
     },
