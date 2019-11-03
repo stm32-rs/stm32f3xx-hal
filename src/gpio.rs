@@ -1948,20 +1948,17 @@ gpio!([
         pins: [
             PF0: (pf0, 0, Input<Floating>, AFRL, [], [
                 AF1: (into_af1, 1, ["stm32f398",],),
-                AF3: (into_af3, 3, ["stm32f358",],),
-                AF4: (into_af4, 4, ["stm32f318", "stm32f378", "stm32f398",],),
-                AF5: (into_af5, 5, ["stm32f318", "stm32f358", "stm32f398",],),
-                AF6: (into_af6, 6, ["stm32f318", "stm32f328", "stm32f398",],),
+                AF4: (into_af4, 4, ["stm32f318", "stm32f358", "stm32f378", "stm32f398",],),
+                AF5: (into_af5, 5, ["stm32f318", "stm32f398",],),
+                AF6: (into_af6, 6, ["stm32f318", "stm32f328", "stm32f358", "stm32f398",],),
             ]),
             PF1: (pf1, 1, Input<Floating>, AFRL, [], [
                 AF1: (into_af1, 1, ["stm32f398",],),
-                AF3: (into_af3, 3, ["stm32f358",],),
-                AF4: (into_af4, 4, ["stm32f318", "stm32f378", "stm32f398",],),
+                AF4: (into_af4, 4, ["stm32f318", "stm32f358", "stm32f378", "stm32f398",],),
                 AF5: (into_af5, 5, ["stm32f318", "stm32f398",],),
             ]),
             PF2: (pf2, 2, Input<Floating>, AFRL, [], [
-                AF0: (into_af0, 0, ["stm32f358",],),
-                AF1: (into_af1, 1, ["stm32f378", "stm32f398",],),
+                AF1: (into_af1, 1, ["stm32f358", "stm32f378", "stm32f398",],),
                 AF2: (into_af2, 2, ["stm32f398",],),
                 AF4: (into_af4, 4, ["stm32f378",],),
                 AF12: (into_af12, 12, ["stm32f398",],),
@@ -1972,9 +1969,8 @@ gpio!([
                 AF12: (into_af12, 12, ["stm32f398",],),
             ]),
             PF4: (pf4, 4, Input<Floating>, AFRL, [], [
-                AF0: (into_af0, 0, ["stm32f358",],),
                 AF1: (into_af1, 1, ["stm32f358", "stm32f378", "stm32f398",],),
-                AF2: (into_af2, 2, ["stm32f398",],),
+                AF2: (into_af2, 2, ["stm32f358", "stm32f398",],),
                 AF3: (into_af3, 3, ["stm32f398",],),
                 AF12: (into_af12, 12, ["stm32f398",],),
             ]),
@@ -1984,14 +1980,11 @@ gpio!([
                 AF12: (into_af12, 12, ["stm32f398",],),
             ]),
             PF6: (pf6, 6, Input<Floating>, AFRL, [], [
-                AF0: (into_af0, 0, ["stm32f358",],),
                 AF1: (into_af1, 1, ["stm32f358", "stm32f378", "stm32f398",],),
-                AF2: (into_af2, 2, ["stm32f378", "stm32f398",],),
-                AF3: (into_af3, 3, ["stm32f358",],),
-                AF4: (into_af4, 4, ["stm32f378", "stm32f398",],),
+                AF2: (into_af2, 2, ["stm32f358", "stm32f378", "stm32f398",],),
+                AF4: (into_af4, 4, ["stm32f358", "stm32f378", "stm32f398",],),
                 AF5: (into_af5, 5, ["stm32f378",],),
-                AF6: (into_af6, 6, ["stm32f358",],),
-                AF7: (into_af7, 7, ["stm32f378", "stm32f398",],),
+                AF7: (into_af7, 7, ["stm32f358", "stm32f378", "stm32f398",],),
                 AF12: (into_af12, 12, ["stm32f398",],),
             ]),
             PF7: (pf7, 7, Input<Floating>, AFRL, [], [
@@ -2004,8 +1997,6 @@ gpio!([
             PF8: (pf8, 8, Input<Floating>, AFRH, [], [
                 AF1: (into_af1, 1, ["stm32f398",],),
                 AF2: (into_af2, 2, ["stm32f398",],),
-                AF3: (into_af3, 3, ["stm32f398",],),
-                AF5: (into_af5, 5, ["stm32f398",],),
                 AF12: (into_af12, 12, ["stm32f398",],),
             ]),
             PF9: (pf9, 9, Input<Floating>, AFRH, [], [
@@ -2016,10 +2007,10 @@ gpio!([
                 AF12: (into_af12, 12, ["stm32f398",],),
             ]),
             PF10: (pf10, 10, Input<Floating>, AFRH, [], [
-                AF0: (into_af0, 0, ["stm32f358",],),
-                AF1: (into_af1, 1, ["stm32f378", "stm32f398",],),
-                AF2: (into_af2, 2, ["stm32f358", "stm32f398",],),
-                AF4: (into_af4, 4, ["stm32f358",],),
+                AF1: (into_af1, 1, ["stm32f358", "stm32f378", "stm32f398",],),
+                AF2: (into_af2, 2, ["stm32f398",],),
+                AF3: (into_af3, 3, ["stm32f358", "stm32f398",],),
+                AF5: (into_af5, 5, ["stm32f358", "stm32f398",],),
                 AF12: (into_af12, 12, ["stm32f398",],),
             ]),
             PF11: (pf11, 11, Input<Floating>, AFRH, [], [
