@@ -28,20 +28,18 @@ struct PwmChannel<X, T> {
     pin_status: PhantomData<T>, // TODO: use PhantomData
 }
 
-impl<T> PwmChannel<Tim8Ch3, T> {
-    // We just consume pc8, don't use it and return
-    // a PwmChannel in a type state that's ready for usage
-    // TODO: Ideally we could free the pin we accept
-    fn output_to_pc8(self, _p: PC8<AF4>) -> PwmChannel<Tim8Ch3, WithPins> {
-        PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
+macro_rules! pwm_channel_pin {
+    ($TimiChi:ident, $output_to_pxi:ident, $PXi:ident, $AFi:ident) => {
+        impl<T> PwmChannel<$TimiChi, T> {
+            fn $output_to_pxi(self, _p: $PXi<$AFi>) -> PwmChannel<$TimiChi, WithPins> {
+                PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
+            }
+        }
     }
 }
 
-impl<T> PwmChannel<Tim8Ch3, T> {
-    fn output_to_pb9(self, _p: PB9<AF10>) -> PwmChannel<Tim8Ch3, WithPins> {
-        PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
-    }
-}
+pwm_channel_pin!(Tim8Ch3, output_to_pc8, PC8, AF4);
+pwm_channel_pin!(Tim8Ch3, output_to_pb9, PB9, AF10);
 
 impl PwmPin for PwmChannel<Tim8Ch3, WithPins> {
     type Duty = u16;
