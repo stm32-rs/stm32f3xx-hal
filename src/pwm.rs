@@ -31,7 +31,7 @@ pub struct PwmChannel<X, T> {
 macro_rules! pwm_channel_pin {
     ($TimiChi:ident, $output_to_pxi:ident, $PXi:ident, $AFi:ident) => {
         impl<T> PwmChannel<$TimiChi, T> {
-            fn $output_to_pxi(self, _p: $PXi<$AFi>) -> PwmChannel<$TimiChi, WithPins> {
+            pub fn $output_to_pxi(self, _p: $PXi<$AFi>) -> PwmChannel<$TimiChi, WithPins> {
                 PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
             }
         }
