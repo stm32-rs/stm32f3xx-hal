@@ -5,27 +5,27 @@ use super::gpio::{AF4, AF10};
 use super::gpio::gpioc::{PC8};
 use super::gpio::gpiob::{PB9};
 
-//struct Tim1Ch1 {}
-//struct Tim1Ch2 {}
-//struct Tim1Ch3 {}
-//struct Tim1Ch4 {}
+//pub struct Tim1Ch1 {}
+//pub struct Tim1Ch2 {}
+//pub struct Tim1Ch3 {}
+//pub struct Tim1Ch4 {}
 
-//struct Tim3Ch1 {}
-//struct Tim3Ch2 {}
-//struct Tim3Ch3 {}
-//struct Tim3Ch4 {}
+//pub struct Tim3Ch1 {}
+//pub struct Tim3Ch2 {}
+//pub struct Tim3Ch3 {}
+//pub struct Tim3Ch4 {}
 
-//struct Tim8Ch1 {}
-//struct Tim8Ch2 {}
-struct Tim8Ch3 {}
-//struct Tim8Ch4 {}
+//pub struct Tim8Ch1 {}
+//pub struct Tim8Ch2 {}
+pub struct Tim8Ch3 {}
+//pub struct Tim8Ch4 {}
 
-struct NoPins {}
-struct WithPins {}
+pub struct NoPins {}
+pub struct WithPins {}
 
-struct PwmChannel<X, T> {
-    timx_chx: PhantomData<X>,
-    pin_status: PhantomData<T>, // TODO: use PhantomData
+pub struct PwmChannel<X, T> {
+    pub(crate) timx_chx: PhantomData<X>,
+    pub(crate) pin_status: PhantomData<T>, // TODO: use PhantomData
 }
 
 macro_rules! pwm_channel_pin {
