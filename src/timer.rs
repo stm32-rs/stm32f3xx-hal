@@ -189,59 +189,57 @@ macro_rules! hal {
     }
 }
 
-impl Timer<TIM8> {
-    fn into_pwm_channels(self, res: u16, freq: u16, apb2: &mut APB2, clocks: &Clocks) -> PwmChannel<Tim8Ch3, NoPins> {
-        // Power the timer
-        apb2.enr().modify(|_, w| w.tim8en().set_bit());
+pub fn tim8_to_pwm_channels(tim: TIM8, res: u16, freq: u16, apb2: &mut APB2, clocks: &Clocks) -> PwmChannel<Tim8Ch3, NoPins> {
+    // Power the timer
+    apb2.enr().modify(|_, w| w.tim8en().set_bit());
 
-        // enable auto reload preloader
-        self.tim.cr1.write(|w| w.arpe().set_bit());
+    // enable auto reload preloader
+    tim.cr1.write(|w| w.arpe().set_bit());
 
-        // Set the "resolution" of the duty cycle (ticks before restarting at 0)
-        self.tim.arr.write(|w| w.arr().bits(res));
-        // TODO: Use Hertz?
-        // Set the pre-scaler
-        self.tim.psc.write(|w| w.psc().bits(clocks.pclk2().0 as u16 / (res * freq)));
+    // Set the "resolution" of the duty cycle (ticks before restarting at 0)
+    tim.arr.write(|w| w.arr().bits(res));
+    // TODO: Use Hertz?
+    // Set the pre-scaler
+    tim.psc.write(|w| w.psc().bits(clocks.pclk2().0 as u16 / (res * freq)));
 
-        // Macro friendly for later
-        if true {
-            // Make the settings reload immediately for TIM1/8
-            self.tim.egr.write(|w| w.ug().set_bit());
-        }
-
-        self.tim.smcr.write(|w| w); // Reset the slave/master config
-        self.tim.cr2.write(|w| w); // reset
-        self.tim.ccmr1_output().write(|w| w
-            // Select PWM Mode 1 for CH1/CH2
-            .oc1m().bits(0b0110)
-            .oc2m().bits(0b0110)
-            // set pre-load enable so that updates to the duty cycle
-            // propagate but _not_ in the middle of a cycle.
-            .oc1pe().set_bit()
-            .oc2pe().set_bit()
-        );
-        self.tim.ccmr2_output().write(|w| w
-            // Select PWM Mode 1 for CH3/CH4
-            .oc3m().bits(0b0110)
-            .oc4m().bits(0b0110)
-            // set pre-load enable so that updates to the duty cycle
-            // propagate but _not_ in the middle of a cycle.
-            .oc3pe().set_bit()
-            .oc4pe().set_bit()
-        );
-
-        // Macro friendly for later
-        if true {
-            // Enable outputs (STM32 Break Timer Specific)
-            self.tim.bdtr.write(|w| w.moe().set_bit());
-        }
-
-        // Enable the Timer
-        self.tim.cr1.modify(|_, w| w.cen().set_bit());
-
-        // TODO: This should return all four channels
-        PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
+    // Macro friendly for later
+    if true {
+        // Make the settings reload immediately for TIM1/8
+        tim.egr.write(|w| w.ug().set_bit());
     }
+
+    tim.smcr.write(|w| w); // Reset the slave/master config
+    tim.cr2.write(|w| w); // reset
+    tim.ccmr1_output().write(|w| w
+        // Select PWM Mode 1 for CH1/CH2
+        .oc1m().bits(0b0110)
+        .oc2m().bits(0b0110)
+        // set pre-load enable so that updates to the duty cycle
+        // propagate but _not_ in the middle of a cycle.
+        .oc1pe().set_bit()
+        .oc2pe().set_bit()
+    );
+    tim.ccmr2_output().write(|w| w
+        // Select PWM Mode 1 for CH3/CH4
+        .oc3m().bits(0b0110)
+        .oc4m().bits(0b0110)
+        // set pre-load enable so that updates to the duty cycle
+        // propagate but _not_ in the middle of a cycle.
+        .oc3pe().set_bit()
+        .oc4pe().set_bit()
+    );
+
+    // Macro friendly for later
+    if true {
+        // Enable outputs (STM32 Break Timer Specific)
+        tim.bdtr.write(|w| w.moe().set_bit());
+    }
+
+    // Enable the Timer
+    tim.cr1.modify(|_, w| w.cen().set_bit());
+
+    // TODO: This should return all four channels
+    PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
 }
 
 #[cfg(feature = "stm32f301")]
