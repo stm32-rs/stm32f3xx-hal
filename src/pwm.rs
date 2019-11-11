@@ -1,9 +1,10 @@
 use core::marker::PhantomData;
 use crate::stm32::{TIM3, TIM8};
 use embedded_hal::PwmPin;
-use super::gpio::{AF4, AF10};
-use super::gpio::gpioc::{PC8};
+use super::gpio::{AF2, AF4, AF10};
 use super::gpio::gpiob::{PB9};
+use super::gpio::gpioc::{PC8};
+use super::gpio::gpioe::{PE4};
 use crate::rcc::{Clocks};
 use crate::stm32::{RCC};
 
@@ -181,7 +182,7 @@ pwm_timer_basic!(tim3, TIM3, apb1enr, tim3en, Tim3Ch3);
 #[cfg(feature = "stm32f303")]
 pwm_channel_pin!(Tim3Ch3, output_to_pc8, PC8, AF4);
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(Tim3Ch3, output_to_pe4, Pe4, AF2);
+pwm_channel_pin!(Tim3Ch3, output_to_pe4, PE4, AF2);
 
 #[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM3, Tim3Ch1, cc1e, ccr1);
