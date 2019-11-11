@@ -12,15 +12,15 @@ use crate::stm32::{RCC};
 //pub struct Tim1Ch3 {}
 //pub struct Tim1Ch4 {}
 
-//pub struct Tim3Ch1 {}
-//pub struct Tim3Ch2 {}
+pub struct Tim3Ch1 {}
+pub struct Tim3Ch2 {}
 pub struct Tim3Ch3 {}
-//pub struct Tim3Ch4 {}
+pub struct Tim3Ch4 {}
 
-//pub struct Tim8Ch1 {}
-//pub struct Tim8Ch2 {}
+pub struct Tim8Ch1 {}
+pub struct Tim8Ch2 {}
 pub struct Tim8Ch3 {}
-//pub struct Tim8Ch4 {}
+pub struct Tim8Ch4 {}
 
 pub struct NoPins {}
 pub struct WithPins {}
@@ -135,41 +135,56 @@ macro_rules! pwm_channel_pin {
 pwm_channel_pin!(Tim8Ch3, output_to_pc8, PC8, AF4);
 pwm_channel_pin!(Tim8Ch3, output_to_pb9, PB9, AF10);
 
-impl PwmPin for PwmChannel<Tim8Ch3, WithPins> {
-    type Duty = u16;
 
-    fn disable(&mut self) {
-        unsafe {
-            &(*TIM8::ptr()).ccer.modify(|_, w| w.cc3e().clear_bit());
-        }
-    }
+macro_rules! pwm_pin_for_pwm_channel {
+    ($TIMx:ident, $TimxChy:ty, $ccxe:ident, $ccrx:ident) => {
+        impl PwmPin for PwmChannel<$TimxChy, WithPins> {
+            type Duty = u16;
 
-    fn enable(&mut self) {
-        unsafe {
-            &(*TIM8::ptr()).ccer.modify(|_, w| w.cc3e().set_bit());
-        }
-    }
+            fn disable(&mut self) {
+                unsafe {
+                    &(*$TIMx::ptr()).ccer.modify(|_, w| w.$ccxe().clear_bit());
+                }
+            }
 
-    fn get_max_duty(&self) -> Self::Duty {
-        unsafe {
-            // TODO: should the resolution just be stored in the channel rather than read?
-            // This would work if it changed, but isn't it the point that it can't be?
-            (*TIM8::ptr()).arr.read().arr().bits()
-        }
-    }
+            fn enable(&mut self) {
+                unsafe {
+                    &(*$TIMx::ptr()).ccer.modify(|_, w| w.$ccxe().set_bit());
+                }
+            }
 
-    fn get_duty(&self) -> Self::Duty {
-        unsafe {
-            // TODO: This could theoretically be passed into the PwmChannel struct
-            (*TIM8::ptr()).ccr3.read().ccr().bits()
-        }
-    }
+            fn get_max_duty(&self) -> Self::Duty {
+                unsafe {
+                    // TODO: should the resolution just be stored in the channel rather than read?
+                    // This would work if it changed, but isn't it the point that it can't be?
+                    (*$TIMx::ptr()).arr.read().arr().bits()
+                }
+            }
 
-    fn set_duty(&mut self, duty: Self::Duty) -> () {
-        unsafe {
-            // TODO: This could theoretically be passed into the PwmChannel struct
-            // and it would then be safe to modify
-            &(*TIM8::ptr()).ccr3.modify(|_, w| w.ccr().bits(duty));
+            fn get_duty(&self) -> Self::Duty {
+                unsafe {
+                    // TODO: This could theoretically be passed into the PwmChannel struct
+                    (*$TIMx::ptr()).$ccrx.read().ccr().bits()
+                }
+            }
+
+            fn set_duty(&mut self, duty: Self::Duty) -> () {
+                unsafe {
+                    // TODO: This could theoretically be passed into the PwmChannel struct
+                    // and it would then be safe to modify
+                    &(*$TIMx::ptr()).$ccrx.modify(|_, w| w.ccr().bits(duty));
+                }
+            }
         }
     }
 }
+
+pwm_pin_for_pwm_channel!(TIM3, Tim3Ch1, cc1e, ccr1);
+pwm_pin_for_pwm_channel!(TIM3, Tim3Ch2, cc2e, ccr2);
+pwm_pin_for_pwm_channel!(TIM3, Tim3Ch3, cc3e, ccr3);
+pwm_pin_for_pwm_channel!(TIM3, Tim3Ch4, cc4e, ccr4);
+
+pwm_pin_for_pwm_channel!(TIM8, Tim8Ch1, cc1e, ccr1);
+pwm_pin_for_pwm_channel!(TIM8, Tim8Ch2, cc2e, ccr2);
+pwm_pin_for_pwm_channel!(TIM8, Tim8Ch3, cc3e, ccr3);
+pwm_pin_for_pwm_channel!(TIM8, Tim8Ch4, cc4e, ccr4);
