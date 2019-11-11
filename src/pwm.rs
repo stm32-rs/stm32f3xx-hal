@@ -117,12 +117,6 @@ macro_rules! pwm_timer_advanced {
     }
 }
 
-#[cfg(feature = "stm32f303")]
-pwm_timer_basic!(tim3, TIM3, apb1enr, tim3en, Tim3Ch3);
-#[cfg(feature = "stm32f303")]
-pwm_timer_advanced!(tim8, TIM8, apb2enr, tim8en, Tim8Ch3);
-
-
 
 macro_rules! pwm_channel_pin {
     ($TimiChi:ident, $output_to_pxi:ident, $PXi:ident, $AFi:ident) => {
@@ -133,11 +127,6 @@ macro_rules! pwm_channel_pin {
         }
     }
 }
-
-#[cfg(feature = "stm32f303")]
-pwm_channel_pin!(Tim8Ch3, output_to_pc8, PC8, AF4);
-#[cfg(feature = "stm32f303")]
-pwm_channel_pin!(Tim8Ch3, output_to_pb9, PB9, AF10);
 
 
 macro_rules! pwm_pin_for_pwm_channel {
@@ -183,6 +172,12 @@ macro_rules! pwm_pin_for_pwm_channel {
     }
 }
 
+
+// TIM3
+
+#[cfg(feature = "stm32f303")]
+pwm_timer_basic!(tim3, TIM3, apb1enr, tim3en, Tim3Ch3);
+
 #[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM3, Tim3Ch1, cc1e, ccr1);
 #[cfg(feature = "stm32f303")]
@@ -191,6 +186,17 @@ pwm_pin_for_pwm_channel!(TIM3, Tim3Ch2, cc2e, ccr2);
 pwm_pin_for_pwm_channel!(TIM3, Tim3Ch3, cc3e, ccr3);
 #[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM3, Tim3Ch4, cc4e, ccr4);
+
+
+// TIM8
+
+#[cfg(feature = "stm32f303")]
+pwm_timer_advanced!(tim8, TIM8, apb2enr, tim8en, Tim8Ch3);
+
+#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(Tim8Ch3, output_to_pb9, PB9, AF10);
+#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(Tim8Ch3, output_to_pc8, PC8, AF4);
 
 #[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM8, Tim8Ch1, cc1e, ccr1);
