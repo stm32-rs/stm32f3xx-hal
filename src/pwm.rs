@@ -26,7 +26,7 @@ pub struct WithPins {}
 
 pub struct PwmChannel<X, T> {
     pub(crate) timx_chx: PhantomData<X>,
-    pub(crate) pin_status: PhantomData<T>, // TODO: use PhantomData
+    pub(crate) pin_status: PhantomData<T>,
 }
 
 pub fn tim8(tim: TIM8, res: u16, freq: u16, apb2: &mut APB2, clocks: &Clocks) -> PwmChannel<Tim8Ch3, NoPins> {
