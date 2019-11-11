@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use crate::stm32::TIM8;
+use crate::stm32::{TIM3, TIM8};
 use embedded_hal::PwmPin;
 use super::gpio::{AF4, AF10};
 use super::gpio::gpioc::{PC8};
@@ -14,7 +14,7 @@ use crate::stm32::{RCC};
 
 //pub struct Tim3Ch1 {}
 //pub struct Tim3Ch2 {}
-//pub struct Tim3Ch3 {}
+pub struct Tim3Ch3 {}
 //pub struct Tim3Ch4 {}
 
 //pub struct Tim8Ch1 {}
@@ -30,63 +30,97 @@ pub struct PwmChannel<X, T> {
     pub(crate) pin_status: PhantomData<T>,
 }
 
-pub fn tim8(tim: TIM8, res: u16, freq: u16, clocks: &Clocks) -> PwmChannel<Tim8Ch3, NoPins> {
-    // Power the timer
-    // We use unsafe here to abstract away this implementation detail
-    // Justification: It is safe because only scopes with mutable references
-    // to TIM8 should ever modify this bit.
-    unsafe {
-        &(*RCC::ptr()).apb2enr.modify(|_, w| w.tim8en().set_bit());
+macro_rules! pwm_timer_private {
+    // TODO: TimxChy needs to become a list
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $TimxChy:ident) => {
+        pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> PwmChannel<$TimxChy, NoPins> {
+            // Power the timer
+            // We use unsafe here to abstract away this implementation detail
+            // Justification: It is safe because only scopes with mutable references
+            // to TIMx should ever modify this bit.
+            unsafe {
+                &(*RCC::ptr()).$apbxenr.modify(|_, w| w.$timxen().set_bit());
+            }
+
+            // enable auto reload preloader
+            tim.cr1.write(|w| w.arpe().set_bit());
+
+            // Set the "resolution" of the duty cycle (ticks before restarting at 0)
+            tim.arr.write(|w| w.arr().bits(res));
+            // TODO: Use Hertz?
+            // Set the pre-scaler
+            tim.psc.write(|w| w.psc().bits(clocks.pclk2().0 as u16 / (res * freq)));
+
+            // Make the settings reload immediately for TIM1/8
+            $trigger_update_event(&tim);
+
+            tim.smcr.write(|w| w); // Reset the slave/master config
+            tim.cr2.write(|w| w); // reset
+
+            // TODO: Not all timers have 4 channels, so these need to be in the macro
+            tim.ccmr1_output().write(|w| w
+                // Select PWM Mode 1 for CH1/CH2
+                .oc1m().bits(0b0110)
+                .oc2m().bits(0b0110)
+                // set pre-load enable so that updates to the duty cycle
+                // propagate but _not_ in the middle of a cycle.
+                .oc1pe().set_bit()
+                .oc2pe().set_bit()
+            );
+            tim.ccmr2_output().write(|w| w
+                // Select PWM Mode 1 for CH3/CH4
+                .oc3m().bits(0b0110)
+                .oc4m().bits(0b0110)
+                // set pre-load enable so that updates to the duty cycle
+                // propagate but _not_ in the middle of a cycle.
+                .oc3pe().set_bit()
+                .oc4pe().set_bit()
+            );
+
+            // Enable outputs (STM32 Break Timer Specific)
+            $enable_break_timer(&tim);
+
+            // Enable the Timer
+            tim.cr1.modify(|_, w| w.cen().set_bit());
+
+            // TODO: This should return all four channels
+            PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
+        }
     }
-
-    // enable auto reload preloader
-    tim.cr1.write(|w| w.arpe().set_bit());
-
-    // Set the "resolution" of the duty cycle (ticks before restarting at 0)
-    tim.arr.write(|w| w.arr().bits(res));
-    // TODO: Use Hertz?
-    // Set the pre-scaler
-    tim.psc.write(|w| w.psc().bits(clocks.pclk2().0 as u16 / (res * freq)));
-
-    // Macro friendly for later
-    if true {
-        // Make the settings reload immediately for TIM1/8
-        tim.egr.write(|w| w.ug().set_bit());
-    }
-
-    tim.smcr.write(|w| w); // Reset the slave/master config
-    tim.cr2.write(|w| w); // reset
-    tim.ccmr1_output().write(|w| w
-        // Select PWM Mode 1 for CH1/CH2
-        .oc1m().bits(0b0110)
-        .oc2m().bits(0b0110)
-        // set pre-load enable so that updates to the duty cycle
-        // propagate but _not_ in the middle of a cycle.
-        .oc1pe().set_bit()
-        .oc2pe().set_bit()
-    );
-    tim.ccmr2_output().write(|w| w
-        // Select PWM Mode 1 for CH3/CH4
-        .oc3m().bits(0b0110)
-        .oc4m().bits(0b0110)
-        // set pre-load enable so that updates to the duty cycle
-        // propagate but _not_ in the middle of a cycle.
-        .oc3pe().set_bit()
-        .oc4pe().set_bit()
-    );
-
-    // Macro friendly for later
-    if true {
-        // Enable outputs (STM32 Break Timer Specific)
-        tim.bdtr.write(|w| w.moe().set_bit());
-    }
-
-    // Enable the Timer
-    tim.cr1.modify(|_, w| w.cen().set_bit());
-
-    // TODO: This should return all four channels
-    PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
 }
+
+macro_rules! pwm_timer_basic {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $TimxChy:ident) => {
+        pwm_timer_private!(
+            $timx,
+            $TIMx,
+            $apbxenr,
+            $timxen,
+            |_| (),
+            |_| (),
+            $TimxChy
+        );
+    }
+}
+
+macro_rules! pwm_timer_advanced {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $TimxChy:ident) => {
+        pwm_timer_private!(
+            $timx,
+            $TIMx,
+            $apbxenr,
+            $timxen,
+            |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
+            |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
+            $TimxChy
+        );
+    }
+}
+
+pwm_timer_basic!(tim3, TIM3, apb1enr, tim3en, Tim3Ch3);
+pwm_timer_advanced!(tim8, TIM8, apb2enr, tim8en, Tim8Ch3);
+
+
 
 macro_rules! pwm_channel_pin {
     ($TimiChi:ident, $output_to_pxi:ident, $PXi:ident, $AFi:ident) => {
