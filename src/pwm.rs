@@ -4,7 +4,8 @@ use embedded_hal::PwmPin;
 use super::gpio::{AF4, AF10};
 use super::gpio::gpioc::{PC8};
 use super::gpio::gpiob::{PB9};
-use crate::rcc::{Clocks, APB1, APB2};
+use crate::rcc::{Clocks};
+use crate::stm32::{RCC};
 
 //pub struct Tim1Ch1 {}
 //pub struct Tim1Ch2 {}
@@ -29,9 +30,14 @@ pub struct PwmChannel<X, T> {
     pub(crate) pin_status: PhantomData<T>,
 }
 
-pub fn tim8(tim: TIM8, res: u16, freq: u16, apb2: &mut APB2, clocks: &Clocks) -> PwmChannel<Tim8Ch3, NoPins> {
+pub fn tim8(tim: TIM8, res: u16, freq: u16, clocks: &Clocks) -> PwmChannel<Tim8Ch3, NoPins> {
     // Power the timer
-    apb2.enr().modify(|_, w| w.tim8en().set_bit());
+    // We use unsafe here to abstract away this implementation detail
+    // Justification: It is safe because only scopes with mutable references
+    // to TIM8 should ever modify this bit.
+    unsafe {
+        &(*RCC::ptr()).apb2enr.modify(|_, w| w.tim8en().set_bit());
+    }
 
     // enable auto reload preloader
     tim.cr1.write(|w| w.arpe().set_bit());
