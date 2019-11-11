@@ -179,6 +179,11 @@ macro_rules! pwm_pin_for_pwm_channel {
 pwm_timer_basic!(tim3, TIM3, apb1enr, tim3en, Tim3Ch3);
 
 #[cfg(feature = "stm32f303")]
+pwm_channel_pin!(Tim3Ch3, output_to_pc8, PC8, AF4);
+#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(Tim3Ch3, output_to_pe4, Pe4, AF2);
+
+#[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM3, Tim3Ch1, cc1e, ccr1);
 #[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM3, Tim3Ch2, cc2e, ccr2);
