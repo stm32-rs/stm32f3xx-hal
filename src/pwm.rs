@@ -33,8 +33,8 @@ pub struct PwmChannel<X, T> {
 
 macro_rules! pwm_timer_private {
     // TODO: TimxChy needs to become a list
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $TimxChy:ident) => {
-        pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> PwmChannel<$TimxChy, NoPins> {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, [$($TimxChy:ident,)+], [$($x:ident,)+]) => {
+        pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> ($(PwmChannel<$TimxChy, NoPins>,)+) {
             // Power the timer
             // We use unsafe here to abstract away this implementation detail
             // Justification: It is safe because only scopes with mutable references
@@ -84,14 +84,16 @@ macro_rules! pwm_timer_private {
             // Enable the Timer
             tim.cr1.modify(|_, w| w.cen().set_bit());
 
-            // TODO: This should return all four channels
-            PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
+            // TODO: Passing in the constructor is a bit silly,
+            // is there an alternative approach to get this to repeat,
+            // even though its not dynamic?
+            ($($x { timx_chx: PhantomData, pin_status: PhantomData },)+)
         }
     }
 }
 
 macro_rules! pwm_timer_basic {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $TimxChy:ident) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, [$($TimxChy:ident,)+], [$($x:ident,)+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
@@ -99,13 +101,14 @@ macro_rules! pwm_timer_basic {
             $timxen,
             |_| (),
             |_| (),
-            $TimxChy
+            [$($TimxChy,)+],
+            [$($x,)+]
         );
     }
 }
 
 macro_rules! pwm_timer_advanced {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $TimxChy:ident) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, [$($TimxChy:ident,)+], [$($x:ident,)+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
@@ -113,7 +116,8 @@ macro_rules! pwm_timer_advanced {
             $timxen,
             |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
-            $TimxChy
+            [$($TimxChy,)+],
+            [$($x,)+]
         );
     }
 }
@@ -177,7 +181,14 @@ macro_rules! pwm_pin_for_pwm_channel {
 // TIM3
 
 #[cfg(feature = "stm32f303")]
-pwm_timer_basic!(tim3, TIM3, apb1enr, tim3en, Tim3Ch3);
+pwm_timer_basic!(
+    tim3,
+    TIM3,
+    apb1enr,
+    tim3en,
+    [Tim3Ch1,Tim3Ch2,Tim3Ch3,Tim3Ch4,],
+    [PwmChannel,PwmChannel,PwmChannel,PwmChannel,]
+);
 
 #[cfg(feature = "stm32f303")]
 pwm_channel_pin!(Tim3Ch3, output_to_pc8, PC8, AF4);
@@ -197,7 +208,14 @@ pwm_pin_for_pwm_channel!(TIM3, Tim3Ch4, cc4e, ccr4);
 // TIM8
 
 #[cfg(feature = "stm32f303")]
-pwm_timer_advanced!(tim8, TIM8, apb2enr, tim8en, Tim8Ch3);
+pwm_timer_advanced!(
+    tim8,
+    TIM8,
+    apb2enr,
+    tim8en,
+    [Tim8Ch1,Tim8Ch2,Tim8Ch3,Tim8Ch4,],
+    [PwmChannel,PwmChannel,PwmChannel,PwmChannel,]
+);
 
 #[cfg(feature = "stm32f303")]
 pwm_channel_pin!(Tim8Ch3, output_to_pb9, PB9, AF10);
