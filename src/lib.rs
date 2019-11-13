@@ -69,3 +69,13 @@ pub mod spi;
 pub mod time;
 #[cfg(feature = "device-selected")]
 pub mod timer;
+#[cfg(all(
+    feature = "stm32-usbd",
+    any(
+        feature = "stm32f303xb",
+        feature = "stm32f303xc",
+        feature = "stm32f303xd",
+        feature = "stm32f303xe",
+    )
+))]
+pub mod usb;

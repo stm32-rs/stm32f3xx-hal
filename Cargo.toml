@@ -32,6 +32,10 @@ version = "0.2.2"
 default-features = false
 version = "1.0.2"
 
+[dependencies.stm32-usbd]
+version = "0.5.0"
+optional = true
+
 [features]
 default = ["unproven"]
 device-selected = []
@@ -40,6 +44,10 @@ stm32f301 = ["stm32f3/stm32f301", "device-selected"]
 stm32f318 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f302 = ["stm32f3/stm32f302", "device-selected"]
 stm32f303 = ["stm32f3/stm32f303", "device-selected"]
+stm32f303xb = ["stm32f303", "stm32-usbd/ram_access_1x16"]
+stm32f303xc = ["stm32f303", "stm32-usbd/ram_access_1x16"]
+stm32f303xd = ["stm32f303", "stm32-usbd/ram_access_2x16"]
+stm32f303xe = ["stm32f303", "stm32-usbd/ram_access_2x16"]
 stm32f373 = ["stm32f3/stm32f373", "device-selected"]
 stm32f378 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f334 = ["stm32f3/stm32f3x4", "device-selected"]
