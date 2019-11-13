@@ -151,7 +151,7 @@
   we have no pins in use, but it cannot be used once we've used PA7.
 */
 
-use crate::stm32::{TIM15, TIM16, TIM17, TIM2};
+use crate::pac::{TIM15, TIM16, TIM17, TIM2};
 use core::marker::PhantomData;
 use embedded_hal::PwmPin;
 
@@ -381,8 +381,8 @@ use crate::gpio::gpiof::PF6;
 ))]
 use crate::gpio::gpiof::PF9;
 
+use crate::pac::RCC;
 use crate::rcc::Clocks;
-use crate::stm32::RCC;
 use crate::time::Hertz;
 
 /// Output Compare Channel 1 of Timer 1 (type state)
@@ -754,7 +754,7 @@ macro_rules! pwm_pin_for_pwm_n_channel {
 ))]
 macro_rules! tim1_common {
     () => {
-        use crate::stm32::TIM1;
+        use crate::pac::TIM1;
 
         /// Output Compare Channel 1 of Timer 1 (type state)
         pub struct TIM1_CH1 {}
@@ -964,7 +964,7 @@ pwm_channel4_pin!(TIM2, TIM2_CH4, output_to_pd6, PD6, AF2);
 ))]
 macro_rules! tim3_common {
     () => {
-        use crate::stm32::TIM3;
+        use crate::pac::TIM3;
 
         /// Output Compare Channel 1 of Timer 3 (type state)
         pub struct TIM3_CH1 {}
@@ -1103,7 +1103,7 @@ pwm_channel3_pin!(TIM3, TIM3_CH3, output_to_pb6, PB6, AF10);
 ))]
 macro_rules! tim4_common {
     () => {
-        use crate::stm32::TIM4;
+        use crate::pac::TIM4;
 
         /// Output Compare Channel 1 of Timer 4 (type state)
         pub struct TIM4_CH1 {}
@@ -1199,7 +1199,7 @@ tim4_ext!();
 #[cfg(feature = "stm32f373")]
 macro_rules! tim5 {
     () => {
-        use crate::stm32::TIM5;
+        use crate::pac::TIM5;
 
         /// Output Compare Channel 1 of Timer 5 (type state)
         pub struct TIM5_CH1 {}
@@ -1257,7 +1257,7 @@ tim5!();
 #[cfg(any(feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
 macro_rules! tim8 {
     () => {
-        use crate::stm32::TIM8;
+        use crate::pac::TIM8;
 
         /// Output Compare Channel 1 of Timer 8 (type state)
         pub struct TIM8_CH1 {}
@@ -1333,7 +1333,7 @@ pwm_channel4_pin!(TIM8, TIM8_CH4, output_to_pd1, PD1, AF4);
 #[cfg(feature = "stm32f373")]
 macro_rules! tim12 {
     () => {
-        use crate::stm32::TIM12;
+        use crate::pac::TIM12;
 
         /// Output Compare Channel 1 of Timer 12 (type state)
         pub struct TIM12_CH1 {}
@@ -1381,7 +1381,7 @@ tim12!();
 #[cfg(feature = "stm32f373")]
 macro_rules! tim13 {
     () => {
-        use crate::stm32::TIM13;
+        use crate::pac::TIM13;
 
         /// Output Compare Channel 1 of Timer 13 (type state)
         pub struct TIM13_CH1 {}
@@ -1424,7 +1424,7 @@ tim13!();
 #[cfg(feature = "stm32f373")]
 macro_rules! tim14 {
     () => {
-        use crate::stm32::TIM14;
+        use crate::pac::TIM14;
 
         /// Output Compare Channel 1 of Timer 14 (type state)
         pub struct TIM14_CH1 {}
@@ -1592,7 +1592,7 @@ pwm_channel1n_pin!(TIM17, TIM17_CH1, output_to_pa13, PA13, AF1);
 #[cfg(feature = "stm32f373")]
 macro_rules! tim19 {
     () => {
-        use crate::stm32::TIM19;
+        use crate::pac::TIM19;
 
         /// Output Compare Channel 1 of Timer 19 (type state)
         pub struct TIM19_CH1 {}
@@ -1650,7 +1650,7 @@ tim19!();
 #[cfg(feature = "stm32f398")]
 macro_rules! tim20 {
     () => {
-        use crate::stm32::TIM20;
+        use crate::pac::TIM20;
 
         /// Output Compare Channel 1 of Timer 20 (type state)
         pub struct TIM20_CH1 {}

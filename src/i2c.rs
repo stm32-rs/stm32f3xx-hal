@@ -1,6 +1,6 @@
 //! Inter-Integrated Circuit (I2C) bus
 
-use crate::stm32::{I2C1, I2C2};
+use crate::pac::{I2C1, I2C2};
 use cast::u8;
 
 use crate::gpio::gpioa::{PA10, PA9};
