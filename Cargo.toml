@@ -11,7 +11,7 @@ documentation = "https://docs.rs/stm32f3xx-hal"
 version = "0.3.0"
 
 [package.metadata.docs.rs]
-features = ["stm32f303", "rt"]
+features = ["stm32f303xc", "rt", "stm32-usbd"]
 
 [dependencies]
 cortex-m = ">=0.5.8,<0.7"
