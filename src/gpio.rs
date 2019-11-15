@@ -285,6 +285,11 @@ macro_rules! gpio {
                 }
 
                 impl AFRL {
+                    // A couple device/port combos have no valid alternate functions:
+                    //   - stm32f303 GPIOG and GPIOH
+                    //   - stm32f318 GPIOC, GPIOD, and GPIOE
+                    //   - stm32f328 GPIOE
+                    #[allow(dead_code)]
                     pub(crate) fn afr(&mut self) -> &$gpioy::AFRL {
                         unsafe { &(*$GPIOX::ptr()).afrl }
                     }
