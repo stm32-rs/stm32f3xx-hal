@@ -13,6 +13,9 @@ version = "0.3.0"
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "stm32-usbd"]
 
+[badges]
+travis-ci = { repository = "stm32-rs/stm32f3xx-hal" }
+
 [dependencies]
 cortex-m = ">=0.5.8,<0.7"
 cortex-m-rt = "0.6.8"
