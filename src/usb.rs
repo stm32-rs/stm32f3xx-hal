@@ -1,4 +1,9 @@
 //! USB peripheral
+//!
+//! Requires the `stm32-usbd` feature and one of the `stm32f303x*` features.
+//!
+//! See <https://github.com/stm32-rs/stm32f3xx-hal/tree/master/examples>
+//! for usage examples.
 
 use crate::stm32::{RCC, USB};
 use stm32_usbd::UsbPeripheral;
