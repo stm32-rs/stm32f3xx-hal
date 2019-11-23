@@ -36,7 +36,6 @@ pub struct PwmChannel<X, T> {
 }
 
 macro_rules! pwm_timer_private {
-    // TODO: TIMx_CHy needs to become a list
     ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
         pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>,)+) {
             // Power the timer
