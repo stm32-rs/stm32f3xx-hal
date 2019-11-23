@@ -132,9 +132,9 @@ macro_rules! pwm_timer_advanced {
 
 
 macro_rules! pwm_channel_pin {
-    ($TIMx:ident, $TIMx_CHy:ident, $output_to_pzx:ident, $PXi:ident, $AFi:ident, $ccmrz_output:ident, $ocym:ident, $ocype:ident) => {
+    ($TIMx:ident, $TIMx_CHy:ident, $output_to_pzx:ident, $Pzi:ident, $AFj:ident, $ccmrz_output:ident, $ocym:ident, $ocype:ident) => {
         impl PwmChannel<$TIMx_CHy, NoPins> {
-            pub fn $output_to_pzx(self, _p: $PXi<$AFi>) -> PwmChannel<$TIMx_CHy, WithPins> {
+            pub fn $output_to_pzx(self, _p: $Pzi<$AFj>) -> PwmChannel<$TIMx_CHy, WithPins> {
                 unsafe {
                     (*$TIMx::ptr()).$ccmrz_output().write(|w| w
                         // Select PWM Mode 1 for CHy
@@ -149,7 +149,7 @@ macro_rules! pwm_channel_pin {
         }
 
         impl PwmChannel<$TIMx_CHy, WithPins> {
-            pub fn $output_to_pzx(self, _p: $PXi<$AFi>) -> PwmChannel<$TIMx_CHy, WithPins> {
+            pub fn $output_to_pzx(self, _p: $Pzi<$AFj>) -> PwmChannel<$TIMx_CHy, WithPins> {
                 self
             }
         }
