@@ -30,8 +30,8 @@ pub struct NoPins {}
 pub struct WithPins {}
 
 pub struct PwmChannel<X, T> {
-    pub(crate) timx_chx: PhantomData<X>,
-    pub(crate) pin_status: PhantomData<T>,
+    timx_chx: PhantomData<X>,
+    pin_status: PhantomData<T>,
 }
 
 macro_rules! pwm_timer_private {
