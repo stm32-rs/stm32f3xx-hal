@@ -1,10 +1,11 @@
 use core::marker::PhantomData;
-use crate::stm32::{TIM3, TIM8};
+use crate::stm32::{TIM3, TIM8, TIM16};
 use embedded_hal::PwmPin;
-use super::gpio::{AF2, AF4, AF10};
-use super::gpio::gpiob::{PB9};
+use super::gpio::{AF1, AF2, AF4, AF10};
+use super::gpio::gpioa::{PA6, PA12};
+use super::gpio::gpiob::{PB4, PB8, PB9};
 use super::gpio::gpioc::{PC8};
-use super::gpio::gpioe::{PE4};
+use super::gpio::gpioe::{PE0, PE4};
 use crate::rcc::{Clocks};
 use crate::stm32::{RCC};
 
@@ -23,6 +24,8 @@ pub struct Tim8Ch2 {}
 pub struct Tim8Ch3 {}
 pub struct Tim8Ch4 {}
 
+pub struct Tim16Ch1 {}
+
 pub struct NoPins {}
 pub struct WithPins {}
 
@@ -33,7 +36,7 @@ pub struct PwmChannel<X, T> {
 
 macro_rules! pwm_timer_private {
     // TODO: TimxChy needs to become a list
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, [$($TimxChy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TimxChy:ident,)+], [$($x:ident,)+]) => {
         pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> ($(PwmChannel<$TimxChy, NoPins>,)+) {
             // Power the timer
             // We use unsafe here to abstract away this implementation detail
@@ -47,7 +50,11 @@ macro_rules! pwm_timer_private {
             tim.cr1.write(|w| w.arpe().set_bit());
 
             // Set the "resolution" of the duty cycle (ticks before restarting at 0)
-            tim.arr.write(|w| w.arr().bits(res));
+            // Oddly this is unsafe for some timers and not others
+            #[allow(unused_unsafe)]
+            tim.arr.write(|w| unsafe {
+                w.arr().bits(res)
+            });
             // TODO: Use Hertz?
             // Set the pre-scaler
             tim.psc.write(|w| w.psc().bits(clocks.pclk2().0 as u16 / (res * freq)));
@@ -55,28 +62,11 @@ macro_rules! pwm_timer_private {
             // Make the settings reload immediately for TIM1/8
             $trigger_update_event(&tim);
 
-            tim.smcr.write(|w| w); // Reset the slave/master config
-            tim.cr2.write(|w| w); // reset
+            // Reset the slave/master config
+            $reset_slave_master_config(&tim);
 
-            // TODO: Not all timers have 4 channels, so these need to be in the macro
-            tim.ccmr1_output().write(|w| w
-                // Select PWM Mode 1 for CH1/CH2
-                .oc1m().bits(0b0110)
-                .oc2m().bits(0b0110)
-                // set pre-load enable so that updates to the duty cycle
-                // propagate but _not_ in the middle of a cycle.
-                .oc1pe().set_bit()
-                .oc2pe().set_bit()
-            );
-            tim.ccmr2_output().write(|w| w
-                // Select PWM Mode 1 for CH3/CH4
-                .oc3m().bits(0b0110)
-                .oc4m().bits(0b0110)
-                // set pre-load enable so that updates to the duty cycle
-                // propagate but _not_ in the middle of a cycle.
-                .oc3pe().set_bit()
-                .oc4pe().set_bit()
-            );
+            // reset
+            tim.cr2.write(|w| w);
 
             // Enable outputs (STM32 Break Timer Specific)
             $enable_break_timer(&tim);
@@ -101,6 +91,23 @@ macro_rules! pwm_timer_basic {
             $timxen,
             |_| (),
             |_| (),
+            |_| (),
+            [$($TimxChy,)+],
+            [$($x,)+]
+        );
+    }
+}
+
+macro_rules! pwm_timer_with_break {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, [$($TimxChy:ident,)+], [$($x:ident,)+]) => {
+        pwm_timer_private!(
+            $timx,
+            $TIMx,
+            $apbxenr,
+            $timxen,
+            |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
+            |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
+            |_| (),
             [$($TimxChy,)+],
             [$($x,)+]
         );
@@ -116,6 +123,7 @@ macro_rules! pwm_timer_advanced {
             $timxen,
             |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
+            |tim: &$TIMx| tim.smcr.write(|w| w),
             [$($TimxChy,)+],
             [$($x,)+]
         );
@@ -124,10 +132,25 @@ macro_rules! pwm_timer_advanced {
 
 
 macro_rules! pwm_channel_pin {
-    ($TimiChi:ident, $output_to_pxi:ident, $PXi:ident, $AFi:ident) => {
-        impl<T> PwmChannel<$TimiChi, T> {
+    ($TIMx:ident, $TimiChi:ident, $output_to_pxi:ident, $PXi:ident, $AFi:ident, $ccmrz_output:ident, $ocym:ident, $ocype:ident) => {
+        impl PwmChannel<$TimiChi, NoPins> {
             pub fn $output_to_pxi(self, _p: $PXi<$AFi>) -> PwmChannel<$TimiChi, WithPins> {
+                unsafe {
+                    (*$TIMx::ptr()).$ccmrz_output().write(|w| w
+                        // Select PWM Mode 1 for CHy
+                        .$ocym().bits(0b0110)
+                        // set pre-load enable so that updates to the duty cycle
+                        // propagate but _not_ in the middle of a cycle.
+                        .$ocype().set_bit()
+                    );
+                }
                 PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
+            }
+        }
+
+        impl PwmChannel<$TimiChi, WithPins> {
+            pub fn $output_to_pxi(self, _p: $PXi<$AFi>) -> PwmChannel<$TimiChi, WithPins> {
+                self
             }
         }
     }
@@ -135,7 +158,7 @@ macro_rules! pwm_channel_pin {
 
 
 macro_rules! pwm_pin_for_pwm_channel {
-    ($TIMx:ident, $TimxChy:ty, $ccxe:ident, $ccrx:ident) => {
+    ($TIMx:ident, $TimxChy:ty, $ccxe:ident, $ccrx:ident, $ccrq:ident) => {
         impl PwmPin for PwmChannel<$TimxChy, WithPins> {
             type Duty = u16;
 
@@ -162,7 +185,7 @@ macro_rules! pwm_pin_for_pwm_channel {
             fn get_duty(&self) -> Self::Duty {
                 unsafe {
                     // TODO: This could theoretically be passed into the PwmChannel struct
-                    (*$TIMx::ptr()).$ccrx.read().ccr().bits()
+                    (*$TIMx::ptr()).$ccrx.read().$ccrq().bits()
                 }
             }
 
@@ -170,7 +193,7 @@ macro_rules! pwm_pin_for_pwm_channel {
                 unsafe {
                     // TODO: This could theoretically be passed into the PwmChannel struct
                     // and it would then be safe to modify
-                    &(*$TIMx::ptr()).$ccrx.modify(|_, w| w.ccr().bits(duty));
+                    &(*$TIMx::ptr()).$ccrx.modify(|_, w| w.$ccrq().bits(duty));
                 }
             }
         }
@@ -191,18 +214,18 @@ pwm_timer_basic!(
 );
 
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(Tim3Ch3, output_to_pc8, PC8, AF4);
+pwm_channel_pin!(TIM3, Tim3Ch3, output_to_pc8, PC8, AF4, ccmr2_output, oc3m, oc3pe);
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(Tim3Ch3, output_to_pe4, PE4, AF2);
+pwm_channel_pin!(TIM3, Tim3Ch3, output_to_pe4, PE4, AF2, ccmr2_output, oc3m, oc3pe);
 
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(TIM3, Tim3Ch1, cc1e, ccr1);
+pwm_pin_for_pwm_channel!(TIM3, Tim3Ch1, cc1e, ccr1, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(TIM3, Tim3Ch2, cc2e, ccr2);
+pwm_pin_for_pwm_channel!(TIM3, Tim3Ch2, cc2e, ccr2, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(TIM3, Tim3Ch3, cc3e, ccr3);
+pwm_pin_for_pwm_channel!(TIM3, Tim3Ch3, cc3e, ccr3, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(TIM3, Tim3Ch4, cc4e, ccr4);
+pwm_pin_for_pwm_channel!(TIM3, Tim3Ch4, cc4e, ccr4, ccr);
 
 
 // TIM8
@@ -218,15 +241,43 @@ pwm_timer_advanced!(
 );
 
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(Tim8Ch3, output_to_pb9, PB9, AF10);
+pwm_channel_pin!(TIM8, Tim8Ch3, output_to_pb9, PB9, AF10, ccmr2_output, oc3m, oc3pe);
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(Tim8Ch3, output_to_pc8, PC8, AF4);
+pwm_channel_pin!(TIM8, Tim8Ch3, output_to_pc8, PC8, AF4, ccmr2_output, oc3m, oc3pe);
 
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(TIM8, Tim8Ch1, cc1e, ccr1);
+pwm_pin_for_pwm_channel!(TIM8, Tim8Ch1, cc1e, ccr1, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(TIM8, Tim8Ch2, cc2e, ccr2);
+pwm_pin_for_pwm_channel!(TIM8, Tim8Ch2, cc2e, ccr2, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(TIM8, Tim8Ch3, cc3e, ccr3);
+pwm_pin_for_pwm_channel!(TIM8, Tim8Ch3, cc3e, ccr3, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(TIM8, Tim8Ch4, cc4e, ccr4);
+pwm_pin_for_pwm_channel!(TIM8, Tim8Ch4, cc4e, ccr4, ccr);
+
+// TIM16
+
+// TODO: It would be nice if single channel timers didn't return a 1-tuple
+// and instead just returned the single channel directly
+#[cfg(feature = "stm32f303")]
+pwm_timer_with_break!(
+    tim16,
+    TIM16,
+    apb2enr,
+    tim16en,
+    [Tim16Ch1,],
+    [PwmChannel,]
+);
+
+#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(TIM16, Tim16Ch1, output_to_pa9, PA6, AF1, ccmr1_output, oc1m, oc1pe);
+#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(TIM16, Tim16Ch1, output_to_pa12, PA12, AF1, ccmr1_output, oc1m, oc1pe);
+#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(TIM16, Tim16Ch1, output_to_pb4, PB4, AF1, ccmr1_output, oc1m, oc1pe);
+#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(TIM16, Tim16Ch1, output_to_pb8, PB8, AF1, ccmr1_output, oc1m, oc1pe);
+#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(TIM16, Tim16Ch1, output_to_pe0, PE0, AF4, ccmr1_output, oc1m, oc1pe);
+
+#[cfg(feature = "stm32f303")]
+pwm_pin_for_pwm_channel!(TIM16, Tim16Ch1, cc1e, ccr1, ccr1);
