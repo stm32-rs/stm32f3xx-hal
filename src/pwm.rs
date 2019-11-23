@@ -30,7 +30,7 @@ pub struct NoPins {}
 pub struct WithPins {}
 
 pub struct PwmChannel<X, T> {
-    timx_chx: PhantomData<X>,
+    timx_chy: PhantomData<X>,
     pin_status: PhantomData<T>,
 }
 
@@ -77,7 +77,7 @@ macro_rules! pwm_timer_private {
             // TODO: Passing in the constructor is a bit silly,
             // is there an alternative approach to get this to repeat,
             // even though its not dynamic?
-            ($($x { timx_chx: PhantomData, pin_status: PhantomData },)+)
+            ($($x { timx_chy: PhantomData, pin_status: PhantomData },)+)
         }
     }
 }
@@ -132,9 +132,9 @@ macro_rules! pwm_timer_advanced {
 
 
 macro_rules! pwm_channel_pin {
-    ($TIMx:ident, $TimiChi:ident, $output_to_pxi:ident, $PXi:ident, $AFi:ident, $ccmrz_output:ident, $ocym:ident, $ocype:ident) => {
-        impl PwmChannel<$TimiChi, NoPins> {
-            pub fn $output_to_pxi(self, _p: $PXi<$AFi>) -> PwmChannel<$TimiChi, WithPins> {
+    ($TIMx:ident, $TimxChy:ident, $output_to_pzx:ident, $PXi:ident, $AFi:ident, $ccmrz_output:ident, $ocym:ident, $ocype:ident) => {
+        impl PwmChannel<$TimxChy, NoPins> {
+            pub fn $output_to_pzx(self, _p: $PXi<$AFi>) -> PwmChannel<$TimxChy, WithPins> {
                 unsafe {
                     (*$TIMx::ptr()).$ccmrz_output().write(|w| w
                         // Select PWM Mode 1 for CHy
@@ -144,12 +144,12 @@ macro_rules! pwm_channel_pin {
                         .$ocype().set_bit()
                     );
                 }
-                PwmChannel { timx_chx: PhantomData, pin_status: PhantomData }
+                PwmChannel { timx_chy: PhantomData, pin_status: PhantomData }
             }
         }
 
-        impl PwmChannel<$TimiChi, WithPins> {
-            pub fn $output_to_pxi(self, _p: $PXi<$AFi>) -> PwmChannel<$TimiChi, WithPins> {
+        impl PwmChannel<$TimxChy, WithPins> {
+            pub fn $output_to_pzx(self, _p: $PXi<$AFi>) -> PwmChannel<$TimxChy, WithPins> {
                 self
             }
         }
