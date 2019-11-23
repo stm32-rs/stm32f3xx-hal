@@ -37,6 +37,7 @@ pub struct PwmChannel<X, T> {
 
 macro_rules! pwm_timer_private {
     ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+        // TODO: ARR has different bit-depth on different timers
         pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>,)+) {
             // Power the timer
             // We use unsafe here to abstract away this implementation detail
@@ -156,7 +157,7 @@ macro_rules! pwm_channel_pin {
     }
 }
 
-macro_rules! pwm_pin_for_pwm_channel {
+macro_rules! pwm_pin_for_pwm_channel_private {
     ($state:ident, $TIMx:ident, $TIMx_CHy:ty, $ccx_enable:ident, $ccrx:ident, $ccrq:ident) => {
         impl PwmPin for PwmChannel<$TIMx_CHy, $state> {
             type Duty = u16;
