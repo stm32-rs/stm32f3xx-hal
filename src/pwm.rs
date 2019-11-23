@@ -200,6 +200,20 @@ macro_rules! pwm_pin_for_pwm_channel_private {
     }
 }
 
+macro_rules! pwm_pin_for_pwm_channel {
+    ($TIMx:ident, $TIMx_CHy:ty, $ccxe:ident, $ccrx:ident, $ccrq:ident) => {
+        pwm_pin_for_pwm_channel_private!(WithPins, $TIMx, $TIMx_CHy, $ccxe, $ccrx, $ccrq);
+    }
+}
+
+macro_rules! pwm_pin_for_pwm_n_channel {
+    ($TIMx:ident, $TIMx_CHy:ty, $ccxe:ident, $ccxne:ident, $ccrx:ident, $ccrq:ident) => {
+        pwm_pin_for_pwm_channel_private!(WithPins, $TIMx, $TIMx_CHy, $ccxe, $ccrx, $ccrq);
+
+        pwm_pin_for_pwm_channel_private!(WithNPins, $TIMx, $TIMx_CHy, $ccxne, $ccrx, $ccrq);
+    }
+}
+
 
 // TIM3
 
@@ -219,13 +233,13 @@ pwm_channel_pin!(WithPins, TIM3, TIM3_CH3, output_to_pc8, PC8, AF4, ccmr2_output
 pwm_channel_pin!(WithPins, TIM3, TIM3_CH3, output_to_pe4, PE4, AF2, ccmr2_output, oc3m, oc3pe);
 
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM3, TIM3_CH1, cc1e, ccr1, ccr);
+pwm_pin_for_pwm_channel!(TIM3, TIM3_CH1, cc1e, ccr1, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM3, TIM3_CH2, cc2e, ccr2, ccr);
+pwm_pin_for_pwm_channel!(TIM3, TIM3_CH2, cc2e, ccr2, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM3, TIM3_CH3, cc3e, ccr3, ccr);
+pwm_pin_for_pwm_channel!(TIM3, TIM3_CH3, cc3e, ccr3, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM3, TIM3_CH4, cc4e, ccr4, ccr);
+pwm_pin_for_pwm_channel!(TIM3, TIM3_CH4, cc4e, ccr4, ccr);
 
 
 // TIM8
@@ -249,16 +263,14 @@ pwm_channel_pin!(WithPins, TIM8, TIM8_CH3, output_to_pc8, PC8, AF4, ccmr2_output
 pwm_channel_pin!(WithNPins, TIM8, TIM8_CH3, output_to_pb1, PB1, AF4, ccmr2_output, oc3m, oc3pe);
 
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM8, TIM8_CH1, cc1e, ccr1, ccr);
+pwm_pin_for_pwm_n_channel!(TIM8, TIM8_CH1, cc1e, cc1ne, ccr1, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM8, TIM8_CH2, cc2e, ccr2, ccr);
+pwm_pin_for_pwm_n_channel!(TIM8, TIM8_CH2, cc2e, cc2ne, ccr2, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM8, TIM8_CH3, cc3e, ccr3, ccr);
+pwm_pin_for_pwm_n_channel!(TIM8, TIM8_CH3, cc3e, cc3ne, ccr3, ccr);
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM8, TIM8_CH4, cc4e, ccr4, ccr);
+pwm_pin_for_pwm_channel!(TIM8, TIM8_CH4, cc4e, ccr4, ccr);
 
-#[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithNPins, TIM8, TIM8_CH3, cc3ne, ccr3, ccr);
 
 // TIM16
 
@@ -286,4 +298,4 @@ pwm_channel_pin!(WithPins, TIM16, Tim16Ch1, output_to_pb8, PB8, AF1, ccmr1_outpu
 pwm_channel_pin!(WithPins, TIM16, Tim16Ch1, output_to_pe0, PE0, AF4, ccmr1_output, oc1m, oc1pe);
 
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithPins, TIM16, Tim16Ch1, cc1e, ccr1, ccr1);
+pwm_pin_for_pwm_n_channel!(TIM16, Tim16Ch1, cc1e, cc1ne, ccr1, ccr1);
