@@ -28,7 +28,7 @@ pub struct Tim16Ch1 {}
 
 pub struct NoPins {}
 pub struct WithPins {}
-pub struct WithComplementaryPins {}
+pub struct WithNPins {}
 
 pub struct PwmChannel<X, T> {
     timx_chy: PhantomData<X>,
@@ -245,7 +245,7 @@ pwm_channel_pin!(WithPins, TIM8, TIM8_CH3, output_to_pb9, PB9, AF10, ccmr2_outpu
 pwm_channel_pin!(WithPins, TIM8, TIM8_CH3, output_to_pc8, PC8, AF4, ccmr2_output, oc3m, oc3pe);
 
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(WithComplementaryPins, TIM8, TIM8_CH3, output_to_pb1, PB1, AF4, ccmr2_output, oc3m, oc3pe);
+pwm_channel_pin!(WithNPins, TIM8, TIM8_CH3, output_to_pb1, PB1, AF4, ccmr2_output, oc3m, oc3pe);
 
 #[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(WithPins, TIM8, TIM8_CH1, cc1e, ccr1, ccr);
@@ -257,7 +257,7 @@ pwm_pin_for_pwm_channel!(WithPins, TIM8, TIM8_CH3, cc3e, ccr3, ccr);
 pwm_pin_for_pwm_channel!(WithPins, TIM8, TIM8_CH4, cc4e, ccr4, ccr);
 
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_channel!(WithComplementaryPins, TIM8, TIM8_CH3, cc3ne, ccr3, ccr);
+pwm_pin_for_pwm_channel!(WithNPins, TIM8, TIM8_CH3, cc3ne, ccr3, ccr);
 
 // TIM16
 
