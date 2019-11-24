@@ -24,7 +24,7 @@ pub struct TIM8_CH2 {}
 pub struct TIM8_CH3 {}
 pub struct TIM8_CH4 {}
 
-pub struct Tim16Ch1 {}
+pub struct TIM16_CH1 {}
 
 pub struct NoPins {}
 pub struct WithPins {}
@@ -291,22 +291,22 @@ pwm_timer_with_break!(
     apb2enr,
     pclk2,
     tim16en,
-    [Tim16Ch1],
+    [TIM16_CH1],
     [PwmChannel]
 );
 
 // Channels
 #[cfg(feature = "stm32f303")]
-pwm_pin_for_pwm_n_channel!(TIM16, Tim16Ch1, cc1e, cc1ne, ccr1, ccr1);
+pwm_pin_for_pwm_n_channel!(TIM16, TIM16_CH1, cc1e, cc1ne, ccr1, ccr1);
 
 // Pins
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(WithPins, TIM16, Tim16Ch1, output_to_pa9, PA6, AF1, ccmr1_output, oc1m, oc1pe);
+pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pa9, PA6, AF1, ccmr1_output, oc1m, oc1pe);
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(WithPins, TIM16, Tim16Ch1, output_to_pa12, PA12, AF1, ccmr1_output, oc1m, oc1pe);
+pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pa12, PA12, AF1, ccmr1_output, oc1m, oc1pe);
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(WithPins, TIM16, Tim16Ch1, output_to_pb4, PB4, AF1, ccmr1_output, oc1m, oc1pe);
+pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pb4, PB4, AF1, ccmr1_output, oc1m, oc1pe);
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(WithPins, TIM16, Tim16Ch1, output_to_pb8, PB8, AF1, ccmr1_output, oc1m, oc1pe);
+pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pb8, PB8, AF1, ccmr1_output, oc1m, oc1pe);
 #[cfg(feature = "stm32f303")]
-pwm_channel_pin!(WithPins, TIM16, Tim16Ch1, output_to_pe0, PE0, AF4, ccmr1_output, oc1m, oc1pe);
+pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pe0, PE0, AF4, ccmr1_output, oc1m, oc1pe);
