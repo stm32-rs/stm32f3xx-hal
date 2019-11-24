@@ -1,12 +1,12 @@
 use core::marker::PhantomData;
 use crate::stm32::{TIM2, TIM3, TIM8, TIM16};
 use embedded_hal::PwmPin;
-use super::gpio::{AF1, AF2, AF4, AF10};
-use super::gpio::gpioa::{PA2, PA6, PA9, PA12};
-use super::gpio::gpiob::{PB1, PB4, PB8, PB9, PB10};
-use super::gpio::gpioc::{PC8};
-use super::gpio::gpiod::{PD7};
-use super::gpio::gpioe::{PE0, PE4};
+use crate::gpio::{AF1, AF2, AF4, AF10};
+use crate::gpio::gpioa::{PA2, PA6, PA9, PA12};
+use crate::gpio::gpiob::{PB1, PB4, PB8, PB9, PB10};
+use crate::gpio::gpioc::{PC8};
+use crate::gpio::gpiod::{PD7};
+use crate::gpio::gpioe::{PE0, PE4};
 use crate::rcc::{Clocks};
 use crate::stm32::{RCC};
 
