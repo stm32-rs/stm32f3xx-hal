@@ -36,9 +36,9 @@ pub struct PwmChannel<X, T> {
 }
 
 macro_rules! pwm_timer_private {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         // TODO: ARR has different bit-depth on different timers
-        pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>,)+) {
+        pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer
             // We use unsafe here to abstract away this implementation detail
             // Justification: It is safe because only scopes with mutable references
@@ -78,13 +78,13 @@ macro_rules! pwm_timer_private {
             // TODO: Passing in the constructor is a bit silly,
             // is there an alternative approach to get this to repeat,
             // even though its not dynamic?
-            ($($x { timx_chy: PhantomData, pin_status: PhantomData },)+)
+            ($($x { timx_chy: PhantomData, pin_status: PhantomData }),+)
         }
     }
 }
 
 macro_rules! pwm_timer_basic {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
@@ -94,14 +94,14 @@ macro_rules! pwm_timer_basic {
             |_| (),
             |_| (),
             |_| (),
-            [$($TIMx_CHy,)+],
-            [$($x,)+]
+            [$($TIMx_CHy),+],
+            [$($x),+]
         );
     }
 }
 
 macro_rules! pwm_timer_with_break {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
@@ -111,14 +111,14 @@ macro_rules! pwm_timer_with_break {
             |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
             |_| (),
-            [$($TIMx_CHy,)+],
-            [$($x,)+]
+            [$($TIMx_CHy),+],
+            [$($x),+]
         );
     }
 }
 
 macro_rules! pwm_timer_advanced {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
@@ -128,8 +128,8 @@ macro_rules! pwm_timer_advanced {
             |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
             |tim: &$TIMx| tim.smcr.write(|w| w),
-            [$($TIMx_CHy,)+],
-            [$($x,)+]
+            [$($TIMx_CHy),+],
+            [$($x),+]
         );
     }
 }
@@ -227,8 +227,8 @@ pwm_timer_basic!(
     apb1enr,
     pclk1,
     tim3en,
-    [TIM3_CH1,TIM3_CH2,TIM3_CH3,TIM3_CH4,],
-    [PwmChannel,PwmChannel,PwmChannel,PwmChannel,]
+    [TIM3_CH1,TIM3_CH2,TIM3_CH3,TIM3_CH4],
+    [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
 );
 
 // Channels
@@ -257,8 +257,8 @@ pwm_timer_advanced!(
     apb2enr,
     pclk2,
     tim8en,
-    [TIM8_CH1,TIM8_CH2,TIM8_CH3,TIM8_CH4,],
-    [PwmChannel,PwmChannel,PwmChannel,PwmChannel,]
+    [TIM8_CH1,TIM8_CH2,TIM8_CH3,TIM8_CH4],
+    [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
 );
 
 // Channels
@@ -284,8 +284,6 @@ pwm_channel_pin!(WithNPins, TIM8, TIM8_CH3, output_to_pb1, PB1, AF4, ccmr2_outpu
 
 // TIM16
 
-// TODO: It would be nice if single channel timers didn't return a 1-tuple
-// and instead just returned the single channel directly
 #[cfg(feature = "stm32f303")]
 pwm_timer_with_break!(
     tim16,
@@ -293,8 +291,8 @@ pwm_timer_with_break!(
     apb2enr,
     pclk2,
     tim16en,
-    [Tim16Ch1,],
-    [PwmChannel,]
+    [Tim16Ch1],
+    [PwmChannel]
 );
 
 // Channels
