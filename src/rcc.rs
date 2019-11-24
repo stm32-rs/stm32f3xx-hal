@@ -97,10 +97,7 @@ impl APB2 {
 const HSI: u32 = 8_000_000; // Hz
 
 // some microcontrollers do not have USB
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f334",
-))]
+#[cfg(any(feature = "stm32f301", feature = "stm32f334",))]
 mod usb_clocking {
     pub fn has_usb() -> bool {
         false
@@ -191,21 +188,59 @@ impl CFGR {
         self
     }
 
-    /// Freezes the clock configuration, making it effective
-    pub fn freeze(self, acr: &mut ACR) -> Clocks {
+    /// Returns a tuple of the (pllsrclk frequency, pllmul, and pllsrc).
+    #[cfg(not(any(feature = "stm32f302", feature = "stm32f303")))]
+    fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRCW) {
         let pllsrcclk = self.hse.unwrap_or(HSI / 2);
+        let pllmul = self.sysclk.unwrap_or(pllsrcclk) / pllsrcclk;
 
-        let pllmul = (2 * self.sysclk.unwrap_or(pllsrcclk)) / pllsrcclk;
+        let pllsrc = if self.hse.is_some() {
+            rcc::cfgr::PLLSRCW::HSE_DIV_PREDIV
+        } else {
+            rcc::cfgr::PLLSRCW::HSI_DIV2
+        };
+        (pllsrcclk, pllmul, pllsrc)
+    }
+
+    /// Returns a tuple of the (pllsrclk frequency, pllmul, and pllsrc).
+    #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+    fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRCW) {
+        let mut pllsrcclk = self.hse.unwrap_or(HSI / 2);
+        let mut pllmul = self.sysclk.unwrap_or(pllsrcclk) / pllsrcclk;
+
+        let pllsrc = if self.hse.is_some() {
+            rcc::cfgr::PLLSRCW::HSE_DIV_PREDIV
+        } else if pllmul > 16 {
+            pllmul /= 2;
+            pllsrcclk *= 2;
+            rcc::cfgr::PLLSRCW::HSI_DIV_PREDIV
+        } else {
+            rcc::cfgr::PLLSRCW::HSI_DIV2
+        };
+        (pllsrcclk, pllmul, pllsrc)
+    }
+
+    /// Returns a tuple containing the effective sysclk rate and optional pll settings.
+    fn calc_sysclk(&self) -> (u32, Option<(u8, rcc::cfgr::PLLSRCW)>) {
+        let (pllsrcclk, pllmul, pllsrc) = self.calc_pll();
+
         let pllmul = cmp::min(cmp::max(pllmul, 2), 16);
-        let pllmul_bits = if pllmul == 2 {
+        let sysclk = pllmul * pllsrcclk;
+        assert!(sysclk <= 72_000_000);
+
+        let pll_options = if pllmul == 2 {
             None
         } else {
-            Some(pllmul as u8 - 2)
+            let pllmul_bits = pllmul as u8 - 2;
+            Some((pllmul_bits, pllsrc))
         };
 
-        let sysclk = pllmul * self.hse.unwrap_or(HSI) / 2;
+        (sysclk, pll_options)
+    }
 
-        assert!(sysclk <= 72_000_000);
+    /// Freezes the clock configuration, making it effective
+    pub fn freeze(self, acr: &mut ACR) -> Clocks {
+        let (sysclk, pll_options) = self.calc_sysclk();
 
         let hpre_bits = self
             .hclk
@@ -274,11 +309,10 @@ impl CFGR {
             })
         }
 
-
         // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
         // PLL output frequency is a supported one.
         // usbpre == false: divide clock by 1.5, otherwise no division
-        let usb_ok = has_usb() && self.hse.is_some() && pllmul_bits.is_some();
+        let usb_ok = has_usb() && self.hse.is_some() && pll_options.is_some();
         let (usbpre, usbclk_valid) = match (usb_ok, sysclk) {
             (true, 72_000_000) => (false, true),
             (true, 48_000_000) => (true, true),
@@ -295,10 +329,10 @@ impl CFGR {
             while rcc.cr.read().hserdy().bit_is_clear() {}
         }
 
-        if let Some(pllmul_bits) = pllmul_bits {
+        if let Some((pllmul_bits, pllsrc)) = pll_options {
             // enable PLL and wait for it to be ready
-
-            rcc.cfgr.write(|w| w.pllmul().bits(pllmul_bits));
+            rcc.cfgr
+                .write(|w| w.pllmul().bits(pllmul_bits).pllsrc().variant(pllsrc));
 
             rcc.cr.write(|w| w.pllon().set_bit());
 
@@ -315,7 +349,7 @@ impl CFGR {
                 .hpre()
                 .bits(hpre_bits)
                 .sw()
-                .bits(if pllmul_bits.is_some() {
+                .bits(if pll_options.is_some() {
                     // PLL
                     0b10
                 } else if self.hse.is_some() {
