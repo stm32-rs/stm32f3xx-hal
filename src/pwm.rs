@@ -36,7 +36,7 @@ pub struct PwmChannel<X, T> {
 }
 
 macro_rules! pwm_timer_private {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
         // TODO: ARR has different bit-depth on different timers
         pub fn $timx(tim: $TIMx, res: u16, freq: u16, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>,)+) {
             // Power the timer
@@ -58,7 +58,7 @@ macro_rules! pwm_timer_private {
             });
             // TODO: Use Hertz?
             // Set the pre-scaler
-            tim.psc.write(|w| w.psc().bits(clocks.pclk2().0 as u16 / (res * freq)));
+            tim.psc.write(|w| w.psc().bits(clocks.$pclkz().0 as u16 / (res * freq)));
 
             // Make the settings reload immediately for TIM1/8
             $trigger_update_event(&tim);
@@ -84,11 +84,12 @@ macro_rules! pwm_timer_private {
 }
 
 macro_rules! pwm_timer_basic {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
             $apbxenr,
+            $pclkz,
             $timxen,
             |_| (),
             |_| (),
@@ -100,11 +101,12 @@ macro_rules! pwm_timer_basic {
 }
 
 macro_rules! pwm_timer_with_break {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
             $apbxenr,
+            $pclkz,
             $timxen,
             |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
@@ -116,11 +118,12 @@ macro_rules! pwm_timer_with_break {
 }
 
 macro_rules! pwm_timer_advanced {
-    ($timx:ident, $TIMx:ty, $apbxenr:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
+    ($timx:ident, $TIMx:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident,)+], [$($x:ident,)+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
             $apbxenr,
+            $pclkz,
             $timxen,
             |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
@@ -222,6 +225,7 @@ pwm_timer_basic!(
     tim3,
     TIM3,
     apb1enr,
+    pclk1,
     tim3en,
     [TIM3_CH1,TIM3_CH2,TIM3_CH3,TIM3_CH4,],
     [PwmChannel,PwmChannel,PwmChannel,PwmChannel,]
@@ -251,6 +255,7 @@ pwm_timer_advanced!(
     tim8,
     TIM8,
     apb2enr,
+    pclk2,
     tim8en,
     [TIM8_CH1,TIM8_CH2,TIM8_CH3,TIM8_CH4,],
     [PwmChannel,PwmChannel,PwmChannel,PwmChannel,]
@@ -286,6 +291,7 @@ pwm_timer_with_break!(
     tim16,
     TIM16,
     apb2enr,
+    pclk2,
     tim16en,
     [Tim16Ch1,],
     [PwmChannel,]
