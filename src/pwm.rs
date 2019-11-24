@@ -8,6 +8,7 @@ use crate::gpio::gpioc::{PC8};
 use crate::gpio::gpiod::{PD7};
 use crate::gpio::gpioe::{PE0, PE4};
 use crate::rcc::{Clocks};
+use crate::time::Hertz;
 use crate::stm32::{RCC};
 
 //pub struct TIM1_CH1 {}
@@ -43,7 +44,7 @@ pub struct PwmChannel<X, T> {
 
 macro_rules! pwm_timer_private {
     ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
-        pub fn $timx(tim: $TIMx, res: $res, freq: u16, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
+        pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer
             // We use unsafe here to abstract away this implementation detail
             // Justification: It is safe because only scopes with mutable references
@@ -61,10 +62,10 @@ macro_rules! pwm_timer_private {
             tim.arr.write(|w| unsafe {
                 w.arr().bits(res)
             });
-            // TODO: Use Hertz?
+
             // Set the pre-scaler
             tim.psc.write(|w| w.psc().bits(
-                (clocks.$pclkz().0 / res as u32 / freq as u32) as u16
+                (clocks.$pclkz().0 / res as u32 / freq.0) as u16
             ));
 
             // Make the settings reload immediately for TIM1/8
