@@ -2,10 +2,10 @@ use core::marker::PhantomData;
 use crate::stm32::{TIM2, TIM3, TIM8, TIM16};
 use embedded_hal::PwmPin;
 use crate::gpio::{AF1, AF2, AF4, AF10};
-use crate::gpio::gpioa::{PA2, PA6, PA9, PA12};
-use crate::gpio::gpiob::{PB1, PB4, PB8, PB9, PB10};
+use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA5, PA6, PA9, PA10, PA12, PA15};
+use crate::gpio::gpiob::{PB1, PB3, PB4, PB8, PB9, PB10, PB11};
 use crate::gpio::gpioc::{PC8};
-use crate::gpio::gpiod::{PD7};
+use crate::gpio::gpiod::{PD3, PD4, PD6, PD7};
 use crate::gpio::gpioe::{PE0, PE4};
 use crate::rcc::{Clocks};
 use crate::time::Hertz;
@@ -231,7 +231,6 @@ macro_rules! pwm_pin_for_pwm_n_channel {
 
 // TIM2
 
-#[cfg(feature = "stm32f303")]
 pwm_timer_basic!(
     tim2,
     TIM2,
@@ -244,24 +243,34 @@ pwm_timer_basic!(
 );
 
 // Channels
-#[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM2, TIM2_CH1, u32, cc1e, ccr1, ccr);
-#[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM2, TIM2_CH2, u32, cc2e, ccr2, ccr);
-#[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM2, TIM2_CH3, u32, cc3e, ccr3, ccr);
-#[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_channel!(TIM2, TIM2_CH4, u32, cc4e, ccr4, ccr);
 
 // Pins
-#[cfg(feature = "stm32f303")]
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH1, output_to_pa0, PA0, AF1, ccmr1_output, oc1m, oc1pe);
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH1, output_to_pa5, PA5, AF1, ccmr1_output, oc1m, oc1pe);
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH1, output_to_pa15, PA15, AF1, ccmr1_output, oc1m, oc1pe);
+#[cfg(any(feature = "stm32f303", feature = "stm32f302", feature = "stm32f358", feature = "stm32f398"))]
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH1, output_to_pd3, PD3, AF2, ccmr1_output, oc1m, oc1pe);
+
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH2, output_to_pa1, PA1, AF1, ccmr1_output, oc2m, oc2pe);
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH2, output_to_pb3, PB3, AF1, ccmr1_output, oc2m, oc2pe);
+#[cfg(any(feature = "stm32f303", feature = "stm32f302", feature = "stm32f358", feature = "stm32f398"))]
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH2, output_to_pd4, PD4, AF2, ccmr1_output, oc2m, oc2pe);
+
 pwm_channel_pin!(WithPins, TIM2, TIM2_CH3, output_to_pa2, PA2, AF1, ccmr2_output, oc3m, oc3pe);
-#[cfg(feature = "stm32f303")]
 pwm_channel_pin!(WithPins, TIM2, TIM2_CH3, output_to_pa9, PA9, AF10, ccmr2_output, oc3m, oc3pe);
-#[cfg(feature = "stm32f303")]
 pwm_channel_pin!(WithPins, TIM2, TIM2_CH3, output_to_pb10, PB10, AF1, ccmr2_output, oc3m, oc3pe);
-#[cfg(feature = "stm32f303")]
+#[cfg(any(feature = "stm32f303", feature = "stm32f302", feature = "stm32f358", feature = "stm32f398"))]
 pwm_channel_pin!(WithPins, TIM2, TIM2_CH3, output_to_pd7, PD7, AF2, ccmr2_output, oc3m, oc3pe);
+
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH4, output_to_pa3, PA3, AF1, ccmr2_output, oc4m, oc4pe);
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH4, output_to_pa10, PA10, AF1, ccmr2_output, oc4m, oc4pe);
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH4, output_to_pb11, PB11, AF1, ccmr2_output, oc4m, oc4pe);
+#[cfg(any(feature = "stm32f303", feature = "stm32f302", feature = "stm32f358", feature = "stm32f398"))]
+pwm_channel_pin!(WithPins, TIM2, TIM2_CH4, output_to_pd6, PD6, AF2, ccmr2_output, oc4m, oc4pe);
 
 
 // TIM3
