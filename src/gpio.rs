@@ -1130,6 +1130,14 @@ gpio!([
                 AF7: (into_af7, 7,),
                 AF15: (into_af15, 15,),
             ], []),
+            PB11: (pb11, 11, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+                AF3: (into_af3, 3,),
+                AF5: (into_af5, 5,),
+                AF6: (into_af6, 6,),
+                AF7: (into_af7, 7,),
+                AF15: (into_af15, 15,),
+            ], []),
             PB14: (pb14, 14, Input<Floating>, AFRH, [
                 AF1: (into_af1, 1,),
                 AF3: (into_af3, 3,),
