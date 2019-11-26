@@ -464,6 +464,27 @@ macro_rules! gpio {
                             }
                         )*
 
+                        /// Configures the pin to operate as a floating input pin
+                        pub fn into_floating_input(
+                            self,
+                            moder: &mut MODER,
+                            pupdr: &mut PUPDR,
+                        ) -> $PXi<Input<Floating>> {
+                            let offset = 2 * $i;
+
+                            // input mode
+                            moder
+                                .moder()
+                                .modify(|r, w| unsafe { w.bits(r.bits() & !(0b11 << offset)) });
+
+                            // no pull-up or pull-down
+                            pupdr
+                                .pupdr()
+                                .modify(|r, w| unsafe { w.bits(r.bits() & !(0b11 << offset)) });
+
+                            $PXi { _mode: PhantomData }
+                        }
+
                         /// Configures the pin to operate as a pulled down input pin
                         pub fn into_pull_down_input(
                             self,
