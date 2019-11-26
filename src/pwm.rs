@@ -729,3 +729,6 @@ pwm_channel_pin!(WithPins, TIM17, TIM17_CH1, output_to_pb9, PB9, AF1, ccmr1_outp
 pwm_channel_pin!(WithPins, TIM17, TIM17_CH1, output_to_pe1, PE1, AF4, ccmr1_output, oc1m, oc1pe);
 
 pwm_channel_pin!(WithNPins, TIM17, TIM17_CH1, output_to_pa13, PA13, AF1, ccmr1_output, oc1m, oc1pe);
+
+// TIM19
+// TODO: This timer present in stm32f373 and stm32f378
