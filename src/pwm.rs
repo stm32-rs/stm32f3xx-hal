@@ -732,3 +732,7 @@ pwm_channel_pin!(WithNPins, TIM17, TIM17_CH1, output_to_pa13, PA13, AF1, ccmr1_o
 
 // TIM19
 // TODO: This timer present in stm32f373 and stm32f378
+
+
+// TIM20
+// TODO: This timer present in stm32f398
