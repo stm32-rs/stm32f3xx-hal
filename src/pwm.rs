@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use crate::stm32::{TIM2, TIM3, TIM8, TIM15, TIM16, TIM17};
+use crate::stm32::{TIM2, TIM15, TIM16, TIM17};
 use embedded_hal::PwmPin;
 use crate::gpio::{AF1, AF2, AF3, AF4, AF5, AF9, AF10};
 use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA4, PA5, PA6, PA7, PA9, PA10, PA12, PA13, PA14, PA15};
@@ -274,6 +274,8 @@ pwm_channel_pin!(WithPins, TIM2, TIM2_CH4, output_to_pd6, PD6, AF2, ccmr2_output
 #[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378", feature = "stm32f334", feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
 macro_rules! tim3_common {
     () => {
+        use crate::stm32::TIM3;
+
         pub struct TIM3_CH1 {}
         pub struct TIM3_CH2 {}
         pub struct TIM3_CH3 {}
@@ -359,6 +361,8 @@ pwm_channel_pin!(WithPins, TIM3, TIM3_CH3, output_to_pb6, PB6, AF10, ccmr2_outpu
 #[cfg(any(feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
 macro_rules! tim8 {
     () => {
+        use crate::stm32::TIM8;
+
         pub struct TIM8_CH1 {}
         pub struct TIM8_CH2 {}
         pub struct TIM8_CH3 {}
