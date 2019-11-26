@@ -1,21 +1,16 @@
 use core::marker::PhantomData;
 use crate::stm32::{TIM2, TIM15, TIM16, TIM17};
 use embedded_hal::PwmPin;
-use crate::gpio::{AF1, AF2, AF3, AF4, AF5, AF9, AF10};
+use crate::gpio::{AF1, AF2, AF3, AF4, AF5, AF6, AF9, AF10, AF11};
 use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA4, PA5, PA6, PA7, PA8, PA9, PA10, PA11, PA12, PA13, PA14, PA15};
-use crate::gpio::gpiob::{PB0, PB1, PB3, PB4, PB5, PB6, PB7, PB8, PB9, PB10, PB11, PB14, PB15};
-use crate::gpio::gpioc::{PC0, PC1, PC2, PC3, PC4, PC6, PC7, PC8, PC9, PC10, PC11, PC12};
+use crate::gpio::gpiob::{PB0, PB1, PB3, PB4, PB5, PB6, PB7, PB8, PB9, PB10, PB11, PB13, PB14, PB15};
+use crate::gpio::gpioc::{PC0, PC1, PC2, PC3, PC4, PC6, PC7, PC8, PC9, PC10, PC11, PC12, PC13};
 use crate::gpio::gpiod::{PD1, PD3, PD4, PD6, PD7, PD12, PD13, PD14, PD15};
-use crate::gpio::gpioe::{PE0, PE1, PE4, PE6, PE7, PE8, PE9};
-use crate::gpio::gpiof::{PF6, PF9, PF10};
+use crate::gpio::gpioe::{PE0, PE1, PE4, PE6, PE7, PE8, PE9, PE10, PE11, PE12, PE13, PE14};
+use crate::gpio::gpiof::{PF0, PF6, PF9, PF10};
 use crate::rcc::{Clocks};
 use crate::time::Hertz;
 use crate::stm32::{RCC};
-
-//pub struct TIM1_CH1 {}
-//pub struct TIM1_CH2 {}
-//pub struct TIM1_CH3 {}
-//pub struct TIM1_CH4 {}
 
 pub struct TIM2_CH1 {}
 pub struct TIM2_CH2 {}
@@ -224,6 +219,101 @@ macro_rules! pwm_pin_for_pwm_n_channel {
         pwm_pin_for_pwm_channel_private!(WithNPins, $TIMx, $TIMx_CHy, $res, $ccxne, $ccrx, $ccrq);
     }
 }
+
+
+// TIM1
+
+#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+macro_rules! tim1_common {
+    () => {
+        use crate::stm32::TIM1;
+
+        pub struct TIM1_CH1 {}
+        pub struct TIM1_CH2 {}
+        pub struct TIM1_CH3 {}
+        pub struct TIM1_CH4 {}
+
+        pwm_timer_advanced!(
+            tim1,
+            TIM1,
+            u16,
+            apb2enr,
+            pclk2,
+            tim1en,
+            [TIM1_CH1,TIM1_CH2,TIM1_CH3,TIM1_CH4],
+            [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
+        );
+
+        // Channels
+        pwm_pin_for_pwm_n_channel!(TIM1, TIM1_CH1, u16, cc1e, cc1ne, ccr1, ccr);
+        pwm_pin_for_pwm_n_channel!(TIM1, TIM1_CH2, u16, cc2e, cc2ne, ccr2, ccr);
+        pwm_pin_for_pwm_n_channel!(TIM1, TIM1_CH3, u16, cc3e, cc3ne, ccr3, ccr);
+        pwm_pin_for_pwm_channel!(TIM1, TIM1_CH4, u16, cc4e, ccr4, ccr);
+
+        //Pins
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH1, output_to_pa8, PA8, AF6, ccmr1_output, oc1m, oc1pe);
+
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH1, output_to_pa7, PA7, AF6, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH1, output_to_pa11, PA11, AF6, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH1, output_to_pb13, PB13, AF6, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH1, output_to_pc13, PC13, AF4, ccmr1_output, oc1m, oc1pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH2, output_to_pa9, PA9, AF6, ccmr1_output, oc2m, oc2pe);
+
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH2, output_to_pa12, PA12, AF6, ccmr1_output, oc2m, oc2pe);
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH2, output_to_pb0, PB0, AF6, ccmr1_output, oc2m, oc2pe);
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH2, output_to_pb14, PB14, AF6, ccmr1_output, oc2m, oc2pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH3, output_to_pa10, PA10, AF6, ccmr2_output, oc3m, oc3pe);
+
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH3, output_to_pb1, PB1, AF6, ccmr2_output, oc3m, oc3pe);
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH3, output_to_pb15, PB15, AF4, ccmr2_output, oc3m, oc3pe);
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH3, output_to_pf0, PF0, AF6, ccmr2_output, oc3m, oc3pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH3, output_to_pa11, PA11, AF11, ccmr2_output, oc4m, oc4pe);
+    }
+}
+
+#[cfg(any(feature = "stm32f301", feature = "stm32f334", feature = "stm32f398"))]
+macro_rules! tim1_ext1 {
+    () => {
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH1, output_to_pc0, PC0, AF2, ccmr1_output, oc1m, oc1pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH2, output_to_pc1, PC1, AF2, ccmr1_output, oc2m, oc2pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH3, output_to_pc2, PC2, AF2, ccmr2_output, oc3m, oc3pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH4, output_to_pc3, PC3, AF2, ccmr2_output, oc4m, oc4pe);
+    }
+}
+
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
+macro_rules! tim1_ext2 {
+    () => {
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH1, output_to_pe9, PE9, AF2, ccmr1_output, oc1m, oc1pe);
+
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH1, output_to_pe8, PE8, AF2, ccmr1_output, oc1m, oc1pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH2, output_to_pe11, PE11, AF2, ccmr1_output, oc2m, oc2pe);
+
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH2, output_to_pe10, PE10, AF2, ccmr1_output, oc2m, oc2pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH3, output_to_pe13, PE13, AF2, ccmr2_output, oc3m, oc3pe);
+
+        pwm_channel_pin!(WithNPins, TIM1, TIM1_CH3, output_to_pe12, PE12, AF2, ccmr2_output, oc3m, oc3pe);
+
+        pwm_channel_pin!(WithPins, TIM1, TIM1_CH3, output_to_pe14, PE14, AF2, ccmr2_output, oc4m, oc4pe);
+    }
+}
+
+#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+tim1_common!();
+
+#[cfg(any(feature = "stm32f301", feature = "stm32f334", feature = "stm32f398"))]
+tim1_ext1!();
+
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
+tim1_ext2!();
 
 
 // TIM2
