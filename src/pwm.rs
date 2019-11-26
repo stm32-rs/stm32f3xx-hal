@@ -4,7 +4,7 @@ use embedded_hal::PwmPin;
 use crate::gpio::{AF1, AF2, AF3, AF4, AF5, AF9, AF10};
 use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA4, PA5, PA6, PA7, PA8, PA9, PA10, PA11, PA12, PA13, PA14, PA15};
 use crate::gpio::gpiob::{PB0, PB1, PB3, PB4, PB5, PB6, PB7, PB8, PB9, PB10, PB11, PB14, PB15};
-use crate::gpio::gpioc::{PC0, PC1, PC2, PC3, PC6, PC7, PC8, PC9, PC10, PC11, PC12};
+use crate::gpio::gpioc::{PC0, PC1, PC2, PC3, PC4, PC6, PC7, PC8, PC9, PC10, PC11, PC12};
 use crate::gpio::gpiod::{PD1, PD3, PD4, PD6, PD7, PD12, PD13, PD14, PD15};
 use crate::gpio::gpioe::{PE0, PE1, PE4, PE6, PE7, PE8, PE9};
 use crate::gpio::gpiof::{PF6, PF9, PF10};
@@ -565,6 +565,45 @@ macro_rules! tim12 {
 // TODO: This timer is also present in stm32f378
 #[cfg(feature = "stm32f373")]
 tim12!();
+
+
+// TIM13
+
+#[cfg(feature = "stm32f373")]
+macro_rules! tim13 {
+    () => {
+        use crate::stm32::TIM13;
+
+        pub struct TIM13_CH1 {}
+        pub struct TIM13_CH2 {}
+        pub struct TIM13_CH3 {}
+        pub struct TIM13_CH4 {}
+
+        pwm_timer_basic!(
+            tim13,
+            TIM13,
+            u16,
+            apb1enr,
+            pclk1,
+            tim13en,
+            [TIM13_CH1],
+            [PwmChannel]
+        );
+
+        // Channels
+        pwm_pin_for_pwm_channel!(TIM13, TIM13_CH1, u16, cc1e, ccr1, ccr);
+
+        // Pins
+        pwm_channel_pin!(WithPins, TIM13, TIM13_CH1, output_to_pa6, PA6, AF9, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithPins, TIM13, TIM13_CH1, output_to_pa9, PA9, AF2, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithPins, TIM13, TIM13_CH1, output_to_pb3, PB3, AF9, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithPins, TIM13, TIM13_CH1, output_to_pc4, PC4, AF2, ccmr1_output, oc1m, oc1pe);
+    }
+}
+
+// TODO: This timer is also present in stm32f378
+#[cfg(feature = "stm32f373")]
+tim13!();
 
 
 // TIM15
