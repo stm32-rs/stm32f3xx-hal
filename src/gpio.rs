@@ -554,17 +554,22 @@ macro_rules! gpio {
                         }
 
                         /// Configures the pin to operate as analog, with disabled schmitt trigger.
-                        /// This mode is suitable when the pin is connected to the DAC.
+                        /// This mode is suitable when the pin is connected to the DAC or ADC.
                         pub fn into_analog(
                             self,
                             moder: &mut MODER,
+                            pupdr: &mut PUPDR,
                         ) -> $PXi<Analog> {
                             let offset = 2 * $i;
 
+                            // floating - this is necessary for analog mode
+                            pupdr.pupdr().modify(|r, w| unsafe {
+                                w.bits(r.bits() & !(0b11 << offset) | (0b00 << offset))
+                            });
+
                             // analog mode
-                            let mode = 0b11;
                             moder.moder().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b11 << offset)) | (mode << offset))
+                                w.bits((r.bits() & !(0b11 << offset)) | (0b11 << offset))
                             });
 
                             $PXi { _mode: PhantomData }
