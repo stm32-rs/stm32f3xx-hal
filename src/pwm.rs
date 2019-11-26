@@ -2,8 +2,8 @@ use core::marker::PhantomData;
 use crate::stm32::{TIM2, TIM3, TIM8, TIM16};
 use embedded_hal::PwmPin;
 use crate::gpio::{AF1, AF2, AF4, AF10};
-use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA5, PA6, PA9, PA10, PA12, PA15};
-use crate::gpio::gpiob::{PB1, PB3, PB4, PB8, PB9, PB10, PB11};
+use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA5, PA6, PA9, PA10, PA12, PA13, PA15};
+use crate::gpio::gpiob::{PB1, PB3, PB4, PB6, PB8, PB9, PB10, PB11};
 use crate::gpio::gpioc::{PC8};
 use crate::gpio::gpiod::{PD3, PD4, PD6, PD7};
 use crate::gpio::gpioe::{PE0, PE4};
@@ -341,7 +341,6 @@ pwm_channel_pin!(WithNPins, TIM8, TIM8_CH3, output_to_pb1, PB1, AF4, ccmr2_outpu
 
 // TIM16
 
-#[cfg(feature = "stm32f303")]
 pwm_timer_with_break!(
     tim16,
     TIM16,
@@ -354,17 +353,15 @@ pwm_timer_with_break!(
 );
 
 // Channels
-#[cfg(feature = "stm32f303")]
 pwm_pin_for_pwm_n_channel!(TIM16, TIM16_CH1, u16, cc1e, cc1ne, ccr1, ccr1);
 
 // Pins
-#[cfg(feature = "stm32f303")]
 pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pa9, PA6, AF1, ccmr1_output, oc1m, oc1pe);
-#[cfg(feature = "stm32f303")]
 pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pa12, PA12, AF1, ccmr1_output, oc1m, oc1pe);
-#[cfg(feature = "stm32f303")]
 pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pb4, PB4, AF1, ccmr1_output, oc1m, oc1pe);
-#[cfg(feature = "stm32f303")]
 pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pb8, PB8, AF1, ccmr1_output, oc1m, oc1pe);
-#[cfg(feature = "stm32f303")]
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
 pwm_channel_pin!(WithPins, TIM16, TIM16_CH1, output_to_pe0, PE0, AF4, ccmr1_output, oc1m, oc1pe);
+
+pwm_channel_pin!(WithNPins, TIM16, TIM16_CH1, output_to_pa13, PA13, AF1, ccmr1_output, oc1m, oc1pe);
+pwm_channel_pin!(WithNPins, TIM16, TIM16_CH1, output_to_pb6, PB6, AF1, ccmr1_output, oc1m, oc1pe);
