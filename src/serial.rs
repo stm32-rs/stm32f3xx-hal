@@ -24,7 +24,10 @@ use crate::gpio::gpiob::{PB10, PB6, PB7};
 use crate::gpio::gpioc::{PC10, PC11, PC4, PC5};
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f334",
@@ -35,7 +38,10 @@ use crate::gpio::gpioc::{PC10, PC11, PC4, PC5};
 use crate::gpio::gpiod::{PD5, PD6, PD8, PD9};
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f328",
@@ -83,7 +89,10 @@ unsafe impl TxPin<USART1> for PB6<AF7> {}
 unsafe impl TxPin<USART1> for PC4<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f328",
@@ -97,7 +106,10 @@ unsafe impl RxPin<USART1> for PB7<AF7> {}
 unsafe impl RxPin<USART1> for PC5<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f328",
@@ -111,7 +123,10 @@ unsafe impl TxPin<USART2> for PA2<AF7> {}
 // unsafe impl TxPin<USART2> for PB3<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f334",
@@ -126,7 +141,10 @@ unsafe impl RxPin<USART2> for PA3<AF7> {}
 // unsafe impl RxPin<USART2> for PB4<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f334",
@@ -140,7 +158,10 @@ unsafe impl TxPin<USART3> for PB10<AF7> {}
 unsafe impl TxPin<USART3> for PC10<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f334",
@@ -164,7 +185,10 @@ unsafe impl RxPin<USART3> for PB11<AF7> {}
 unsafe impl RxPin<USART3> for PC11<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f334",
@@ -175,7 +199,10 @@ unsafe impl RxPin<USART3> for PC11<AF7> {}
 unsafe impl RxPin<USART3> for PD9<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f328",

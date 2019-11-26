@@ -95,6 +95,7 @@ macro_rules! gpio {
     ([
         $({
             devices: [$($device:expr,)+],
+            devices_except: [$($device_except:expr,)*],
             GPIO: $GPIOX:ident,
             gpio: $gpiox:ident,
             gpio_mapped: $gpioy:ident,
@@ -111,17 +112,21 @@ macro_rules! gpio {
         },)+
     ]) => {
         $(
-            #[cfg(any(
+            #[cfg(all(any(
                 $(feature = $device,)+
-            ))]
+            ), not(any(
+                $(feature = $device_except,)*
+            ))))]
             use crate::stm32::$GPIOX;
         )+
 
         pub enum Gpio {
             $(
-                #[cfg(any(
+                #[cfg(all(any(
                     $(feature = $device,)+
-                ))]
+                ), not(any(
+                    $(feature = $device_except,)*
+                ))))]
                 $GPIOX,
             )+
         }
@@ -141,9 +146,11 @@ macro_rules! gpio {
                 unsafe {
                     match &self.gpio {
                         $(
-                            #[cfg(any(
+                            #[cfg(all(any(
                                 $(feature = $device,)+
-                            ))]
+                            ), not(any(
+                                $(feature = $device_except,)*
+                            ))))]
                             Gpio::$GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << self.i)),
                         )+
                     }
@@ -156,9 +163,11 @@ macro_rules! gpio {
                 unsafe {
                     match &self.gpio {
                         $(
-                            #[cfg(any(
+                            #[cfg(all(any(
                                 $(feature = $device,)+
-                            ))]
+                            ), not(any(
+                                $(feature = $device_except,)*
+                            ))))]
                             Gpio::$GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + self.i))),
                         )+
                     }
@@ -180,9 +189,11 @@ macro_rules! gpio {
                 Ok(unsafe {
                     match &self.gpio {
                         $(
-                            #[cfg(any(
+                            #[cfg(all(any(
                                 $(feature = $device,)+
-                            ))]
+                            ), not(any(
+                                $(feature = $device_except,)*
+                            ))))]
                             Gpio::$GPIOX => (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0,
                         )+
                     }
@@ -201,9 +212,11 @@ macro_rules! gpio {
                 Ok(unsafe {
                     match &self.gpio {
                         $(
-                            #[cfg(any(
+                            #[cfg(all(any(
                                 $(feature = $device,)+
-                            ))]
+                            ), not(any(
+                                $(feature = $device_except,)*
+                            ))))]
                             Gpio::$GPIOX => (*$GPIOX::ptr()).odr.read().bits() & (1 << self.i) == 0,
                         )+
                     }
@@ -216,9 +229,11 @@ macro_rules! gpio {
 
         $(
             /// GPIO
-            #[cfg(any(
+            #[cfg(all(any(
                 $(feature = $device,)+
-            ))]
+            ), not(any(
+                $(feature = $device_except,)*
+            ))))]
             pub mod $gpiox {
                 use core::marker::PhantomData;
 
@@ -658,6 +673,7 @@ gpio!([
             "stm32f358",
             "stm32f398",
         ],
+        devices_except: [],
         GPIO: GPIOA,
         gpio: gpioa,
         gpio_mapped: gpioa,
@@ -882,6 +898,7 @@ gpio!([
             "stm32f378",
             "stm32f398",
         ],
+        devices_except: [],
         GPIO: GPIOB,
         gpio: gpiob,
         gpio_mapped: gpiob,
@@ -1086,6 +1103,7 @@ gpio!([
         devices: [
             "stm32f373",
         ],
+        devices_except: [],
         GPIO: GPIOB,
         gpio: gpiob,
         gpio_mapped: gpiob,
@@ -1228,6 +1246,7 @@ gpio!([
             "stm32f358",
             "stm32f398",
         ],
+        devices_except: [],
         GPIO: GPIOC,
         gpio: gpioc,
         gpio_mapped: gpioc,
@@ -1344,6 +1363,7 @@ gpio!([
             "stm32f302",
             "stm32f303",
         ],
+        devices_except: [],
         GPIO: GPIOC,
         gpio: gpioc,
         gpio_mapped: gpiob,
@@ -1458,9 +1478,8 @@ gpio!([
     {
         devices: [
             "stm32f301",
-            "stm32f303x6",
-            "stm32f303x8",
         ],
+        devices_except: [],
         GPIO: GPIOD,
         gpio: gpiod,
         gpio_mapped: gpioc,
@@ -1470,15 +1489,37 @@ gpio!([
         pins: [
             PD2: (pd2, 2, Input<Floating>, AFRL, [
                 AF1: (into_af1, 1,),
-            ], [
-                AF2: (into_af2, 2, ["stm32f303x6", "stm32f303x8",],),
-            ]),
+            ], []),
+        ],
+    },
+    {
+        devices: [
+            "stm32f303",
+        ],
+        devices_except: [
+            "stm32f303xb",
+            "stm32f303xc",
+            "stm32f303xd",
+            "stm32f303xe",
+        ],
+        GPIO: GPIOD,
+        gpio: gpiod,
+        gpio_mapped: gpiob,
+        gpio_mapped_ioenr: iopden,
+        gpio_mapped_iorst: iopdrst,
+        partially_erased_pin: PDx,
+        pins: [
+            PD2: (pd2, 2, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+            ], []),
         ],
     },
     {
         devices: [
             "stm32f334",
         ],
+        devices_except: [],
         GPIO: GPIOD,
         gpio: gpiod,
         gpio_mapped: gpioc,
@@ -1521,6 +1562,7 @@ gpio!([
             "stm32f358",
             "stm32f398",
         ],
+        devices_except: [],
         GPIO: GPIOD,
         gpio: gpiod,
         gpio_mapped: gpiob,
@@ -1640,6 +1682,7 @@ gpio!([
             "stm32f303xd",
             "stm32f303xe",
         ],
+        devices_except: [],
         GPIO: GPIOE,
         gpio: gpioe,
         gpio_mapped: gpiob,
@@ -1783,6 +1826,7 @@ gpio!([
             "stm32f378",
             "stm32f398",
         ],
+        devices_except: [],
         GPIO: GPIOE,
         gpio: gpioe,
         gpio_mapped: gpioc,
@@ -1904,9 +1948,8 @@ gpio!([
     {
         devices: [
             "stm32f301",
-            "stm32f303x6",
-            "stm32f303x8",
         ],
+        devices_except: [],
         GPIO: GPIOF,
         gpio: gpiof,
         gpio_mapped: gpioc,
@@ -1915,22 +1958,44 @@ gpio!([
         partially_erased_pin: PFx,
         pins: [
             PF0: (pf0, 0, Input<Floating>, AFRL, [
+                AF4: (into_af4, 4,),
+                AF5: (into_af5, 5,),
                 AF6: (into_af6, 6,),
-            ], [
-                AF4: (into_af4, 4, ["stm32f301",],),
-                AF5: (into_af5, 5, ["stm32f301",],),
-            ]),
+            ], []),
             PF1: (pf1, 1, Input<Floating>, AFRL, [
-            ], [
-                AF4: (into_af4, 4, ["stm32f301",],),
-                AF5: (into_af5, 5, ["stm32f301",],),
-            ]),
+                AF4: (into_af4, 4,),
+                AF5: (into_af5, 5,),
+            ], []),
+        ],
+    },
+    {
+        devices: [
+            "stm32f303",
+        ],
+        devices_except: [
+            "stm32f303xb",
+            "stm32f303xc",
+            "stm32f303xd",
+            "stm32f303xe",
+        ],
+        GPIO: GPIOF,
+        gpio: gpiof,
+        gpio_mapped: gpiob,
+        gpio_mapped_ioenr: iopfen,
+        gpio_mapped_iorst: iopfrst,
+        partially_erased_pin: PFx,
+        pins: [
+            PF0: (pf0, 0, Input<Floating>, AFRL, [
+                AF6: (into_af6, 6,),
+            ], []),
+            PF1: (pf1, 1, Input<Floating>, AFRL, [], []),
         ],
     },
     {
         devices: [
             "stm32f302",
         ],
+        devices_except: [],
         GPIO: GPIOF,
         gpio: gpiof,
         gpio_mapped: gpiob,
@@ -1971,6 +2036,7 @@ gpio!([
         devices: [
             "stm32f334",
         ],
+        devices_except: [],
         GPIO: GPIOF,
         gpio: gpiof,
         gpio_mapped: gpioc,
@@ -1997,6 +2063,7 @@ gpio!([
             "stm32f303xd",
             "stm32f303xe",
         ],
+        devices_except: [],
         GPIO: GPIOF,
         gpio: gpiof,
         gpio_mapped: gpiob,
@@ -2065,6 +2132,7 @@ gpio!([
         devices: [
             "stm32f373",
         ],
+        devices_except: [],
         GPIO: GPIOF,
         gpio: gpiof,
         gpio_mapped: gpioc,
@@ -2111,6 +2179,7 @@ gpio!([
             "stm32f378",
             "stm32f398",
         ],
+        devices_except: [],
         GPIO: GPIOF,
         gpio: gpiof,
         gpio_mapped: gpioc,
@@ -2213,8 +2282,10 @@ gpio!([
     },
     {
         devices: [
-            "stm32f303",
+            "stm32f303xd",
+            "stm32f303xe",
         ],
+        devices_except: [],
         GPIO: GPIOG,
         gpio: gpiog,
         gpio_mapped: gpiob,
@@ -2222,28 +2293,82 @@ gpio!([
         gpio_mapped_iorst: iopgrst,
         partially_erased_pin: PGx,
         pins: [
-            PG0: (pg0, 0, Input<Floating>, AFRL, [], []),
-            PG1: (pg1, 1, Input<Floating>, AFRL, [], []),
-            PG2: (pg2, 2, Input<Floating>, AFRL, [], []),
-            PG3: (pg3, 3, Input<Floating>, AFRL, [], []),
-            PG4: (pg4, 4, Input<Floating>, AFRL, [], []),
-            PG5: (pg5, 5, Input<Floating>, AFRL, [], []),
-            PG6: (pg6, 6, Input<Floating>, AFRL, [], []),
-            PG7: (pg7, 7, Input<Floating>, AFRL, [], []),
-            PG8: (pg8, 8, Input<Floating>, AFRH, [], []),
-            PG9: (pg9, 9, Input<Floating>, AFRH, [], []),
-            PG10: (pg10, 10, Input<Floating>, AFRH, [], []),
-            PG11: (pg11, 11, Input<Floating>, AFRH, [], []),
-            PG12: (pg12, 12, Input<Floating>, AFRH, [], []),
-            PG13: (pg13, 13, Input<Floating>, AFRH, [], []),
-            PG14: (pg14, 14, Input<Floating>, AFRH, [], []),
-            PG15: (pg15, 15, Input<Floating>, AFRH, [], []),
+            PG0: (pg0, 0, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG1: (pg1, 1, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG2: (pg2, 2, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG3: (pg3, 3, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG4: (pg4, 4, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG5: (pg5, 5, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG6: (pg6, 6, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG7: (pg7, 7, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG8: (pg8, 8, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+            ], []),
+            PG9: (pg9, 9, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG10: (pg10, 10, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG11: (pg11, 11, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG12: (pg12, 12, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG13: (pg13, 13, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG14: (pg14, 14, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PG15: (pg15, 15, Input<Floating>, AFRH, [
+                AF1: (into_af1, 1,),
+            ], []),
         ],
     },
     {
         devices: [
-            "stm32f303",
+            "stm32f303xd",
+            "stm32f303xe",
         ],
+        devices_except: [],
         GPIO: GPIOH,
         gpio: gpioh,
         gpio_mapped: gpiob,
@@ -2251,22 +2376,20 @@ gpio!([
         gpio_mapped_iorst: iophrst,
         partially_erased_pin: PHx,
         pins: [
-            PH0: (ph0, 0, Input<Floating>, AFRL, [], []),
-            PH1: (ph1, 1, Input<Floating>, AFRL, [], []),
-            PH2: (ph2, 2, Input<Floating>, AFRL, [], []),
-            PH3: (ph3, 3, Input<Floating>, AFRL, [], []),
-            PH4: (ph4, 4, Input<Floating>, AFRL, [], []),
-            PH5: (ph5, 5, Input<Floating>, AFRL, [], []),
-            PH6: (ph6, 6, Input<Floating>, AFRL, [], []),
-            PH7: (ph7, 7, Input<Floating>, AFRL, [], []),
-            PH8: (ph8, 8, Input<Floating>, AFRH, [], []),
-            PH9: (ph9, 9, Input<Floating>, AFRH, [], []),
-            PH10: (ph10, 10, Input<Floating>, AFRH, [], []),
-            PH11: (ph11, 11, Input<Floating>, AFRH, [], []),
-            PH12: (ph12, 12, Input<Floating>, AFRH, [], []),
-            PH13: (ph13, 13, Input<Floating>, AFRH, [], []),
-            PH14: (ph14, 14, Input<Floating>, AFRH, [], []),
-            PH15: (ph15, 15, Input<Floating>, AFRH, [], []),
+            PH0: (ph0, 0, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PH1: (ph1, 1, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF2: (into_af2, 2,),
+                AF12: (into_af12, 12,),
+            ], []),
+            PH2: (ph2, 2, Input<Floating>, AFRL, [
+                AF1: (into_af1, 1,),
+                AF12: (into_af12, 12,),
+            ], []),
         ],
     },
 ]);

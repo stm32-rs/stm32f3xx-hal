@@ -77,7 +77,7 @@ opt-level = "s"
 
 [[example]]
 name = "toggle"
-required-features = ["rt", "stm32f303"]
+required-features = ["rt", "stm32f303xc"]
 
 [[example]]
 name = "usb_serial"
