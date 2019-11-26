@@ -34,7 +34,7 @@ pub struct PwmChannel<X, T> {
 }
 
 macro_rules! pwm_timer_private {
-    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
+    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $apbxrstr:ident, $pclkz:ident, $timxrst:ident, $timxen:ident, $enable_break_timer:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer
             // We use unsafe here to abstract away this implementation detail
@@ -42,6 +42,8 @@ macro_rules! pwm_timer_private {
             // to TIMx should ever modify this bit.
             unsafe {
                 &(*RCC::ptr()).$apbxenr.modify(|_, w| w.$timxen().set_bit());
+                (*RCC::ptr()).$apbxrstr.modify(|_, w| w.$timxrst().set_bit());
+                (*RCC::ptr()).$apbxrstr.modify(|_, w| w.$timxrst().clear_bit());
             }
 
             // enable auto reload preloader
@@ -62,13 +64,6 @@ macro_rules! pwm_timer_private {
             // Make the settings reload immediately
             tim.egr.write(|w| w.ug().set_bit());
 
-            // Reset the slave/master config
-            $reset_slave_master_config(&tim);
-
-            // TODO: Is this needed?
-            // reset
-            // tim.cr2.write(|w| w);
-
             // Enable outputs (STM32 Break Timer Specific)
             $enable_break_timer(&tim);
 
@@ -84,15 +79,16 @@ macro_rules! pwm_timer_private {
 }
 
 macro_rules! pwm_timer_basic {
-    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
+    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $apb1rstr:ident, $pclkz:ident, $timxrst:ident, $timxen:ident, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
             $res,
             $apbxenr,
+            $apb1rstr,
             $pclkz,
+            $timxrst,
             $timxen,
-            |_| (),
             |_| (),
             [$($TIMx_CHy),+],
             [$($x),+]
@@ -101,33 +97,17 @@ macro_rules! pwm_timer_basic {
 }
 
 macro_rules! pwm_timer_with_break {
-    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
+    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $apbxrstr:ident, $pclkz:ident, $timxrst:ident, $timxen:ident, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         pwm_timer_private!(
             $timx,
             $TIMx,
             $res,
             $apbxenr,
+            $apbxrstr,
             $pclkz,
+            $timxrst,
             $timxen,
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
-            |_| (),
-            [$($TIMx_CHy),+],
-            [$($x),+]
-        );
-    }
-}
-
-macro_rules! pwm_timer_advanced {
-    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
-        pwm_timer_private!(
-            $timx,
-            $TIMx,
-            $res,
-            $apbxenr,
-            $pclkz,
-            $timxen,
-            |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
-            |tim: &$TIMx| tim.smcr.write(|w| w),
             [$($TIMx_CHy),+],
             [$($x),+]
         );
@@ -230,12 +210,14 @@ macro_rules! tim1_common {
         pub struct TIM1_CH3 {}
         pub struct TIM1_CH4 {}
 
-        pwm_timer_advanced!(
+        pwm_timer_with_break!(
             tim1,
             TIM1,
             u16,
             apb2enr,
+            apb2rstr,
             pclk2,
+            tim1rst,
             tim1en,
             [TIM1_CH1,TIM1_CH2,TIM1_CH3,TIM1_CH4],
             [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
@@ -320,7 +302,9 @@ pwm_timer_basic!(
     TIM2,
     u32,
     apb1enr,
+    apb1rstr,
     pclk1,
+    tim2rst,
     tim2en,
     [TIM2_CH1,TIM2_CH2,TIM2_CH3,TIM2_CH4],
     [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
@@ -374,7 +358,9 @@ macro_rules! tim3_common {
             TIM3,
             u16,
             apb1enr,
+            apb1rstr,
             pclk1,
+            tim3rst,
             tim3en,
             [TIM3_CH1,TIM3_CH2,TIM3_CH3,TIM3_CH4],
             [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
@@ -461,7 +447,9 @@ macro_rules! tim4 {
             TIM4,
             u16,
             apb1enr,
+            apb1rstr,
             pclk1,
+            tim4rst,
             tim4en,
             [TIM4_CH1,TIM4_CH2,TIM4_CH3,TIM4_CH4],
             [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
@@ -513,7 +501,9 @@ macro_rules! tim5 {
             TIM5,
             u32,
             apb1enr,
+            apb1rstr,
             pclk1,
+            tim5rst,
             tim5en,
             [TIM5_CH1,TIM5_CH2,TIM5_CH3,TIM5_CH4],
             [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
@@ -561,12 +551,14 @@ macro_rules! tim8 {
         pub struct TIM8_CH3 {}
         pub struct TIM8_CH4 {}
 
-        pwm_timer_advanced!(
+        pwm_timer_with_break!(
             tim8,
             TIM8,
             u16,
             apb2enr,
+            apb2rstr,
             pclk2,
+            tim8rst,
             tim8en,
             [TIM8_CH1,TIM8_CH2,TIM8_CH3,TIM8_CH4],
             [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
@@ -628,7 +620,9 @@ macro_rules! tim12 {
             TIM12,
             u16,
             apb1enr,
+            apb1rstr,
             pclk1,
+            tim12rst,
             tim12en,
             [TIM12_CH1,TIM12_CH2],
             [PwmChannel,PwmChannel]
@@ -671,7 +665,9 @@ macro_rules! tim13 {
             TIM13,
             u16,
             apb1enr,
+            apb1rstr,
             pclk1,
+            tim13rst,
             tim13en,
             [TIM13_CH1],
             [PwmChannel]
@@ -706,7 +702,9 @@ macro_rules! tim14 {
             TIM14,
             u16,
             apb1enr,
+            apb1rstr,
             pclk1,
+            tim14rst,
             tim14en,
             [TIM14_CH1],
             [PwmChannel]
@@ -735,7 +733,9 @@ pwm_timer_with_break!(
     TIM15,
     u16,
     apb2enr,
+    apb2rstr,
     pclk2,
+    tim15rst,
     tim15en,
     [TIM15_CH1,TIM15_CH2],
     [PwmChannel,PwmChannel]
@@ -771,7 +771,9 @@ pwm_timer_with_break!(
     TIM16,
     u16,
     apb2enr,
+    apb2rstr,
     pclk2,
+    tim16rst,
     tim16en,
     [TIM16_CH1],
     [PwmChannel]
@@ -799,7 +801,9 @@ pwm_timer_with_break!(
     TIM17,
     u16,
     apb2enr,
+    apb2rstr,
     pclk2,
+    tim17rst,
     tim17en,
     [TIM17_CH1],
     [PwmChannel]
@@ -835,7 +839,9 @@ macro_rules! tim19 {
             TIM19,
             u16,
             apb2enr,
+            apb2rstr,
             pclk2,
+            tim19rst,
             tim19en,
             [TIM19_CH1,TIM19_CH2,TIM19_CH3,TIM19_CH4],
             [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
@@ -888,7 +894,9 @@ macro_rules! tim20 {
             TIM20,
             u16,
             apb2enr,
+            apb2rstr,
             pclk2,
+            tim20rst,
             tim20en,
             [TIM20_CH1,TIM20_CH2,TIM20_CH3,TIM20_CH4],
             [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
