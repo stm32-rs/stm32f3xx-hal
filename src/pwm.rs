@@ -5,7 +5,7 @@ use crate::gpio::{AF1, AF2, AF3, AF4, AF5, AF6, AF9, AF10, AF11};
 use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA4, PA5, PA6, PA7, PA8, PA9, PA10, PA11, PA12, PA13, PA14, PA15};
 use crate::gpio::gpiob::{PB0, PB1, PB3, PB4, PB5, PB6, PB7, PB8, PB9, PB10, PB11, PB13, PB14, PB15};
 use crate::gpio::gpioc::{PC0, PC1, PC2, PC3, PC4, PC6, PC7, PC8, PC9, PC10, PC11, PC12, PC13};
-use crate::gpio::gpiod::{PD1, PD3, PD4, PD6, PD7, PD12, PD13, PD14, PD15};
+use crate::gpio::gpiod::{PD0, PD1, PD3, PD4, PD6, PD7, PD12, PD13, PD14, PD15};
 use crate::gpio::gpioe::{PE0, PE1, PE4, PE6, PE7, PE8, PE9, PE10, PE11, PE12, PE13, PE14};
 use crate::gpio::gpiof::{PF0, PF6, PF9, PF10};
 use crate::rcc::{Clocks};
@@ -820,9 +820,58 @@ pwm_channel_pin!(WithPins, TIM17, TIM17_CH1, output_to_pe1, PE1, AF4, ccmr1_outp
 
 pwm_channel_pin!(WithNPins, TIM17, TIM17_CH1, output_to_pa13, PA13, AF1, ccmr1_output, oc1m, oc1pe);
 
-// TIM19
-// TODO: This timer present in stm32f373 and stm32f378
 
+// TIM19
+
+#[cfg(feature = "stm32f373")]
+macro_rules! tim19 {
+    () => {
+        use crate::stm32::TIM19;
+
+        pub struct TIM19_CH1 {}
+        pub struct TIM19_CH2 {}
+        pub struct TIM19_CH3 {}
+        pub struct TIM19_CH4 {}
+
+        pwm_timer_basic!(
+            tim19,
+            TIM19,
+            u16,
+            apb2enr,
+            pclk2,
+            tim19en,
+            [TIM19_CH1,TIM19_CH2,TIM19_CH3,TIM19_CH4],
+            [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
+        );
+
+        // Channels
+        pwm_pin_for_pwm_channel!(TIM19, TIM19_CH1, u16, cc1e, ccr1, ccr);
+        pwm_pin_for_pwm_channel!(TIM19, TIM19_CH2, u16, cc2e, ccr2, ccr);
+        pwm_pin_for_pwm_channel!(TIM19, TIM19_CH3, u16, cc3e, ccr3, ccr);
+        pwm_pin_for_pwm_channel!(TIM19, TIM19_CH4, u16, cc4e, ccr4, ccr);
+
+        // Pins
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH1, output_to_pa0, PA0, AF11, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH1, output_to_pb6, PB6, AF11, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH1, output_to_pc10, PC10, AF2, ccmr1_output, oc1m, oc1pe);
+
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH2, output_to_pa1, PA1, AF11, ccmr1_output, oc2m, oc2pe);
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH2, output_to_pb7, PB7, AF11, ccmr1_output, oc2m, oc2pe);
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH2, output_to_pc11, PC11, AF2, ccmr1_output, oc2m, oc2pe);
+
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH3, output_to_pa2, PA2, AF11, ccmr2_output, oc3m, oc3pe);
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH3, output_to_pb8, PB8, AF11, ccmr2_output, oc3m, oc3pe);
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH3, output_to_pc12, PC12, AF2, ccmr2_output, oc3m, oc3pe);
+
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH4, output_to_pa3, PA3, AF11, ccmr2_output, oc4m, oc4pe);
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH4, output_to_pb9, PB9, AF11, ccmr2_output, oc4m, oc4pe);
+        pwm_channel_pin!(WithPins, TIM19, TIM19_CH4, output_to_pd0, PD0, AF2, ccmr2_output, oc4m, oc4pe);
+    }
+}
+
+// TODO: This timer is also present in stm32f378
+#[cfg(feature = "stm32f373")]
+tim19!();
 
 // TIM20
 // TODO: This timer present in stm32f398
