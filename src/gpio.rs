@@ -43,6 +43,9 @@ pub struct PushPull;
 /// Open drain output (type state)
 pub struct OpenDrain;
 
+/// Analog mode (type state)
+pub struct Analog;
+
 /// Alternate function 0 (type state)
 pub struct AF0;
 
@@ -235,7 +238,7 @@ macro_rules! gpio {
                 #[allow(unused_imports)]
                 use super::{AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF13, AF14, AF15};
                 use super::{
-                    Floating, GpioExt, Input, OpenDrain, Output,
+                    Floating, GpioExt, Input, OpenDrain, Output, Analog,
                     PullDown, PullUp, PushPull,
                     PXx, Gpio,
                 };
@@ -567,6 +570,28 @@ macro_rules! gpio {
                             otyper
                                 .otyper()
                                 .modify(|r, w| unsafe { w.bits(r.bits() & !(0b1 << $i)) });
+
+                            $PXi { _mode: PhantomData }
+                        }
+
+                        /// Configures the pin to operate as analog, with disabled schmitt trigger.
+                        /// This mode is suitable when the pin is connected to the DAC or ADC.
+                        pub fn into_analog(
+                            self,
+                            moder: &mut MODER,
+                            pupdr: &mut PUPDR,
+                        ) -> $PXi<Analog> {
+                            let offset = 2 * $i;
+
+                            // floating - this is necessary for analog mode
+                            pupdr.pupdr().modify(|r, w| unsafe {
+                                w.bits(r.bits() & !(0b11 << offset) | (0b00 << offset))
+                            });
+
+                            // analog mode
+                            moder.moder().modify(|r, w| unsafe {
+                                w.bits((r.bits() & !(0b11 << offset)) | (0b11 << offset))
+                            });
 
                             $PXi { _mode: PhantomData }
                         }
