@@ -8,7 +8,10 @@ use crate::gpio::gpiob::{PB6, PB7, PB8, PB9};
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f334",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f358",
@@ -54,7 +57,10 @@ unsafe impl SclPin<I2C2> for PF1<AF4> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f334",
-    feature = "stm32f303",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
     feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f358",
