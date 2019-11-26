@@ -34,7 +34,7 @@ pub struct PwmChannel<X, T> {
 }
 
 macro_rules! pwm_timer_private {
-    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, $trigger_update_event:expr, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
+    ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $pclkz:ident, $timxen:ident, $enable_break_timer:expr, $reset_slave_master_config:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer
             // We use unsafe here to abstract away this implementation detail
@@ -59,8 +59,8 @@ macro_rules! pwm_timer_private {
                 (clocks.$pclkz().0 / res as u32 / freq.0) as u16
             ));
 
-            // Make the settings reload immediately for TIM1/8
-            $trigger_update_event(&tim);
+            // Make the settings reload immediately
+            tim.egr.write(|w| w.ug().set_bit());
 
             // Reset the slave/master config
             $reset_slave_master_config(&tim);
@@ -94,7 +94,6 @@ macro_rules! pwm_timer_basic {
             $timxen,
             |_| (),
             |_| (),
-            |_| (),
             [$($TIMx_CHy),+],
             [$($x),+]
         );
@@ -110,7 +109,6 @@ macro_rules! pwm_timer_with_break {
             $apbxenr,
             $pclkz,
             $timxen,
-            |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
             |_| (),
             [$($TIMx_CHy),+],
@@ -128,7 +126,6 @@ macro_rules! pwm_timer_advanced {
             $apbxenr,
             $pclkz,
             $timxen,
-            |tim: &$TIMx| tim.egr.write(|w| w.ug().set_bit()),
             |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
             |tim: &$TIMx| tim.smcr.write(|w| w),
             [$($TIMx_CHy),+],
