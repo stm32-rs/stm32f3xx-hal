@@ -70,8 +70,9 @@ macro_rules! pwm_timer_private {
             // Reset the slave/master config
             $reset_slave_master_config(&tim);
 
+            // TODO: Is this needed?
             // reset
-            tim.cr2.write(|w| w);
+            // tim.cr2.write(|w| w);
 
             // Enable outputs (STM32 Break Timer Specific)
             $enable_break_timer(&tim);
