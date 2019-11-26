@@ -524,6 +524,49 @@ macro_rules! tim8 {
 tim8!();
 
 
+// TIM12
+
+#[cfg(feature = "stm32f373")]
+macro_rules! tim12 {
+    () => {
+        use crate::stm32::TIM12;
+
+        pub struct TIM12_CH1 {}
+        pub struct TIM12_CH2 {}
+        pub struct TIM12_CH3 {}
+        pub struct TIM12_CH4 {}
+
+        pwm_timer_basic!(
+            tim12,
+            TIM12,
+            u16,
+            apb1enr,
+            pclk1,
+            tim12en,
+            [TIM12_CH1,TIM12_CH2],
+            [PwmChannel,PwmChannel]
+        );
+
+        // Channels
+        pwm_pin_for_pwm_channel!(TIM12, TIM12_CH1, u16, cc1e, ccr1, ccr);
+        pwm_pin_for_pwm_channel!(TIM12, TIM12_CH2, u16, cc2e, ccr2, ccr);
+
+        // Pins
+        pwm_channel_pin!(WithPins, TIM12, TIM12_CH1, output_to_pa4, PA4, AF10, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithPins, TIM12, TIM12_CH1, output_to_pa14, PA14, AF10, ccmr1_output, oc1m, oc1pe);
+        pwm_channel_pin!(WithPins, TIM12, TIM12_CH1, output_to_pb14, PB14, AF10, ccmr1_output, oc1m, oc1pe);
+
+        pwm_channel_pin!(WithPins, TIM12, TIM12_CH2, output_to_pa5, PA5, AF10, ccmr1_output, oc2m, oc2pe);
+        pwm_channel_pin!(WithPins, TIM12, TIM12_CH2, output_to_pa15, PA15, AF10, ccmr1_output, oc2m, oc2pe);
+        pwm_channel_pin!(WithPins, TIM12, TIM12_CH2, output_to_pb15, PB15, AF10, ccmr1_output, oc2m, oc2pe);
+    }
+}
+
+// TODO: This timer is also present in stm32f378
+#[cfg(feature = "stm32f373")]
+tim12!();
+
+
 // TIM15
 
 pwm_timer_with_break!(
