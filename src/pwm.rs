@@ -41,7 +41,7 @@ macro_rules! pwm_timer_private {
             // Justification: It is safe because only scopes with mutable references
             // to TIMx should ever modify this bit.
             unsafe {
-                &(*RCC::ptr()).$apbxenr.modify(|_, w| w.$timxen().set_bit());
+                (*RCC::ptr()).$apbxenr.modify(|_, w| w.$timxen().set_bit());
                 (*RCC::ptr()).$apbxrstr.modify(|_, w| w.$timxrst().set_bit());
                 (*RCC::ptr()).$apbxrstr.modify(|_, w| w.$timxrst().clear_bit());
             }
