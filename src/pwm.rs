@@ -6,7 +6,7 @@ use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA4, PA5, PA6, PA7, PA8, PA9, PA10,
 use crate::gpio::gpiob::{PB0, PB1, PB3, PB4, PB5, PB6, PB7, PB8, PB9, PB10, PB11, PB13, PB14, PB15};
 use crate::gpio::gpioc::{PC0, PC1, PC2, PC3, PC4, PC6, PC7, PC8, PC9, PC10, PC11, PC12, PC13};
 use crate::gpio::gpiod::{PD0, PD1, PD3, PD4, PD6, PD7, PD12, PD13, PD14, PD15};
-use crate::gpio::gpioe::{PE0, PE1, PE4, PE6, PE7, PE8, PE9, PE10, PE11, PE12, PE13, PE14};
+use crate::gpio::gpioe::{PE0, PE1, PE2, PE4, PE6, PE7, PE8, PE9, PE10, PE11, PE12, PE13, PE14};
 use crate::gpio::gpiof::{PF0, PF6, PF9, PF10};
 use crate::rcc::{Clocks};
 use crate::time::Hertz;
@@ -873,5 +873,40 @@ macro_rules! tim19 {
 #[cfg(feature = "stm32f373")]
 tim19!();
 
+
 // TIM20
-// TODO: This timer present in stm32f398
+//
+#[cfg(feature = "stm32f398")]
+macro_rules! tim20 {
+    () => {
+        use crate::stm32::TIM20;
+
+        pub struct TIM20_CH1 {}
+        pub struct TIM20_CH2 {}
+        pub struct TIM20_CH3 {}
+        pub struct TIM20_CH4 {}
+
+        pwm_timer_basic!(
+            tim20,
+            TIM20,
+            u16,
+            apb2enr,
+            pclk2,
+            tim20en,
+            [TIM20_CH1,TIM20_CH2,TIM20_CH3,TIM20_CH4],
+            [PwmChannel,PwmChannel,PwmChannel,PwmChannel]
+        );
+
+        // Channels
+        // TODO: stm32f3 doesn't suppport registers for all 4 channels
+        pwm_pin_for_pwm_n_channel!(TIM20, TIM20_CH1, u16, cc1e, cc1ne, ccr1, ccr1);
+
+        //Pins
+        pwm_channel_pin!(WithPins, TIM20, TIM20_CH1, output_to_pe2, PE2, AF6, ccmr1_output, oc1m, oc1pe);
+
+        pwm_channel_pin!(WithNPins, TIM20, TIM20_CH1, output_to_pe4, PE4, AF6, ccmr1_output, oc1m, oc1pe);
+    }
+}
+
+#[cfg(feature = "stm32f398")]
+tim20!();
