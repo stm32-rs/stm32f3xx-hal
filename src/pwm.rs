@@ -1,13 +1,69 @@
 use core::marker::PhantomData;
 use crate::stm32::{TIM2, TIM15, TIM16, TIM17};
 use embedded_hal::PwmPin;
-use crate::gpio::{AF1, AF2, AF3, AF4, AF5, AF6, AF9, AF10, AF11};
-use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA4, PA5, PA6, PA7, PA8, PA9, PA10, PA11, PA12, PA13, PA14, PA15};
-use crate::gpio::gpiob::{PB0, PB1, PB3, PB4, PB5, PB6, PB7, PB8, PB9, PB10, PB11, PB13, PB14, PB15};
-use crate::gpio::gpioc::{PC0, PC1, PC2, PC3, PC4, PC6, PC7, PC8, PC9, PC10, PC11, PC12, PC13};
-use crate::gpio::gpiod::{PD0, PD1, PD3, PD4, PD6, PD7, PD12, PD13, PD14, PD15};
-use crate::gpio::gpioe::{PE0, PE1, PE2, PE4, PE6, PE7, PE8, PE9, PE10, PE11, PE12, PE13, PE14};
-use crate::gpio::gpiof::{PF0, PF6, PF9, PF10};
+
+use crate::gpio::{AF1, AF2, AF9, AF10};
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::AF3;
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::{AF4, AF6};
+#[cfg(any(feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::AF5;
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f373", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::AF11;
+
+use crate::gpio::gpioa::{PA0, PA1, PA2, PA3, PA5, PA6, PA7, PA9, PA10, PA12, PA13, PA15};
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378", feature = "stm32f334", feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpioa::PA4;
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f373", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpioa::PA8;
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpioa::PA11;
+#[cfg(any(feature = "stm32f303", feature = "stm32f373", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpioa::PA14;
+
+use crate::gpio::gpiob::{PB3, PB4, PB5, PB6, PB8, PB9, PB10, PB11, PB14, PB15};
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378", feature = "stm32f334", feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiob::{PB0, PB1};
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378", feature = "stm32f334", feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiob::PB7;
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiob::PB13;
+
+#[cfg(any(feature = "stm32f334", feature = "stm32f373", feature = "stm32f398"))]
+use crate::gpio::gpioc::{PC0, PC1, PC2, PC3};
+#[cfg(feature = "stm32f373")]
+use crate::gpio::gpioc::PC4;
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpioc::{PC6, PC7, PC8, PC9};
+#[cfg(any(feature = "stm32f303", feature = "stm32f373", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpioc::{PC10, PC11, PC12};
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpioc::PC13;
+
+#[cfg(any(feature = "stm32f303", feature = "stm32f302", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiod::{PD3, PD4, PD6, PD7};
+#[cfg(feature = "stm32f373")]
+use crate::gpio::gpiod::PD0;
+#[cfg(any(feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiod::PD1;
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiod::{PD12, PD13, PD14, PD15};
+
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpioe::{PE0, PE1, PE6, PE7, PE8, PE9, PE10, PE11, PE12, PE13, PE14};
+#[cfg(feature = "stm32f398")]
+use crate::gpio::gpioe::{PE2, PE4};
+
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiof::PF0;
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f378", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiof::PF6;
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f373", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiof::PF9;
+#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
+use crate::gpio::gpiof::PF10;
+
 use crate::rcc::{Clocks};
 use crate::time::Hertz;
 use crate::stm32::{RCC};
