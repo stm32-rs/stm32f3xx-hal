@@ -92,7 +92,7 @@ pub struct PwmChannel<X, T> {
 macro_rules! pwm_timer_private {
     ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $apbxrstr:ident, $pclkz:ident, $timxrst:ident, $timxen:ident, $enable_break_timer:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
-            // Power the timer
+            // Power the timer and reset it to ensure a clean state
             // We use unsafe here to abstract away this implementation detail
             // Justification: It is safe because only scopes with mutable references
             // to TIMx should ever modify this bit.
