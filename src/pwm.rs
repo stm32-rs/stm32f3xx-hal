@@ -363,7 +363,7 @@ macro_rules! pwm_channel_pin {
             /// The pin is consumed and cannot be returned.
             pub fn $output_to_pzx(self, _p: $Pzi<$AFj>) -> PwmChannel<$TIMx_CHy, $resulting_state> {
                 unsafe {
-                    (*$TIMx::ptr()).$ccmrz_output().write(|w| w
+                    (*$TIMx::ptr()).$ccmrz_output().modify(|_, w| w
                         // Select PWM Mode 1 for CHy
                         .$ocym().bits(0b0110)
                         // set pre-load enable so that updates to the duty cycle
