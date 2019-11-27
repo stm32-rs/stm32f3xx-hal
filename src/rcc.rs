@@ -189,7 +189,12 @@ impl CFGR {
     }
 
     /// Returns a tuple of the (pllsrclk frequency, pllmul, and pllsrc).
-    #[cfg(not(any(feature = "stm32f302", feature = "stm32f303")))]
+    #[cfg(not(any(
+        feature = "stm32f302",
+        feature = "stm32f303xd",
+        feature = "stm32f303xe",
+        feature = "stm32f398"
+    )))]
     fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRCW) {
         let pllsrcclk = self.hse.unwrap_or(HSI / 2);
         let pllmul = self.sysclk.unwrap_or(pllsrcclk) / pllsrcclk;
@@ -203,7 +208,12 @@ impl CFGR {
     }
 
     /// Returns a tuple of the (pllsrclk frequency, pllmul, and pllsrc).
-    #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+    #[cfg(any(
+        feature = "stm32f302",
+        feature = "stm32f303xd",
+        feature = "stm32f303xe",
+        feature = "stm32f398",
+    ))]
     fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRCW) {
         let mut pllsrcclk = self.hse.unwrap_or(HSI / 2);
         let mut pllmul = self.sysclk.unwrap_or(pllsrcclk) / pllsrcclk;
