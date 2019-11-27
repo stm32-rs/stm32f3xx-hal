@@ -685,6 +685,9 @@ macro_rules! tim13 {
     }
 }
 
+#[cfg(feature = "stm32f373")]
+tim13!();
+
 
 // TIM14
 
