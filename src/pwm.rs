@@ -1,3 +1,83 @@
+/*!
+  # Pulse width modulation
+
+  Numerous stm32 timers can be used to output pulse width modulated
+  signals on a variety of pins.  The timers support up to 4
+  simultaneous pwm outputs in separate `Channels`.  These channels
+  share a period and resolution, but can have a different duty cycle.
+  All pins on a shared channel have the exact same output.
+
+  ## Creating the (unconfigured) channels
+
+  Before we connect any pins, we need to convert our timer peripheral
+  into a set of channels.  We may only be interested in using one or
+  two of these channels, so we can simply ignore them with `_` when we
+  destructure.
+
+  ```
+    // (Other imports omitted)
+    use stm32f3xx-hal::pwm::tim3;
+
+    let dp = stm32f303::Peripherals::take().unwrap();
+
+    let mut flash = dp.FLASH.constrain();
+    let mut rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.freeze(&mut flash.acr);
+
+    // Set the resolution of our duty cycle to 9000 and our period to
+    // 50hz.
+    let mut (c1_no_pins, _, _, c4_no_pins) =
+        tim3(device.TIM3, 9000, 50.hz(), clocks);
+  ```
+
+  In this case, we're only going to use channel 1 and channel 4.
+  Currently we can't enable these timers, because they don't have any
+  pins, so the following wouldn't compile.
+
+
+  ```
+    // DOES NOT COMPILE
+    c1_no_pins.enable();
+    c4_no_pins.enable();
+  ```
+
+  ## Connecting our pins and enabling the channels
+
+  From here we can connect as many compatible pins as we like.  Once
+  the channels have pins connected they can be enabled.
+
+  ```
+    let mut gpioa = dp.GPIOB.split(&mut rcc.ahb);
+    let pa6 = gpioa.pa6.into_af2(&mut gpioa.moder, &mut gpioa.afrl);
+
+    let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
+    let pb1 = gpiob.pb1.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
+    let pb4 = gpiob.pb4.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
+
+    let mut ch1 = ch1_no_pins
+        .output_to_pa6(pa6)
+        .output_to_pb4(pb4);
+
+    let mut ch4 = ch4_no_pins
+        .output_to_pb1(pb1);
+
+    ch1.enable();
+    ch4.enable();
+  ```
+
+  All three pins will output a 50hz period. PA6 and PB4 will share a
+  duty cycle, but the duty cycle for PB1 can be controlled
+  independently.
+
+  ```
+    // Affect PA6 and PB4
+    ch1.set_duty_cycle(1000);
+
+    // Affect only PB1
+    ch4.set_duty_cycle(2000);
+  ```
+*/
+
 use core::marker::PhantomData;
 use crate::stm32::{TIM2, TIM15, TIM16, TIM17};
 use embedded_hal::PwmPin;
