@@ -68,20 +68,31 @@ use crate::rcc::{Clocks};
 use crate::time::Hertz;
 use crate::stm32::{RCC};
 
+/// Output Compare Channel 1 of Timer 1 (type state)
 pub struct TIM2_CH1 {}
+/// Output Compare Channel 2 of Timer 1 (type state)
 pub struct TIM2_CH2 {}
+/// Output Compare Channel 3 of Timer 1 (type state)
 pub struct TIM2_CH3 {}
+/// Output Compare Channel 4 of Timer 1 (type state)
 pub struct TIM2_CH4 {}
 
+/// Output Compare Channel 1 of Timer 15 (type state)
 pub struct TIM15_CH1 {}
+/// Output Compare Channel 2 of Timer 15 (type state)
 pub struct TIM15_CH2 {}
 
+/// Output Compare Channel 1 of Timer 16 (type state)
 pub struct TIM16_CH1 {}
 
+/// Output Compare Channel 1 of Timer 17 (type state)
 pub struct TIM17_CH1 {}
 
+/// Type state used to represent a channel that has no pins yet
 pub struct NoPins {}
+/// Type state used to represent a channel is using regular pins
 pub struct WithPins {}
+/// Type state used to represent a channel is using (only) complementary pins
 pub struct WithNPins {}
 
 pub struct PwmChannel<X, T> {
@@ -260,9 +271,13 @@ macro_rules! tim1_common {
     () => {
         use crate::stm32::TIM1;
 
+        /// Output Compare Channel 1 of Timer 1 (type state)
         pub struct TIM1_CH1 {}
+        /// Output Compare Channel 2 of Timer 1 (type state)
         pub struct TIM1_CH2 {}
+        /// Output Compare Channel 3 of Timer 1 (type state)
         pub struct TIM1_CH3 {}
+        /// Output Compare Channel 4 of Timer 1 (type state)
         pub struct TIM1_CH4 {}
 
         pwm_timer_with_break!(
@@ -404,9 +419,13 @@ macro_rules! tim3_common {
     () => {
         use crate::stm32::TIM3;
 
+        /// Output Compare Channel 1 of Timer 3 (type state)
         pub struct TIM3_CH1 {}
+        /// Output Compare Channel 2 of Timer 3 (type state)
         pub struct TIM3_CH2 {}
+        /// Output Compare Channel 3 of Timer 3 (type state)
         pub struct TIM3_CH3 {}
+        /// Output Compare Channel 4 of Timer 3 (type state)
         pub struct TIM3_CH4 {}
 
         pwm_timer_basic!(
@@ -493,9 +512,13 @@ macro_rules! tim4 {
     () => {
         use crate::stm32::TIM4;
 
+        /// Output Compare Channel 1 of Timer 4 (type state)
         pub struct TIM4_CH1 {}
+        /// Output Compare Channel 2 of Timer 4 (type state)
         pub struct TIM4_CH2 {}
+        /// Output Compare Channel 3 of Timer 4 (type state)
         pub struct TIM4_CH3 {}
+        /// Output Compare Channel 4 of Timer 4 (type state)
         pub struct TIM4_CH4 {}
 
         pwm_timer_basic!(
@@ -547,9 +570,13 @@ macro_rules! tim5 {
     () => {
         use crate::stm32::TIM5;
 
+        /// Output Compare Channel 1 of Timer 5 (type state)
         pub struct TIM5_CH1 {}
+        /// Output Compare Channel 2 of Timer 5 (type state)
         pub struct TIM5_CH2 {}
+        /// Output Compare Channel 3 of Timer 5 (type state)
         pub struct TIM5_CH3 {}
+        /// Output Compare Channel 4 of Timer 5 (type state)
         pub struct TIM5_CH4 {}
 
         pwm_timer_basic!(
@@ -602,9 +629,13 @@ macro_rules! tim8 {
     () => {
         use crate::stm32::TIM8;
 
+        /// Output Compare Channel 1 of Timer 8 (type state)
         pub struct TIM8_CH1 {}
+        /// Output Compare Channel 2 of Timer 8 (type state)
         pub struct TIM8_CH2 {}
+        /// Output Compare Channel 3 of Timer 8 (type state)
         pub struct TIM8_CH3 {}
+        /// Output Compare Channel 4 of Timer 8 (type state)
         pub struct TIM8_CH4 {}
 
         pwm_timer_with_break!(
@@ -666,9 +697,13 @@ macro_rules! tim12 {
     () => {
         use crate::stm32::TIM12;
 
+        /// Output Compare Channel 1 of Timer 12 (type state)
         pub struct TIM12_CH1 {}
+        /// Output Compare Channel 2 of Timer 12 (type state)
         pub struct TIM12_CH2 {}
+        /// Output Compare Channel 3 of Timer 12 (type state)
         pub struct TIM12_CH3 {}
+        /// Output Compare Channel 4 of Timer 12 (type state)
         pub struct TIM12_CH4 {}
 
         pwm_timer_basic!(
@@ -711,9 +746,13 @@ macro_rules! tim13 {
     () => {
         use crate::stm32::TIM13;
 
+        /// Output Compare Channel 1 of Timer 13 (type state)
         pub struct TIM13_CH1 {}
+        /// Output Compare Channel 2 of Timer 13 (type state)
         pub struct TIM13_CH2 {}
+        /// Output Compare Channel 3 of Timer 13 (type state)
         pub struct TIM13_CH3 {}
+        /// Output Compare Channel 4 of Timer 13 (type state)
         pub struct TIM13_CH4 {}
 
         pwm_timer_basic!(
@@ -751,9 +790,13 @@ macro_rules! tim14 {
     () => {
         use crate::stm32::TIM14;
 
+        /// Output Compare Channel 1 of Timer 14 (type state)
         pub struct TIM14_CH1 {}
+        /// Output Compare Channel 2 of Timer 14 (type state)
         pub struct TIM14_CH2 {}
+        /// Output Compare Channel 3 of Timer 14 (type state)
         pub struct TIM14_CH3 {}
+        /// Output Compare Channel 4 of Timer 14 (type state)
         pub struct TIM14_CH4 {}
 
         pwm_timer_basic!(
@@ -888,9 +931,13 @@ macro_rules! tim19 {
     () => {
         use crate::stm32::TIM19;
 
+        /// Output Compare Channel 1 of Timer 19 (type state)
         pub struct TIM19_CH1 {}
+        /// Output Compare Channel 2 of Timer 19 (type state)
         pub struct TIM19_CH2 {}
+        /// Output Compare Channel 3 of Timer 19 (type state)
         pub struct TIM19_CH3 {}
+        /// Output Compare Channel 4 of Timer 19 (type state)
         pub struct TIM19_CH4 {}
 
         pwm_timer_basic!(
@@ -943,9 +990,13 @@ macro_rules! tim20 {
     () => {
         use crate::stm32::TIM20;
 
+        /// Output Compare Channel 1 of Timer 20 (type state)
         pub struct TIM20_CH1 {}
+        /// Output Compare Channel 2 of Timer 20 (type state)
         pub struct TIM20_CH2 {}
+        /// Output Compare Channel 3 of Timer 20 (type state)
         pub struct TIM20_CH3 {}
+        /// Output Compare Channel 4 of Timer 20 (type state)
         pub struct TIM20_CH4 {}
 
         pwm_timer_basic!(
