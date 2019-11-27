@@ -107,6 +107,15 @@ pub struct PwmChannel<X, T> {
 
 macro_rules! pwm_timer_private {
     ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $apbxrstr:ident, $pclkz:ident, $timxrst:ident, $timxen:ident, $enable_break_timer:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
+        /// Create one or more output channels from a TIM Peripheral
+        /// This function requires the maximum resolution of the duty cycle,
+        /// the period of the PWM signal and the frozen clock configuration.
+        ///
+        /// The resolution should be chosen to offer sufficient steps against
+        /// your target peripheral.  For example, a servo that can turn from
+        /// 0 degrees (2% duty cycle) to 180 degrees (4% duty cycle) might choose
+        /// a resolution of 9000.  This allows the servo to be set in increments
+        /// of exactly one degree.
         pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer and reset it to ensure a clean state
             // We use unsafe here to abstract away this implementation detail
@@ -194,6 +203,11 @@ macro_rules! pwm_timer_with_break {
 macro_rules! pwm_channel_pin {
     ($resulting_state:ident, $TIMx:ident, $TIMx_CHy:ident, $output_to_pzx:ident, $Pzi:ident, $AFj:ident, $ccmrz_output:ident, $ocym:ident, $ocype:ident) => {
         impl PwmChannel<$TIMx_CHy, NoPins> {
+            /// Output to a specific pin from a channel that does not yet have
+            /// any pins.  This channel cannot be enabled until this method
+            /// is called.
+            ///
+            /// The pin is consumed and cannot be returned.
             pub fn $output_to_pzx(self, _p: $Pzi<$AFj>) -> PwmChannel<$TIMx_CHy, $resulting_state> {
                 unsafe {
                     (*$TIMx::ptr()).$ccmrz_output().write(|w| w
@@ -209,6 +223,11 @@ macro_rules! pwm_channel_pin {
         }
 
         impl PwmChannel<$TIMx_CHy, $resulting_state> {
+            /// Output to a specific pin from a channel is already configured
+            /// with output pins.  There is no limit to the number of pins that
+            /// can be used (as long as they are compatible).
+            ///
+            /// The pin is consumed and cannot be returned.
             pub fn $output_to_pzx(self, _p: $Pzi<$AFj>) -> PwmChannel<$TIMx_CHy, $resulting_state> {
                 self
             }
