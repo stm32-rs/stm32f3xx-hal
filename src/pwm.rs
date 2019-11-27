@@ -113,8 +113,12 @@ macro_rules! pwm_timer_private {
             });
 
             // Set the pre-scaler
+            // TODO: This is repeated in the timer/pwm module.
+            // It might make sense to move into the clocks as a crate-only property.
+            // TODO: ppre1 is used in timer.rs (never ppre2), should this be dynamic?
+            let clock_freq = clocks.$pclkz().0 * if clocks.ppre1() == 1 { 1 } else { 2 };
             tim.psc.write(|w| w.psc().bits(
-                (clocks.$pclkz().0 / res as u32 / freq.0) as u16
+                (clock_freq / res as u32 / freq.0) as u16
             ));
 
             // Make the settings reload immediately
