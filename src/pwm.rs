@@ -76,6 +76,26 @@
     // Affect only PB1
     ch4.set_duty_cycle(2000);
   ```
+
+  ## Single channel timers
+
+  Timers that only have only one channel do not return a tuple, and
+  instead return the (unconfigured) channel directly.
+
+  ```
+    // (Other imports omitted)
+    use stm32f3xx-hal::pwm::tim16;
+
+    let dp = stm32f303::Peripherals::take().unwrap();
+
+    let mut flash = dp.FLASH.constrain();
+    let mut rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.freeze(&mut flash.acr);
+
+    // Set the resolution of our duty cycle to 9000 and our period to
+    // 50hz.
+    let mut c1_no_pins = tim16(device.TIM3, 9000, 50.hz(), clocks);
+  ```
 */
 
 use core::marker::PhantomData;
