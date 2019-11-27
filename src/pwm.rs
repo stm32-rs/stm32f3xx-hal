@@ -200,7 +200,7 @@ macro_rules! pwm_pin_for_pwm_n_channel {
 
 // TIM1
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
 macro_rules! tim1_common {
     () => {
         use crate::stm32::TIM1;
@@ -253,7 +253,7 @@ macro_rules! tim1_common {
     }
 }
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f334", feature = "stm32f398"))]
+#[cfg(any(feature = "stm32f334", feature = "stm32f398"))]
 macro_rules! tim1_ext1 {
     () => {
         pwm_channel_pin!(WithPins, TIM1, TIM1_CH1, output_to_pc0, PC0, AF2, ccmr1_output, oc1m, oc1pe);
@@ -285,10 +285,11 @@ macro_rules! tim1_ext2 {
     }
 }
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
+// TODO: stm32f301 has TIM1 with ext1
+#[cfg(any(feature = "stm32f318", feature = "stm32f302", feature = "stm32f303", feature = "stm32f334", feature = "stm32f358", feature = "stm32f398"))]
 tim1_common!();
 
-#[cfg(any(feature = "stm32f301", feature = "stm32f334", feature = "stm32f398"))]
+#[cfg(any(feature = "stm32f334", feature = "stm32f398"))]
 tim1_ext1!();
 
 #[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f358", feature = "stm32f398"))]
