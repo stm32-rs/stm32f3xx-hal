@@ -95,6 +95,11 @@ pub struct WithPins {}
 /// Type state used to represent a channel is using (only) complementary pins
 pub struct WithNPins {}
 
+/// Representation of a Channel for an abritary timer channel,
+/// that also holds a type state for whether or not this channel
+/// is using any pins yet.
+///
+/// If there are no pins supplied, it cannot be enabled.
 pub struct PwmChannel<X, T> {
     timx_chy: PhantomData<X>,
     pin_status: PhantomData<T>,
