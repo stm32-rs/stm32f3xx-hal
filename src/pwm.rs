@@ -96,6 +96,59 @@
     // 50hz.
     let mut c1_no_pins = tim16(device.TIM3, 9000, 50.hz(), clocks);
   ```
+
+  ## Complementary timers
+
+  Certain timers have complementary outputs.  Currently, channels can
+  output to _either_ pins used for standard or complementary pins (and
+  do not exhibit complementary behaviors).  Most of the time this will
+  be totally invisible.
+
+  In this example, we use a complementary pin in the same way we'd use
+  any other pwm channel.
+
+  ```
+    // (Other imports omitted)
+    use stm32f3xx-hal::pwm::tim1;
+
+    let dp = stm32f303::Peripherals::take().unwrap();
+
+    let mut flash = dp.FLASH.constrain();
+    let mut rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.freeze(&mut flash.acr);
+
+    // Set the resolution of our duty cycle to 9000 and our period to
+    // 50hz.
+    let mut (ch1_no_pins, _, _, _) = tim1(device.TIM3, 9000, 50.hz(), clocks);
+
+    let mut gpioa = dp.GPIOB.split(&mut rcc.ahb);
+    let pa7 = gpioa.pa7.into_af6(&mut gpioa.moder, &mut gpioa.afrl);
+
+    let mut ch1 = ch1_no_pins.output_to(pa7);
+    ch1.enable();
+  ```
+
+  We used this channel/pin exactly like any previous example.
+
+  However, we cannot use standard and complementary pins
+  simultaneously.  Luckily, typestates enforce this for us.
+
+  ```
+    ...
+
+    let mut gpioa = dp.GPIOB.split(&mut rcc.ahb);
+    let pa7 = gpioa.pa7.into_af6(&mut gpioa.moder, &mut gpioa.afrl);
+    let pa8 = gpioa.pa8.into_af6(&mut gpioa.moder, &mut gpioa.afrl);
+
+    let mut ch1 = ch1_no_pins
+        .output_to(pa7)
+        // DOES NOT COMPILE
+        .output_to(pa8);
+  ```
+
+  Once we've connected a complementary pin (PA7) we are now _only_
+  allowed to use other complementary pins.  PA8 is a valid choice if
+  we have no pins in use, but it cannot be used once we've used PA7.
 */
 
 use core::marker::PhantomData;
