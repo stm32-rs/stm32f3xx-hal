@@ -203,36 +203,31 @@ macro_rules! pwm_pin_for_pwm_channel_private {
 
             fn disable(&mut self) {
                 unsafe {
-                    &(*$TIMx::ptr()).ccer.modify(|_, w| w.$ccx_enable().clear_bit());
+                    (*$TIMx::ptr()).ccer.modify(|_, w| w.$ccx_enable().clear_bit());
                 }
             }
 
             fn enable(&mut self) {
                 unsafe {
-                    &(*$TIMx::ptr()).ccer.modify(|_, w| w.$ccx_enable().set_bit());
+                    (*$TIMx::ptr()).ccer.modify(|_, w| w.$ccx_enable().set_bit());
                 }
             }
 
             fn get_max_duty(&self) -> Self::Duty {
                 unsafe {
-                    // TODO: should the resolution just be stored in the channel rather than read?
-                    // This would work if it changed, but isn't it the point that it can't be?
                     (*$TIMx::ptr()).arr.read().arr().bits()
                 }
             }
 
             fn get_duty(&self) -> Self::Duty {
                 unsafe {
-                    // TODO: This could theoretically be passed into the PwmChannel struct
                     (*$TIMx::ptr()).$ccrx.read().$ccrq().bits()
                 }
             }
 
             fn set_duty(&mut self, duty: Self::Duty) -> () {
                 unsafe {
-                    // TODO: This could theoretically be passed into the PwmChannel struct
-                    // and it would then be safe to modify
-                    &(*$TIMx::ptr()).$ccrx.modify(|_, w| w.$ccrq().bits(duty));
+                    (*$TIMx::ptr()).$ccrx.modify(|_, w| w.$ccrq().bits(duty));
                 }
             }
         }
