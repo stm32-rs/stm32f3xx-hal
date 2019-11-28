@@ -295,9 +295,8 @@ macro_rules! pwm_timer_private {
             // It might make sense to move into the clocks as a crate-only property.
             // TODO: ppre1 is used in timer.rs (never ppre2), should this be dynamic?
             let clock_freq = clocks.$pclkz().0 * if clocks.ppre1() == 1 { 1 } else { 2 };
-            tim.psc.write(|w| w.psc().bits(
-                (clock_freq / res as u32 / freq.0) as u16
-            ));
+            let prescale_factor = clock_freq / res as u32 / freq.0;
+            tim.psc.write(|w| w.psc().bits(prescale_factor as u16 - 1));
 
             // Make the settings reload immediately
             tim.egr.write(|w| w.ug().set_bit());
