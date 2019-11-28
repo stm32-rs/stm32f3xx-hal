@@ -1,5 +1,5 @@
 //! # Work in Progress
-//! API for the ADC1 and ADC2 (Analog to Digital Converter) on the 303xB/C/D/E
+//! API for the ADC (Analog to Digital Converter) on the 303xB/C/D/E
 //!
 //! # Examples
 //! check `adc.rs` in the examples folder
@@ -460,12 +460,12 @@ macro_rules! adc12_hal {
                     }
                 }
             }
+            adc_hal! {
+                $ADC: ($init, ADC1_2),
+            }
         )+
-    adc_hal! {
-        $ADC: ($init, ADC1_2)
     }
 }
-
 macro_rules! adc34_hal {
     ($(
             $ADC:ident: ($init:ident),
@@ -481,9 +481,10 @@ macro_rules! adc34_hal {
                     }
                 }
             }
+            adc_hal! {
+                $ADC: ($init, ADC3_4),
+            }
         )+
-    adc_hal! {
-        $ADC: ($init, ADC3_4)
     }
 }
 
