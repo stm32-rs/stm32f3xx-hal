@@ -1,19 +1,6 @@
 //! # Work in Progress
 //! API for the ADC1 and ADC2 (Analog to Digital Converter) on the 303xB/C/D/E
 //!
-//! IMPORTANT - only valid for the 303xB/C/D/E variant.
-//! NOT for the 303x6/8:
-//!
-//! The availability of ADC channels varies
-//! for different sub-variants of stm32f3xx controllers.
-//! This means that e.g. channel ADC1_IN11
-//! is connected to PB0 on a f303x6 chip
-//! while there is no such channel on a F303xB/C.
-//! However the PB0 on that variant is connected to channel ADC3_IN12.
-//!
-//! See → 15.3.4
-//!
-//!
 //! # Examples
 //! check `adc.rs` in the examples folder
 //!
@@ -141,7 +128,12 @@ macro_rules! adc_pins {
     };
 }
 
-#[cfg(any(feature = "stm32f303",))]
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
 adc_pins!(ADC1,
     gpioa::PA0<Analog> => 1_u8,
     gpioa::PA1<Analog> => 2_u8,
@@ -156,7 +148,12 @@ adc_pins!(ADC1,
     gpiof::PF2<Analog> => 10_u8,
 );
 
-#[cfg(any(feature = "stm32f303",))]
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
 adc_pins!(ADC2,
     gpioa::PA4<Analog> => 1_u8,
     gpioa::PA5<Analog> => 2_u8,
@@ -298,7 +295,12 @@ macro_rules! adc_hal {
                     });
                 }
 
-                #[cfg(any(feature = "stm32f303",))]
+                #[cfg(any(
+                    feature = "stm32f303xb",
+                    feature = "stm32f303xc",
+                    feature = "stm32f303xd",
+                    feature = "stm32f303xe",
+                ))]
                 fn wait_advregen_startup(&self) {
                     const MAX_STARTUP_TIME_US: u32 = 10;
                     asm::delay(MAX_STARTUP_TIME_US / (self.clocks.sysclk().0 /1_000_000));
@@ -392,7 +394,12 @@ macro_rules! adc_hal {
     }
 }
 
-#[cfg(any(feature = "stm32f303",))]
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
 adc_hal! {
     ADC1: (adc1, ADC1_2),
     ADC2: (adc2, ADC1_2),
