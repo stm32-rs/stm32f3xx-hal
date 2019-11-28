@@ -7,15 +7,27 @@
 use cortex_m::asm;
 use embedded_hal::adc::{Channel, OneShot};
 
-use crate::{
-    gpio::{gpioa, gpiob, gpioc, gpiof, Analog},
-    rcc::{Clocks, AHB},
-    stm32::{ADC1, ADC1_2, ADC2},
-};
+use crate::rcc::{Clocks, AHB};
+
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
+use crate::gpio::{gpioa, gpiob, gpioc, gpiod, gpioe, gpiof, Analog};
+
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
+use crate::stm32::{ADC1, ADC1_2, ADC2, ADC3, ADC3_4, ADC4};
 
 /// ADC configuration
 pub struct Adc<ADC> {
-    rb: ADC,
+    pub rb: ADC,
     clocks: Clocks,
     prescale: Prescale,
     operation_mode: Option<OperationMode>,
@@ -160,15 +172,62 @@ adc_pins!(ADC2,
     gpioa::PA6<Analog> => 3_u8,
     gpioa::PA7<Analog> => 4_u8,
     gpioc::PC4<Analog> => 5_u8,
+    gpioc::PC5<Analog> => 11_u8,
+    gpiob::PB2<Analog> => 12_u8,
     // Channels 6 to 10 are shared channels (i.e. ADC12_INx)
     gpioc::PC0<Analog> => 6_u8,
     gpioc::PC1<Analog> => 7_u8,
     gpioc::PC2<Analog> => 8_u8,
     gpioc::PC3<Analog> => 9_u8,
     gpiof::PF2<Analog> => 10_u8,
-    // exclusive ADC2 channels again
-    gpioc::PC5<Analog> => 11_u8,
-    gpiob::PB2<Analog> => 12_u8,
+);
+
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
+adc_pins!(ADC3,
+    gpiob::PB1<Analog> => 1_u8,
+    gpioe::PE9<Analog> => 2_u8,
+    gpioe::PE13<Analog> => 3_u8,
+    gpiob::PB13<Analog> => 5_u8,
+    gpiob::PB0<Analog> => 12_u8,
+    gpioe::PE7<Analog> => 13_u8,
+    gpioe::PE10<Analog> => 14_u8,
+    gpioe::PE11<Analog> => 15_u8,
+    gpioe::PE12<Analog> => 16_u8,
+    // Shared channels (i.e. ADC34_INx)
+    gpioe::PE8<Analog> => 6_u8,
+    gpiod::PD10<Analog> => 7_u8,
+    gpiod::PD11<Analog> => 8_u8,
+    gpiod::PD12<Analog> => 9_u8,
+    gpiod::PD13<Analog> => 10_u8,
+    gpiod::PD14<Analog> => 11_u8,
+);
+
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
+adc_pins!(ADC4,
+    gpioe::PE14<Analog> => 1_u8,
+    gpioe::PE15<Analog> => 2_u8,
+    gpiob::PB12<Analog> => 3_u8,
+    gpiob::PB14<Analog> => 4_u8,
+    gpiob::PB15<Analog> => 5_u8,
+    gpiob::PB8<Analog> => 12_u8,
+    gpiob::PB9<Analog> => 13_u8,
+    // Shared channels (i.e. ADC34_INx)
+    gpioe::PE8<Analog> => 6_u8,
+    gpiod::PD10<Analog> => 7_u8,
+    gpiod::PD11<Analog> => 8_u8,
+    gpiod::PD12<Analog> => 9_u8,
+    gpiod::PD13<Analog> => 10_u8,
+    gpiod::PD14<Analog> => 11_u8,
 );
 
 macro_rules! adc_hal {
@@ -177,10 +236,10 @@ macro_rules! adc_hal {
     )+) => {
         $(
             impl Adc<$ADC> {
+
                 /// Init a new ADC
                 ///
                 /// Enables the clock, performs a calibration and enables the ADC
-
                 pub fn $init(
                     rb: $ADC,
                     adc_common : &mut $ADC_COMMON,
@@ -235,14 +294,6 @@ macro_rules! adc_hal {
                     self.rb.cr.modify(|_, w| w.aden().clear_bit());
                 }
 
-                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut $ADC_COMMON) {
-                    ahb.enr().modify(|_, w| w.adc12en().enabled());
-                    unsafe {
-                        adc_common.ccr.modify(|_, w| w
-                            .ckmode().bits(self.prescale.bitcode())
-                        );
-                    }
-                }
 
                 /// Calibrate according to 15.3.8 in the Reference Manual
                 fn calibrate(&mut self) {
@@ -394,13 +445,65 @@ macro_rules! adc_hal {
     }
 }
 
+macro_rules! adc12_hal {
+    ($(
+            $ADC:ident: ($init:ident),
+    )+) => {
+        $(
+            impl Adc<$ADC> {
+                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) {
+                    ahb.enr().modify(|_, w| w.adc12en().enabled());
+                    unsafe {
+                        adc_common.ccr.modify(|_, w| w
+                            .ckmode().bits(self.prescale.bitcode())
+                        );
+                    }
+                }
+            }
+        )+
+    adc_hal! {
+        $ADC: ($init, ADC1_2)
+    }
+}
+
+macro_rules! adc34_hal {
+    ($(
+            $ADC:ident: ($init:ident),
+    )+) => {
+        $(
+            impl Adc<$ADC> {
+                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) {
+                    ahb.enr().modify(|_, w| w.adc34en().enabled());
+                    unsafe {
+                        adc_common.ccr.modify(|_, w| w
+                            .ckmode().bits(self.prescale.bitcode())
+                        );
+                    }
+                }
+            }
+        )+
+    adc_hal! {
+        $ADC: ($init, ADC3_4)
+    }
+}
+
 #[cfg(any(
     feature = "stm32f303xb",
     feature = "stm32f303xc",
     feature = "stm32f303xd",
     feature = "stm32f303xe",
 ))]
-adc_hal! {
-    ADC1: (adc1, ADC1_2),
-    ADC2: (adc2, ADC1_2),
+adc12_hal! {
+    ADC1: (adc1),
+    ADC2: (adc2),
+}
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
+adc34_hal! {
+    ADC3: (adc3),
+    ADC4: (adc4),
 }
