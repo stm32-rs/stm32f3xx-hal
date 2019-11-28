@@ -60,6 +60,8 @@ pub mod i2c;
 #[cfg(feature = "device-selected")]
 pub mod prelude;
 #[cfg(feature = "device-selected")]
+pub mod pwm;
+#[cfg(feature = "device-selected")]
 pub mod rcc;
 #[cfg(feature = "device-selected")]
 pub mod serial;
@@ -69,5 +71,13 @@ pub mod spi;
 pub mod time;
 #[cfg(feature = "device-selected")]
 pub mod timer;
-#[cfg(feature = "device-selected")]
-pub mod pwm;
+#[cfg(all(
+    feature = "stm32-usbd",
+    any(
+        feature = "stm32f303xb",
+        feature = "stm32f303xc",
+        feature = "stm32f303xd",
+        feature = "stm32f303xe",
+    )
+))]
+pub mod usb;

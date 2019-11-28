@@ -1,5 +1,9 @@
 # stm32f3xx-hal
 
+[![Build Status](https://travis-ci.com/stm32-rs/stm32f3xx-hal.svg)](https://travis-ci.com/stm32-rs/stm32f3xx-hal)
+[![Crate](https://img.shields.io/crates/v/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
+[![Docs](https://docs.rs/stm32f3xx-hal/badge.svg)](https://docs.rs/stm32f3xx-hal)
+
 `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
 peripheral access API for the STMicro STM32F3 series microcontrollers. The
 selection of the MCU is done by feature gates, typically specified by board

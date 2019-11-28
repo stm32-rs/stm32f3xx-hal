@@ -11,7 +11,10 @@ documentation = "https://docs.rs/stm32f3xx-hal"
 version = "0.3.0"
 
 [package.metadata.docs.rs]
-features = ["stm32f303", "rt"]
+features = ["stm32f303xc", "rt", "stm32-usbd"]
+
+[badges]
+travis-ci = { repository = "stm32-rs/stm32f3xx-hal" }
 
 [dependencies]
 cortex-m = ">=0.5.8,<0.7"
@@ -32,6 +35,15 @@ version = "0.2.2"
 default-features = false
 version = "1.0.2"
 
+[dependencies.stm32-usbd]
+version = "0.5.0"
+optional = true
+
+[dev-dependencies]
+panic-semihosting = "0.5.2"
+usb-device = "0.2.3"
+usbd-serial = "0.1.0"
+
 [features]
 default = ["unproven"]
 device-selected = []
@@ -40,6 +52,12 @@ stm32f301 = ["stm32f3/stm32f301", "device-selected"]
 stm32f318 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f302 = ["stm32f3/stm32f302", "device-selected"]
 stm32f303 = ["stm32f3/stm32f303", "device-selected"]
+stm32f303xb = ["stm32f303", "stm32-usbd/ram_access_1x16"]
+stm32f303xc = ["stm32f303", "stm32-usbd/ram_access_1x16"]
+stm32f303xd = ["stm32f303", "stm32-usbd/ram_access_2x16"]
+stm32f303xe = ["stm32f303", "stm32-usbd/ram_access_2x16"]
+stm32f303x6 = ["stm32f303"]
+stm32f303x8 = ["stm32f303"]
 stm32f373 = ["stm32f3/stm32f373", "device-selected"]
 stm32f378 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f334 = ["stm32f3/stm32f3x4", "device-selected"]
@@ -56,3 +74,11 @@ lto = true
 debug = true
 lto = true
 opt-level = "s"
+
+[[example]]
+name = "toggle"
+required-features = ["rt", "stm32f303xc"]
+
+[[example]]
+name = "usb_serial"
+required-features = ["rt", "stm32f303xc", "stm32-usbd"]
