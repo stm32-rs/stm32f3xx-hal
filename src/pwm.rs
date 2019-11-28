@@ -540,7 +540,7 @@ macro_rules! tim1_common {
         pwm_channel3n_pin!(TIM1, TIM1_CH3, output_to_pb15, PB15, AF4);
         pwm_channel3n_pin!(TIM1, TIM1_CH3, output_to_pf0, PF0, AF6);
 
-        pwm_channel3_pin!(TIM1, TIM1_CH3, output_to_pa11, PA11, AF11);
+        pwm_channel4_pin!(TIM1, TIM1_CH4, output_to_pa11, PA11, AF11);
     }
 }
 
@@ -572,7 +572,7 @@ macro_rules! tim1_ext2 {
 
         pwm_channel3n_pin!(TIM1, TIM1_CH3, output_to_pe12, PE12, AF2);
 
-        pwm_channel3_pin!(TIM1, TIM1_CH3, output_to_pe14, PE14, AF2);
+        pwm_channel4_pin!(TIM1, TIM1_CH4, output_to_pe14, PE14, AF2);
     }
 }
 
@@ -902,8 +902,8 @@ macro_rules! tim8 {
         pwm_channel3n_pin!(TIM8, TIM8_CH3, output_to_pb5, PB5, AF3);
         pwm_channel3n_pin!(TIM8, TIM8_CH3, output_to_pc12, PC12, AF4);
 
-        pwm_channel3_pin!(TIM8, TIM8_CH3, output_to_pc9, PC9, AF4);
-        pwm_channel3_pin!(TIM8, TIM8_CH3, output_to_pd1, PD1, AF4);
+        pwm_channel4_pin!(TIM8, TIM8_CH4, output_to_pc9, PC9, AF4);
+        pwm_channel4_pin!(TIM8, TIM8_CH4, output_to_pd1, PD1, AF4);
     }
 }
 
