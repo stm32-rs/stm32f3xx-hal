@@ -233,19 +233,16 @@ impl CFGR {
     /// Returns a tuple containing the effective sysclk rate and optional pll settings.
     fn calc_sysclk(&self) -> (u32, Option<(u8, rcc::cfgr::PLLSRCW)>) {
         let (pllsrcclk, pllmul, pllsrc) = self.calc_pll();
+        if pllmul == 1 {
+            return (pllsrcclk, None);
+        }
 
         let pllmul = cmp::min(cmp::max(pllmul, 2), 16);
         let sysclk = pllmul * pllsrcclk;
         assert!(sysclk <= 72_000_000);
 
-        let pll_options = if pllmul == 2 {
-            None
-        } else {
-            let pllmul_bits = pllmul as u8 - 2;
-            Some((pllmul_bits, pllsrc))
-        };
-
-        (sysclk, pll_options)
+        let pllmul_bits = pllmul as u8 - 2;
+        (sysclk, Some((pllmul_bits, pllsrc)))
     }
 
     /// Freezes the clock configuration, making it effective
