@@ -342,9 +342,9 @@ impl CFGR {
         if let Some((pllmul_bits, pllsrc)) = pll_options {
             // enable PLL and wait for it to be ready
             rcc.cfgr
-                .write(|w| w.pllmul().bits(pllmul_bits).pllsrc().variant(pllsrc));
+                .modify(|_, w| w.pllmul().bits(pllmul_bits).pllsrc().variant(pllsrc));
 
-            rcc.cr.write(|w| w.pllon().set_bit());
+            rcc.cr.modify(|_, w| w.pllon().set_bit());
 
             while rcc.cr.read().pllrdy().bit_is_clear() {}
         }
