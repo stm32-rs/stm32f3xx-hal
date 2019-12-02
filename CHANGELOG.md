@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - This allow using 72 MHz `sysclk` on the `stm32f303`
 - Analog gpio trait ([#33](https://github.com/stm32-rs/stm32f3xx-hal/pull/33))
 - Add PWM Channels ([#34](https://github.com/stm32-rs/stm32f3xx-hal/pull/34))
+- SPI embedded hal modes are now public ([#35](https://github.com/stm32-rs/stm32f3xx-hal/pull/18))
 
 ### Breaking changes
 

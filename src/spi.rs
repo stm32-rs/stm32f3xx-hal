@@ -2,7 +2,8 @@
 
 use core::ptr;
 
-use crate::hal::spi::{FullDuplex, Mode, Phase, Polarity};
+use crate::hal::spi::FullDuplex;
+pub use crate::hal::spi::{Mode, Phase, Polarity};
 use crate::stm32::{SPI1, SPI2, SPI3};
 use nb;
 
