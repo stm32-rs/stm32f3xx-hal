@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `stm32f303` is now split into `stm32f303xd` and `stm32f303xe` as they provide
   different alternate gpio functions. `stm32f303` is still available.
 
+### Fixed
+
+- Fixed wrong initialization of the SPI ([#35](https://github.com/stm32-rs/stm32f3xx-hal/pull/18))
 
 ## [v0.3.0] - 2019-08-26
 
