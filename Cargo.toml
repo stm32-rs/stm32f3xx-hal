@@ -76,6 +76,10 @@ lto = true
 opt-level = "s"
 
 [[example]]
+name = "pwm"
+required-features = ["stm32f303xc"]
+
+[[example]]
 name = "toggle"
 required-features = ["rt", "stm32f303xc"]
 
