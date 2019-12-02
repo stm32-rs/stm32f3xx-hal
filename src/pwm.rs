@@ -433,6 +433,7 @@ macro_rules! pwm_timer_private {
         /// 0 degrees (2% duty cycle) to 180 degrees (4% duty cycle) might choose
         /// a resolution of 9000.  This allows the servo to be set in increments
         /// of exactly one degree.
+        #[allow(unused_parens)]
         pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer and reset it to ensure a clean state
             // We use unsafe here to abstract away this implementation detail
