@@ -142,7 +142,7 @@ macro_rules! hal {
                     // DS: 8-bit data size
                     // SSOE: Slave Select output disabled
                     spi.cr2
-                        .write(|w| unsafe {
+                        .modify(|_, w| unsafe {
                             w.frxth().set_bit().ds().bits(0b111).ssoe().clear_bit()
                         });
 
@@ -168,7 +168,7 @@ macro_rules! hal {
                     // SSI: set nss high = master mode
                     // CRCEN: hardware CRC calculation disabled
                     // BIDIMODE: 2 line unidirectional (full duplex)
-                    spi.cr1.write(|w| {
+                    spi.cr1.modify(|_, w| {
                         w.cpha()
                             .bit(mode.phase == Phase::CaptureOnSecondTransition)
                             .cpol()

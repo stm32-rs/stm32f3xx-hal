@@ -145,7 +145,7 @@ macro_rules! gpio {
             type Error = ();
 
             fn set_high(&mut self) -> Result<(), Self::Error> {
-                // NOTE(unsafe) atomic write to a stateless register
+                // NOTE(unsafe, write) atomic write to a stateless register
                 unsafe {
                     match &self.gpio {
                         $(
@@ -162,7 +162,7 @@ macro_rules! gpio {
             }
 
             fn set_low(&mut self) -> Result<(), Self::Error> {
-                // NOTE(unsafe) atomic write to a stateless register
+                // NOTE(unsafe, write) atomic write to a stateless register
                 unsafe {
                     match &self.gpio {
                         $(
@@ -383,13 +383,13 @@ macro_rules! gpio {
                     type Error = ();
 
                     fn set_high(&mut self) -> Result<(), Self::Error> {
-                        // NOTE(unsafe) atomic write to a stateless register
+                        // NOTE(unsafe, write) atomic write to a stateless register
                         unsafe { (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << self.i)) }
                         Ok(())
                     }
 
                     fn set_low(&mut self) -> Result<(), Self::Error> {
-                        // NOTE(unsafe) atomic write to a stateless register
+                        // NOTE(unsafe, write) atomic write to a stateless register
                         unsafe { (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + self.i))) }
                         Ok(())
                     }
@@ -659,13 +659,13 @@ macro_rules! gpio {
                         type Error = ();
 
                         fn set_high(&mut self) -> Result<(), Self::Error> {
-                            // NOTE(unsafe) atomic write to a stateless register
+                            // NOTE(unsafe, write) atomic write to a stateless register
                             unsafe { (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << $i)) }
                             Ok(())
                         }
 
                         fn set_low(&mut self) -> Result<(), Self::Error> {
-                            // NOTE(unsafe) atomic write to a stateless register
+                            // NOTE(unsafe, write) atomic write to a stateless register
                             unsafe { (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + $i))) }
                             Ok(())
                         }

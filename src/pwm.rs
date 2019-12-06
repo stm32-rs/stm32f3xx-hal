@@ -446,10 +446,15 @@ macro_rules! pwm_timer_private {
             }
 
             // enable auto reload preloader
-            tim.cr1.write(|w| w.arpe().set_bit());
+            tim.cr1.modify(|w| w.arpe().set_bit());
 
             // Set the "resolution" of the duty cycle (ticks before restarting at 0)
             // Oddly this is unsafe for some timers and not others
+            //
+            // FIXME: I guess this is due to some Timers not allowing values >16bit.
+            // So this needs to be checked according to the Timer type.
+            //
+            // NOTE(write): uses all bits of this register.
             #[allow(unused_unsafe)]
             tim.arr.write(|w| unsafe {
                 w.arr().bits(res)
@@ -461,10 +466,11 @@ macro_rules! pwm_timer_private {
             // TODO: ppre1 is used in timer.rs (never ppre2), should this be dynamic?
             let clock_freq = clocks.$pclkz().0 * if clocks.ppre1() == 1 { 1 } else { 2 };
             let prescale_factor = clock_freq / res as u32 / freq.0;
+            // NOTE(write): uses all bits of this register.
             tim.psc.write(|w| w.psc().bits(prescale_factor as u16 - 1));
 
             // Make the settings reload immediately
-            tim.egr.write(|w| w.ug().set_bit());
+            tim.egr.modify(|w| w.ug().set_bit());
 
             // Enable outputs (STM32 Break Timer Specific)
             $enable_break_timer(&tim);
@@ -509,7 +515,7 @@ macro_rules! pwm_timer_with_break {
             $pclkz,
             $timxrst,
             $timxen,
-            |tim: &$TIMx| tim.bdtr.write(|w| w.moe().set_bit()),
+            |tim: &$TIMx| tim.bdtr.modify(|w| w.moe().set_bit()),
             [$($TIMx_CHy),+],
             [$($x),+]
         );

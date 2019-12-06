@@ -108,6 +108,7 @@ macro_rules! hal {
                         / frequency;
                     let psc = u16((ticks - 1) / (1 << 16)).unwrap();
 
+                    // NOTE(write): uses all bits in this register.
                     self.tim.psc.write(|w| w.psc().bits(psc));
 
                     let arr = u16(ticks / u32(psc + 1)).unwrap();
@@ -115,6 +116,7 @@ macro_rules! hal {
                     self.tim.arr.write(|w| unsafe { w.bits(u32(arr)) });
 
                     // Trigger an update event to load the prescaler value to the clock
+                    // NOTE(write): uses all bits in this register.
                     self.tim.egr.write(|w| w.ug().set_bit());
                     // The above line raises an update event which will indicate
                     // that the timer is already finished. Since this is not the case,
@@ -155,14 +157,14 @@ macro_rules! hal {
                 /// Starts listening for an `event`
                 pub fn listen(&mut self, event: Event) {
                     match event {
-                        Event::Update => self.tim.dier.write(|w| w.uie().set_bit()),
+                        Event::Update => self.tim.dier.modify(|w| w.uie().set_bit()),
                     }
                 }
 
                 /// Stops listening for an `event`
                 pub fn unlisten(&mut self, event: Event) {
                     match event {
-                        Event::Update => self.tim.dier.write(|w| w.uie().clear_bit()),
+                        Event::Update => self.tim.dier.modify(|w| w.uie().clear_bit()),
                     }
                 }
 

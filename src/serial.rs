@@ -256,6 +256,7 @@ macro_rules! hal {
 
                     let brr = clocks.$pclkX().0 / baud_rate.0;
                     assert!(brr >= 16, "impossible baud rate");
+                    // NOTE(write): uses all bits of this register.
                     usart.brr.write(|w| unsafe { w.bits(brr) });
 
                     // UE: enable USART
@@ -263,7 +264,7 @@ macro_rules! hal {
                     // TE: enable transceiver
                     usart
                         .cr1
-                        .write(|w| w.ue().set_bit().re().set_bit().te().set_bit());
+                        .modify(|w| w.ue().set_bit().re().set_bit().te().set_bit());
 
                     Serial { usart, pins }
                 }
