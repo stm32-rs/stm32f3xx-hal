@@ -446,7 +446,7 @@ macro_rules! pwm_timer_private {
             }
 
             // enable auto reload preloader
-            tim.cr1.modify(|w| w.arpe().set_bit());
+            tim.cr1.modify(|_, w| w.arpe().set_bit());
 
             // Set the "resolution" of the duty cycle (ticks before restarting at 0)
             // Oddly this is unsafe for some timers and not others
@@ -470,7 +470,8 @@ macro_rules! pwm_timer_private {
             tim.psc.write(|w| w.psc().bits(prescale_factor as u16 - 1));
 
             // Make the settings reload immediately
-            tim.egr.modify(|w| w.ug().set_bit());
+            // NOTE(write): write to a state-less register.
+            tim.egr.write(|w| w.ug().set_bit());
 
             // Enable outputs (STM32 Break Timer Specific)
             $enable_break_timer(&tim);
@@ -515,7 +516,7 @@ macro_rules! pwm_timer_with_break {
             $pclkz,
             $timxrst,
             $timxen,
-            |tim: &$TIMx| tim.bdtr.modify(|w| w.moe().set_bit()),
+            |tim: &$TIMx| tim.bdtr.modify(|_, w| w.moe().set_bit()),
             [$($TIMx_CHy),+],
             [$($x),+]
         );

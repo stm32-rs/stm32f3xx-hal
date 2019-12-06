@@ -264,7 +264,7 @@ macro_rules! hal {
                     // TE: enable transceiver
                     usart
                         .cr1
-                        .modify(|w| w.ue().set_bit().re().set_bit().te().set_bit());
+                        .modify(|_, w| w.ue().set_bit().re().set_bit().te().set_bit());
 
                     Serial { usart, pins }
                 }

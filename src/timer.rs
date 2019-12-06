@@ -157,14 +157,14 @@ macro_rules! hal {
                 /// Starts listening for an `event`
                 pub fn listen(&mut self, event: Event) {
                     match event {
-                        Event::Update => self.tim.dier.modify(|w| w.uie().set_bit()),
+                        Event::Update => self.tim.dier.modify(|_, w| w.uie().set_bit()),
                     }
                 }
 
                 /// Stops listening for an `event`
                 pub fn unlisten(&mut self, event: Event) {
                     match event {
-                        Event::Update => self.tim.dier.modify(|w| w.uie().clear_bit()),
+                        Event::Update => self.tim.dier.modify(|_, w| w.uie().clear_bit()),
                     }
                 }
 
