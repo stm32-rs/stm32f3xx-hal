@@ -112,21 +112,23 @@ macro_rules! hal {
 
                     let arr = u16(ticks / u32(psc + 1)).unwrap();
 
+                    // TODO (sh3rm4n)
+                    // self.tim.arr.write(|w| { w.arr().bits(arr) });
                     self.tim.arr.write(|w| unsafe { w.bits(u32(arr)) });
 
                     // Trigger an update event to load the prescaler value to the clock
-                    self.tim.egr.write(|w| w.ug().set_bit());
+                    self.tim.egr.write(|w| w.ug().update());
                     // The above line raises an update event which will indicate
                     // that the timer is already finished. Since this is not the case,
                     // it should be cleared
                     self.clear_update_interrupt_flag();
 
                     // start counter
-                    self.tim.cr1.modify(|_, w| w.cen().set_bit());
+                    self.tim.cr1.modify(|_, w| w.cen().enabled());
                 }
 
                 fn wait(&mut self) -> nb::Result<(), Void> {
-                    if self.tim.sr.read().uif().bit_is_clear() {
+                    if self.tim.sr.read().uif().is_clear() {
                         Err(nb::Error::WouldBlock)
                     } else {
                         self.clear_update_interrupt_flag();
@@ -142,8 +144,8 @@ macro_rules! hal {
                     T: Into<Hertz>,
                 {
                     // enable and reset peripheral to a clean slate state
-                    $apb.enr().modify(|_, w| w.$timXen().set_bit());
-                    $apb.rstr().modify(|_, w| w.$timXrst().set_bit());
+                    $apb.enr().modify(|_, w| w.$timXen().enabled());
+                    $apb.rstr().modify(|_, w| w.$timXrst().reset());
                     $apb.rstr().modify(|_, w| w.$timXrst().clear_bit());
 
                     let mut timer = Timer { clocks, tim };
@@ -155,25 +157,25 @@ macro_rules! hal {
                 /// Starts listening for an `event`
                 pub fn listen(&mut self, event: Event) {
                     match event {
-                        Event::Update => self.tim.dier.write(|w| w.uie().set_bit()),
+                        Event::Update => self.tim.dier.write(|w| w.uie().enabled()),
                     }
                 }
 
                 /// Stops listening for an `event`
                 pub fn unlisten(&mut self, event: Event) {
                     match event {
-                        Event::Update => self.tim.dier.write(|w| w.uie().clear_bit()),
+                        Event::Update => self.tim.dier.write(|w| w.uie().disabled()),
                     }
                 }
 
                 /// Stops the timer
                 pub fn stop(&mut self) {
-                    self.tim.cr1.modify(|_, w| w.cen().clear_bit());
+                    self.tim.cr1.modify(|_, w| w.cen().disabled());
                 }
 
                 /// Clears Update Interrupt Flag
                 pub fn clear_update_interrupt_flag(&mut self) {
-                    self.tim.sr.modify(|_, w| w.uif().clear_bit());
+                    self.tim.sr.modify(|_, w| w.uif().clear());
                 }
 
                 /// Releases the TIM peripheral
