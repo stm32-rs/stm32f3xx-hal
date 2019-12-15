@@ -84,15 +84,15 @@ pub struct I2c<I2C, PINS> {
 }
 
 macro_rules! busy_wait {
-    ($i2c:expr, $flag:ident) => {
+    ($i2c:expr, $flag:ident, $variant:ident) => {
         loop {
             let isr = $i2c.isr.read();
 
-            if isr.berr().bit_is_set() {
+            if isr.berr().is_error() {
                 return Err(Error::Bus);
-            } else if isr.arlo().bit_is_set() {
+            } else if isr.arlo().is_lost() {
                 return Err(Error::Arbitration);
-            } else if isr.$flag().bit_is_set() {
+            } else if isr.$flag().$variant() {
                 break;
             } else {
                 // try again
@@ -117,8 +117,8 @@ macro_rules! hal {
                     SCL: SclPin<$I2CX>,
                     SDA: SdaPin<$I2CX>,
                 {
-                    apb1.enr().modify(|_, w| w.$i2cXen().set_bit());
-                    apb1.rstr().modify(|_, w| w.$i2cXrst().set_bit());
+                    apb1.enr().modify(|_, w| w.$i2cXen().enabled());
+                    apb1.rstr().modify(|_, w| w.$i2cXrst().reset());
                     apb1.rstr().modify(|_, w| w.$i2cXrst().clear_bit());
 
                     let freq = freq.into().0;
@@ -196,7 +196,7 @@ macro_rules! hal {
                     });
 
                     // Enable the peripheral
-                    i2c.cr1.write(|w| w.pe().set_bit());
+                    i2c.cr1.write(|w| w.pe().enabled());
 
                     I2c { i2c, pins }
                 }
@@ -219,19 +219,19 @@ macro_rules! hal {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
-                            .clear_bit()
+                            .write()
                             .nbytes()
                             .bits(bytes.len() as u8)
                             .start()
-                            .set_bit()
+                            .start()
                             .autoend()
-                            .set_bit()
+                            .automatic()
                     });
 
                     for byte in bytes {
                         // Wait until we are allowed to send data (START has been ACKed or last byte
                         // when through)
-                        busy_wait!(self.i2c, txis);
+                        busy_wait!(self.i2c, txis, is_empty);
 
                         // put byte on the wire
                         self.i2c.txdr.write(|w| w.txdata().bits(*byte));
@@ -267,44 +267,44 @@ macro_rules! hal {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
-                            .clear_bit()
+                            .write()
                             .nbytes()
                             .bits(bytes.len() as u8)
                             .start()
-                            .set_bit()
+                            .start()
                             .autoend()
-                            .clear_bit()
+                            .software()
                     });
 
                     for byte in bytes {
                         // Wait until we are allowed to send data (START has been ACKed or last byte
                         // when through)
-                        busy_wait!(self.i2c, txis);
+                        busy_wait!(self.i2c, txis, is_empty);
 
                         // put byte on the wire
                         self.i2c.txdr.write(|w| w.txdata().bits(*byte));
                     }
 
                     // Wait until the last transmission is finished
-                    busy_wait!(self.i2c, tc);
+                    busy_wait!(self.i2c, tc, is_complete);
 
                     // reSTART and prepare to receive bytes into `buffer`
                     self.i2c.cr2.write(|w| {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
-                            .set_bit()
+                            .read()
                             .nbytes()
                             .bits(buffer.len() as u8)
                             .start()
-                            .set_bit()
+                            .start()
                             .autoend()
-                            .set_bit()
+                            .automatic()
                     });
 
                     for byte in buffer {
                         // Wait until we have received something
-                        busy_wait!(self.i2c, rxne);
+                        busy_wait!(self.i2c, rxne, is_not_empty);
 
                         *byte = self.i2c.rxdr.read().rxdata().bits();
                     }
