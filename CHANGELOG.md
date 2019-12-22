@@ -85,3 +85,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Implement GPIO InputPin traits ([#2](https://github.com/stm32-rs/stm32f3xx-hal/pull/2))
+
+## [v0.1.2] - 2019-04-06
+
+### Added 
+
+- Support `stm32f328`, `stm32f358` and `stm32f398` devices
+- Support `stm32f334` device
+- Support `stm32f378` device
+- Support `stm32f373` device
+
+## [v0.1.1] - 2019-03-31
+
+- Support `stm32f301` and `stm32f318` devices
+- Support `stm32f302` device
+
+## [v0.1.0] - 2019-03-31
+
+- Support `stm32f303` device
