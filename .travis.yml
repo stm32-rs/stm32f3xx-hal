@@ -13,6 +13,8 @@ matrix:
 
 install:
   - rustup target add thumbv7em-none-eabihf
+  - rustup component add rustfmt
 
 script:
   - ci/build.py
+  - cargo fmt -- --check
