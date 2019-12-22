@@ -368,7 +368,6 @@ impl CFGR {
                 })
         });
 
-
         Clocks {
             hclk: Hertz(hclk),
             pclk1: Hertz(pclk1),
@@ -379,8 +378,6 @@ impl CFGR {
             usbclk_valid,
         }
     }
-
-
 }
 
 /// Frozen clock frequencies
