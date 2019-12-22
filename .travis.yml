@@ -1,12 +1,18 @@
 language: rust
+
 rust:
   - stable
   - nightly
+
 cache: cargo
+
 matrix:
   allow_failures:
     - rust: nightly
   fast_finish: true
-script:
+
+install:
   - rustup target add thumbv7em-none-eabihf
+
+script:
   - ci/build.py
