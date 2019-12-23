@@ -3,9 +3,9 @@
 pub use crate::flash::FlashExt as _stm32f3xx_hal_flash_FlashExt;
 pub use crate::gpio::GpioExt as _stm32f3xx_hal_gpio_GpioExt;
 #[cfg(feature = "unproven")]
-pub use crate::hal::digital::v2::OutputPin as _embedded_hal_digital_OutputPin;
-#[cfg(feature = "unproven")]
 pub use crate::hal::digital::v2::InputPin as _embedded_hal_digital_InputPin;
+#[cfg(feature = "unproven")]
+pub use crate::hal::digital::v2::OutputPin as _embedded_hal_digital_OutputPin;
 #[cfg(feature = "unproven")]
 pub use crate::hal::digital::v2::StatefulOutputPin as _embedded_hal_digital_StatefulOutputPin;
 #[cfg(feature = "unproven")]
