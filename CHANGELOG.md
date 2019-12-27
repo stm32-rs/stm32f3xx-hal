@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#21](https://github.com/stm32-rs/stm32f3xx-hal/pull/21))
 - `stm32f303` is now split into `stm32f303xd` and `stm32f303xe` as they provide
   different alternate gpio functions. `stm32f303` is still available.
+- Bump `stm32f3` dependency to `0.9.0` ([#39](https://github.com/stm32-rs/stm32f3xx-hal/pull/39))
 
 ### Fixed
 
