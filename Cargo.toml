@@ -86,3 +86,7 @@ required-features = ["rt", "stm32f303xc"]
 [[example]]
 name = "usb_serial"
 required-features = ["rt", "stm32f303xc", "stm32-usbd"]
+
+[[example]]
+name = "spi"
+required-features = ["stm32f303"]

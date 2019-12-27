@@ -2,7 +2,8 @@
 
 use core::ptr;
 
-use crate::hal::spi::{FullDuplex, Mode, Phase, Polarity};
+use crate::hal::spi::FullDuplex;
+pub use crate::hal::spi::{Mode, Phase, Polarity};
 use crate::stm32::{SPI1, SPI2, SPI3};
 use nb;
 
@@ -175,13 +176,9 @@ macro_rules! hal {
                             .bit(mode.polarity == Polarity::IdleHigh)
                             .mstr()
                             .set_bit()
-                            .br();
-
-                        unsafe {
-                            w.bits(br);
-                        }
-
-                        w.spe()
+                            .br()
+                            .bits(br)
+                            .spe()
                             .set_bit()
                             .lsbfirst()
                             .clear_bit()
