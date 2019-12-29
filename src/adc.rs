@@ -1,21 +1,23 @@
 //! # Work in Progress
-//! API for the ADC (Analog to Digital Converter) on the 303xB/C/D/E
+//! API for the ADC (Analog to Digital Converter)
+//!
+//! Note that the more specific your hardware selection is
+//! (e.g. stm32f303**xc** instead of just stm32f303)
+//! the more functionality is accessible
+//! (in this case: ADC3 and ADC4 additionaly to ADC1 and ADC2).
 //!
 //! # Examples
-//! check `adc.rs` in the examples folder
-//!
+//! For a simple, working example check `adc.rs` in the examples folder.
 use cortex_m::asm;
 use embedded_hal::adc::{Channel, OneShot};
 
 use crate::rcc::{Clocks, AHB};
 
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
-use crate::gpio::{gpioa, gpiob, gpioc, gpiod, gpioe, gpiof, Analog};
+#[cfg(feature = "stm32f303")]
+const MAX_ADVREGEN_STARTUP_US: u32 = 10;
+
+#[cfg(feature = "stm32f303")]
+use crate::gpio::{gpioa, gpiob, gpioc, Analog};
 
 #[cfg(any(
     feature = "stm32f303xb",
@@ -23,9 +25,23 @@ use crate::gpio::{gpioa, gpiob, gpioc, gpiod, gpioe, gpiof, Analog};
     feature = "stm32f303xd",
     feature = "stm32f303xe",
 ))]
-use crate::stm32::{ADC1, ADC1_2, ADC2, ADC3, ADC3_4, ADC4};
+use crate::gpio::{gpiod, gpioe, gpiof};
+
+#[cfg(feature = "stm32f303")]
+use crate::stm32::{ADC1, ADC1_2, ADC2};
+
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
+use crate::stm32::{ADC3, ADC3_4, ADC4};
 
 /// ADC configuration
+///
+/// TODO: Remove `pub` from the register block once all functionalities are implemented.
+/// Leave it here until then as it allows easy access to the registers.
 pub struct Adc<ADC> {
     pub rb: ADC,
     clocks: Clocks,
@@ -33,14 +49,14 @@ pub struct Adc<ADC> {
     operation_mode: Option<OperationMode>,
 }
 
-#[derive(Clone, Copy, Debug)]
 /// ADC sampling time
 ///
-/// each channel can be sampled with a different sample time.
-/// the total conversion time is
-/// 12.5 ADC clock cycles + sample time (T_x + .5)
+/// Each channel can be sampled with a different sample time.
+/// For Sampletime T_n the total conversion time (in ADC clock cycles) is
+/// 12.5 + (n + .5)
 ///
 /// TODO: there are boundaries on how this can be set depending on the hardware.
+/// Check them and implement a sample time setting mechanism.
 pub enum SampleTime {
     T_1,
     T_2,
@@ -72,17 +88,20 @@ impl SampleTime {
         }
     }
 }
-#[derive(Clone, Copy, Debug, PartialEq)]
+
+#[derive(Clone, Copy, PartialEq)]
 /// ADC operation mode
+///
+/// TODO: Implement other modes (DMA, Differential,…)
 pub enum OperationMode {
     OneShot,
-    // TODO all the other modes
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 /// ADC prescale
+///
+/// TODO: Implement a setter that checks requirements for `HCLK_1` and add it.
 pub enum Prescale {
-    // HCLK_1 needs some requirements to be met
     HCLK_2 = 2,
     HCLK_4 = 4,
 }
@@ -102,7 +121,6 @@ impl Prescale {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
 /// ADC data register alignment
 pub enum Align {
     /// Right alignment of output data
@@ -128,6 +146,7 @@ impl Align {
     }
 }
 
+/// Maps pins to ADC Channels.
 macro_rules! adc_pins {
     ($ADC:ident, $($pin:ty => $chan:expr),+ $(,)*) => {
         $(
@@ -140,6 +159,28 @@ macro_rules! adc_pins {
     };
 }
 
+// # ADC1 Pin/Channel mapping
+// ## f303
+
+#[cfg(feature = "stm32f303")]
+adc_pins!(ADC1,
+    gpioa::PA0<Analog> => 1_u8,
+    gpioa::PA1<Analog> => 2_u8,
+    gpioa::PA2<Analog> => 3_u8,
+    gpioa::PA3<Analog> => 4_u8,
+    gpioc::PC0<Analog> => 6_u8,
+    gpioc::PC1<Analog> => 7_u8,
+    gpioc::PC2<Analog> => 8_u8,
+    gpioc::PC3<Analog> => 9_u8,
+);
+
+#[cfg(any(feature = "stm32f303x6", feature = "stm32f303x8"))]
+adc_pins!(ADC1,
+    gpiob::PB0<Analog> => 11_u8,
+    gpiob::PB1<Analog> => 12_u8,
+    gpiob::PB13<Analog> => 13_u8,
+);
+
 #[cfg(any(
     feature = "stm32f303xb",
     feature = "stm32f303xc",
@@ -147,17 +188,33 @@ macro_rules! adc_pins {
     feature = "stm32f303xe",
 ))]
 adc_pins!(ADC1,
-    gpioa::PA0<Analog> => 1_u8,
-    gpioa::PA1<Analog> => 2_u8,
-    gpioa::PA2<Analog> => 3_u8,
-    gpioa::PA3<Analog> => 4_u8,
     gpiof::PF4<Analog> => 5_u8,
-    // Channels 6 to 10 are shared channels (i.e. ADC12_INx)
+    gpiof::PF2<Analog> => 10_u8,
+);
+
+// # ADC2 Pin/Channel mapping
+// ## f303
+
+#[cfg(feature = "stm32f303")]
+adc_pins!(ADC2,
+    gpioa::PA4<Analog> => 1_u8,
+    gpioa::PA5<Analog> => 2_u8,
+    gpioa::PA6<Analog> => 3_u8,
+    gpioa::PA7<Analog> => 4_u8,
+    gpioc::PC4<Analog> => 5_u8,
+    gpioc::PC5<Analog> => 11_u8,
+    gpiob::PB2<Analog> => 12_u8,
     gpioc::PC0<Analog> => 6_u8,
     gpioc::PC1<Analog> => 7_u8,
     gpioc::PC2<Analog> => 8_u8,
     gpioc::PC3<Analog> => 9_u8,
-    gpiof::PF2<Analog> => 10_u8,
+);
+
+#[cfg(any(feature = "stm32f303x6", feature = "stm32f303x8"))]
+adc_pins!(ADC2,
+    gpiob::PB12<Analog> => 13_u8,
+    gpiob::PB14<Analog> => 14_u8,
+    gpiob::PB15<Analog> => 15_u8,
 );
 
 #[cfg(any(
@@ -167,20 +224,11 @@ adc_pins!(ADC1,
     feature = "stm32f303xe",
 ))]
 adc_pins!(ADC2,
-    gpioa::PA4<Analog> => 1_u8,
-    gpioa::PA5<Analog> => 2_u8,
-    gpioa::PA6<Analog> => 3_u8,
-    gpioa::PA7<Analog> => 4_u8,
-    gpioc::PC4<Analog> => 5_u8,
-    gpioc::PC5<Analog> => 11_u8,
-    gpiob::PB2<Analog> => 12_u8,
-    // Channels 6 to 10 are shared channels (i.e. ADC12_INx)
-    gpioc::PC0<Analog> => 6_u8,
-    gpioc::PC1<Analog> => 7_u8,
-    gpioc::PC2<Analog> => 8_u8,
-    gpioc::PC3<Analog> => 9_u8,
     gpiof::PF2<Analog> => 10_u8,
 );
+
+// # ADC3 Pin/Channel mapping
+// ## f303
 
 #[cfg(any(
     feature = "stm32f303xb",
@@ -207,6 +255,9 @@ adc_pins!(ADC3,
     gpiod::PD14<Analog> => 11_u8,
 );
 
+// # ADC4 Pin/Channel mapping
+// ## f303
+
 #[cfg(any(
     feature = "stm32f303xb",
     feature = "stm32f303xc",
@@ -230,6 +281,10 @@ adc_pins!(ADC4,
     gpiod::PD14<Analog> => 11_u8,
 );
 
+/// Abstract implementation of ADC functionality
+///
+/// Do not use directly. See adc12_hal for a applicable Macro.
+/// TODO: Extend/generalize beyond f303
 macro_rules! adc_hal {
     ($(
             $ADC:ident: ($init:ident, $ADC_COMMON:ident),
@@ -255,7 +310,8 @@ macro_rules! adc_hal {
                     this_adc.enable_clock(ahb, adc_common);
                     this_adc.set_align(Align::default());
                     this_adc.calibrate();
-                    // ADEN bit cannot be set during ADCAL=1 and 4 ADC clock cycle after the ADCAL
+                    // ADEN bit cannot be set during ADCAL=1
+                    // and 4 ADC clock cycle after the ADCAL
                     // bit is cleared by hardware
                     this_adc.wait_adc_clk_cycles(4);
                     this_adc.enable();
@@ -269,8 +325,8 @@ macro_rules! adc_hal {
                     self.rb.isr.modify(|_, w| w.ovr().clear_bit());
 
                     self.rb.cfgr.modify(|_, w| w
-                        .cont()     .clear_bit()
-                        .ovrmod()   .clear_bit()
+                        .cont().clear_bit()
+                        .ovrmod().clear_bit()
                     );
 
                     self.rb.sqr1.modify(|_, w|
@@ -346,17 +402,14 @@ macro_rules! adc_hal {
                     });
                 }
 
-                #[cfg(any(
-                    feature = "stm32f303xb",
-                    feature = "stm32f303xc",
-                    feature = "stm32f303xd",
-                    feature = "stm32f303xe",
-                ))]
+                /// wait for the advregen to startup.
+                ///
+                /// This is based on the MAX_ADVREGEN_STARTUP_US of the device.
                 fn wait_advregen_startup(&self) {
-                    const MAX_STARTUP_TIME_US: u32 = 10;
-                    asm::delay(MAX_STARTUP_TIME_US / (self.clocks.sysclk().0 /1_000_000));
+                        asm::delay((MAX_ADVREGEN_STARTUP_US * 1_000_000) / self.clocks.sysclk().0);
                 }
 
+                /// busy ADC read
                 fn convert_one(&mut self, chan: u8) -> u16 {
                     self.ensure_oneshot();
                     self.set_chan_smps(chan, SampleTime::default());
@@ -386,8 +439,9 @@ macro_rules! adc_hal {
                     );
                 }
 
-                // Note: only allowed when ADSTART = 0
+                /// Note: only allowed when ADSTART = 0
                 fn set_chan_smps(&self, chan: u8, smp: SampleTime) {
+                    // NOTE(unsafe): Use only predefined, valid values.
                     match chan {
                         1 => self.rb.smpr1.modify(|_, w|
                             unsafe {w.smp1().bits(smp.bitcode())}),
@@ -445,6 +499,9 @@ macro_rules! adc_hal {
     }
 }
 
+/// Macro to implement ADC functionallity for ADC1 and ADC2
+///
+/// TODO: Extend/differentiate beyond f303.
 macro_rules! adc12_hal {
     ($(
             $ADC:ident: ($init:ident),
@@ -453,6 +510,7 @@ macro_rules! adc12_hal {
             impl Adc<$ADC> {
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) {
                     ahb.enr().modify(|_, w| w.adc12en().enabled());
+                    // NOTE(unsafe): Use only predefined, valid values.
                     unsafe {
                         adc_common.ccr.modify(|_, w| w
                             .ckmode().bits(self.prescale.bitcode())
@@ -466,6 +524,16 @@ macro_rules! adc12_hal {
         )+
     }
 }
+
+/// Macro to implement ADC functionallity for ADC3 and ADC4
+///
+/// TODO: Extend/differentiate beyond f303.
+#[cfg(any(
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
 macro_rules! adc34_hal {
     ($(
             $ADC:ident: ($init:ident),
@@ -474,6 +542,7 @@ macro_rules! adc34_hal {
             impl Adc<$ADC> {
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) {
                     ahb.enr().modify(|_, w| w.adc34en().enabled());
+                    // NOTE(unsafe): Use only predefined, valid values.
                     unsafe {
                         adc_common.ccr.modify(|_, w| w
                             .ckmode().bits(self.prescale.bitcode())
@@ -488,12 +557,7 @@ macro_rules! adc34_hal {
     }
 }
 
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(feature = "stm32f303")]
 adc12_hal! {
     ADC1: (adc1),
     ADC2: (adc2),
