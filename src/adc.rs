@@ -329,10 +329,7 @@ macro_rules! adc_hal {
                         .ovrmod().clear_bit()
                     );
 
-                    self.rb.sqr1.modify(|_, w|
-                        // NOTE(unsafe): set the sequence length to 1
-                        unsafe { w.l3().bits(0) }
-                    );
+                    self.rb.sqr1.modify(|_, w| w.l().bits(0));
 
                     self.operation_mode = Some(OperationMode::OneShot);
                 }
@@ -353,7 +350,7 @@ macro_rules! adc_hal {
 
                 /// Calibrate according to 15.3.8 in the Reference Manual
                 fn calibrate(&mut self) {
-                    if !self.advregen_enabled() {
+                    if !self.rb.cr.read().advregen().is_enabled() {
                         self.advregen_enable();
                         self.wait_advregen_startup();
                     }
@@ -374,32 +371,11 @@ macro_rules! adc_hal {
                     asm::delay(adc_clk_cycle * cycles);
                 }
 
-
-                fn advregen_enabled(&self) -> bool {
-                    return self._get_new_advregen() == 0b01;
-                }
-
                 fn advregen_enable(&mut self){
-                    // need to go though 00 first
-                    self._set_new_advregen(0b00);
-                    self._set_new_advregen(0b01);
-                }
+                    // need to go through intermediate first
+                    self.rb.cr.modify(|_, w| w.advregen().intermediate());
+                    self.rb.cr.modify(|_, w| w.advregen().enabled());
 
-                /// returns ADVREGEN[1:0]
-                /// (deeppwd got merged as high bit in advregen - see ref manual)
-                fn _get_new_advregen(&self) -> u8 {
-                    return
-                        (self.rb.cr.read().deeppwd().bit() as u8) << 1 |
-                        (self.rb.cr.read().advregen().bit() as u8);
-                }
-
-                /// sets ADVREGEN[1:0]
-                /// (deeppwd got merged as high bit in advregen - see ref manual)
-                fn _set_new_advregen(&mut self, val: u8) {
-                    self.rb.cr.modify(|_, w| { w
-                        .deeppwd().bit((val & 0x02) != 0)
-                            .advregen().bit((val & 0x01) != 0)
-                    });
                 }
 
                 /// wait for the advregen to startup.
@@ -417,7 +393,7 @@ macro_rules! adc_hal {
 
                     self.rb.cr.modify(|_, w| w.adstart().set_bit());
                     while self.rb.isr.read().eos().bit_is_clear() {}
-                    return self.rb.dr.read().regular_data().bits();
+                    return self.rb.dr.read().rdata().bits();
                 }
 
                 fn ensure_oneshot(&mut self) {
@@ -432,51 +408,35 @@ macro_rules! adc_hal {
                     };
                 }
 
+                /// This should only be invoked with the defined channels for the particular
+                /// device. (See Pin/Channel mapping above)
                 fn select_single_chan(&self, chan: u8) {
                     self.rb.sqr1.modify(|_, w|
-                        // NOTE(unsafe): set the ADC_INx
+                        // NOTE(unsafe): chan is the x in ADCn_INx
                         unsafe { w.sq1().bits(chan) }
                     );
                 }
 
                 /// Note: only allowed when ADSTART = 0
                 fn set_chan_smps(&self, chan: u8, smp: SampleTime) {
-                    // NOTE(unsafe): Use only predefined, valid values.
                     match chan {
-                        1 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp1().bits(smp.bitcode())}),
-                        2 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp2().bits(smp.bitcode())}),
-                        3 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp3().bits(smp.bitcode())}),
-                        4 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp4().bits(smp.bitcode())}),
-                        5 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp5().bits(smp.bitcode())}),
-                        6 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp6().bits(smp.bitcode())}),
-                        7 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp7().bits(smp.bitcode())}),
-                        8 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp8().bits(smp.bitcode())}),
-                        9 => self.rb.smpr1.modify(|_, w|
-                            unsafe {w.smp9().bits(smp.bitcode())}),
-                        11 => self.rb.smpr2.modify(|_, w|
-                            unsafe {w.smp10().bits(smp.bitcode())}),
-                        12 => self.rb.smpr2.modify(|_, w|
-                            unsafe {w.smp12().bits(smp.bitcode())}),
-                        13 => self.rb.smpr2.modify(|_, w|
-                            unsafe {w.smp13().bits(smp.bitcode())}),
-                        14 => self.rb.smpr2.modify(|_, w|
-                            unsafe {w.smp14().bits(smp.bitcode())}),
-                        15 => self.rb.smpr2.modify(|_, w|
-                            unsafe {w.smp15().bits(smp.bitcode())}),
-                        16 => self.rb.smpr2.modify(|_, w|
-                            unsafe {w.smp16().bits(smp.bitcode())}),
-                        17 => self.rb.smpr2.modify(|_, w|
-                            unsafe {w.smp17().bits(smp.bitcode())}),
-                        18 => self.rb.smpr2.modify(|_, w|
-                            unsafe {w.smp18().bits(smp.bitcode())}),
+                        1 => self.rb.smpr1.modify(|_, w| w.smp1().bits(smp.bitcode())),
+                        2 => self.rb.smpr1.modify(|_, w| w.smp2().bits(smp.bitcode())),
+                        3 => self.rb.smpr1.modify(|_, w| w.smp3().bits(smp.bitcode())),
+                        4 => self.rb.smpr1.modify(|_, w| w.smp4().bits(smp.bitcode())),
+                        5 => self.rb.smpr1.modify(|_, w| w.smp5().bits(smp.bitcode())),
+                        6 => self.rb.smpr1.modify(|_, w| w.smp6().bits(smp.bitcode())),
+                        7 => self.rb.smpr1.modify(|_, w| w.smp7().bits(smp.bitcode())),
+                        8 => self.rb.smpr1.modify(|_, w| w.smp8().bits(smp.bitcode())),
+                        9 => self.rb.smpr1.modify(|_, w| w.smp9().bits(smp.bitcode())),
+                        11 => self.rb.smpr2.modify(|_, w| w.smp10().bits(smp.bitcode())),
+                        12 => self.rb.smpr2.modify(|_, w| w.smp12().bits(smp.bitcode())),
+                        13 => self.rb.smpr2.modify(|_, w| w.smp13().bits(smp.bitcode())),
+                        14 => self.rb.smpr2.modify(|_, w| w.smp14().bits(smp.bitcode())),
+                        15 => self.rb.smpr2.modify(|_, w| w.smp15().bits(smp.bitcode())),
+                        16 => self.rb.smpr2.modify(|_, w| w.smp16().bits(smp.bitcode())),
+                        17 => self.rb.smpr2.modify(|_, w| w.smp17().bits(smp.bitcode())),
+                        18 => self.rb.smpr2.modify(|_, w| w.smp18().bits(smp.bitcode())),
                         _ => unreachable!(),
                     };
                 }
