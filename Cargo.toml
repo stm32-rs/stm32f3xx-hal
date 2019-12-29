@@ -113,3 +113,8 @@ required-features = ["stm32f303"]
 [[example]]
 name = "serial_dma"
 required-features = ["stm32f303"]
+||||||| parent of f894222... Reworked ADC example to work with all f303 devices.
+
+[[example]]
+name = "adc"
+required-features = ["stm32f303"]
