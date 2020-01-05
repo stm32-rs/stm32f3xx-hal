@@ -5,6 +5,7 @@ use core::ptr;
 use core::convert::Infallible;
 
 use crate::hal::serial;
+use crate::hal::blocking::serial::write::Default;
 use crate::stm32::{USART1, USART2, USART3};
 use nb;
 
@@ -370,6 +371,8 @@ macro_rules! hal {
                     }
                 }
             }
+
+            impl Default<u8> for Tx<$USARTX> {}
         )+
     }
 }
