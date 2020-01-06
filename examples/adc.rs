@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-//! Example usage for ADC.
+//! Example usage for ADC on STM32F303
 
 extern crate panic_semihosting;
 
@@ -15,19 +15,20 @@ use stm32f3xx_hal::{adc, prelude::*, stm32};
 fn main() -> ! {
     // get peripherals, clocks and freeze them
     let mut dp = stm32::Peripherals::take().unwrap();
-    let mut rcc = peripherals.RCC.constrain();
-    let clocks = rcc.cfgr.freeze(&mut peripherals.FLASH.constrain().acr);
+    let mut rcc = dp.RCC.constrain();
+    let clocks = rcc.cfgr.freeze(&mut dp.FLASH.constrain().acr);
 
     // set up adc1
+    #[rustfmt::skip]
     let mut adc1 = adc::Adc::adc1(
-        peripherals.ADC1,
-        &mut peripherals.ADC1_2,
+        dp.ADC1,
+        &mut dp.ADC1_2,
         &mut rcc.ahb,
         clocks,
     );
 
     // set up pin pa0 as analog pin
-    let mut gpio_a = peripherals.GPIOA.split(&mut rcc.ahb);
+    let mut gpio_a = dp.GPIOA.split(&mut rcc.ahb);
     let mut adc1_in1_pin = gpio_a.pa0.into_analog(&mut gpio_a.moder, &mut gpio_a.pupdr);
 
     loop {
