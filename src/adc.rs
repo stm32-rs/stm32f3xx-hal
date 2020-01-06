@@ -295,7 +295,7 @@ macro_rules! adc_hal {
                 /// Init a new ADC
                 ///
                 /// Enables the clock, performs a calibration and enables the ADC
-                pub fn $init(
+                pub fn $adcx(
                     rb: $ADC,
                     adc_common : &mut $ADC_COMMON,
                     ahb: &mut AHB,
@@ -464,7 +464,7 @@ macro_rules! adc_hal {
 /// TODO: Extend/differentiate beyond f303.
 macro_rules! adc12_hal {
     ($(
-            $ADC:ident: ($init:ident),
+            $ADC:ident: ($adcx:ident),
     )+) => {
         $(
             impl Adc<$ADC> {
@@ -479,7 +479,7 @@ macro_rules! adc12_hal {
                 }
             }
             adc_hal! {
-                $ADC: ($init, ADC1_2),
+                $ADC: ($adcx, ADC1_2),
             }
         )+
     }
@@ -496,7 +496,7 @@ macro_rules! adc12_hal {
 ))]
 macro_rules! adc34_hal {
     ($(
-            $ADC:ident: ($init:ident),
+            $ADC:ident: ($adcx:ident),
     )+) => {
         $(
             impl Adc<$ADC> {
@@ -511,7 +511,7 @@ macro_rules! adc34_hal {
                 }
             }
             adc_hal! {
-                $ADC: ($init, ADC3_4),
+                $ADC: ($adcx, ADC3_4),
             }
         )+
     }
