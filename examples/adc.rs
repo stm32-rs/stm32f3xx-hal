@@ -14,7 +14,7 @@ use stm32f3xx_hal::{adc, prelude::*, stm32};
 /// Main Thread
 fn main() -> ! {
     // get peripherals, clocks and freeze them
-    let mut peripherals = stm32::Peripherals::take().unwrap();
+    let mut dp = stm32::Peripherals::take().unwrap();
     let mut rcc = peripherals.RCC.constrain();
     let clocks = rcc.cfgr.freeze(&mut peripherals.FLASH.constrain().acr);
 

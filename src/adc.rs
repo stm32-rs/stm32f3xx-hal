@@ -287,7 +287,7 @@ adc_pins!(ADC4,
 /// TODO: Extend/generalize beyond f303
 macro_rules! adc_hal {
     ($(
-            $ADC:ident: ($init:ident, $ADC_COMMON:ident),
+            $ADC:ident: ($adcx:ident, $ADC_COMMON:ident),
     )+) => {
         $(
             impl Adc<$ADC> {
@@ -315,7 +315,7 @@ macro_rules! adc_hal {
                     // bit is cleared by hardware
                     this_adc.wait_adc_clk_cycles(4);
                     this_adc.enable();
-                    return this_adc;
+                    this_adc
                 }
 
                 /// sets up adc in one shot mode for a single channel
