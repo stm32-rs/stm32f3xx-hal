@@ -68,12 +68,13 @@ pub enum SampleTime {
     T_601,
 }
 
-impl SampleTime {
-    /// Get the default timer
-    pub fn default() -> Self {
+impl Default for SampleTime {
+    fn default() -> Self {
         SampleTime::T_19
     }
+}
 
+impl SampleTime {
     /// Conversion to bits for SMP
     fn bitcode(&self) -> u8 {
         match self {
@@ -106,12 +107,13 @@ pub enum Prescale {
     HCLK_4 = 4,
 }
 
-impl Prescale {
-    /// Get default prescaler
+impl Default for Prescale {
     fn default() -> Self {
         Prescale::HCLK_2
     }
+}
 
+impl Prescale {
     /// Conversion to bits for CKMODE in ADCx_CCR
     fn bitcode(&self) -> u8 {
         match self {
@@ -129,9 +131,8 @@ pub enum Align {
     Left,
 }
 
-impl Align {
-    /// Default: right alignment
-    pub fn default() -> Self {
+impl Default for Align {
+    fn default() -> Self {
         Align::Right
     }
 }
