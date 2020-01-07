@@ -1,12 +1,13 @@
 //! Serial
 
+use core::convert::Infallible;
 use core::marker::PhantomData;
 use core::ptr;
 
+use crate::hal::blocking::serial::write::Default;
 use crate::hal::serial;
 use crate::stm32::{USART1, USART2, USART3};
 use nb;
-use void::Void;
 
 use crate::gpio::gpioa::{PA10, PA2, PA3, PA9};
 #[cfg(any(
@@ -337,13 +338,13 @@ macro_rules! hal {
             }
 
             impl serial::Write<u8> for Tx<$USARTX> {
-                // NOTE(Void) See section "29.7 USART interrupts"; the only possible errors during
+                // NOTE(Infallible) See section "29.7 USART interrupts"; the only possible errors during
                 // transmission are: clear to send (which is disabled in this case) errors and
                 // framing errors (which only occur in SmartCard mode); neither of these apply to
                 // our hardware configuration
-                type Error = Void;
+                type Error = Infallible;
 
-                fn flush(&mut self) -> nb::Result<(), Void> {
+                fn flush(&mut self) -> nb::Result<(), Infallible> {
                     // NOTE(unsafe) atomic read with no side effects
                     let isr = unsafe { (*$USARTX::ptr()).isr.read() };
 
@@ -354,7 +355,7 @@ macro_rules! hal {
                     }
                 }
 
-                fn write(&mut self, byte: u8) -> nb::Result<(), Void> {
+                fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
                     // NOTE(unsafe) atomic read with no side effects
                     let isr = unsafe { (*$USARTX::ptr()).isr.read() };
 
@@ -370,6 +371,8 @@ macro_rules! hal {
                     }
                 }
             }
+
+            impl Default<u8> for Tx<$USARTX> {}
         )+
     }
 }
