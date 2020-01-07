@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Use Infallible error type for UART
+- Implement blocking Write for UART
+
 ## [v0.4.0] - 2019-12-27
 
 ### Added
