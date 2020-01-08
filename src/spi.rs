@@ -2,7 +2,8 @@
 
 use core::ptr;
 
-use crate::hal::spi::{FullDuplex, Mode, Phase, Polarity};
+use crate::hal::spi::FullDuplex;
+pub use crate::hal::spi::{Mode, Phase, Polarity};
 use crate::stm32::{SPI1, SPI2, SPI3};
 use nb;
 
@@ -133,30 +134,15 @@ macro_rules! hal {
                     MOSI: MosiPin<$SPIX>,
                 {
                     // enable or reset $SPIX
-                    apb2.enr().modify(|_, w| w.$spiXen().set_bit());
-                    apb2.rstr().modify(|_, w| w.$spiXrst().set_bit());
+                    apb2.enr().modify(|_, w| w.$spiXen().enabled());
+                    apb2.rstr().modify(|_, w| w.$spiXrst().reset());
                     apb2.rstr().modify(|_, w| w.$spiXrst().clear_bit());
 
                     // FRXTH: RXNE event is generated if the FIFO level is greater than or equal to
                     //        8-bit
                     // DS: 8-bit data size
                     // SSOE: Slave Select output disabled
-                    spi.cr2
-                        .modify(|_, w| unsafe {
-                            w.frxth().set_bit().ds().bits(0b111).ssoe().clear_bit()
-                        });
-
-                    let br = match clocks.$pclkX().0 / freq.into().0 {
-                        0 => unreachable!(),
-                        1..=2 => 0b000,
-                        3..=5 => 0b001,
-                        6..=11 => 0b010,
-                        12..=23 => 0b011,
-                        24..=39 => 0b100,
-                        40..=95 => 0b101,
-                        96..=191 => 0b110,
-                        _ => 0b111,
-                    };
+                    spi.cr2.write(|w| w.frxth().quarter().ds().eight_bit().ssoe().disabled());
 
                     // CPHA: phase
                     // CPOL: polarity
@@ -168,31 +154,43 @@ macro_rules! hal {
                     // SSI: set nss high = master mode
                     // CRCEN: hardware CRC calculation disabled
                     // BIDIMODE: 2 line unidirectional (full duplex)
-                    spi.cr1.modify(|_, w| {
-                        w.cpha()
-                            .bit(mode.phase == Phase::CaptureOnSecondTransition)
-                            .cpol()
-                            .bit(mode.polarity == Polarity::IdleHigh)
-                            .mstr()
-                            .set_bit()
-                            .br();
+                    spi.cr1.write(|w| {
+                        w.mstr().master();
 
-                        unsafe {
-                            w.bits(br);
-                        }
+                        match mode.phase {
+                            Phase::CaptureOnFirstTransition => w.cpha().first_edge(),
+                            Phase::CaptureOnSecondTransition => w.cpha().second_edge(),
+                        };
+
+                        match mode.polarity {
+                            Polarity::IdleLow => w.cpol().idle_low(),
+                            Polarity::IdleHigh => w.cpol().idle_high(),
+                        };
+
+                        match clocks.$pclkX().0 / freq.into().0 {
+                            0 => unreachable!(),
+                            1..=2 => w.br().div2(),
+                            3..=5 => w.br().div4(),
+                            6..=11 => w.br().div8(),
+                            12..=23 => w.br().div16(),
+                            24..=39 => w.br().div32(),
+                            40..=95 => w.br().div64(),
+                            96..=191 => w.br().div128(),
+                            _ => w.br().div256(),
+                        };
 
                         w.spe()
-                            .set_bit()
+                            .enabled()
                             .lsbfirst()
-                            .clear_bit()
+                            .lsbfirst()
                             .ssi()
-                            .set_bit()
+                            .slave_not_selected()
                             .ssm()
-                            .set_bit()
+                            .enabled()
                             .crcen()
-                            .clear_bit()
+                            .disabled()
                             .bidimode()
-                            .clear_bit()
+                            .unidirectional()
                     });
 
                     Spi { spi, pins }
@@ -210,13 +208,13 @@ macro_rules! hal {
                 fn read(&mut self) -> nb::Result<u8, Error> {
                     let sr = self.spi.sr.read();
 
-                    Err(if sr.ovr().bit_is_set() {
+                    Err(if sr.ovr().is_overrun() {
                         nb::Error::Other(Error::Overrun)
-                    } else if sr.modf().bit_is_set() {
+                    } else if sr.modf().is_fault() {
                         nb::Error::Other(Error::ModeFault)
-                    } else if sr.crcerr().bit_is_set() {
+                    } else if sr.crcerr().is_no_match() {
                         nb::Error::Other(Error::Crc)
-                    } else if sr.rxne().bit_is_set() {
+                    } else if sr.rxne().is_not_empty() {
                         // NOTE(read_volatile) read only 1 byte (the svd2rust API only allows
                         // reading a half-word)
                         return Ok(unsafe {
@@ -230,13 +228,13 @@ macro_rules! hal {
                 fn send(&mut self, byte: u8) -> nb::Result<(), Error> {
                     let sr = self.spi.sr.read();
 
-                    Err(if sr.ovr().bit_is_set() {
+                    Err(if sr.ovr().is_overrun() {
                         nb::Error::Other(Error::Overrun)
-                    } else if sr.modf().bit_is_set() {
+                    } else if sr.modf().is_fault() {
                         nb::Error::Other(Error::ModeFault)
-                    } else if sr.crcerr().bit_is_set() {
+                    } else if sr.crcerr().is_no_match() {
                         nb::Error::Other(Error::Crc)
-                    } else if sr.txe().bit_is_set() {
+                    } else if sr.txe().is_empty() {
                         // NOTE(write_volatile) see note above
                         unsafe { ptr::write_volatile(&self.spi.dr as *const _ as *mut u8, byte) }
                         return Ok(());
