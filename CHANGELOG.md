@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Use Infallible error type for UART
 - Implement blocking Write for UART
+- Implement blocking Read for I2C
 
 ## [v0.4.0] - 2019-12-27
 
