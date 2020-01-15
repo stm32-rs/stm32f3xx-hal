@@ -26,6 +26,9 @@ paste = "1"
 rtcc = "0.2"
 stm32f3 = "0.12"
 
+[dependencies.canbus]
+path = "/Users/zklapow/dev/personal/robot/canbus"
+
 [dependencies.bare-metal]
 version = "0.2"
 features = ["const-fn"]
