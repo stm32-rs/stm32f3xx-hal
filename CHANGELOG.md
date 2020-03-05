@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Implement blocking Write for UART
 - Implement blocking Read for I2C
 
+### Fixed
+- Regression in v0.4.0 that set SPI to LSB-first ordering
+
 ## [v0.4.0] - 2019-12-27
 
 ### Added
