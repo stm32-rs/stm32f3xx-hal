@@ -182,7 +182,7 @@ macro_rules! hal {
                         w.spe()
                             .enabled()
                             .lsbfirst()
-                            .lsbfirst()
+                            .msbfirst()
                             .ssi()
                             .slave_not_selected()
                             .ssm()
