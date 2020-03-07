@@ -4,8 +4,6 @@ rust:
   - stable
   - nightly
 
-cache: cargo
-
 matrix:
   allow_failures:
     - rust: nightly
