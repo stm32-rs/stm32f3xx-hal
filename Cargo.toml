@@ -8,7 +8,7 @@ license = "0BSD"
 name = "stm32f3xx-hal"
 repository = "https://github.com/stm32-rs/stm32f3xx-hal"
 documentation = "https://docs.rs/stm32f3xx-hal"
-version = "0.4.0"
+version = "0.4.1"
 
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "stm32-usbd"]
