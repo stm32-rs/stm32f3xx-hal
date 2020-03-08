@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Wrong frequency reported by `MonoTimer` ([#56](https://github.com/stm32-rs/stm32f3xx-hal/pull/56))
+
 ## [v0.4.1] - 2020-03-07
 
 ### Added
@@ -107,7 +111,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [v0.1.2] - 2019-04-06
 
-### Added 
+### Added
 
 - Support `stm32f328`, `stm32f358` and `stm32f398` devices
 - Support `stm32f334` device
