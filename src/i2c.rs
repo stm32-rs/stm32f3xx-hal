@@ -88,12 +88,12 @@ macro_rules! busy_wait {
         loop {
             let isr = $i2c.isr.read();
 
-            if isr.berr().is_error() {
+            if isr.$flag().$variant() {
+                break;
+            } else if isr.berr().is_error() {
                 return Err(Error::Bus);
             } else if isr.arlo().is_lost() {
                 return Err(Error::Arbitration);
-            } else if isr.$flag().$variant() {
-                break;
             } else {
                 // try again
             }
@@ -228,7 +228,7 @@ macro_rules! hal {
                             .start()
                             .start()
                             .autoend()
-                            .software()
+                            .automatic()
                     });
 
                     for byte in buffer {
@@ -315,16 +315,16 @@ macro_rules! hal {
                     });
 
                     for byte in bytes {
-                        // Wait until we are allowed to send data (START has been ACKed or last byte
-                        // when through)
+                        // Wait until we are allowed to send data
+                        // (START has been ACKed or last byte went through):
                         busy_wait!(self.i2c, txis, is_empty);
 
-                        // put byte on the wire
+                        // put byte into TXDR
                         // NOTE(write): writes all non-reserved bits.
                         self.i2c.txdr.write(|w| w.txdata().bits(*byte));
                     }
 
-                    // Wait until the last transmission is finished
+                    // Wait until the last byte transmission is finished:
                     busy_wait!(self.i2c, tc, is_complete);
 
                     // reSTART and prepare to receive bytes into `buffer`
