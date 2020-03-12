@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Wrong frequency reported by `MonoTimer` ([#56](https://github.com/stm32-rs/stm32f3xx-hal/pull/56))
 
+### Changed
+
+- Bump `stm32f3` dependency to `0.10.0` ([#42](https://github.com/stm32-rs/stm32f3xx-hal/pull/42))
+
 ## [v0.4.1] - 2020-03-07
 
 ### Added
