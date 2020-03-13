@@ -451,10 +451,8 @@ macro_rules! pwm_timer_private {
             // Set the "resolution" of the duty cycle (ticks before restarting at 0)
             // Oddly this is unsafe for some timers and not others
             //
-            // FIXME: I guess this is due to some Timers not allowing values >16bit.
-            // So this needs to be checked according to the Timer type.
-            //
-            // NOTE(write): uses all bits of this register.
+            // NOTE(write): not all timers are documented in stm32f3, thus marked unsafe.
+            // This write uses all bits of this register so there are no unknown side effects.
             #[allow(unused_unsafe)]
             tim.arr.write(|w| unsafe {
                 w.arr().bits(res)
