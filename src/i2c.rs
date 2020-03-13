@@ -22,7 +22,7 @@ use crate::gpio::gpiob::{PB6, PB7, PB8, PB9};
 use crate::gpio::gpiof::PF6;
 use crate::gpio::gpiof::{PF0, PF1};
 use crate::gpio::AF4;
-use crate::hal::blocking::i2c::{Write, WriteRead};
+use crate::hal::blocking::i2c::{Read, Write, WriteRead};
 use crate::rcc::{Clocks, APB1};
 use crate::time::Hertz;
 
@@ -205,6 +205,42 @@ macro_rules! hal {
                 /// Releases the I2C peripheral and associated pins
                 pub fn free(self) -> ($I2CX, (SCL, SDA)) {
                     (self.i2c, self.pins)
+                }
+            }
+
+            impl<PINS> Read for I2c<$I2CX, PINS> {
+                type Error = Error;
+                fn read(&mut self, addr: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
+                    // TODO support transfers of more than 255 bytes
+                    assert!(buffer.len() < 256 && buffer.len() > 0);
+
+                    // TODO do we have to explicitly wait here if the bus is busy (e.g. another
+                    // master is communicating)?
+
+                    // START and prepare to receive `bytes`
+                    self.i2c.cr2.write(|w| {
+                        w.sadd()
+                            .bits(u16::from(addr << 1))
+                            .rd_wrn()
+                            .read()
+                            .nbytes()
+                            .bits(buffer.len() as u8)
+                            .start()
+                            .start()
+                            .autoend()
+                            .software()
+                    });
+
+                    for byte in buffer {
+                        // Wait until we have received something
+                        busy_wait!(self.i2c, rxne, is_not_empty);
+
+                        *byte = self.i2c.rxdr.read().rxdata().bits();
+                    }
+
+                    // automatic STOP
+
+                    Ok(())
                 }
             }
 

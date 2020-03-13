@@ -86,7 +86,7 @@ impl MonoTimer {
         drop(dwt);
 
         MonoTimer {
-            frequency: clocks.sysclk(),
+            frequency: clocks.hclk(),
         }
     }
 

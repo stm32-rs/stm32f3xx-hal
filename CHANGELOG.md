@@ -7,10 +7,25 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Wrong frequency reported by `MonoTimer` ([#56](https://github.com/stm32-rs/stm32f3xx-hal/pull/56))
+
+### Changed
+
+- Bump `stm32f3` dependency to `0.10.0` ([#42](https://github.com/stm32-rs/stm32f3xx-hal/pull/42))
+
+## [v0.4.1] - 2020-03-07
+
 ### Added
 
-- Use Infallible error type for UART
-- Implement blocking Write for UART
+- Use Infallible error type for UART ([#50](https://github.com/stm32-rs/stm32f3xx-hal/pull/50))
+- Implement blocking Write for UART ([#50](https://github.com/stm32-rs/stm32f3xx-hal/pull/50))
+- Implement blocking Read for I2C ([#52](https://github.com/stm32-rs/stm32f3xx-hal/pull/52))
+
+### Fixed
+
+- Regression in v0.4.0 that set SPI to LSB-first ordering ([#60](https://github.com/stm32-rs/stm32f3xx-hal/pull/60))
 
 ## [v0.4.0] - 2019-12-27
 
@@ -100,7 +115,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [v0.1.2] - 2019-04-06
 
-### Added 
+### Added
 
 - Support `stm32f328`, `stm32f358` and `stm32f398` devices
 - Support `stm32f334` device
@@ -116,7 +131,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Support `stm32f303` device
 
-[Unreleased]: https://github.com/stm32-rs/stm32f1xx-hal/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.1...HEAD
+[v0.4.1]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.0...v0.4.1
 [v0.4.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.2.3...v0.3.0
 [v0.2.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.2.2...v0.2.3
