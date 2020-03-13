@@ -34,10 +34,10 @@ unsafe impl UsbPeripheral for Peripheral {
 
         cortex_m::interrupt::free(|_| {
             // Enable USB peripheral
-            rcc.apb1enr.modify(|_, w| w.usben().set_bit());
+            rcc.apb1enr.modify(|_, w| w.usben().enabled());
 
             // Reset USB peripheral
-            rcc.apb1rstr.modify(|_, w| w.usbrst().set_bit());
+            rcc.apb1rstr.modify(|_, w| w.usbrst().reset());
             rcc.apb1rstr.modify(|_, w| w.usbrst().clear_bit());
         });
     }

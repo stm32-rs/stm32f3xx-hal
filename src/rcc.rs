@@ -195,14 +195,14 @@ impl CFGR {
         feature = "stm32f303xe",
         feature = "stm32f398"
     )))]
-    fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRCW) {
+    fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRC_A) {
         let pllsrcclk = self.hse.unwrap_or(HSI / 2);
         let pllmul = self.sysclk.unwrap_or(pllsrcclk) / pllsrcclk;
 
         let pllsrc = if self.hse.is_some() {
-            rcc::cfgr::PLLSRCW::HSE_DIV_PREDIV
+            rcc::cfgr::PLLSRC_A::HSE_DIV_PREDIV
         } else {
-            rcc::cfgr::PLLSRCW::HSI_DIV2
+            rcc::cfgr::PLLSRC_A::HSI_DIV2
         };
         (pllsrcclk, pllmul, pllsrc)
     }
@@ -214,24 +214,24 @@ impl CFGR {
         feature = "stm32f303xe",
         feature = "stm32f398",
     ))]
-    fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRCW) {
+    fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRC_A) {
         let mut pllsrcclk = self.hse.unwrap_or(HSI / 2);
         let mut pllmul = self.sysclk.unwrap_or(pllsrcclk) / pllsrcclk;
 
         let pllsrc = if self.hse.is_some() {
-            rcc::cfgr::PLLSRCW::HSE_DIV_PREDIV
+            rcc::cfgr::PLLSRC_A::HSE_DIV_PREDIV
         } else if pllmul > 16 {
             pllmul /= 2;
             pllsrcclk *= 2;
-            rcc::cfgr::PLLSRCW::HSI_DIV_PREDIV
+            rcc::cfgr::PLLSRC_A::HSI_DIV_PREDIV
         } else {
-            rcc::cfgr::PLLSRCW::HSI_DIV2
+            rcc::cfgr::PLLSRC_A::HSI_DIV2
         };
         (pllsrcclk, pllmul, pllsrc)
     }
 
     /// Returns a tuple containing the effective sysclk rate and optional pll settings.
-    fn calc_sysclk(&self) -> (u32, Option<(u8, rcc::cfgr::PLLSRCW)>) {
+    fn calc_sysclk(&self) -> (u32, Option<(u8, rcc::cfgr::PLLSRC_A)>) {
         let (pllsrcclk, pllmul, pllsrc) = self.calc_pll();
         if pllmul == 1 {
             return (pllsrcclk, None);

@@ -22,7 +22,7 @@ use crate::gpio::gpiob::{PB6, PB7, PB8, PB9};
 use crate::gpio::gpiof::PF6;
 use crate::gpio::gpiof::{PF0, PF1};
 use crate::gpio::AF4;
-use crate::hal::blocking::i2c::{Write, WriteRead};
+use crate::hal::blocking::i2c::{Read, Write, WriteRead};
 use crate::rcc::{Clocks, APB1};
 use crate::time::Hertz;
 
@@ -84,15 +84,15 @@ pub struct I2c<I2C, PINS> {
 }
 
 macro_rules! busy_wait {
-    ($i2c:expr, $flag:ident) => {
+    ($i2c:expr, $flag:ident, $variant:ident) => {
         loop {
             let isr = $i2c.isr.read();
 
-            if isr.berr().bit_is_set() {
+            if isr.berr().is_error() {
                 return Err(Error::Bus);
-            } else if isr.arlo().bit_is_set() {
+            } else if isr.arlo().is_lost() {
                 return Err(Error::Arbitration);
-            } else if isr.$flag().bit_is_set() {
+            } else if isr.$flag().$variant() {
                 break;
             } else {
                 // try again
@@ -117,8 +117,8 @@ macro_rules! hal {
                     SCL: SclPin<$I2CX>,
                     SDA: SdaPin<$I2CX>,
                 {
-                    apb1.enr().modify(|_, w| w.$i2cXen().set_bit());
-                    apb1.rstr().modify(|_, w| w.$i2cXrst().set_bit());
+                    apb1.enr().modify(|_, w| w.$i2cXen().enabled());
+                    apb1.rstr().modify(|_, w| w.$i2cXrst().reset());
                     apb1.rstr().modify(|_, w| w.$i2cXrst().clear_bit());
 
                     let freq = freq.into().0;
@@ -208,6 +208,42 @@ macro_rules! hal {
                 }
             }
 
+            impl<PINS> Read for I2c<$I2CX, PINS> {
+                type Error = Error;
+                fn read(&mut self, addr: u8, buffer: &mut [u8]) -> Result<(), Self::Error> {
+                    // TODO support transfers of more than 255 bytes
+                    assert!(buffer.len() < 256 && buffer.len() > 0);
+
+                    // TODO do we have to explicitly wait here if the bus is busy (e.g. another
+                    // master is communicating)?
+
+                    // START and prepare to receive `bytes`
+                    self.i2c.cr2.write(|w| {
+                        w.sadd()
+                            .bits(u16::from(addr << 1))
+                            .rd_wrn()
+                            .read()
+                            .nbytes()
+                            .bits(buffer.len() as u8)
+                            .start()
+                            .start()
+                            .autoend()
+                            .software()
+                    });
+
+                    for byte in buffer {
+                        // Wait until we have received something
+                        busy_wait!(self.i2c, rxne, is_not_empty);
+
+                        *byte = self.i2c.rxdr.read().rxdata().bits();
+                    }
+
+                    // automatic STOP
+
+                    Ok(())
+                }
+            }
+
             impl<PINS> Write for I2c<$I2CX, PINS> {
                 type Error = Error;
 
@@ -220,19 +256,19 @@ macro_rules! hal {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
-                            .clear_bit()
+                            .write()
                             .nbytes()
                             .bits(bytes.len() as u8)
                             .start()
-                            .set_bit()
+                            .start()
                             .autoend()
-                            .set_bit()
+                            .automatic()
                     });
 
                     for byte in bytes {
                         // Wait until we are allowed to send data (START has been ACKed or last byte
                         // when through)
-                        busy_wait!(self.i2c, txis);
+                        busy_wait!(self.i2c, txis, is_empty);
 
                         // put byte on the wire
                         // NOTE(write): writes all non-reserved bits.
@@ -269,19 +305,19 @@ macro_rules! hal {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
-                            .clear_bit()
+                            .write()
                             .nbytes()
                             .bits(bytes.len() as u8)
                             .start()
-                            .set_bit()
+                            .start()
                             .autoend()
-                            .clear_bit()
+                            .software()
                     });
 
                     for byte in bytes {
                         // Wait until we are allowed to send data (START has been ACKed or last byte
                         // when through)
-                        busy_wait!(self.i2c, txis);
+                        busy_wait!(self.i2c, txis, is_empty);
 
                         // put byte on the wire
                         // NOTE(write): writes all non-reserved bits.
@@ -289,25 +325,25 @@ macro_rules! hal {
                     }
 
                     // Wait until the last transmission is finished
-                    busy_wait!(self.i2c, tc);
+                    busy_wait!(self.i2c, tc, is_complete);
 
                     // reSTART and prepare to receive bytes into `buffer`
                     self.i2c.cr2.modify(|_, w| {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
-                            .set_bit()
+                            .read()
                             .nbytes()
                             .bits(buffer.len() as u8)
                             .start()
-                            .set_bit()
+                            .start()
                             .autoend()
-                            .set_bit()
+                            .automatic()
                     });
 
                     for byte in buffer {
                         // Wait until we have received something
-                        busy_wait!(self.i2c, rxne);
+                        busy_wait!(self.i2c, rxne, is_not_empty);
 
                         *byte = self.i2c.rxdr.read().rxdata().bits();
                     }
