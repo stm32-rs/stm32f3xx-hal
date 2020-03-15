@@ -182,6 +182,7 @@ macro_rules! hal {
                     let scll = u8(scll).unwrap();
 
                     // Configure for "fast mode" (400 KHz)
+                    // NOTE(write): writes all non-reserved bits.
                     i2c.timingr.write(|w| {
                         w.presc()
                             .bits(presc)
@@ -196,7 +197,7 @@ macro_rules! hal {
                     });
 
                     // Enable the peripheral
-                    i2c.cr1.write(|w| w.pe().enabled());
+                    i2c.cr1.modify(|_, w| w.pe().set_bit());
 
                     I2c { i2c, pins }
                 }
@@ -251,7 +252,7 @@ macro_rules! hal {
                     assert!(bytes.len() < 256 && bytes.len() > 0);
 
                     // START and prepare to send `bytes`
-                    self.i2c.cr2.write(|w| {
+                    self.i2c.cr2.modify(|_, w| {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
@@ -270,6 +271,7 @@ macro_rules! hal {
                         busy_wait!(self.i2c, txis, is_empty);
 
                         // put byte on the wire
+                        // NOTE(write): writes all non-reserved bits.
                         self.i2c.txdr.write(|w| w.txdata().bits(*byte));
                     }
 
@@ -299,7 +301,7 @@ macro_rules! hal {
                     // master is communicating)?
 
                     // START and prepare to send `bytes`
-                    self.i2c.cr2.write(|w| {
+                    self.i2c.cr2.modify(|_, w| {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
@@ -318,6 +320,7 @@ macro_rules! hal {
                         busy_wait!(self.i2c, txis, is_empty);
 
                         // put byte on the wire
+                        // NOTE(write): writes all non-reserved bits.
                         self.i2c.txdr.write(|w| w.txdata().bits(*byte));
                     }
 
@@ -325,7 +328,7 @@ macro_rules! hal {
                     busy_wait!(self.i2c, tc, is_complete);
 
                     // reSTART and prepare to receive bytes into `buffer`
-                    self.i2c.cr2.write(|w| {
+                    self.i2c.cr2.modify(|_, w| {
                         w.sadd()
                             .bits(u16::from(addr << 1))
                             .rd_wrn()
