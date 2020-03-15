@@ -3,7 +3,7 @@
 #![no_std]
 #![no_main]
 
-extern crate panic_semihosting;
+use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
