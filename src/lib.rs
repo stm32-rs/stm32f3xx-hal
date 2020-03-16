@@ -1,19 +1,22 @@
 #![no_std]
 #![allow(non_camel_case_types)]
 
-#[cfg(not(feature = "device-selected"))]
+#[cfg(all(not(feature = "device-selected"), not(feature = "needs-subvariant")))]
 compile_error!(
-    "This crate requires one of the following device features enabled:
-        stm32f301
-        stm32f318
-        stm32f302
-        stm32f303
-        stm32f373
-        stm32f378
-        stm32f334
-        stm32f328
-        stm32f358
-        stm32f398"
+    "This crate requires you to specify your target device as a feature.
+
+    See README -> Selecting the right feature gate."
+);
+
+#[cfg(all(not(feature = "device-selected"), feature = "needs-subvariant"))]
+compile_error!(
+    "This crate requires you to specify the subvariant of your chip.
+
+    e.g. The STM32F3Discovery board has a STM32F303VCT6 chip.
+    If you only specified `--features stm32f303` you will get this error.
+    Expand it to `--features stm32f303xc` to get all the functionality of your board.
+
+    See README -> Selecting the right feature gate for more."
 );
 
 pub use embedded_hal as hal;

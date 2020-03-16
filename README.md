@@ -41,3 +41,38 @@ Almost all of the implementation was shamelessly adapted from the
 ## License
 
 [0-clause BSD license](LICENSE-0BSD.txt).
+
+## Selecting the right feature gate
+
+For some of the stm32f3xx chips there are sub-variants that behave differently
+and need to be specified.
+
+If your code built perfectly before and throws a compile error now, don't worry.
+While there are a lot of cool new features coming your way, we want to make sure
+your old code still behaves the same and there are no wrong assumptions
+creating unexpected behaviour.
+
+As this crate is still under fundamental development, expect more sub-variants
+to pop up in the future.
+
+### Steps to select the right feature
+1. Get the full name of the chip you are using from your datasheet, user manual or other source.
+
+    *Example: We want to use the STM32F3Discovery kit.*
+    *The [Usermanual][] tells us it's using a STM32F303VC chip.*
+
+2. Find your chip as a feature that derives `"device-selected"` in the [Cargo.toml] file.
+
+    *Example: Looking for the right feature for our STM32F303VC chip we first find
+    `stm32f301 = […]`. This is the wrong chip, as we're not looking for `f301` but for `f303`.*
+
+    *Next in line is `stm32f303 = ["stm32f3/stm32f303", "needs-subvariant"]`. We're
+    getting close! But there is no `"device-selected"` in the derived features list.*
+
+    *Looking further we find `stm32f303xc`. This matches STM32F303VC (note that VC → xc) and derives `"device-selected`", so we're good to go.*
+
+3. Add the chip name as a feature to your cargo call.
+
+    *Example: Using the STM32F303VC chip we run `cargo check --features stm32f303xc`.*
+
+[Usermanual]: https://www.st.com/content/ccc/resource/technical/document/user_manual/8a/56/97/63/8d/56/41/73/DM00063382.pdf/files/DM00063382.pdf/jcr:content/translations/en.DM00063382.pdf
