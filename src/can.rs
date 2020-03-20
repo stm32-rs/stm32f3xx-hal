@@ -297,7 +297,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
     ) -> Result<Option<Self::Frame>, nb::Error<Self::Error>> {
         if let Some(data) = frame.data() {
             assert!(
-                data.len() < 8,
+                frame.length < 8,
                 "CanFrame cannot contain more than 8 bytes of data"
             );
         }
@@ -328,19 +328,22 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
 
             match frame.data() {
                 Some(d) => unsafe {
-                    d.iter().enumerate().for_each(|(j, val)| match j {
-                        0 => tx.tdlr.modify(|_, w| w.data0().bits(*val)),
-                        1 => tx.tdlr.modify(|_, w| w.data1().bits(*val)),
-                        2 => tx.tdlr.modify(|_, w| w.data2().bits(*val)),
-                        3 => tx.tdlr.modify(|_, w| w.data3().bits(*val)),
-                        4 => tx.tdhr.modify(|_, w| w.data4().bits(*val)),
-                        5 => tx.tdhr.modify(|_, w| w.data5().bits(*val)),
-                        6 => tx.tdhr.modify(|_, w| w.data6().bits(*val)),
-                        7 => tx.tdhr.modify(|_, w| w.data7().bits(*val)),
-                        _ => unreachable!(),
-                    });
+                    for j in 0..frame.length {
+                        let val = &frame.data[j];
+                        match j {
+                            0 => tx.tdlr.modify(|_, w| w.data0().bits(*val)),
+                            1 => tx.tdlr.modify(|_, w| w.data1().bits(*val)),
+                            2 => tx.tdlr.modify(|_, w| w.data2().bits(*val)),
+                            3 => tx.tdlr.modify(|_, w| w.data3().bits(*val)),
+                            4 => tx.tdhr.modify(|_, w| w.data4().bits(*val)),
+                            5 => tx.tdhr.modify(|_, w| w.data5().bits(*val)),
+                            6 => tx.tdhr.modify(|_, w| w.data6().bits(*val)),
+                            7 => tx.tdhr.modify(|_, w| w.data7().bits(*val)),
+                            _ => unreachable!(),
+                        }
+                    }
 
-                    tx.tdtr.modify(|_, w| w.dlc().bits(d.len() as u8));
+                    tx.tdtr.modify(|_, w| w.dlc().bits(frame.length as u8));
 
                     tx.tir.modify(|_, w| w.rtr().clear_bit());
                 },
@@ -404,7 +407,7 @@ impl Receiver for CanFifo {
             // Release the mailbox
             can.rfr[self.idx].modify(|_, w| w.rfom().set_bit());
 
-            let frame = CanFrame::data_frame(rcv_id, &data);
+            let frame = CanFrame::new_with_len(rcv_id, &data, len);
 
             return Ok(frame);
         }
@@ -481,17 +484,21 @@ impl Receiver for CanFifo {
 }
 
 impl CanFrame {
-    pub fn data_frame(id: CanId, data: &[u8]) -> CanFrame {
-        assert!(data.len() <= 8, "CAN Frames can have at most 8 data bytes");
+    pub fn new_with_len(id: CanId, data: &[u8], length: usize) -> CanFrame {
+        assert!(length <= 8, "CAN Frames can have at most 8 data bytes");
 
         let mut frame_data = [0u8; 8];
-        frame_data[0..data.len()].clone_from_slice(data);
+        frame_data[0..length].clone_from_slice(&data[0..length]);
 
         CanFrame {
             id,
             data: frame_data,
-            length: data.len(),
+            length,
         }
+    }
+
+    pub fn data_frame(id: CanId, data: &[u8]) -> CanFrame {
+        CanFrame::new_with_len(id, data, data.len())
     }
 
     pub fn remote_frame(id: CanId) -> CanFrame {
