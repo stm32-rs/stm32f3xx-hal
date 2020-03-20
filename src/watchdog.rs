@@ -1,6 +1,7 @@
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 
 use crate::stm32::{DBGMCU, IWDG};
+use crate::time::MilliSeconds;
 
 const LSI_KHZ: u32 = 40;
 const MAX_PR: u8 = 8;
@@ -9,13 +10,13 @@ const KR_ACCESS: u16 = 0x5555;
 const KR_RELOAD: u16 = 0xAAAA;
 const KR_START: u16 = 0xCCCC;
 
-struct IndependentWatchDog {
+pub struct IndependentWatchDog {
     iwdg: IWDG,
 }
 
 impl IndependentWatchDog {
     pub fn new(iwdg: IWDG) -> Self {
-        IndependentWatchdog { iwdg }
+        IndependentWatchDog { iwdg }
     }
 
     pub fn stop_on_debug(&self, dbg: &DBGMCU, stop: bool) {
@@ -81,7 +82,7 @@ impl IndependentWatchDog {
     }
 }
 
-impl WatchdogEnable for IndependentWatchdog {
+impl WatchdogEnable for IndependentWatchDog {
     type Time = MilliSeconds;
 
     fn start<T: Into<Self::Time>>(&mut self, period: T) {
@@ -91,7 +92,7 @@ impl WatchdogEnable for IndependentWatchdog {
     }
 }
 
-impl Watchdog for IndependentWatchdog {
+impl Watchdog for IndependentWatchDog {
     fn feed(&mut self) {
         self.iwdg.kr.write(|w| unsafe { w.key().bits(KR_RELOAD) });
     }
