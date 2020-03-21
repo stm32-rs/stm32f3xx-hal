@@ -12,7 +12,7 @@ version = "0.4.1"
 
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "stm32-usbd"]
-default-target = "x86_64-unknown-linux-gnu"
+targets = ["thumbv7em-none-eabihf"]
 
 [badges]
 travis-ci = { repository = "stm32-rs/stm32f3xx-hal" }
