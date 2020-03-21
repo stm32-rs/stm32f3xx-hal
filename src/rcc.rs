@@ -101,8 +101,14 @@ const HSI: u32 = 8_000_000; // Hz
 // some microcontrollers do not have USB
 #[cfg(any(feature = "stm32f301", feature = "stm32f334",))]
 mod usb_clocking {
-    pub fn has_usb() -> bool {
-        false
+    use crate::stm32::rcc::cfgr;
+
+    pub fn is_valid(
+        _sysclk: &u32,
+        _hse: &Option<u32>,
+        _pll_options: &Option<(cfgr::PLLMUL_A, cfgr::PLLSRC_A)>,
+    ) -> (bool, bool) {
+        (false, false)
     }
 
     pub fn set_usbpre<W>(w: &mut W, _: bool) -> &mut W {
@@ -121,18 +127,28 @@ mod usb_clocking {
     feature = "stm32f398",
 ))]
 mod usb_clocking {
-    use crate::stm32::rcc;
+    use crate::stm32::rcc::cfgr;
 
-    pub fn has_usb() -> bool {
-        true
+    pub fn is_valid(
+        sysclk: &u32,
+        hse: &Option<u32>,
+        pll_options: &Option<(cfgr::PLLMUL_A, cfgr::PLLSRC_A)>,
+    ) -> (cfgr::USBPRE_A, bool) {
+        // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
+        // PLL output frequency is a supported one.
+        // usbpre == false: divide clock by 1.5, otherwise no division
+        let usb_ok = hse.is_some() && pll_options.is_some();
+        match (usb_ok, sysclk) {
+            (true, 72_000_000) => (cfgr::USBPRE_A::DIV1_5, true),
+            (true, 48_000_000) => (cfgr::USBPRE_A::DIV1, true),
+            _ => (cfgr::USBPRE_A::DIV1, false),
+        }
     }
 
-    pub fn set_usbpre(w: &mut rcc::cfgr::W, bit: bool) -> &mut rcc::cfgr::W {
-        w.usbpre().bit(bit)
+    pub fn set_usbpre(w: &mut cfgr::W, usb_prescale: cfgr::USBPRE_A) -> &mut cfgr::W {
+        w.usbpre().variant(usb_prescale)
     }
 }
-
-use self::usb_clocking::{has_usb, set_usbpre};
 
 /// Clock configuration
 pub struct CFGR {
@@ -334,15 +350,7 @@ impl CFGR {
             })
         }
 
-        // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
-        // PLL output frequency is a supported one.
-        // usbpre == false: divide clock by 1.5, otherwise no division
-        let usb_ok = has_usb() && self.hse.is_some() && pll_options.is_some();
-        let (usbpre, usbclk_valid) = match (usb_ok, sysclk) {
-            (true, 72_000_000) => (false, true),
-            (true, 48_000_000) => (true, true),
-            _ => (true, false),
-        };
+        let (usbpre, usbclk_valid) = usb_clocking::is_valid(&sysclk, &self.hse, &pll_options);
 
         let rcc = unsafe { &*RCC::ptr() };
 
