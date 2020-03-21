@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Wrong frequency reported by `MonoTimer` ([#56](https://github.com/stm32-rs/stm32f3xx-hal/pull/56))
 - Use automatic mode with I2C autoend on `Read` ([#72](https://github.com/stm32-rs/stm32f3xx-hal/pull/72))
+- Wrong calculation of HCLK prescaler, if using a prescaler value equal or
+  higher than 64 ([#42](https://github.com/stm32-rs/stm32f3xx-hal/pull/42))
 
 ### Changed
 
