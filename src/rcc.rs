@@ -2,8 +2,10 @@
 
 use core::cmp;
 
-use crate::stm32::{rcc, RCC};
-use cast::u32;
+use crate::stm32::{
+    rcc::{self, cfgr},
+    RCC,
+};
 
 use crate::flash::ACR;
 use crate::time::Hertz;
@@ -195,14 +197,14 @@ impl CFGR {
         feature = "stm32f303xe",
         feature = "stm32f398"
     )))]
-    fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRC_A) {
+    fn calc_pll(&self) -> (u32, u32, cfgr::PLLSRC_A) {
         let pllsrcclk = self.hse.unwrap_or(HSI / 2);
         let pllmul = self.sysclk.unwrap_or(pllsrcclk) / pllsrcclk;
 
         let pllsrc = if self.hse.is_some() {
-            rcc::cfgr::PLLSRC_A::HSE_DIV_PREDIV
+            cfgr::PLLSRC_A::HSE_DIV_PREDIV
         } else {
-            rcc::cfgr::PLLSRC_A::HSI_DIV2
+            cfgr::PLLSRC_A::HSI_DIV2
         };
         (pllsrcclk, pllmul, pllsrc)
     }
@@ -214,92 +216,108 @@ impl CFGR {
         feature = "stm32f303xe",
         feature = "stm32f398",
     ))]
-    fn calc_pll(&self) -> (u32, u32, rcc::cfgr::PLLSRC_A) {
+    fn calc_pll(&self) -> (u32, u32, cfgr::PLLSRC_A) {
         let mut pllsrcclk = self.hse.unwrap_or(HSI / 2);
         let mut pllmul = self.sysclk.unwrap_or(pllsrcclk) / pllsrcclk;
 
         let pllsrc = if self.hse.is_some() {
-            rcc::cfgr::PLLSRC_A::HSE_DIV_PREDIV
+            cfgr::PLLSRC_A::HSE_DIV_PREDIV
         } else if pllmul > 16 {
             pllmul /= 2;
             pllsrcclk *= 2;
-            rcc::cfgr::PLLSRC_A::HSI_DIV_PREDIV
+            cfgr::PLLSRC_A::HSI_DIV_PREDIV
         } else {
-            rcc::cfgr::PLLSRC_A::HSI_DIV2
+            cfgr::PLLSRC_A::HSI_DIV2
         };
         (pllsrcclk, pllmul, pllsrc)
     }
 
     /// Returns a tuple containing the effective sysclk rate and optional pll settings.
-    fn calc_sysclk(&self) -> (u32, Option<(u8, rcc::cfgr::PLLSRC_A)>) {
+    fn calc_sysclk(&self) -> (u32, Option<(cfgr::PLLMUL_A, cfgr::PLLSRC_A)>) {
         let (pllsrcclk, pllmul, pllsrc) = self.calc_pll();
         if pllmul == 1 {
             return (pllsrcclk, None);
         }
 
         let pllmul = cmp::min(cmp::max(pllmul, 2), 16);
-        let sysclk = pllmul * pllsrcclk;
+        let sysclk = pllsrcclk * pllmul;
         assert!(sysclk <= 72_000_000);
 
-        let pllmul_bits = pllmul as u8 - 2;
-        (sysclk, Some((pllmul_bits, pllsrc)))
+        // NOTE From<u8> for PLLMUL_A is not implemented
+        let pllmul_mul = match pllmul as u8 {
+            2 => cfgr::PLLMUL_A::MUL2,
+            3 => cfgr::PLLMUL_A::MUL3,
+            4 => cfgr::PLLMUL_A::MUL4,
+            5 => cfgr::PLLMUL_A::MUL5,
+            6 => cfgr::PLLMUL_A::MUL6,
+            7 => cfgr::PLLMUL_A::MUL7,
+            8 => cfgr::PLLMUL_A::MUL8,
+            9 => cfgr::PLLMUL_A::MUL9,
+            10 => cfgr::PLLMUL_A::MUL10,
+            11 => cfgr::PLLMUL_A::MUL11,
+            12 => cfgr::PLLMUL_A::MUL12,
+            13 => cfgr::PLLMUL_A::MUL13,
+            14 => cfgr::PLLMUL_A::MUL14,
+            15 => cfgr::PLLMUL_A::MUL15,
+            16 => cfgr::PLLMUL_A::MUL16,
+            _ => unreachable!(),
+        };
+        (sysclk, Some((pllmul_mul, pllsrc)))
     }
 
     /// Freezes the clock configuration, making it effective
     pub fn freeze(self, acr: &mut ACR) -> Clocks {
         let (sysclk, pll_options) = self.calc_sysclk();
 
-        let hpre_bits = self
+        let (hpre_bits, hpre) = self
             .hclk
             .map(|hclk| match sysclk / hclk {
                 0 => unreachable!(),
-                1 => 0b0111,
-                2 => 0b1000,
-                3..=5 => 0b1001,
-                6..=11 => 0b1010,
-                12..=39 => 0b1011,
-                40..=95 => 0b1100,
-                96..=191 => 0b1101,
-                192..=383 => 0b1110,
-                _ => 0b1111,
+                1 => (cfgr::HPRE_A::DIV1, 1),
+                2 => (cfgr::HPRE_A::DIV2, 2),
+                3..=5 => (cfgr::HPRE_A::DIV4, 4),
+                6..=11 => (cfgr::HPRE_A::DIV8, 8),
+                12..=39 => (cfgr::HPRE_A::DIV16, 16),
+                40..=95 => (cfgr::HPRE_A::DIV64, 64),
+                96..=191 => (cfgr::HPRE_A::DIV128, 128),
+                192..=383 => (cfgr::HPRE_A::DIV256, 256),
+                _ => (cfgr::HPRE_A::DIV512, 512),
             })
-            .unwrap_or(0b0111);
+            .unwrap_or((cfgr::HPRE_A::DIV1, 1));
 
-        let hclk = sysclk / (1 << (hpre_bits - 0b0111));
+        let hclk: u32 = sysclk / hpre;
 
         assert!(hclk <= 72_000_000);
 
-        let ppre1_bits = self
+        let (ppre1_bits, ppre1) = self
             .pclk1
             .map(|pclk1| match hclk / pclk1 {
                 0 => unreachable!(),
-                1 => 0b011,
-                2 => 0b100,
-                3..=5 => 0b101,
-                6..=11 => 0b110,
-                _ => 0b111,
+                1 => (cfgr::PPRE1_A::DIV1, 1),
+                2 => (cfgr::PPRE1_A::DIV2, 2),
+                3..=5 => (cfgr::PPRE1_A::DIV4, 4),
+                6..=11 => (cfgr::PPRE1_A::DIV8, 8),
+                _ => (cfgr::PPRE1_A::DIV16, 16),
             })
-            .unwrap_or(0b011);
+            .unwrap_or((cfgr::PPRE1_A::DIV1, 1));
 
-        let ppre1 = 1 << (ppre1_bits - 0b011);
-        let pclk1 = hclk / u32(ppre1);
+        let pclk1 = hclk / u32::from(ppre1);
 
         assert!(pclk1 <= 36_000_000);
 
-        let ppre2_bits = self
+        let (ppre2_bits, ppre2) = self
             .pclk2
             .map(|pclk2| match hclk / pclk2 {
                 0 => unreachable!(),
-                1 => 0b011,
-                2 => 0b100,
-                3..=5 => 0b101,
-                6..=11 => 0b110,
-                _ => 0b111,
+                1 => (cfgr::PPRE2_A::DIV1, 1),
+                2 => (cfgr::PPRE2_A::DIV2, 2),
+                3..=5 => (cfgr::PPRE2_A::DIV4, 4),
+                6..=11 => (cfgr::PPRE2_A::DIV8, 8),
+                _ => (cfgr::PPRE2_A::DIV16, 16),
             })
-            .unwrap_or(0b011);
+            .unwrap_or((cfgr::PPRE2_A::DIV1, 1));
 
-        let ppre2 = 1 << (ppre2_bits - 0b011);
-        let pclk2 = hclk / u32(ppre2);
+        let pclk2 = hclk / u32::from(ppre2);
 
         assert!(pclk2 <= 72_000_000);
 
@@ -330,42 +348,39 @@ impl CFGR {
 
         if self.hse.is_some() {
             // enable HSE and wait for it to be ready
+            rcc.cr.modify(|_, w| w.hseon().on());
 
-            rcc.cr.modify(|_, w| w.hseon().set_bit());
-
-            while rcc.cr.read().hserdy().bit_is_clear() {}
+            while rcc.cr.read().hserdy().is_not_ready() {}
         }
 
-        if let Some((pllmul_bits, pllsrc)) = pll_options {
+        if let Some((pllmul_mul, pllsrc)) = pll_options {
             // enable PLL and wait for it to be ready
             rcc.cfgr
-                .modify(|_, w| w.pllmul().bits(pllmul_bits).pllsrc().variant(pllsrc));
+                .modify(|_, w| w.pllmul().variant(pllmul_mul).pllsrc().variant(pllsrc));
 
-            rcc.cr.modify(|_, w| w.pllon().set_bit());
+            rcc.cr.modify(|_, w| w.pllon().on());
 
-            while rcc.cr.read().pllrdy().bit_is_clear() {}
+            while rcc.cr.read().pllrdy().is_not_ready() {}
         }
 
         // set prescalers and clock source
-        rcc.cfgr.modify(|_, w| unsafe {
-            set_usbpre(w, usbpre)
-                .ppre2()
-                .bits(ppre2_bits)
+        rcc.cfgr.modify(|_, w| {
+            usb_clocking::set_usbpre(w, usbpre);
+
+            w.ppre2()
+                .variant(ppre2_bits)
                 .ppre1()
-                .bits(ppre1_bits)
+                .variant(ppre1_bits)
                 .hpre()
-                .bits(hpre_bits)
-                .sw()
-                .bits(if pll_options.is_some() {
-                    // PLL
-                    0b10
-                } else if self.hse.is_some() {
-                    // HSE
-                    0b01
-                } else {
-                    // HSI
-                    0b00
-                })
+                .variant(hpre_bits);
+
+            if pll_options.is_some() {
+                w.sw().pll()
+            } else if self.hse.is_some() {
+                w.sw().hse()
+            } else {
+                w.sw().hsi()
+            }
         });
 
         Clocks {
