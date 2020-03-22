@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - **Breaking** The feature gate requires you to select a subvaraint if possible. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
+- **Breaking** Split up `stm32f302` into sub-targets `stm32f302xb`,`stm32f302xc`,`stm32f302xd`,`stm32f302xe`
 
 ## [v0.4.3] - 2020-04-11
 
