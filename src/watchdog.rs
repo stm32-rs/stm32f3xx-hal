@@ -1,3 +1,5 @@
+//! Watchdog
+
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 
 use crate::stm32::{DBGMCU, IWDG};
@@ -6,19 +8,18 @@ use crate::time::MilliSeconds;
 const LSI_KHZ: u32 = 40;
 const MAX_PR: u8 = 8;
 const MAX_RL: u16 = 0x1000;
-const KR_ACCESS: u16 = 0x5555;
-const KR_RELOAD: u16 = 0xAAAA;
-const KR_START: u16 = 0xCCCC;
 
 pub struct IndependentWatchDog {
     iwdg: IWDG,
 }
 
 impl IndependentWatchDog {
+    /// Creates a new `IndependentWatchDog` without starting it. Call `start` to start the watchdog. See `WatchdogEnable` and `Watchdog` for more info.
     pub fn new(iwdg: IWDG) -> Self {
         IndependentWatchDog { iwdg }
     }
 
+    /// Set the watchdog to stop when a breakpoint is hit while debugging
     pub fn stop_on_debug(&self, dbg: &DBGMCU, stop: bool) {
         dbg.apb1_fz.modify(|_, w| w.dbg_iwdg_stop().bit(stop));
     }
@@ -73,11 +74,11 @@ impl IndependentWatchDog {
 
     fn access_registers<A, F: FnMut(&IWDG) -> A>(&self, mut f: F) -> A {
         // Unprotect write access to registers
-        self.iwdg.kr.write(|w| unsafe { w.key().bits(KR_ACCESS) });
+        self.iwdg.kr.write(|w| w.key().enable());
         let a = f(&self.iwdg);
 
         // Protect again
-        self.iwdg.kr.write(|w| unsafe { w.key().bits(KR_RELOAD) });
+        self.iwdg.kr.write(|w| w.key().reset());
         a
     }
 }
@@ -88,12 +89,12 @@ impl WatchdogEnable for IndependentWatchDog {
     fn start<T: Into<Self::Time>>(&mut self, period: T) {
         self.setup(period.into().0);
 
-        self.iwdg.kr.write(|w| unsafe { w.key().bits(KR_START) });
+        self.iwdg.kr.write(|w| w.key().start());
     }
 }
 
 impl Watchdog for IndependentWatchDog {
     fn feed(&mut self) {
-        self.iwdg.kr.write(|w| unsafe { w.key().bits(KR_RELOAD) });
+        self.iwdg.kr.write(|w| w.key().reset());
     }
 }
