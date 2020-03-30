@@ -892,7 +892,7 @@ gpio!([
                 AF13: (into_af13, 13, ["stm32f334",],),
                 AF14: (into_af14, 14, ["stm32f302", "stm32f303xb", "stm32f303xc",],),
             ]),
-            PA13: (pa13, 13, Input<Floating>, AFRH, [
+            PA13: (pa13, 13, AF0, AFRH, [
                 AF0: (into_af0, 0,),
                 AF1: (into_af1, 1,),
                 AF3: (into_af3, 3,),
@@ -904,7 +904,7 @@ gpio!([
                 AF6: (into_af6, 6, ["stm32f373", "stm32f378", "stm32f398",],),
                 AF10: (into_af10, 10, ["stm32f302", "stm32f303xb", "stm32f303xc", "stm32f303xd", "stm32f303xe", "stm32f373", "stm32f378", "stm32f358", "stm32f398",],),
             ]),
-            PA14: (pa14, 14, Input<Floating>, AFRH, [
+            PA14: (pa14, 14, AF0, AFRH, [
                 AF0: (into_af0, 0,),
                 AF3: (into_af3, 3,),
                 AF4: (into_af4, 4,),
@@ -915,7 +915,7 @@ gpio!([
                 AF7: (into_af7, 7, ["stm32f301", "stm32f318", "stm32f302", "stm32f303", "stm32f334", "stm32f328", "stm32f358", "stm32f398",],),
                 AF10: (into_af10, 10, ["stm32f373", "stm32f378",],),
             ]),
-            PA15: (pa15, 15, Input<Floating>, AFRH, [
+            PA15: (pa15, 15, AF0, AFRH, [
                 AF0: (into_af0, 0,),
                 AF1: (into_af1, 1,),
                 AF4: (into_af4, 4,),
@@ -977,7 +977,7 @@ gpio!([
                 AF13: (into_af13, 13, ["stm32f334",],),
                 AF15: (into_af15, 15, ["stm32f301", "stm32f302", "stm32f303", "stm32f334",],),
             ]),
-            PB3: (pb3, 3, Input<Floating>, AFRL, [
+            PB3: (pb3, 3, AF0, AFRL, [
                 AF0: (into_af0, 0,),
                 AF1: (into_af1, 1,),
                 AF3: (into_af3, 3,),
@@ -993,7 +993,7 @@ gpio!([
                 AF12: (into_af12, 12, ["stm32f334",],),
                 AF13: (into_af13, 13, ["stm32f334",],),
             ]),
-            PB4: (pb4, 4, Input<Floating>, AFRL, [
+            PB4: (pb4, 4, AF0, AFRL, [
                 AF0: (into_af0, 0,),
                 AF1: (into_af1, 1,),
                 AF3: (into_af3, 3,),
