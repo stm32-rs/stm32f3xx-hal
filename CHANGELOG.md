@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Wrong default modes for debug GPIO pins
+
 ## [v0.4.2] - 2020-03-21
 
 ### Fixed
