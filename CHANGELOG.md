@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Support for safe one-shot DMA transfers ([#86](https://github.com/stm32-rs/stm32f3xx-hal/pull/86))
+- DMA support for serial reception and transmission ([#86](https://github.com/stm32-rs/stm32f3xx-hal/pull/86))
+
 ### Fixed
 
 - `PLL` was calculated wrong for devices, which do not divide `HSI` ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
