@@ -23,7 +23,20 @@ use nb;
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-use crate::gpio::{gpiod, gpioe};
+use crate::gpio::gpiod;
+#[cfg(any(
+    feature = "stm32f302",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
+))]
+use crate::gpio::gpioe;
 
 #[cfg(feature = "stm32f303")]
 mod dma_imports {
