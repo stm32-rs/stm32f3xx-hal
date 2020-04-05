@@ -546,26 +546,22 @@ macro_rules! gpio {
                         }
 
                         /// Configures the pin to operate as an open drain output pin
-                        pub fn into_open_drain_output(
-                            self,
-                            moder: &mut MODER,
-                            otyper: &mut OTYPER,
-                        ) -> $PXi<Output<OpenDrain>> {
-                            let offset = 2 * $i;
-
-                            // general purpose output mode
-                            let mode = 0b01;
-                            moder.moder().modify(|r, w| unsafe {
-                                w.bits((r.bits() & !(0b11 << offset)) | (mode << offset))
+                        pub fn into_open_drain_output(self) -> $PXi<Output<OpenDrain>> {
+                        let offset = 2 * $i;
+                        unsafe {
+                            &(*$GPIOX::ptr()).pupdr.modify(|r, w| {
+                                w.bits((r.bits() & !(0b11 << offset)) | (0b00 << offset))
                             });
+                            &(*$GPIOX::ptr()).otyper.modify(|r, w| {
+                                w.bits(r.bits() | (0b1 << $i))
+                            });
+                            &(*$GPIOX::ptr()).moder.modify(|r, w| {
+                                w.bits((r.bits() & !(0b11 << offset)) | (0b01 << offset))
+                            })
+                        };
 
-                            // open drain output
-                            otyper
-                                .otyper()
-                                .modify(|r, w| unsafe { w.bits(r.bits() | (0b1 << $i)) });
-
-                            $PXi { _mode: PhantomData }
-                        }
+                        $PXi { _mode: PhantomData }
+                    }
 
                         /// Configures the pin to operate as an push pull output pin
                         pub fn into_push_pull_output(
@@ -699,6 +695,19 @@ macro_rules! gpio {
 
                     #[cfg(feature = "unproven")]
                     impl<MODE> toggleable::Default for $PXi<Output<MODE>> {}
+
+                    impl<MODE> InputPin for $PXi<Output<MODE>> {
+                    type Error = ();
+
+                    fn is_high(&self) -> Result<bool, Self::Error> {
+                        self.is_low().map(|v| !v)
+                    }
+
+                    fn is_low(&self) -> Result<bool, Self::Error> {
+                        // NOTE(unsafe) atomic read with no side effects
+                        Ok(unsafe { (*$GPIOX::ptr()).idr.read().bits() & (1 << $i) == 0 })
+                    }
+                }
                 )+
             }
         )+
