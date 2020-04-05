@@ -123,6 +123,8 @@ pub use crate::pac::interrupt;
 #[cfg(feature = "device-selected")]
 pub mod delay;
 #[cfg(feature = "device-selected")]
+pub mod dma;
+#[cfg(feature = "device-selected")]
 pub mod flash;
 #[cfg(feature = "device-selected")]
 pub mod gpio;

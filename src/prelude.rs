@@ -1,5 +1,6 @@
 //! Prelude
 
+pub use crate::dma::DmaExt as _stm32f3xx_hal_dma_DmaExt;
 pub use crate::flash::FlashExt as _stm32f3xx_hal_flash_FlashExt;
 pub use crate::gpio::GpioExt as _stm32f3xx_hal_gpio_GpioExt;
 pub use crate::hal::prelude::*;
