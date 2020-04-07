@@ -393,7 +393,9 @@ macro_rules! adc_hal {
                     self.select_single_chan(chan);
 
                     self.rb.cr.modify(|_, w| w.adstart().set_bit());
-                    while self.rb.isr.read().eos().bit_is_clear() {}
+                    while self.rb.isr.read().eos().is_not_complete()
+                        {}
+                    self.rb.isr.modify(|_, w| w.eos().clear());
                     return self.rb.dr.read().rdata().bits();
                 }
 
