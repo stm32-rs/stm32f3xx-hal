@@ -44,7 +44,7 @@ fn main() -> ! {
 
     // start separate DMAs for sending and receiving the data
     let sending = tx.write_all(Pin::new(tx_buf), tx_channel);
-    let receiving = rx.read_all(Pin::new(rx_buf), rx_channel);
+    let receiving = rx.read_exact(Pin::new(rx_buf), rx_channel);
 
     // block until all data was transmitted and received
     let (mut tx_buf, tx_channel, tx) = sending.wait();
@@ -56,7 +56,7 @@ fn main() -> ! {
     tx_buf.copy_from_slice(b"hi again!");
 
     let sending = tx.write_all(tx_buf, tx_channel);
-    let receiving = rx.read_all(rx_buf, rx_channel);
+    let receiving = rx.read_exact(rx_buf, rx_channel);
 
     let (tx_buf, ..) = sending.wait();
     let (rx_buf, ..) = receiving.wait();

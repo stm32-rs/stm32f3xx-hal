@@ -381,7 +381,7 @@ macro_rules! hal {
             #[cfg(feature = "stm32f303")]
             impl Rx<$USARTX> {
                 /// Fill the buffer with received data using DMA.
-                pub fn read_all<B, C>(
+                pub fn read_exact<B, C>(
                     self,
                     mut buffer: Pin<B>,
                     mut channel: C
