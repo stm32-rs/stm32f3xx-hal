@@ -471,12 +471,9 @@ macro_rules! adc12_hal {
             impl Adc<$ADC> {
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) {
                     ahb.enr().modify(|_, w| w.adc12en().enabled());
-                    // NOTE(unsafe): Use only predefined, valid values.
-                    unsafe {
-                        adc_common.ccr.modify(|_, w| w
-                            .ckmode().bits(self.prescale.bitcode())
-                        );
-                    }
+                    adc_common.ccr.modify(|_, w| w
+                        .ckmode().bits(self.prescale.bitcode())
+                    );
                 }
             }
             adc_hal! {
@@ -503,12 +500,9 @@ macro_rules! adc34_hal {
             impl Adc<$ADC> {
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) {
                     ahb.enr().modify(|_, w| w.adc34en().enabled());
-                    // NOTE(unsafe): Use only predefined, valid values.
-                    unsafe {
-                        adc_common.ccr.modify(|_, w| w
-                            .ckmode().bits(self.prescale.bitcode())
-                        );
-                    }
+                    adc_common.ccr.modify(|_, w| w
+                        .ckmode().bits(self.prescale.bitcode())
+                    );
                 }
             }
             adc_hal! {
