@@ -31,16 +31,20 @@ version = "0.2"
 features = ["const-fn"]
 
 [dependencies.cast]
-default-features = false
 version = "0.2"
-
-[dependencies.void]
 default-features = false
+
+[dependencies.stable_deref_trait]
 version = "1"
+default-features = false
 
 [dependencies.stm32-usbd]
 version = "0.5"
 optional = true
+
+[dependencies.void]
+version = "1"
+default-features = false
 
 [dev-dependencies]
 panic-semihosting = "0.5"

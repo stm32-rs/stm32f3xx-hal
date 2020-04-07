@@ -42,10 +42,8 @@ use crate::gpio::gpioe;
 mod dma_imports {
     pub use crate::dma;
     pub use as_slice::{AsMutSlice, AsSlice};
-    pub use core::{
-        ops::{Deref, DerefMut},
-        pin::Pin,
-    };
+    pub use core::ops::{Deref, DerefMut};
+    pub use stable_deref_trait::StableDeref;
 }
 
 #[cfg(feature = "stm32f303")]
@@ -383,13 +381,13 @@ macro_rules! hal {
                 /// Fill the buffer with received data using DMA.
                 pub fn read_exact<B, C>(
                     self,
-                    mut buffer: Pin<B>,
+                    mut buffer: B,
                     mut channel: C
                 ) -> dma::Transfer<B, C, Self>
                 where
                     Self: dma::Target<C>,
-                    B: DerefMut + 'static,
-                    B::Target: AsMutSlice<Element = u8> + Unpin,
+                    B: DerefMut + StableDeref + 'static,
+                    B::Target: AsMutSlice<Element = u8>,
                     C: dma::Channel,
                 {
                     // NOTE(unsafe) taking the address of a register
@@ -413,12 +411,12 @@ macro_rules! hal {
                 /// Transmit all data in the buffer using DMA.
                 pub fn write_all<B, C>(
                     self,
-                    buffer: Pin<B>,
+                    buffer: B,
                     mut channel: C
                 ) -> dma::Transfer<B, C, Self>
                 where
                     Self: dma::Target<C>,
-                    B: Deref + 'static,
+                    B: Deref + StableDeref + 'static,
                     B::Target: AsSlice<Element = u8>,
                     C: dma::Channel,
                 {

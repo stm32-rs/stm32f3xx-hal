@@ -7,7 +7,6 @@
 
 use panic_semihosting as _;
 
-use core::pin::Pin;
 use cortex_m::singleton;
 use cortex_m_rt::entry;
 use stm32f3xx_hal::{prelude::*, serial::Serial, stm32};
@@ -43,11 +42,11 @@ fn main() -> ! {
     let (tx_channel, rx_channel) = (dma1.ch4, dma1.ch5);
 
     // start separate DMAs for sending and receiving the data
-    let sending = tx.write_all(Pin::new(tx_buf), tx_channel);
-    let receiving = rx.read_exact(Pin::new(rx_buf), rx_channel);
+    let sending = tx.write_all(tx_buf, tx_channel);
+    let receiving = rx.read_exact(rx_buf, rx_channel);
 
     // block until all data was transmitted and received
-    let (mut tx_buf, tx_channel, tx) = sending.wait();
+    let (tx_buf, tx_channel, tx) = sending.wait();
     let (rx_buf, rx_channel, rx) = receiving.wait();
 
     assert_eq!(tx_buf, rx_buf);

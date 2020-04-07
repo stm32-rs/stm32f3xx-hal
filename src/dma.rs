@@ -10,10 +10,8 @@ use crate::{
     stm32::{self, dma1::ch::cr},
 };
 use cast::u16;
-use core::{
-    pin::Pin,
-    sync::atomic::{self, Ordering},
-};
+use core::sync::atomic::{self, Ordering};
+use stable_deref_trait::StableDeref;
 
 /// Extension trait to split a DMA peripheral into independent channels
 pub trait DmaExt {
@@ -37,9 +35,9 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     ///
     /// Callers must ensure that the DMA channel is configured correctly for
     /// the given target and buffer.
-    pub unsafe fn start(buffer: Pin<B>, mut channel: C, target: T) -> Self
+    pub unsafe fn start(buffer: B, mut channel: C, target: T) -> Self
     where
-        B: 'static,
+        B: StableDeref + 'static,
         T: Target<C>,
     {
         assert!(!channel.is_enabled());
@@ -64,7 +62,7 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     }
 
     /// Stop this transfer and return ownership over its parts
-    pub fn stop(mut self) -> (Pin<B>, C, T) {
+    pub fn stop(mut self) -> (B, C, T) {
         let mut inner = self.inner.take().unwrap();
         inner.stop();
 
@@ -72,7 +70,7 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     }
 
     /// Block until this transfer is done and return ownership over its parts
-    pub fn wait(self) -> (Pin<B>, C, T) {
+    pub fn wait(self) -> (B, C, T) {
         while !self.is_complete() {}
 
         self.stop()
@@ -89,7 +87,7 @@ impl<B, C: Channel, T> Drop for Transfer<B, C, T> {
 
 /// This only exists so we can implement `Drop` for `Transfer`.
 struct TransferInner<B, C, T> {
-    buffer: Pin<B>,
+    buffer: B,
     channel: C,
     target: T,
 }
