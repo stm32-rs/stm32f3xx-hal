@@ -320,13 +320,19 @@ macro_rules! hal {
                     let isr = unsafe { (*$USARTX::ptr()).isr.read() };
 
                     Err(if isr.pe().bit_is_set() {
+                        // Clear the bit by writing 1 to the clear register
+                        unsafe { (*$USARTX::ptr()).icr.write(|w| { w.pecf().set_bit() }) };
                         nb::Error::Other(Error::Parity)
                     } else if isr.fe().bit_is_set() {
+                        // Clear the bit by writing 1 to the clear register
+                        unsafe { (*$USARTX::ptr()).icr.write(|w| { w.fecf().set_bit() }) };
                         nb::Error::Other(Error::Framing)
                     } else if isr.nf().bit_is_set() {
+                        // Clear the bit by writing 1 to the clear register
+                        unsafe { (*$USARTX::ptr()).icr.write(|w| { w.ncf().set_bit() }) };
                         nb::Error::Other(Error::Noise)
                     } else if isr.ore().bit_is_set() {
-                        // Clear the bit
+                        // Clear the bit by writing 1 to the clear register
                         unsafe { (*$USARTX::ptr()).icr.write(|w| { w.orecf().set_bit() }) };
                         nb::Error::Other(Error::Overrun)
                     } else if isr.rxne().bit_is_set() {
