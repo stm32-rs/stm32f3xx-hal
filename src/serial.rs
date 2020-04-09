@@ -326,6 +326,8 @@ macro_rules! hal {
                     } else if isr.nf().bit_is_set() {
                         nb::Error::Other(Error::Noise)
                     } else if isr.ore().bit_is_set() {
+                        // Clear the bit
+                        unsafe { (*$USARTX::ptr()).icr.write(|w| { w.orecf().set_bit() }) };
                         nb::Error::Other(Error::Overrun)
                     } else if isr.rxne().bit_is_set() {
                         // NOTE(read_volatile) see `write_volatile` below
