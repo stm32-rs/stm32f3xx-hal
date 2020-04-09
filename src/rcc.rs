@@ -100,16 +100,18 @@ const HSI: u32 = 8_000_000; // Hz
 #[cfg(any(feature = "stm32f301", feature = "stm32f334",))]
 mod usb_clocking {
     use crate::stm32::rcc::cfgr;
+    use crate::rcc::PllConfig;
 
-    pub fn is_valid(
+    pub(crate) fn is_valid(
         _sysclk: &u32,
         _hse: &Option<u32>,
-        _pll_options: &Option<(cfgr::PLLMUL_A, cfgr::PLLSRC_A)>,
+        _pclk1: &u32,
+        _pll_config: &Option<PllConfig>,
     ) -> (bool, bool) {
         (false, false)
     }
 
-    pub fn set_usbpre<W>(w: &mut W, _: bool) -> &mut W {
+    pub(crate) fn set_usbpre<W>(w: &mut W, _: bool) -> &mut W {
         w
     }
 }
@@ -126,24 +128,33 @@ mod usb_clocking {
 ))]
 mod usb_clocking {
     use crate::stm32::rcc::cfgr;
+    use crate::rcc::PllConfig;
 
-    pub fn is_valid(
+    /// Check for all clock options to be
+    pub(crate) fn is_valid(
         sysclk: &u32,
         hse: &Option<u32>,
-        pll_options: &Option<(cfgr::PLLMUL_A, cfgr::PLLSRC_A)>,
+        pclk1: &u32,
+        pll_config: &Option<PllConfig>,
     ) -> (cfgr::USBPRE_A, bool) {
         // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
         // PLL output frequency is a supported one.
         // usbpre == false: divide clock by 1.5, otherwise no division
-        let usb_ok = hse.is_some() && pll_options.is_some();
-        match (usb_ok, sysclk) {
-            (true, 72_000_000) => (cfgr::USBPRE_A::DIV1_5, true),
-            (true, 48_000_000) => (cfgr::USBPRE_A::DIV1, true),
-            _ => (cfgr::USBPRE_A::DIV1, false),
+        let usb_ok = hse.is_some() && pll_config.is_some();
+        // The APB1 clock must have a minimum frequency of 10 MHz to avoid data overrun/underrun
+        // problems. [RM0316 32.5.2]
+        if *pclk1 >= 10_000_000 {
+            match (usb_ok, sysclk) {
+                (true, 72_000_000) => (cfgr::USBPRE_A::DIV1_5, true),
+                (true, 48_000_000) => (cfgr::USBPRE_A::DIV1, true),
+                _ => (cfgr::USBPRE_A::DIV1, false),
+            }
+        } else {
+            (cfgr::USBPRE_A::DIV1, false)
         }
     }
 
-    pub fn set_usbpre(w: &mut cfgr::W, usb_prescale: cfgr::USBPRE_A) -> &mut cfgr::W {
+    pub(crate) fn set_usbpre(w: &mut cfgr::W, usb_prescale: cfgr::USBPRE_A) -> &mut cfgr::W {
         w.usbpre().variant(usb_prescale)
     }
 }
@@ -157,7 +168,7 @@ pub struct CFGR {
     sysclk: Option<u32>,
 }
 
-struct PllConfig {
+pub(crate) struct PllConfig {
     src: rcc::cfgr::PLLSRC_A,
     mul: rcc::cfgr::PLLMUL_A,
     div: Option<rcc::cfgr2::PREDIV_A>,
@@ -534,7 +545,7 @@ impl CFGR {
             })
         }
 
-        let (usbpre, usbclk_valid) = usb_clocking::is_valid(&sysclk, &self.hse, &pll_options);
+        let (usbpre, usbclk_valid) = usb_clocking::is_valid(&sysclk, &self.hse, &pclk1, &pll_config);
 
         let rcc = unsafe { &*RCC::ptr() };
 
