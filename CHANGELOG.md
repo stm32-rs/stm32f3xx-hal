@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Wrong default modes for debug GPIO pins
 - Wrong calculation of HCLK prescaler, if using a prescaler value equal or
   higher than 64 ([#42](https://github.com/stm32-rs/stm32f3xx-hal/pull/42))
+- UART reception error flags not cleared ([#91](https://github.com/stm32-rs/stm32f3xx-hal/pull/91))
 
 ## [v0.4.2] - 2020-03-21
 
