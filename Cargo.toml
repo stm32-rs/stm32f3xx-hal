@@ -50,6 +50,7 @@ default = ["unproven"]
 device-selected = []
 needs-subvariant = []
 rt = ["stm32f3/rt"]
+# Any Changes here should be mirrored in README.md and src/lib.rs
 stm32f301 = ["stm32f3/stm32f301", "needs-subvariant"]
 stm32f301xb = ["stm32f301", "device-selected"]
 stm32f301xc = ["stm32f301", "device-selected"]
