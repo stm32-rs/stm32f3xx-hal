@@ -56,6 +56,7 @@ As this crate is still under fundamental development, expect more sub-variants
 to pop up in the future.
 
 ### Steps to select the right feature
+
 1. Get the full name of the chip you are using from your datasheet, user manual or other source.
 
     *Example: We want to use the STM32F3Discovery kit.*
