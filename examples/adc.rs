@@ -24,8 +24,9 @@ fn main() -> ! {
         dp.ADC1,
         &mut dp.ADC1_2,
         &mut rcc.ahb,
+        adc::CKMODE::default(),
         clocks,
-    );
+    ).unwrap();
 
     // set up pin pa0 as analog pin
     let mut gpio_a = dp.GPIOA.split(&mut rcc.ahb);

@@ -100,16 +100,13 @@ pub enum OperationMode {
     OneShot,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 /// ADC CKMODE
 ///
 /// TODO: Add ASYNCHRONOUS mode
-/// TODO: ADD SYNCDIV1 mode with a check if the AHB prescaler of the
-/// RCC is set to 1 (the duty cycle of the AHB clock must be 50% in this configuration).
-/// see RM0316 15.3.3
 pub enum CKMODE {
     // ASYNCHRONOUS = 0,
-    // SYNCDIV1 = 1
+    SYNCDIV1 = 1,
     SYNCDIV2 = 2,
     SYNCDIV4 = 4,
 }
@@ -126,7 +123,7 @@ impl From<CKMODE> for stm32f3::stm32f303::adc1_2::ccr::CKMODE_A {
     fn from(ckmode: CKMODE) -> Self {
         match ckmode {
             //CKMODE::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
-            //CKMODE::SYNCDIV1 => CKMODE_A::SYNCDIV1,
+            CKMODE::SYNCDIV1 => CKMODE_A::SYNCDIV1,
             CKMODE::SYNCDIV2 => CKMODE_A::SYNCDIV2,
             CKMODE::SYNCDIV4 => CKMODE_A::SYNCDIV4,
         }
@@ -310,15 +307,21 @@ macro_rules! adc_hal {
                     rb: $ADC,
                     adc_common : &mut $ADC_COMMON,
                     ahb: &mut AHB,
+                    ckmode: CKMODE,
                     clocks: Clocks,
-                ) -> Self {
+                ) -> Option<Self> {
                     let mut this_adc = Self {
                         rb,
                         clocks,
-                        ckmode : CKMODE::default(),
+                        ckmode,
                         operation_mode: None,
                     };
-                    this_adc.enable_clock(ahb, adc_common);
+                    if !(this_adc.clocks_welldefined(clocks)) {
+                        return None;
+                    }
+                    if !(this_adc.enable_clock(ahb, adc_common)){
+                        return None;
+                    }
                     this_adc.set_align(Align::default());
                     this_adc.calibrate();
                     // ADEN bit cannot be set during ADCAL=1
@@ -326,7 +329,13 @@ macro_rules! adc_hal {
                     // bit is cleared by hardware
                     this_adc.wait_adc_clk_cycles(4);
                     this_adc.enable();
-                    this_adc
+                    Some(this_adc)
+                }
+
+                /// Software can use CKMODE::SYNCDIV1 only if
+                /// hclk and sysclk are the same. (see reference manual 15.3.3)
+                fn clocks_welldefined(&self, clocks: Clocks) -> bool {
+                    !(self.ckmode == CKMODE::SYNCDIV1 && !(clocks.hclk().0 == clocks.sysclk().0))
                 }
 
                 /// sets up adc in one shot mode for a single channel
@@ -481,11 +490,16 @@ macro_rules! adc12_hal {
     )+) => {
         $(
             impl Adc<$ADC> {
-                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) {
+                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) -> bool {
+                    if ahb.enr().read().adc34en().is_enabled() &&
+                        (adc_common.ccr.read().ckmode().variant() != self.ckmode.into()) {
+                        return false;
+                    }
                     ahb.enr().modify(|_, w| w.adc12en().enabled());
                     adc_common.ccr.modify(|_, w| w
                         .ckmode().variant(self.ckmode.into())
                     );
+                    true
                 }
             }
             adc_hal! {
@@ -510,11 +524,18 @@ macro_rules! adc34_hal {
     )+) => {
         $(
             impl Adc<$ADC> {
-                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) {
+                /// Returns true iff
+                ///     the clock was enabled
+                ///  or the clock was already enabled with the same settings
+                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) -> bool {
+                    if ahb.enr().read().adc34en().is_enabled() {
+                        return (adc_common.ccr.read().ckmode().variant() == self.ckmode.into())
+                    }
                     ahb.enr().modify(|_, w| w.adc34en().enabled());
                     adc_common.ccr.modify(|_, w| w
                         .ckmode().variant(self.ckmode.into())
                     );
+                    true
                 }
             }
             adc_hal! {
