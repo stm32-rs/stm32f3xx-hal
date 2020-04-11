@@ -103,9 +103,9 @@ mod usb_clocking {
     use crate::stm32::rcc::cfgr;
 
     pub(crate) fn is_valid(
-        _sysclk: &u32,
-        _hse: &Option<u32>,
-        _pclk1: &u32,
+        _sysclk: u32,
+        _hse: Option<u32>,
+        _pclk1: u32,
         _pll_config: &Option<PllConfig>,
     ) -> (bool, bool) {
         (false, false)
@@ -132,9 +132,9 @@ mod usb_clocking {
 
     /// Check for all clock options to be
     pub(crate) fn is_valid(
-        sysclk: &u32,
-        hse: &Option<u32>,
-        pclk1: &u32,
+        sysclk: u32,
+        hse: Option<u32>,
+        pclk1: u32,
         pll_config: &Option<PllConfig>,
     ) -> (cfgr::USBPRE_A, bool) {
         // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
@@ -143,7 +143,7 @@ mod usb_clocking {
         let usb_ok = hse.is_some() && pll_config.is_some();
         // The APB1 clock must have a minimum frequency of 10 MHz to avoid data overrun/underrun
         // problems. [RM0316 32.5.2]
-        if *pclk1 >= 10_000_000 {
+        if pclk1 >= 10_000_000 {
             match (usb_ok, sysclk) {
                 (true, 72_000_000) => (cfgr::USBPRE_A::DIV1_5, true),
                 (true, 48_000_000) => (cfgr::USBPRE_A::DIV1, true),
@@ -537,8 +537,7 @@ impl CFGR {
             })
         }
 
-        let (usbpre, usbclk_valid) =
-            usb_clocking::is_valid(&sysclk, &self.hse, &pclk1, &pll_config);
+        let (usbpre, usbclk_valid) = usb_clocking::is_valid(sysclk, self.hse, pclk1, &pll_config);
 
         let rcc = unsafe { &*RCC::ptr() };
 
