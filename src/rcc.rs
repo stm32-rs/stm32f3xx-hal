@@ -1,7 +1,7 @@
 //! Reset and Clock Control
 
 use crate::stm32::{
-    rcc::{self, cfgr},
+    rcc::{self, cfgr, cfgr2},
     RCC,
 };
 
@@ -169,9 +169,9 @@ pub struct CFGR {
 }
 
 pub(crate) struct PllConfig {
-    src: rcc::cfgr::PLLSRC_A,
-    mul: rcc::cfgr::PLLMUL_A,
-    div: Option<rcc::cfgr2::PREDIV_A>,
+    src: cfgr::PLLSRC_A,
+    mul: cfgr::PLLMUL_A,
+    div: Option<cfgr2::PREDIV_A>,
 }
 
 /// Determine the [greatest common divisor](https://en.wikipedia.org/wiki/Greatest_common_divisor)
@@ -187,46 +187,46 @@ fn gcd(mut a: u32, mut b: u32) -> u32 {
 }
 
 /// Convert pll multiplier into equivalent register field type
-fn into_pll_mul(mul: u8) -> rcc::cfgr::PLLMUL_A {
+fn into_pll_mul(mul: u8) -> cfgr::PLLMUL_A {
     match mul {
-        2 => rcc::cfgr::PLLMUL_A::MUL2,
-        3 => rcc::cfgr::PLLMUL_A::MUL3,
-        4 => rcc::cfgr::PLLMUL_A::MUL4,
-        5 => rcc::cfgr::PLLMUL_A::MUL5,
-        6 => rcc::cfgr::PLLMUL_A::MUL6,
-        7 => rcc::cfgr::PLLMUL_A::MUL7,
-        8 => rcc::cfgr::PLLMUL_A::MUL8,
-        9 => rcc::cfgr::PLLMUL_A::MUL9,
-        10 => rcc::cfgr::PLLMUL_A::MUL10,
-        11 => rcc::cfgr::PLLMUL_A::MUL11,
-        12 => rcc::cfgr::PLLMUL_A::MUL12,
-        13 => rcc::cfgr::PLLMUL_A::MUL13,
-        14 => rcc::cfgr::PLLMUL_A::MUL14,
-        15 => rcc::cfgr::PLLMUL_A::MUL15,
-        16 => rcc::cfgr::PLLMUL_A::MUL16,
+        2 => cfgr::PLLMUL_A::MUL2,
+        3 => cfgr::PLLMUL_A::MUL3,
+        4 => cfgr::PLLMUL_A::MUL4,
+        5 => cfgr::PLLMUL_A::MUL5,
+        6 => cfgr::PLLMUL_A::MUL6,
+        7 => cfgr::PLLMUL_A::MUL7,
+        8 => cfgr::PLLMUL_A::MUL8,
+        9 => cfgr::PLLMUL_A::MUL9,
+        10 => cfgr::PLLMUL_A::MUL10,
+        11 => cfgr::PLLMUL_A::MUL11,
+        12 => cfgr::PLLMUL_A::MUL12,
+        13 => cfgr::PLLMUL_A::MUL13,
+        14 => cfgr::PLLMUL_A::MUL14,
+        15 => cfgr::PLLMUL_A::MUL15,
+        16 => cfgr::PLLMUL_A::MUL16,
         _ => unreachable!(),
     }
 }
 
 /// Convert pll divisor into equivalent register field type
-fn into_pre_div(div: u8) -> rcc::cfgr2::PREDIV_A {
+fn into_pre_div(div: u8) -> cfgr2::PREDIV_A {
     match div {
-        1 => rcc::cfgr2::PREDIV_A::DIV1,
-        2 => rcc::cfgr2::PREDIV_A::DIV2,
-        3 => rcc::cfgr2::PREDIV_A::DIV3,
-        4 => rcc::cfgr2::PREDIV_A::DIV4,
-        5 => rcc::cfgr2::PREDIV_A::DIV5,
-        6 => rcc::cfgr2::PREDIV_A::DIV6,
-        7 => rcc::cfgr2::PREDIV_A::DIV7,
-        8 => rcc::cfgr2::PREDIV_A::DIV8,
-        9 => rcc::cfgr2::PREDIV_A::DIV9,
-        10 => rcc::cfgr2::PREDIV_A::DIV10,
-        11 => rcc::cfgr2::PREDIV_A::DIV11,
-        12 => rcc::cfgr2::PREDIV_A::DIV12,
-        13 => rcc::cfgr2::PREDIV_A::DIV13,
-        14 => rcc::cfgr2::PREDIV_A::DIV14,
-        15 => rcc::cfgr2::PREDIV_A::DIV15,
-        16 => rcc::cfgr2::PREDIV_A::DIV16,
+        1 => cfgr2::PREDIV_A::DIV1,
+        2 => cfgr2::PREDIV_A::DIV2,
+        3 => cfgr2::PREDIV_A::DIV3,
+        4 => cfgr2::PREDIV_A::DIV4,
+        5 => cfgr2::PREDIV_A::DIV5,
+        6 => cfgr2::PREDIV_A::DIV6,
+        7 => cfgr2::PREDIV_A::DIV7,
+        8 => cfgr2::PREDIV_A::DIV8,
+        9 => cfgr2::PREDIV_A::DIV9,
+        10 => cfgr2::PREDIV_A::DIV10,
+        11 => cfgr2::PREDIV_A::DIV11,
+        12 => cfgr2::PREDIV_A::DIV12,
+        13 => cfgr2::PREDIV_A::DIV13,
+        14 => cfgr2::PREDIV_A::DIV14,
+        15 => cfgr2::PREDIV_A::DIV15,
+        16 => cfgr2::PREDIV_A::DIV16,
         _ => unreachable!(),
     }
 }
@@ -341,7 +341,7 @@ impl CFGR {
         assert!(sysclk <= 72_000_000);
 
         let pll_src = if self.hse.is_some() {
-            rcc::cfgr::PLLSRC_A::HSE_DIV_PREDIV
+            cfgr::PLLSRC_A::HSE_DIV_PREDIV
         } else {
             cfgr::PLLSRC_A::HSI_DIV2
         };
@@ -412,9 +412,9 @@ impl CFGR {
         // Select hardware clock source of the PLL
         // TODO Check whether HSI_DIV2 could be useful
         let pll_src = if self.hse.is_some() {
-            rcc::cfgr::PLLSRC_A::HSE_DIV_PREDIV
+            cfgr::PLLSRC_A::HSE_DIV_PREDIV
         } else {
-            rcc::cfgr::PLLSRC_A::HSI_DIV_PREDIV
+            cfgr::PLLSRC_A::HSI_DIV_PREDIV
         };
 
         // Convert into register bit field types
@@ -436,7 +436,7 @@ impl CFGR {
     /// The system clock source is determined by the chosen system clock and the provided hardware
     /// clock.
     /// This function does only chose the PLL if needed, otherwise it will use the oscillator clock as system clock.
-    fn get_sysclk(&self) -> (u32, rcc::cfgr::SW_A, Option<PllConfig>) {
+    fn get_sysclk(&self) -> (u32, cfgr::SW_A, Option<PllConfig>) {
         // If a sysclk is given, check if the PLL has to be used,
         // else select the system clock source, which is either HSI or HSE.
         if let Some(sysclk) = self.sysclk {
@@ -447,32 +447,32 @@ impl CFGR {
                     // because the two valid USB clocks, 72 Mhz and 48 Mhz, can't be generated
                     // directly from neither the internal rc (8 Mhz)  nor the external
                     // Oscillator (max 32 Mhz), without using the PLL.
-                    (hseclk, rcc::cfgr::SW_A::HSE, None)
+                    (hseclk, cfgr::SW_A::HSE, None)
                 } else {
                     let clock_with_pll = self.calc_pll(sysclk);
                     (
                         clock_with_pll.0,
-                        rcc::cfgr::SW_A::PLL,
+                        cfgr::SW_A::PLL,
                         Some(clock_with_pll.1),
                     )
                 }
             } else if sysclk == HSI {
                 // No need to use the PLL
-                (HSI, rcc::cfgr::SW_A::HSE, None)
+                (HSI, cfgr::SW_A::HSE, None)
             } else {
                 let clock_with_pll = self.calc_pll(sysclk);
                 (
                     clock_with_pll.0,
-                    rcc::cfgr::SW_A::PLL,
+                    cfgr::SW_A::PLL,
                     Some(clock_with_pll.1),
                 )
             }
         } else if let Some(hseclk) = self.hse {
             // Use HSE as system clock
-            (hseclk, rcc::cfgr::SW_A::HSE, None)
+            (hseclk, cfgr::SW_A::HSE, None)
         } else {
             // Use HSI as system clock
-            (HSI, rcc::cfgr::SW_A::HSI, None)
+            (HSI, cfgr::SW_A::HSI, None)
         }
     }
 
