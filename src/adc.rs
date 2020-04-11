@@ -10,6 +10,8 @@
 //! For a simple, working example check `adc.rs` in the examples folder.
 use cortex_m::asm;
 use embedded_hal::adc::{Channel, OneShot};
+#[cfg(feature = "stm32f303")]
+use stm32f3::stm32f303::adc1_2::ccr::CKMODE_A;
 
 use crate::rcc::{Clocks, AHB};
 
@@ -45,7 +47,7 @@ use crate::stm32::{ADC3, ADC3_4, ADC4};
 pub struct Adc<ADC> {
     pub rb: ADC,
     clocks: Clocks,
-    prescale: Prescale,
+    ckmode: CKMODE,
     operation_mode: Option<OperationMode>,
 }
 
@@ -99,26 +101,34 @@ pub enum OperationMode {
 }
 
 #[derive(Clone, Copy)]
-/// ADC prescale
+/// ADC CKMODE
 ///
-/// TODO: Implement a setter that checks requirements for `HCLK_1` and add it.
-pub enum Prescale {
-    HCLK_2 = 2,
-    HCLK_4 = 4,
+/// TODO: Add ASYNCHRONOUS mode
+/// TODO: ADD SYNCDIV1 mode with a check if the AHB prescaler of the
+/// RCC is set to 1 (the duty cycle of the AHB clock must be 50% in this configuration).
+/// see RM0316 15.3.3
+pub enum CKMODE {
+    // ASYNCHRONOUS = 0,
+    // SYNCDIV1 = 1
+    SYNCDIV2 = 2,
+    SYNCDIV4 = 4,
 }
 
-impl Default for Prescale {
+impl Default for CKMODE {
     fn default() -> Self {
-        Prescale::HCLK_2
+        CKMODE::SYNCDIV2
     }
 }
 
-impl Prescale {
-    /// Conversion to bits for CKMODE in ADCx_CCR
-    fn bitcode(&self) -> u8 {
-        match self {
-            Prescale::HCLK_2 => 0b10,
-            Prescale::HCLK_4 => 0b11,
+// ADC3_2 returns a pointer to a adc1_2 type, so this from is ok for both.
+#[cfg(feature = "stm32f303")]
+impl From<CKMODE> for stm32f3::stm32f303::adc1_2::ccr::CKMODE_A {
+    fn from(ckmode: CKMODE) -> Self {
+        match ckmode {
+            //CKMODE::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
+            //CKMODE::SYNCDIV1 => CKMODE_A::SYNCDIV1,
+            CKMODE::SYNCDIV2 => CKMODE_A::SYNCDIV2,
+            CKMODE::SYNCDIV4 => CKMODE_A::SYNCDIV4,
         }
     }
 }
@@ -305,7 +315,7 @@ macro_rules! adc_hal {
                     let mut this_adc = Self {
                         rb,
                         clocks,
-                        prescale : Prescale::default(),
+                        ckmode : CKMODE::default(),
                         operation_mode: None,
                     };
                     this_adc.enable_clock(ahb, adc_common);
@@ -368,7 +378,7 @@ macro_rules! adc_hal {
 
 
                 fn wait_adc_clk_cycles(&self, cycles: u32) {
-                    let adc_clk_cycle = self.clocks.hclk().0 / (self.prescale as u32);
+                    let adc_clk_cycle = self.clocks.hclk().0 / (self.ckmode as u32);
                     asm::delay(adc_clk_cycle * cycles);
                 }
 
@@ -474,7 +484,7 @@ macro_rules! adc12_hal {
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) {
                     ahb.enr().modify(|_, w| w.adc12en().enabled());
                     adc_common.ccr.modify(|_, w| w
-                        .ckmode().bits(self.prescale.bitcode())
+                        .ckmode().variant(self.ckmode.into())
                     );
                 }
             }
@@ -503,7 +513,7 @@ macro_rules! adc34_hal {
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) {
                     ahb.enr().modify(|_, w| w.adc34en().enabled());
                     adc_common.ccr.modify(|_, w| w
-                        .ckmode().bits(self.prescale.bitcode())
+                        .ckmode().variant(self.ckmode.into())
                     );
                 }
             }
