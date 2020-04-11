@@ -7,9 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.4.3] - 2020-04-11
+
+### Added
+
+- Independent Watchdog ([#58](https://github.com/stm32-rs/stm32f3xx-hal/pull/58))
+
 ### Fixed
 
-- Wrong default modes for debug GPIO pins
+- Wrong default modes for debug GPIO pins ([#82](https://github.com/stm32-rs/stm32f3xx-hal/pull/82))
 - Wrong calculation of HCLK prescaler, if using a prescaler value equal or
   higher than 64 ([#42](https://github.com/stm32-rs/stm32f3xx-hal/pull/42))
 - UART reception error flags not cleared ([#91](https://github.com/stm32-rs/stm32f3xx-hal/pull/91))
@@ -141,7 +147,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Support `stm32f303` device
 
-[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.2...HEAD
+[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.3...HEAD
+[v0.4.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.1...v0.4.2
 [v0.4.1]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.0...v0.4.1
 [v0.4.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.3.0...v0.4.0
