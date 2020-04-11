@@ -383,7 +383,7 @@ impl CFGR {
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
         let pllsrcclk = self.hse.unwrap_or(HSI);
 
-        let (pll_mul, pll_div) =  {
+        let (pll_mul, pll_div) = {
             // Get the optimal value for the pll divisor (PLL_DIV) and multiplcator (PLL_MUL)
             // with the greatest common divisor calculation.
             let common_divisor = gcd(sysclk, pllsrcclk);
@@ -450,22 +450,14 @@ impl CFGR {
                     (hseclk, cfgr::SW_A::HSE, None)
                 } else {
                     let clock_with_pll = self.calc_pll(sysclk);
-                    (
-                        clock_with_pll.0,
-                        cfgr::SW_A::PLL,
-                        Some(clock_with_pll.1),
-                    )
+                    (clock_with_pll.0, cfgr::SW_A::PLL, Some(clock_with_pll.1))
                 }
             } else if sysclk == HSI {
                 // No need to use the PLL
                 (HSI, cfgr::SW_A::HSE, None)
             } else {
                 let clock_with_pll = self.calc_pll(sysclk);
-                (
-                    clock_with_pll.0,
-                    cfgr::SW_A::PLL,
-                    Some(clock_with_pll.1),
-                )
+                (clock_with_pll.0, cfgr::SW_A::PLL, Some(clock_with_pll.1))
             }
         } else if let Some(hseclk) = self.hse {
             // Use HSE as system clock
