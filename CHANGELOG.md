@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Bump `stm32f3` dependency to `0.10.0` ([#42](https://github.com/stm32-rs/stm32f3xx-hal/pull/42))
-- The feature gate requires you to select a subvaraint if possible. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67), [#47](https://github.com/stm32-rs/stm32f3xx-hal/pull/47))
+- The feature gate requires you to select a subvaraint if possible. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
 
 ## [v0.4.1] - 2020-03-07
 
