@@ -38,9 +38,14 @@ Almost all of the implementation was shamelessly adapted from the
 [`stm32f30x-hal`]: https://github.com/japaric/stm32f30x-hal
 [`embedded-hal`]: https://github.com/japaric/embedded-hal
 
-## Selecting the right feature gate
+## Selecting the right chip
 
-### Possible chip features
+This crate requires you to specify your target chip as a feature.
+
+*Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+So you want to expand your call to `cargo` with `--features stm32f303xc`.*
+
+### Possible chips
 
 [comment]: # (Any changes here should be mirrored in src/lib.rs)
 
@@ -81,7 +86,7 @@ not. Hence we don't want to expose the gpoio_e bank on all stm32f303 (i.e.
 when specifying the feature stm32f303) albeit a stm32f303xc user would
 expect it to do so.*
 
-### Detailed steps to select the right feature
+### Detailed steps to select the right chip
 
 1. Get the full name of the chip you are using from your datasheet, user manual or other source.
 

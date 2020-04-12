@@ -1,9 +1,7 @@
-#![no_std]
-#![allow(non_camel_case_types)]
+/*!
+  # Selecting the right chip
 
-#[cfg(all(not(feature = "device-selected"), not(feature = "needs-subvariant")))]
-compile_error!(
-    "This crate requires you to specify your target device as a feature.
+    This crate requires you to specify your target chip as a feature.
 
     Please select one of the following
 
@@ -27,7 +25,41 @@ compile_error!(
     *   stm32f358
     *   stm32f398
 
-    e.g. The STM32F3Discovery board has a STM32F303VCT6 chip.
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+    So you want to expand your call to `cargo` with `--features stm32f303xc`.
+
+    For more information, see the [README](https://github.com/stm32-rs/stm32f3xx-hal/blob/master/README.md#selecting-the-right-chip)
+ */
+#![no_std]
+#![allow(non_camel_case_types)]
+
+#[cfg(all(not(feature = "device-selected"), not(feature = "needs-subvariant")))]
+compile_error!(
+    "This crate requires you to specify your target chip as a feature.
+
+    Please select one of the following
+
+    (Note: `x` denotes any character in [a-z])
+    *   stm32f301xb
+    *   stm32f301xc
+    *   stm32f301xd
+    *   stm32f301xe
+    *   stm32f318
+    *   stm32f302
+    *   stm32f303xb
+    *   stm32f303xc
+    *   stm32f303xd
+    *   stm32f303xe
+    *   stm32f303x6
+    *   stm32f303x8
+    *   stm32f373
+    *   stm32f378
+    *   stm32f334
+    *   stm32f328
+    *   stm32f358
+    *   stm32f398
+
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
     So you want to expand your call to `cargo` with `--features stm32f303xc`.
 
     For more information, see README -> Selecting the right feature gate.
@@ -63,7 +95,7 @@ compile_error!(
     You probably see this error because you updated the stm32f3xxx-hal.
     Don't worry, you don't neet to change your code.
 
-    e.g. The STM32F3Discovery board has a STM32F303VCT6 chip.
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
     You only specified `--features stm32f303` and got this error.
     Expand it to `--features stm32f303xc` (note the `xc` at the end)
     to get all the functionality of your board.
