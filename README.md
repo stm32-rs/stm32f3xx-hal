@@ -66,14 +66,20 @@ Note: `x` denotes any character in [a-z]
 
 ### Background
 
-For some of the stm32f3xx chips there are sub-variants that behave differently
-and need to be specified. This is why there is only one `stm32f302` but six
-`stm32f303` variants.
+For some of the stm32f3xx chips there are sub-variants that differ in
+functionality, peripheral use and hence 'under the hood' implementation.  To
+allow the full use of all peripherals on certain subvariants without
+allowing for code that just doesn't run on other sub-vairants, they are
+distinct features that need to be specified.
 
-As this crate is still under fundamental development, expect more sub-variants
-to pop up in the future.
-This will probably result in your code not building anymore until you specify
-the correct sub-variant.
+As this crate is still under fundamental development, expect more
+sub-variants replacing the plain variants in the future as we are
+implementing more stuff.  It is not desired to allow the plain variants to
+be used as this leads to confusion.
+*Example: the stm32f303xc has a gpio_e bank while the stm32f303x6 does
+not. Hence we don't want to expose the gpoio_e bank on all stm32f303 (i.e.
+when specifying the feature stm32f303) albeit a stm32f303xc user would
+expect it to do so.*
 
 ### Detailed steps to select the right feature
 
