@@ -1,35 +1,35 @@
 /*!
-  # Selecting the right chip
+ # Selecting the right chip
 
-    This crate requires you to specify your target chip as a feature.
+   This crate requires you to specify your target chip as a feature.
 
-    Please select one of the following
+   Please select one of the following
 
-    (Note: `x` denotes any character in [a-z])
-    *   stm32f301xb
-    *   stm32f301xc
-    *   stm32f301xd
-    *   stm32f301xe
-    *   stm32f318
-    *   stm32f302
-    *   stm32f303xb
-    *   stm32f303xc
-    *   stm32f303xd
-    *   stm32f303xe
-    *   stm32f303x6
-    *   stm32f303x8
-    *   stm32f373
-    *   stm32f378
-    *   stm32f334
-    *   stm32f328
-    *   stm32f358
-    *   stm32f398
+   (Note: `x` denotes any character in [a-z])
+   *   stm32f301xb
+   *   stm32f301xc
+   *   stm32f301xd
+   *   stm32f301xe
+   *   stm32f318
+   *   stm32f302
+   *   stm32f303xb
+   *   stm32f303xc
+   *   stm32f303xd
+   *   stm32f303xe
+   *   stm32f303x6
+   *   stm32f303x8
+   *   stm32f373
+   *   stm32f378
+   *   stm32f334
+   *   stm32f328
+   *   stm32f358
+   *   stm32f398
 
-    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-    So you want to expand your call to `cargo` with `--features stm32f303xc`.
+   Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+   So you want to expand your call to `cargo` with `--features stm32f303xc`.
 
-    For more information, see the [README](https://github.com/stm32-rs/stm32f3xx-hal/blob/master/README.md#selecting-the-right-chip)
- */
+   For more information, see the [README](https://github.com/stm32-rs/stm32f3xx-hal/blob/master/README.md#selecting-the-right-chip)
+*/
 #![no_std]
 #![allow(non_camel_case_types)]
 
@@ -62,45 +62,74 @@ compile_error!(
     Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
     So you want to expand your call to `cargo` with `--features stm32f303xc`.
 
-    For more information, see README -> Selecting the right feature gate.
+    For more information, see README -> Selecting the right chip.
     "
 );
 
-#[cfg(all(not(feature = "device-selected"), feature = "needs-subvariant"))]
+#[cfg(all(not(feature = "device-selected"), feature = "stm32f301"))]
 compile_error!(
     "This crate requires you to specify the subvariant of your chip.
 
-    Please select one of the following
+    You probably see this error because you updated the stm32f3xxx-hal and are still using
+    `--features stm32f301`.
+    Don't worry, you probably don't neet to change your code.
 
+    Please check your datasheet and change `stm32f301` to one of those subvariants:
     (Note: `x` denotes any character in [a-z])
     *   stm32f301xb
     *   stm32f301xc
     *   stm32f301xd
     *   stm32f301xe
-    *   stm32f318
-    *   stm32f302
+
+    For more information, see README -> Selecting the right chip.
+
+    Also check the CHANGELOG for awesome new features for your chip that were made possible by
+    forcing you to specify the subvariant.
+"
+);
+
+#[cfg(all(not(feature = "device-selected"), feature = "stm32f303"))]
+compile_error!(
+    "This crate requires you to specify the subvariant of your chip.
+
+    You probably see this error because you updated the stm32f3xxx-hal and are still using 
+    `--features stm32f303`.
+    Don't worry, you probably don't neet to change your code.
+
+    Please check your datasheet and change your `stm32f303` to one of those subvariants:
+    (Note: `x` denotes any character in [a-z])
     *   stm32f303xb
     *   stm32f303xc
     *   stm32f303xd
     *   stm32f303xe
     *   stm32f303x6
     *   stm32f303x8
-    *   stm32f373
-    *   stm32f378
-    *   stm32f334
-    *   stm32f328
-    *   stm32f358
-    *   stm32f398
+    
+    For more information, see README -> Selecting the right chip.
 
-    You probably see this error because you updated the stm32f3xxx-hal.
-    Don't worry, you don't neet to change your code.
+    Also check the CHANGELOG for awesome new features for your chip that were made possible by
+    forcing you to specify the subvariant.
+"
+);
+#[cfg(all(
+    not(feature = "device-selected"),
+    feature = "needs-subvariant",
+    not(any(feature = "stm32f303", feature = "stm32f301"))
+))]
+compile_error!(
+    "This crate requires you to specify the subvariant of your chip.
 
-    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-    You only specified `--features stm32f303` and got this error.
-    Expand it to `--features stm32f303xc` (note the `xc` at the end)
-    to get all the functionality of your board.
+    However this compile error should also tell you which subvariants to pick from.
+    As this is not the case, please
 
-    For more information, see README -> Selecting the right feature gate.
+    File an issue at
+    https://github.com/stm32-rs/stm32f3xx-hal/issues/new
+    including your call to `cargo` and the version of stm32f3xxx-hal you want to use.
+
+    You may also 
+    * See README -> Selecting the right chip.
+    * Check the CHANGELOG for awesome new features for your chip that were made possible by
+    forcing you to specify the subvariant.
     "
 );
 
