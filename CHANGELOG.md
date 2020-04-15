@@ -7,14 +7,33 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking** The feature gate requires you to select a subvaraint if possible. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
+
+## [v0.4.3] - 2020-04-11
+
+### Added
+
+- Independent Watchdog ([#58](https://github.com/stm32-rs/stm32f3xx-hal/pull/58))
+
+### Fixed
+
+- Wrong default modes for debug GPIO pins ([#82](https://github.com/stm32-rs/stm32f3xx-hal/pull/82))
+- Wrong calculation of HCLK prescaler, if using a prescaler value equal or
+  higher than 64 ([#42](https://github.com/stm32-rs/stm32f3xx-hal/pull/42))
+- UART reception error flags not cleared ([#91](https://github.com/stm32-rs/stm32f3xx-hal/pull/91))
+
+## [v0.4.2] - 2020-03-21
+
 ### Fixed
 
 - Wrong frequency reported by `MonoTimer` ([#56](https://github.com/stm32-rs/stm32f3xx-hal/pull/56))
+- Use automatic mode with I2C autoend on `Read` ([#72](https://github.com/stm32-rs/stm32f3xx-hal/pull/72))
 
 ### Changed
 
-- Bump `stm32f3` dependency to `0.10.0` ([#42](https://github.com/stm32-rs/stm32f3xx-hal/pull/42))
-- **Breaking** The feature gate requires you to select a subvaraint if possible. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
+- Bump `stm32f3` dependency to `0.10.0` ([#70](https://github.com/stm32-rs/stm32f3xx-hal/pull/70))
 
 ## [v0.4.1] - 2020-03-07
 
@@ -51,7 +70,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- Fixed wrong initialization of the SPI ([#35](https://github.com/stm32-rs/stm32f3xx-hal/pull/18))
+- Fixed wrong initialization of the SPI ([#35](https://github.com/stm32-rs/stm32f3xx-hal/pull/35))
 
 ## [v0.3.0] - 2019-08-26
 
@@ -86,7 +105,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Bump `stm32f3` version to `0.7.1` ([#12](https://github.com/stm32-rs/stm32f3xx-hal/pull/12))
-- Bump `embedded-hal` version to `0.2.1` ([#11](https://github.com/stm32-rs/stm32f3xx-hal/pull/11))
+- Bump `embedded-hal` version to `0.2.3` ([#11](https://github.com/stm32-rs/stm32f3xx-hal/pull/11))
 
 ### Fixed
 
@@ -132,7 +151,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Support `stm32f303` device
 
-[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.3...HEAD
+[v0.4.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.2...v0.4.3
+[v0.4.2]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.1...v0.4.2
 [v0.4.1]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.0...v0.4.1
 [v0.4.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.3.0...v0.4.0
 [v0.3.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.2.3...v0.3.0
