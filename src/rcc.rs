@@ -4,8 +4,7 @@ use core::cmp;
 
 use crate::stm32::{
     rcc::{self, cfgr},
-    RCC,
-    PWR,
+    RCC, PWR,
 };
 
 use crate::flash::ACR;
@@ -55,19 +54,23 @@ impl Rcc {
             RTCSrc::LSE => self.enable_lse(false),
         }
         self.unlock_rtc();
-        self.bdcr().modify(|_ , w| {
+        self.bdcr().modify(|_, w| {
             w
                 // RTC Backup Domain reset bit set high
-                .bdrst().set_bit()
+                .bdrst()
+                .set_bit()
         });
         self.bdcr().modify(|_ , w| {
             w
                 // RTC clock source selection
-                .rtcsel().bits(*src as u8)
+                .rtcsel()
+                .bits(*src as u8)
                 // Enable RTC
-                .rtcen().set_bit()
+                .rtcen()
+                .set_bit()
                 // RTC backup Domain reset bit set low
-                .bdrst().clear_bit()
+                .bdrst()
+                .clear_bit()
         });
     }
 
@@ -76,12 +79,14 @@ impl Rcc {
         self.apb1.enr().modify(|_, w| {
             w   
                 // Enable the backup interface by setting PWREN
-                .pwren().set_bit()
+                .pwren()
+                .set_bit()
             });
         pwr.cr.modify(|_, w| { 
             w
                 // Enable access to the backup registers
-                .dbp().set_bit()
+                .dbp()
+                .set_bit()
         });
 
         while pwr.cr.read().dbp().bit_is_clear() {}
