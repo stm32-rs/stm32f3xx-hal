@@ -8,7 +8,6 @@ use crate::stm32::{
     PWR,
 };
 
-use crate::stm32::rcc::BDCR;
 use crate::flash::ACR;
 use crate::time::Hertz;
 
@@ -538,4 +537,12 @@ impl Clocks {
     pub fn usbclk_valid(&self) -> bool {
         self.usbclk_valid
     }
+}
+
+/// RTC clock input source
+#[derive(Clone, Copy)]
+pub enum RTCSrc {
+    LSE = 0b01,
+    LSI = 0b10,
+    HSE = 0b11,
 }
