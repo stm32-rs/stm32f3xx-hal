@@ -66,71 +66,15 @@ compile_error!(
     "
 );
 
-#[cfg(all(not(feature = "device-selected"), feature = "stm32f301"))]
+#[cfg(all(not(feature = "device-selected"), feature = "direct-call-deprecated",))]
 compile_error!(
-    "This crate requires you to specify the subvariant of your chip.
+    "The feature you selected is deprecated, because it was split up into sub-devices.
 
-    You probably see this error because you updated the stm32f3xxx-hal and are still using
-    `--features stm32f301`.
-    Don't worry, you probably don't neet to change your code.
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+    You used to use `--features stm32f303` but now functionalities for the sub-device were added.
+    Replace it with `--features stm32f303xc` to make your code build again.
 
-    Please check your datasheet and change `stm32f301` to one of those subvariants:
-    (Note: `x` denotes any character in [a-z])
-    *   stm32f301xb
-    *   stm32f301xc
-    *   stm32f301xd
-    *   stm32f301xe
-
-    For more information, see README -> Selecting the right chip.
-
-    Also check the CHANGELOG for awesome new features for your chip that were made possible by
-    forcing you to specify the subvariant.
-"
-);
-
-#[cfg(all(not(feature = "device-selected"), feature = "stm32f303"))]
-compile_error!(
-    "This crate requires you to specify the subvariant of your chip.
-
-    You probably see this error because you updated the stm32f3xxx-hal and are still using 
-    `--features stm32f303`.
-    Don't worry, you probably don't neet to change your code.
-
-    Please check your datasheet and change your `stm32f303` to one of those subvariants:
-    (Note: `x` denotes any character in [a-z])
-    *   stm32f303xb
-    *   stm32f303xc
-    *   stm32f303xd
-    *   stm32f303xe
-    *   stm32f303x6
-    *   stm32f303x8
-    
-    For more information, see README -> Selecting the right chip.
-
-    Also check the CHANGELOG for awesome new features for your chip that were made possible by
-    forcing you to specify the subvariant.
-"
-);
-#[cfg(all(
-    not(feature = "device-selected"),
-    feature = "needs-subvariant",
-    not(any(feature = "stm32f303", feature = "stm32f301"))
-))]
-compile_error!(
-    "This crate requires you to specify the subvariant of your chip.
-
-    However this compile error should also tell you which subvariants to pick from.
-    As this is not the case, please
-
-    File an issue at
-    https://github.com/stm32-rs/stm32f3xx-hal/issues/new
-    including your call to `cargo` and the version of stm32f3xxx-hal you want to use.
-
-    You may also 
-    * See README -> Selecting the right chip.
-    * Check the CHANGELOG for awesome new features for your chip that were made possible by
-    forcing you to specify the subvariant.
-    "
+    Please select one of the chip features stated above."
 );
 
 pub use embedded_hal as hal;
