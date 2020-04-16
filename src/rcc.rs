@@ -4,7 +4,7 @@ use core::cmp;
 
 use crate::stm32::{
     rcc::{self, cfgr},
-    RCC, PWR,
+    PWR, RCC,
 };
 
 use crate::flash::ACR;
@@ -60,7 +60,7 @@ impl Rcc {
                 .bdrst()
                 .set_bit()
         });
-        self.bdcr().modify(|_ , w| {
+        self.bdcr().modify(|_, w| {
             w
                 // RTC clock source selection
                 .rtcsel()
@@ -81,7 +81,7 @@ impl Rcc {
                 // Enable the backup interface by setting PWREN
                 .pwren()
                 .set_bit()
-            });
+        });
         pwr.cr.modify(|_, w| { 
             w
                 // Enable access to the backup registers
