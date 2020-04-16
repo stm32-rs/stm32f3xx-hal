@@ -24,7 +24,6 @@ impl RccExt for RCC {
             ahb: AHB { _0: () },
             apb1: APB1 { _0: () },
             apb2: APB2 { _0: () },
-            bkp: BKP { _0: ()},
             cfgr: CFGR {
                 hse: None,
                 hclk: None,
@@ -44,8 +43,6 @@ pub struct Rcc {
     pub apb1: APB1,
     /// Advanced Peripheral Bus 2 (APB2) registers
     pub apb2: APB2,
-    /// RTC domain control register
-    pub bkp: BKP,
     /// Clock configuration
     pub cfgr: CFGR,
 }
@@ -174,35 +171,6 @@ impl APB2 {
     pub(crate) fn rstr(&mut self) -> &rcc::APB2RSTR {
         // NOTE(unsafe) this proxy grants exclusive access to this register
         unsafe { &(*RCC::ptr()).apb2rstr }
-    }
-}
-
-/// RTC domain control register
-pub struct BKP {
-    _0: (),
-}
-
-impl BKP {
-    pub fn bdcr(&mut self) -> &rcc::BDCR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).bdcr }
-    }
-
-    pub fn constrain(&mut self, apb1: &mut APB1, pwr: &mut PWR) -> BackupDomain {
-        apb1.enr().modify(|_ , w| {
-            w   
-                // Enable the backup interface by setting PWREN
-                .pwren().set_bit()
-        });
-        pwr.cr.modify(|_ , w| {
-            w
-                // Enable access to the backup registers
-                .dbp().set_bit()
-        });
-        let _bdcr = self.bdcr();
-        BackupDomain {
-            _regs: _bdcr,
-        }
     }
 }
 
