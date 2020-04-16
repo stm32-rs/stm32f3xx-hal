@@ -46,7 +46,6 @@ pub struct Rcc {
 }
 
 impl Rcc {
-
     pub(crate) fn enable_rtc(&mut self, src: &RTCSrc) {
         match src {
             RTCSrc::LSI => self.enable_lsi(),
@@ -77,12 +76,12 @@ impl Rcc {
     pub(crate) fn unlock_rtc(&mut self) {
         let pwr = unsafe { &(*PWR::ptr()) };
         self.apb1.enr().modify(|_, w| {
-            w   
+            w
                 // Enable the backup interface by setting PWREN
                 .pwren()
                 .set_bit()
         });
-        pwr.cr.modify(|_, w| { 
+        pwr.cr.modify(|_, w| {
             w
                 // Enable access to the backup registers
                 .dbp()
