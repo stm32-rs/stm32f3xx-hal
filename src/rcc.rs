@@ -173,11 +173,6 @@ impl APB2 {
     }
 }
 
-pub struct BackupDomain <'a> {
-    pub(crate) _regs: &'a rcc::BDCR,
-}
-
-
 const HSI: u32 = 8_000_000; // Hz
 
 // some microcontrollers do not have USB
