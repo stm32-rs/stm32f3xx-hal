@@ -6,7 +6,7 @@
 #![no_main]
 #![no_std]
 
-extern crate panic_semihosting;
+use panic_semihosting as _;
 
 use cortex_m_rt::entry;
 use stm32f3xx_hal::prelude::*;

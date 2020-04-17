@@ -319,13 +319,20 @@ macro_rules! hal {
                     // NOTE(unsafe) atomic read with no side effects
                     let isr = unsafe { (*$USARTX::ptr()).isr.read() };
 
+                    // NOTE(unsafe, write) write accessor for atomic writes with no side effects
+                    let icr = unsafe { &(*$USARTX::ptr()).icr };
+
                     Err(if isr.pe().bit_is_set() {
+                        icr.write(|w| w.pecf().clear());
                         nb::Error::Other(Error::Parity)
                     } else if isr.fe().bit_is_set() {
+                        icr.write(|w| w.fecf().clear());
                         nb::Error::Other(Error::Framing)
                     } else if isr.nf().bit_is_set() {
+                        icr.write(|w| w.ncf().clear());
                         nb::Error::Other(Error::Noise)
                     } else if isr.ore().bit_is_set() {
+                        icr.write(|w| w.orecf().clear());
                         nb::Error::Other(Error::Overrun)
                     } else if isr.rxne().bit_is_set() {
                         // NOTE(read_volatile) see `write_volatile` below

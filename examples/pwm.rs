@@ -3,7 +3,7 @@
 #![no_std]
 #![no_main]
 
-extern crate panic_semihosting;
+use panic_semihosting as _;
 
 use cortex_m_rt::entry;
 //use cortex_m_semihosting::hprintln;
@@ -23,7 +23,7 @@ fn main() -> ! {
     // Configure our clocks
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.freeze(&mut flash.acr);
+    let clocks = rcc.cfgr.sysclk(16.mhz()).freeze(&mut flash.acr);
 
     // Prep the pins we need in their correct alternate function
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
@@ -34,10 +34,8 @@ fn main() -> ! {
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
     let pb0 = gpiob.pb0.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
     let pb1 = gpiob.pb1.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb3 = gpiob.pb3.into_af4(&mut gpiob.moder, &mut gpiob.afrl);
     let pb4 = gpiob.pb4.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
     let pb5 = gpiob.pb5.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb7 = gpiob.pb7.into_af10(&mut gpiob.moder, &mut gpiob.afrl);
     let pb8 = gpiob.pb8.into_af1(&mut gpiob.moder, &mut gpiob.afrh);
     let pb10 = gpiob.pb10.into_af1(&mut gpiob.moder, &mut gpiob.afrh);
 
@@ -77,7 +75,7 @@ fn main() -> ! {
     tim3_ch3.set_duty(tim3_ch3.get_max_duty() / 50 * 3); // 6% duty cyle
     tim3_ch3.enable();
 
-    let mut tim3_ch4 = tim3_channels.3.output_to_pb1(pb1).output_to_pb7(pb7);
+    let mut tim3_ch4 = tim3_channels.3.output_to_pb1(pb1);
     tim3_ch4.set_duty(tim3_ch4.get_max_duty() / 10); // 10% duty cyle
     tim3_ch4.enable();
 
@@ -132,7 +130,7 @@ fn main() -> ! {
         &clocks, // To get the timer's clock speed
     );
 
-    let mut tim8_ch1 = tim8_channels.0.output_to_pb3(pb3).output_to_pc10(pc10);
+    let mut tim8_ch1 = tim8_channels.0.output_to_pc10(pc10);
     tim8_ch1.set_duty(tim8_ch1.get_max_duty() / 10); // 10% duty cyle
     tim8_ch1.enable();
 
