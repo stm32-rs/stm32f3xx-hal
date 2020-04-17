@@ -1,19 +1,80 @@
+/*!
+ # Selecting the right chip
+
+   This crate requires you to specify your target chip as a feature.
+
+   Please select one of the following
+
+   (Note: `x` denotes any character in [a-z])
+   *   stm32f301xb
+   *   stm32f301xc
+   *   stm32f301xd
+   *   stm32f301xe
+   *   stm32f318
+   *   stm32f302
+   *   stm32f303xb
+   *   stm32f303xc
+   *   stm32f303xd
+   *   stm32f303xe
+   *   stm32f303x6
+   *   stm32f303x8
+   *   stm32f373
+   *   stm32f378
+   *   stm32f334
+   *   stm32f328
+   *   stm32f358
+   *   stm32f398
+
+   Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+   So you want to expand your call to `cargo` with `--features stm32f303xc`.
+
+   For more information, see the [README](https://github.com/stm32-rs/stm32f3xx-hal/blob/master/README.md#selecting-the-right-chip)
+*/
 #![no_std]
 #![allow(non_camel_case_types)]
 
-#[cfg(not(feature = "device-selected"))]
+#[cfg(all(not(feature = "device-selected"), not(feature = "needs-subvariant")))]
 compile_error!(
-    "This crate requires one of the following device features enabled:
-        stm32f301
-        stm32f318
-        stm32f302
-        stm32f303
-        stm32f373
-        stm32f378
-        stm32f334
-        stm32f328
-        stm32f358
-        stm32f398"
+    "This crate requires you to specify your target chip as a feature.
+
+    Please select one of the following
+
+    (Note: `x` denotes any character in [a-z])
+    *   stm32f301xb
+    *   stm32f301xc
+    *   stm32f301xd
+    *   stm32f301xe
+    *   stm32f318
+    *   stm32f302
+    *   stm32f303xb
+    *   stm32f303xc
+    *   stm32f303xd
+    *   stm32f303xe
+    *   stm32f303x6
+    *   stm32f303x8
+    *   stm32f373
+    *   stm32f378
+    *   stm32f334
+    *   stm32f328
+    *   stm32f358
+    *   stm32f398
+
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+    So you want to expand your call to `cargo` with `--features stm32f303xc`.
+
+    For more information, see README -> Selecting the right chip.
+    "
+);
+
+#[cfg(all(not(feature = "device-selected"), feature = "direct-call-deprecated",))]
+compile_error!(
+    "The feature you selected is deprecated, because it was split up into sub-devices.
+
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+    You used to use `--features stm32f303` but now functionalities for the sub-device were added.
+    Replace it with `--features stm32f303xc` to make your code build again.
+
+    Please select one of the chip features stated above."
 );
 
 pub use embedded_hal as hal;

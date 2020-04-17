@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking** The feature gate requires you to select a subvaraint if possible. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
+
 ## [v0.4.3] - 2020-04-11
 
 ### Added
