@@ -113,26 +113,6 @@ impl Rtc {
     pub fn get_week_day(&self) -> u8 {
         self.regs.dr.read().wdu().bits()
     }
-    // fn perform_write(&mut self, mut func: impl FnMut(&mut Self)) {
-    //     // Disabling write protection to RTC reg block
-    //     self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
-    //     self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
-
-    //     // Setting RTC Initialization bit to make prescalers programmable
-    //     self.regs.isr.modify(|_, w| { w.init().set_bit()});
-
-    //     // wait for initilization mode to take effect
-    //     while self.regs.isr.read().initf().bit() == false {}
-
-    //     // Perform write operation
-    //     func(self);
-
-    //     // Take device out of Initialization mode
-    //     self.regs.isr.modify(|_, w| { w.init().clear_bit()});
-
-    //     // wait for last write to be done
-    //     while !self.regs.isr.read().initf().bit() == false {}
-    // }
 
     fn modify<F>(&mut self, mut closure: F)
     where
