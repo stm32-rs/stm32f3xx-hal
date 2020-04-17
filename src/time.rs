@@ -4,8 +4,6 @@ use cortex_m::peripheral::DWT;
 
 use crate::rcc::Clocks;
 
-use core::fmt;
-
 /// Bits per second
 #[derive(Clone, Copy)]
 pub struct Bps(pub u32);
