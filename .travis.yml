@@ -9,10 +9,41 @@ matrix:
     - rust: nightly
   fast_finish: true
 
+env:
+  - CHIP=stm32f301
+  - CHIP=stm32f301xb
+  - CHIP=stm32f301xc
+  - CHIP=stm32f301xd
+  - CHIP=stm32f301xe
+  - CHIP=stm32f318
+  - CHIP=stm32f302
+  - CHIP=stm32f303
+  - CHIP=stm32f303xb
+  - CHIP=stm32f303xc
+  - CHIP=stm32f303xd
+  - CHIP=stm32f303xe
+  - CHIP=stm32f303x6
+  - CHIP=stm32f303x8
+  - CHIP=stm32f373
+  - CHIP=stm32f378
+  - CHIP=stm32f334
+  - CHIP=stm32f328
+  - CHIP=stm32f358
+  - CHIP=stm32f398
+
+script:
+  - cargo build --features $CHIP,rt
+  - cargo build --example --features $CHIP,rt
+
+jobs:
+  include:
+    script:
+      - cargo fmt -- --check
+
 install:
   - rustup target add thumbv7em-none-eabihf
   - rustup component add rustfmt
 
-script:
-  - ci/build.py
-  - cargo fmt -- --check
+notifications:
+  email:
+    on_success: never
