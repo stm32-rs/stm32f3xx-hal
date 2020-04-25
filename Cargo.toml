@@ -23,7 +23,7 @@ cortex-m = "0.6"
 cortex-m-rt = "0.6"
 embedded-hal = "0.2"
 nb = "0.1"
-stm32f3 = "0.10"
+stm32f3 = "0.11"
 
 [dependencies.bare-metal]
 version = "0.2"

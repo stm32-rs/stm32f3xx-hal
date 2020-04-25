@@ -33,6 +33,7 @@ let clocks = rcc
   This is possible through utilizing the divider, which can devide the
   external oscillator clock on most devices. Some devices have even the
   possibility to divide the internal oscillator clock.
+- Bump `stm32f3` dependency to `0.11.0` ([#97](https://github.com/stm32-rs/stm32f3xx-hal/pull/97))
 
 ## [v0.4.3] - 2020-04-11
 
