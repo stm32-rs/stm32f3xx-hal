@@ -36,7 +36,9 @@ impl Rtc {
 
         let raw_bits: u32 = prediv_s | (prediv_a << 16);
         result.modify(|regs| {
-            regs.prer.write(|w| unsafe { w.bits(raw_bits) });
+            regs.prer.write(|w| unsafe { 
+                w.prediv_s().bits(prediv_s).prediv_a().bits(prediv_a)
+            });
         });
         result
     }
