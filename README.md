@@ -55,7 +55,10 @@ Note: `x` denotes any character in [a-z]
 *   stm32f301xd
 *   stm32f301xe
 *   stm32f318
-*   stm32f302
+*   stm32f302xb
+*   stm32f302xc
+*   stm32f302xd
+*   stm32f302xe
 *   stm32f303xb
 *   stm32f303xc
 *   stm32f303xd

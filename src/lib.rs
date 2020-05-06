@@ -11,7 +11,10 @@
    *   stm32f301xd
    *   stm32f301xe
    *   stm32f318
-   *   stm32f302
+   *   stm32f302xb
+   *   stm32f302xc
+   *   stm32f302xd
+   *   stm32f302xe
    *   stm32f303xb
    *   stm32f303xc
    *   stm32f303xd
@@ -45,7 +48,10 @@ compile_error!(
     *   stm32f301xd
     *   stm32f301xe
     *   stm32f318
-    *   stm32f302
+    *   stm32f302xb
+    *   stm32f302xc
+    *   stm32f302xd
+    *   stm32f302xe
     *   stm32f303xb
     *   stm32f303xc
     *   stm32f303xd
@@ -71,8 +77,8 @@ compile_error!(
     "The feature you selected is deprecated, because it was split up into sub-devices.
 
     Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-    You used to use `--features stm32f303` but now functionalities for the sub-device were added.
-    Replace it with `--features stm32f303xc` to make your code build again.
+    You probably used to use `--features stm32f303` but now functionalities for the sub-device were added.
+    In this case replace it with `--features stm32f303xc` to make your code build again.
 
     Please select one of the chip features stated above."
 );

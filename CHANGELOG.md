@@ -7,9 +7,32 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `PLL` was calculated wrong for devices, which do not divide `HSI` ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
+
 ### Changed
 
 - **Breaking** The feature gate requires you to select a subvaraint if possible. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
+- **Breaking** Split up `stm32f302` into sub-targets `stm32f302xb`,`stm32f302xc`,`stm32f302xd`,`stm32f302xe`
+- The system clock calculation is more fine grained now. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
+  Now the system clock can be some value, like 14 MHz, which can not a
+  be represented as a multiple of the oscillator clock:
+```rust
+let clocks = rcc
+    .cfgr
+    .use_hse(8.mhz())
+    .sysclk(14.mhz())
+
+// or
+let clocks = rcc
+    .cfgr
+    .use_hse(32.mhz())
+    .sysclk(72.mhz())
+```
+  This is possible through utilizing the divider, which can devide the
+  external oscillator clock on most devices. Some devices have even the
+  possibility to divide the internal oscillator clock.
 
 ## [v0.4.3] - 2020-04-11
 
