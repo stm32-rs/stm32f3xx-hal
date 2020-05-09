@@ -27,9 +27,6 @@ stm32f3 = "0.10"
 typenum = "1.11.2"
 embedded-hal-can = "0.1.0"
 
-[dependencies.canbus]
-path = "/Users/zklapow/dev/personal/robot/canbus"
-
 [dependencies.bare-metal]
 version = "0.2"
 features = ["const-fn"]

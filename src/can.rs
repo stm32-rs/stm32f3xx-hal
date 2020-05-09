@@ -295,7 +295,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
         &mut self,
         frame: &Self::Frame,
     ) -> Result<Option<Self::Frame>, nb::Error<Self::Error>> {
-        if let Some(data) = frame.data() {
+        if let Some(_) = frame.data() {
             assert!(
                 frame.length < 8,
                 "CanFrame cannot contain more than 8 bytes of data"
@@ -327,7 +327,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
             }
 
             match frame.data() {
-                Some(d) => unsafe {
+                Some(_) => unsafe {
                     for j in 0..frame.length {
                         let val = &frame.data[j];
                         match j {
@@ -370,7 +370,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
 
 impl Receiver for CanFifo {
     fn receive(&mut self) -> Result<Self::Frame, Error<Self::Error>> {
-        let can = unsafe { (&*CAN::ptr()) };
+        let can = unsafe { &*CAN::ptr() };
 
         let rx = &can.rx[self.idx];
         if (can).rfr[self.idx].read().fmp().bits() > 0 {
@@ -418,7 +418,7 @@ impl Receiver for CanFifo {
     fn set_filter(&mut self, filter: Self::Filter) {
         // TODO: this likely needs to be in a critical section, is that OK?
 
-        let can = unsafe { (&*CAN::ptr()) };
+        let can = unsafe { &*CAN::ptr() };
 
         // Filter init mode
         can.fmr.modify(|_, w| w.finit().set_bit());
