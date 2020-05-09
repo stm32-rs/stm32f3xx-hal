@@ -19,7 +19,6 @@ targets = ["thumbv7em-none-eabihf"]
 travis-ci = { repository = "stm32-rs/stm32f3xx-hal" }
 
 [dependencies]
-as-slice = "0.1"
 cortex-m = "0.6"
 cortex-m-rt = "0.6"
 embedded-hal = "0.2"

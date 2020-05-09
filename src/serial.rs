@@ -39,15 +39,7 @@ use crate::gpio::gpiod;
 use crate::gpio::gpioe;
 
 #[cfg(feature = "stm32f303")]
-mod dma_imports {
-    pub use crate::dma;
-    pub use as_slice::{AsMutSlice, AsSlice};
-    pub use core::ops::{Deref, DerefMut};
-    pub use stable_deref_trait::StableDeref;
-}
-
-#[cfg(feature = "stm32f303")]
-use dma_imports::*;
+pub use crate::dma;
 
 /// Interrupt event
 pub enum Event {
@@ -381,28 +373,19 @@ macro_rules! hal {
                 /// Fill the buffer with received data using DMA.
                 pub fn read_exact<B, C>(
                     self,
-                    mut buffer: B,
+                    buffer: B,
                     mut channel: C
                 ) -> dma::Transfer<B, C, Self>
                 where
                     Self: dma::Target<C>,
-                    B: DerefMut + StableDeref + 'static,
-                    B::Target: AsMutSlice<Element = u8>,
+                    B: dma::WriteBuffer<Word = u8> + 'static,
                     C: dma::Channel,
                 {
                     // NOTE(unsafe) taking the address of a register
                     let pa = unsafe { &(*$USARTX::ptr()).rdr } as *const _ as u32;
                     channel.set_peripheral_address(pa, dma::Increment::Disable);
 
-                    let slice = buffer.as_mut_slice();
-                    let (ma, len) = (slice.as_mut_ptr() as u32, slice.len());
-                    channel.set_memory_address(ma, dma::Increment::Enable);
-                    channel.set_transfer_length(len);
-                    channel.set_word_size(dma::WordSize::Bits8);
-
-                    channel.set_direction(dma::Direction::FromPeripheral);
-
-                    unsafe { dma::Transfer::start(buffer, channel, self) }
+                    dma::Transfer::start_write(buffer, channel, self)
                 }
             }
 
@@ -416,23 +399,14 @@ macro_rules! hal {
                 ) -> dma::Transfer<B, C, Self>
                 where
                     Self: dma::Target<C>,
-                    B: Deref + StableDeref + 'static,
-                    B::Target: AsSlice<Element = u8>,
+                    B: dma::ReadBuffer<Word = u8> + 'static,
                     C: dma::Channel,
                 {
                     // NOTE(unsafe) taking the address of a register
                     let pa = unsafe { &(*$USARTX::ptr()).tdr } as *const _ as u32;
                     channel.set_peripheral_address(pa, dma::Increment::Disable);
 
-                    let slice = buffer.as_slice();
-                    let (ma, len) = (slice.as_ptr() as u32, slice.len());
-                    channel.set_memory_address(ma, dma::Increment::Enable);
-                    channel.set_transfer_length(len);
-                    channel.set_word_size(dma::WordSize::Bits8);
-
-                    channel.set_direction(dma::Direction::FromMemory);
-
-                    unsafe { dma::Transfer::start(buffer, channel, self) }
+                    dma::Transfer::start_read(buffer, channel, self)
                 }
             }
         )+

@@ -10,7 +10,11 @@ use crate::{
     stm32::{self, dma1::ch::cr},
 };
 use cast::u16;
-use core::sync::atomic::{self, Ordering};
+use core::{
+    mem::{self, MaybeUninit},
+    ops::{Deref, DerefMut},
+    sync::atomic::{self, Ordering},
+};
 use stable_deref_trait::StableDeref;
 
 /// Extension trait to split a DMA peripheral into independent channels
@@ -29,15 +33,46 @@ pub struct Transfer<B, C: Channel, T> {
 }
 
 impl<B, C: Channel, T> Transfer<B, C, T> {
-    /// Start a DMA transfer.
-    ///
+    /// Start a DMA write transfer.
+    pub fn start_write(mut buffer: B, mut channel: C, target: T) -> Self
+    where
+        B: WriteBuffer + 'static,
+        T: Target<C>,
+    {
+        let (ptr, len) = buffer.write_buffer();
+
+        channel.set_memory_address(ptr as u32, Increment::Enable);
+        channel.set_transfer_length(len);
+        channel.set_word_size::<B::Word>();
+        channel.set_direction(Direction::FromPeripheral);
+
+        unsafe { Self::start(buffer, channel, target) }
+    }
+
+    /// Start a DMA read transfer.
+    pub fn start_read(buffer: B, mut channel: C, target: T) -> Self
+    where
+        B: ReadBuffer + 'static,
+        T: Target<C>,
+    {
+        let (ptr, len) = buffer.read_buffer();
+
+        channel.set_memory_address(ptr as u32, Increment::Enable);
+        channel.set_transfer_length(len);
+        channel.set_word_size::<B::Word>();
+        channel.set_direction(Direction::FromMemory);
+
+        unsafe { Self::start(buffer, channel, target) }
+    }
+
     /// # Safety
     ///
-    /// Callers must ensure that the DMA channel is configured correctly for
-    /// the given target and buffer.
-    pub unsafe fn start(buffer: B, mut channel: C, target: T) -> Self
+    /// Callers must ensure that:
+    ///
+    /// - the given buffer will be valid for the duration of the transfer
+    /// - the DMA channel is configured correctly for the given target and buffer
+    unsafe fn start(buffer: B, mut channel: C, target: T) -> Self
     where
-        B: StableDeref + 'static,
         T: Target<C>,
     {
         assert!(!channel.is_enabled());
@@ -100,6 +135,211 @@ impl<B, C: Channel, T> TransferInner<B, C, T> {
     }
 }
 
+/// Trait for buffers that can be given to DMA for reading.
+///
+/// # Safety
+///
+/// The implementing type must be safe to use for DMA reads. This means:
+///
+/// - It must be a pointer that references the actual buffer.
+/// - The requirements documented on `read_buffer` must be fulfilled.
+pub unsafe trait ReadBuffer {
+    type Word;
+
+    /// Provide a buffer usable for DMA reads.
+    ///
+    /// The return value is:
+    ///
+    /// - pointer to the start of the buffer
+    /// - buffer size in words
+    ///
+    /// # Safety
+    ///
+    /// - This function must always return the same values, if called multiple
+    ///   times.
+    /// - The memory specified by the returned pointer and size must not be
+    ///   freed as long as `self` is not dropped.
+    fn read_buffer(&self) -> (*const Self::Word, usize);
+}
+
+/// Trait for buffers that can be given to DMA for writing.
+///
+/// # Safety
+///
+/// The implementing type must be safe to use for DMA writes. This means:
+///
+/// - It must be a pointer that references the actual buffer.
+/// - `Target` must be a type that is valid for any possible byte pattern.
+/// - The requirements documented on `write_buffer` must be fulfilled.
+pub unsafe trait WriteBuffer {
+    type Word;
+
+    /// Provide a buffer usable for DMA writes.
+    ///
+    /// The return value is:
+    ///
+    /// - pointer to the start of the buffer
+    /// - buffer size in words
+    ///
+    /// # Safety
+    ///
+    /// - This function must always return the same values, if called multiple
+    ///   times.
+    /// - The memory specified by the returned pointer and size must not be
+    ///   freed as long as `self` is not dropped.
+    fn write_buffer(&mut self) -> (*mut Self::Word, usize);
+}
+
+// Blanked implementations for common DMA buffer types.
+
+unsafe impl<B, T> ReadBuffer for B
+where
+    B: Deref<Target = T> + StableDeref,
+    T: ReadTarget + ?Sized,
+{
+    type Word = T::Word;
+
+    fn read_buffer(&self) -> (*const Self::Word, usize) {
+        self.as_read_buffer()
+    }
+}
+
+unsafe impl<B, T> WriteBuffer for B
+where
+    B: DerefMut<Target = T> + StableDeref,
+    T: WriteTarget + ?Sized,
+{
+    type Word = T::Word;
+
+    fn write_buffer(&mut self) -> (*mut Self::Word, usize) {
+        self.as_write_buffer()
+    }
+}
+
+/// Trait for DMA word types used by the blanket DMA buffer impls.
+///
+/// # Safety
+///
+/// Types that implement this trait must be valid for every possible byte
+/// pattern. This is to ensure that, whatever DMA writes into the buffer,
+/// we won't get UB due to invalid values.
+pub unsafe trait Word {}
+
+unsafe impl Word for u8 {}
+unsafe impl Word for u16 {}
+unsafe impl Word for u32 {}
+
+/// Trait for `Deref` targets used by the blanket `DmaReadBuffer` impl.
+///
+/// This trait exists solely to work around
+/// https://github.com/rust-lang/rust/issues/20400.
+///
+/// # Safety
+///
+/// - `as_read_buffer` must adhere to the safety requirements
+///   documented for `DmaReadBuffer::dma_read_buffer`.
+pub unsafe trait ReadTarget {
+    type Word: Word;
+
+    fn as_read_buffer(&self) -> (*const Self::Word, usize) {
+        let ptr = self as *const _ as *const Self::Word;
+        let len = mem::size_of_val(self) / mem::size_of::<Self::Word>();
+        (ptr, len)
+    }
+}
+
+/// Trait for `DerefMut` targets used by the blanket `DmaWriteBuffer` impl.
+///
+/// This trait exists solely to work around
+/// https://github.com/rust-lang/rust/issues/20400.
+///
+/// # Safety
+///
+/// - `as_write_buffer` must adhere to the safety requirements
+///   documented for `DmaWriteBuffer::dma_write_buffer`.
+pub unsafe trait WriteTarget {
+    type Word: Word;
+
+    fn as_write_buffer(&mut self) -> (*mut Self::Word, usize) {
+        let ptr = self as *mut _ as *mut Self::Word;
+        let len = mem::size_of_val(self) / mem::size_of::<Self::Word>();
+        (ptr, len)
+    }
+}
+
+unsafe impl<W: Word> ReadTarget for W {
+    type Word = W;
+}
+
+unsafe impl<W: Word> WriteTarget for W {
+    type Word = W;
+}
+
+unsafe impl<T: ReadTarget> ReadTarget for [T] {
+    type Word = T::Word;
+}
+
+unsafe impl<T: WriteTarget> WriteTarget for [T] {
+    type Word = T::Word;
+}
+
+macro_rules! dma_target_array_impls {
+    ( $( $i:expr, )+ ) => {
+        $(
+            unsafe impl<T: ReadTarget> ReadTarget for [T; $i] {
+                type Word = T::Word;
+            }
+
+            unsafe impl<T: WriteTarget> WriteTarget for [T; $i] {
+                type Word = T::Word;
+            }
+        )+
+    };
+}
+
+#[rustfmt::skip]
+dma_target_array_impls!(
+    0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
+    10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
+    20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
+    30,  31,  32,  33,  34,  35,  36,  37,  38,  39,
+    40,  41,  42,  43,  44,  45,  46,  47,  48,  49,
+    50,  51,  52,  53,  54,  55,  56,  57,  58,  59,
+    60,  61,  62,  63,  64,  65,  66,  67,  68,  69,
+    70,  71,  72,  73,  74,  75,  76,  77,  78,  79,
+    80,  81,  82,  83,  84,  85,  86,  87,  88,  89,
+    90,  91,  92,  93,  94,  95,  96,  97,  98,  99,
+   100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
+   110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+   120, 121, 122, 123, 124, 125, 126, 127, 128, 129,
+   130, 131, 132, 133, 134, 135, 136, 137, 138, 139,
+   140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
+   150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+   160, 161, 162, 163, 164, 165, 166, 167, 168, 169,
+   170, 171, 172, 173, 174, 175, 176, 177, 178, 179,
+   180, 181, 182, 183, 184, 185, 186, 187, 188, 189,
+   190, 191, 192, 193, 194, 195, 196, 197, 198, 199,
+   200, 201, 202, 203, 204, 205, 206, 207, 208, 209,
+   210, 211, 212, 213, 214, 215, 216, 217, 218, 219,
+   220, 221, 222, 223, 224, 225, 226, 227, 228, 229,
+   230, 231, 232, 233, 234, 235, 236, 237, 238, 239,
+   240, 241, 242, 243, 244, 245, 246, 247, 248, 249,
+   250, 251, 252, 253, 254, 255, 256,
+
+   1 <<  9,
+   1 << 10,
+   1 << 11,
+   1 << 12,
+   1 << 13,
+   1 << 14,
+   1 << 15,
+   1 << 16,
+);
+
+unsafe impl<T: WriteTarget> WriteTarget for MaybeUninit<T> {
+    type Word = T::Word;
+}
+
 /// DMA address increment mode
 pub enum Increment {
     /// Enable increment
@@ -113,26 +353,6 @@ impl From<Increment> for cr::PINC_A {
         match inc {
             Increment::Enable => cr::PINC_A::ENABLED,
             Increment::Disable => cr::PINC_A::DISABLED,
-        }
-    }
-}
-
-/// DMA word size
-pub enum WordSize {
-    /// 8 bits
-    Bits8,
-    /// 16 bits
-    Bits16,
-    /// 32 bits
-    Bits32,
-}
-
-impl From<WordSize> for cr::PSIZE_A {
-    fn from(size: WordSize) -> Self {
-        match size {
-            WordSize::Bits8 => cr::PSIZE_A::BITS8,
-            WordSize::Bits16 => cr::PSIZE_A::BITS16,
-            WordSize::Bits32 => cr::PSIZE_A::BITS32,
         }
     }
 }
@@ -251,8 +471,16 @@ pub trait Channel: private::Channel {
     }
 
     /// Set the word size
-    fn set_word_size(&mut self, size: WordSize) {
-        let psize = size.into();
+    fn set_word_size<W>(&mut self) {
+        use cr::PSIZE_A::*;
+
+        let psize = match mem::size_of::<W>() {
+            1 => BITS8,
+            2 => BITS16,
+            4 => BITS32,
+            s => panic!("unsupported word size: {}", s),
+        };
+
         self.ch().cr.modify(|_, w| {
             w.psize().variant(psize);
             w.msize().variant(psize)
