@@ -13,8 +13,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- **Breaking** The feature gate requires you to select a subvaraint if possible. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
-- **Breaking** Split up `stm32f302` into sub-targets `stm32f302xb`,`stm32f302xc`,`stm32f302xd`,`stm32f302xe`
 - The system clock calculation is more fine grained now. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
   Now the system clock can be some value, like 14 MHz, which can not a
   be represented as a multiple of the oscillator clock:
@@ -33,6 +31,12 @@ let clocks = rcc
   This is possible through utilizing the divider, which can devide the
   external oscillator clock on most devices. Some devices have even the
   possibility to divide the internal oscillator clock.
+
+### Breaking changes
+
+- The feature gate requires you to select a subvariant if possible. ([#75](https://github.com/stm32-rs/stm32f3xx-hal/pull/75))
+- Split up `stm32f302` into sub-targets `stm32f302xb`,`stm32f302xc`,`stm32f302xd`,`stm32f302xe`
+- Bump `stm32f3` dependency to `0.11.0` ([#97](https://github.com/stm32-rs/stm32f3xx-hal/pull/97))
 
 ## [v0.4.3] - 2020-04-11
 
@@ -134,7 +138,7 @@ let clocks = rcc
 
 - Various peripheral mappings for some devices ([#12](https://github.com/stm32-rs/stm32f3xx-hal/pull/12))
 
-### Breaking changers
+### Breaking changes
 
 - Switch to the `embedded-hal` v2 digital pin trait.
 
