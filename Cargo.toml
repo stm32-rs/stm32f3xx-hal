@@ -65,6 +65,8 @@ stm32f302xb = ["stm32f302", "device-selected"]
 stm32f302xc = ["stm32f302", "device-selected"]
 stm32f302xd = ["stm32f302", "device-selected"]
 stm32f302xe = ["stm32f302", "device-selected"]
+stm32f302x6 = ["stm32f302", "device-selected"]
+stm32f302x8 = ["stm32f302", "device-selected"]
 stm32f303 = ["stm32f3/stm32f303", "direct-call-deprecated"]
 stm32f303xb = ["stm32f303", "stm32-usbd/ram_access_1x16", "device-selected"]
 stm32f303xc = ["stm32f303", "stm32-usbd/ram_access_1x16", "device-selected"]
@@ -104,3 +106,7 @@ required-features = ["rt", "stm32f303xc", "stm32-usbd"]
 [[example]]
 name = "spi"
 required-features = ["stm32f303"]
+
+[[example]]
+name = "can"
+required-features = ["rt", "stm32f302xc"]
