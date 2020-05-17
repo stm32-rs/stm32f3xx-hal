@@ -194,7 +194,7 @@ impl Can {
         tx: gpioa::PA12<AF9>,
         apb1: &mut APB1,
     ) -> Can {
-        apb1.enr().modify(|_, w| w.canen().set_bit());
+        apb1.enr().modify(|_, w| w.canen().enabled());
         can.mcr.modify(|_, w| w.sleep().clear_bit());
         can.mcr.modify(|_, w| w.inrq().set_bit());
 
@@ -496,11 +496,7 @@ impl CanFrame {
     }
 
     pub fn data_frame_with_data(id: CanId, data: [u8; 8], length: usize) -> CanFrame {
-        CanFrame {
-            id,
-            data,
-            length,
-        }
+        CanFrame { id, data, length }
     }
 
     pub fn remote_frame(id: CanId) -> CanFrame {
