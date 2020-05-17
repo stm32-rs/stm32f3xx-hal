@@ -13,13 +13,13 @@ use stm32f3::stm32f302::CAN;
 const EXID_MASK: u32 = 0b11111111111000000000000000000;
 const MAX_EXTENDED_ID: u32 = 0x1FFFFFFF;
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CanId {
     BaseId(u16),
     ExtendedId(u32),
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanFrame {
     pub id: CanId,
     pub data: [u8; 8],
@@ -31,7 +31,7 @@ pub enum FilterMode {
     List,
 }
 
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum CanFilterData {
     IdFilter(CanId),
     MaskFilter(u16, u16),
@@ -39,7 +39,7 @@ pub enum CanFilterData {
     AcceptAll,
 }
 
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct CanFilter {
     data: CanFilterData,
     index: Option<u8>,
@@ -188,7 +188,7 @@ impl CanFilterData {
 }
 
 impl Can {
-    pub fn new(
+    pub fn can(
         can: stm32::CAN,
         rx: gpioa::PA11<AF9>,
         tx: gpioa::PA12<AF9>,
@@ -295,17 +295,10 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
         &mut self,
         frame: &Self::Frame,
     ) -> Result<Option<Self::Frame>, nb::Error<Self::Error>> {
-        if let Some(_) = frame.data() {
-            assert!(
-                frame.length < 8,
-                "CanFrame cannot contain more than 8 bytes of data"
-            );
-        }
-
         let can = unsafe { &*CAN::ptr() };
 
-        for i in 0..3 {
-            let free = match i {
+        for tx_idx in 0..3 {
+            let free = match tx_idx {
                 0 => can.tsr.read().tme0().bit_is_set(),
                 1 => can.tsr.read().tme1().bit_is_set(),
                 2 => can.tsr.read().tme2().bit_is_set(),
@@ -316,7 +309,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                 continue;
             }
 
-            let tx = &can.tx[i];
+            let tx = &can.tx[tx_idx];
 
             match frame.id {
                 CanId::BaseId(id) => tx.tir.modify(|_, w| unsafe { w.stid().bits(id) }),
@@ -326,8 +319,8 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                 }),
             }
 
-            match frame.data() {
-                Some(_) => unsafe {
+            if let Some(_) = frame.data() {
+                unsafe {
                     for j in 0..frame.length {
                         let val = &frame.data[j];
                         match j {
@@ -344,17 +337,18 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                     }
 
                     tx.tdtr.modify(|_, w| w.dlc().bits(frame.length as u8));
+                }
 
-                    tx.tir.modify(|_, w| w.rtr().clear_bit());
-                },
-                None => tx.tir.modify(|_, w| w.rtr().set_bit()),
+                tx.tir.modify(|_, w| w.rtr().clear_bit());
+            } else {
+                tx.tir.modify(|_, w| w.rtr().set_bit());
             }
 
             // Request the frame be sent!
             tx.tir.modify(|_, w| w.txrq().set_bit());
 
             // TODO: we can prob not wait for txok?
-            while match i {
+            while match tx_idx {
                 0 => can.tsr.read().txok0().bit_is_clear(),
                 1 => can.tsr.read().txok1().bit_is_clear(),
                 2 => can.tsr.read().txok2().bit_is_clear(),
@@ -407,7 +401,7 @@ impl Receiver for CanFifo {
             // Release the mailbox
             can.rfr[self.idx].modify(|_, w| w.rfom().set_bit());
 
-            let frame = CanFrame::new_with_len(rcv_id, &data, len);
+            let frame = CanFrame::data_frame_with_data(rcv_id, data, len);
 
             return Ok(frame);
         }
@@ -499,6 +493,14 @@ impl CanFrame {
 
     pub fn data_frame(id: CanId, data: &[u8]) -> CanFrame {
         CanFrame::new_with_len(id, data, data.len())
+    }
+
+    pub fn data_frame_with_data(id: CanId, data: [u8; 8], length: usize) -> CanFrame {
+        CanFrame {
+            id,
+            data,
+            length,
+        }
     }
 
     pub fn remote_frame(id: CanId) -> CanFrame {

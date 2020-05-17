@@ -24,7 +24,6 @@ cortex-m-rt = "0.6"
 embedded-hal = "0.2"
 nb = "0.1"
 stm32f3 = "0.10"
-typenum = "1.11.2"
 embedded-hal-can = "0.1.0"
 
 [dependencies.bare-metal]

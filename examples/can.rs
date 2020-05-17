@@ -8,16 +8,12 @@ use stm32f3xx_hal as hal;
 
 use cortex_m_rt::entry;
 
+use cortex_m::asm;
 use hal::prelude::*;
 use hal::stm32;
 use hal::watchdog::IndependentWatchDog;
-use cortex_m::asm;
 
-use hal::can::{
-    Can, CanFifo, CanFilter, CanFilterData, CanFrame, CanId, CanTransmitter, Event, Filter,
-    Frame,
-    FilterMode, Receiver, Transmitter,
-};
+use hal::can::{Can, CanFilter, CanFrame, CanId, Filter, Frame, Receiver, Transmitter};
 use nb::block;
 
 // Each "node" needs a different ID, we set up a filter too look for messages to this ID
@@ -33,7 +29,7 @@ fn main() -> ! {
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
-    let clocks = rcc
+    let _clocks = rcc
         .cfgr
         .use_hse(32.mhz())
         .sysclk(32.mhz())
@@ -46,7 +42,7 @@ fn main() -> ! {
     let can_tx = gpioa.pa12.into_af9(&mut gpioa.moder, &mut gpioa.afrh);
 
     // Initialize the CAN peripheral
-    let can = Can::new(dp.CAN, can_rx, can_tx, &mut rcc.apb1);
+    let can = Can::can(dp.CAN, can_rx, can_tx, &mut rcc.apb1);
 
     // Uncomment the following line to enable CAN interrupts
     // can.listen(Event::Fifo0Fmp);
