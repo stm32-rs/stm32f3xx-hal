@@ -34,14 +34,18 @@ use crate::gpio::gpioa::{PA5, PA6, PA7};
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f318",
-    feature = "stm32f328",
     feature = "stm32f334",
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
 use crate::gpio::gpiob::PB13;
 use crate::gpio::gpiob::{PB14, PB15, PB5};
-#[cfg(any(feature = "stm32f302", feature = "stm32f303", feature = "stm32f318",))]
+#[cfg(any(
+    feature = "stm32f302",
+    feature = "stm32f303",
+    feature = "stm32f318",
+    feature = "stm32f328",
+))]
 use crate::gpio::gpiob::{PB3, PB4};
 use crate::gpio::gpioc::{PC10, PC11, PC12};
 #[cfg(any(
@@ -82,7 +86,6 @@ use crate::rcc::Clocks;
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f318",
-    feature = "stm32f328",
     feature = "stm32f358",
     feature = "stm32f373",
     feature = "stm32f378",
@@ -134,7 +137,8 @@ unsafe impl SckPin<SPI1> for PA5<AF5> {}
     feature = "stm32f302xc",
     feature = "stm32f302xd",
     feature = "stm32f302xe",
-    feature = "stm32f303"
+    feature = "stm32f303",
+    feature = "stm32f328",
 ))]
 unsafe impl SckPin<SPI1> for PB3<AF5> {}
 
@@ -143,7 +147,6 @@ unsafe impl SckPin<SPI1> for PB3<AF5> {}
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f318",
-    feature = "stm32f328",
     feature = "stm32f334",
     feature = "stm32f358",
     feature = "stm32f398"
@@ -212,7 +215,8 @@ unsafe impl MisoPin<SPI1> for PA6<AF5> {}
     feature = "stm32f302xc",
     feature = "stm32f302xd",
     feature = "stm32f302xe",
-    feature = "stm32f303"
+    feature = "stm32f303",
+    feature = "stm32f328",
 ))]
 unsafe impl MisoPin<SPI1> for PB4<AF5> {}
 
@@ -468,6 +472,7 @@ macro_rules! hal {
 #[cfg(any(
     feature = "stm32f303x6",
     feature = "stm32f303x8",
+    feature = "stm32f328",
     feature = "stm32f334",
 ))]
 hal! {
@@ -490,7 +495,6 @@ hal! {
     feature = "stm32f302xc",
     feature = "stm32f303xb",
     feature = "stm32f303xc",
-    feature = "stm32f328",
     feature = "stm32f358",
     feature = "stm32f373",
     feature = "stm32f378",
