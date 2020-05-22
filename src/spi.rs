@@ -14,7 +14,8 @@ use crate::stm32::spi1;
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 use crate::stm32::SPI4;
 
@@ -28,6 +29,7 @@ use crate::gpio::gpioa::{PA1, PA10, PA12, PA13, PA2, PA3, PA8, PA9};
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f318",
+    feature = "stm32f398",
 ))]
 use crate::gpio::gpioa::{PA10, PA11};
 use crate::gpio::gpioa::{PA5, PA6, PA7};
@@ -52,6 +54,7 @@ use crate::gpio::gpiob::{PB14, PB15, PB5};
     feature = "stm32f358",
     feature = "stm32f373",
     feature = "stm32f378",
+    feature = "stm32f398",
 ))]
 use crate::gpio::gpiob::{PB3, PB4};
 use crate::gpio::gpioc::{PC10, PC11, PC12};
@@ -63,7 +66,8 @@ use crate::gpio::gpiod::{PD3, PD4, PD7, PD8};
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 use crate::gpio::gpioe::{PE12, PE13, PE14, PE2, PE5, PE6};
 #[cfg(any(
@@ -74,6 +78,7 @@ use crate::gpio::gpioe::{PE12, PE13, PE14, PE2, PE5, PE6};
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f318",
+    feature = "stm32f398",
 ))]
 use crate::gpio::gpiof::PF1;
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
@@ -88,6 +93,7 @@ use crate::gpio::gpiof::PF6;
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f358",
+    feature = "stm32f398",
 ))]
 use crate::gpio::gpiof::{PF10, PF9};
 use crate::gpio::{AF5, AF6};
@@ -158,6 +164,7 @@ unsafe impl SckPin<SPI1> for PA12<AF6> {}
     feature = "stm32f358",
     feature = "stm32f373",
     feature = "stm32f378",
+    feature = "stm32f398",
 ))]
 unsafe impl SckPin<SPI1> for PB3<AF5> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
@@ -191,6 +198,7 @@ unsafe impl SckPin<SPI2> for PD8<AF5> {}
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f318",
+    feature = "stm32f398",
 ))]
 unsafe impl SckPin<SPI2> for PF1<AF5> {}
 #[cfg(any(
@@ -203,6 +211,7 @@ unsafe impl SckPin<SPI2> for PF1<AF5> {}
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f358",
+    feature = "stm32f398",
 ))]
 unsafe impl SckPin<SPI2> for PF9<AF5> {}
 #[cfg(any(
@@ -215,6 +224,7 @@ unsafe impl SckPin<SPI2> for PF9<AF5> {}
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f358",
+    feature = "stm32f398",
 ))]
 unsafe impl SckPin<SPI2> for PF10<AF5> {}
 
@@ -227,6 +237,7 @@ unsafe impl SckPin<SPI3> for PA1<AF6> {}
     feature = "stm32f318",
     feature = "stm32f373",
     feature = "stm32f378",
+    feature = "stm32f398",
 ))]
 unsafe impl SckPin<SPI3> for PB3<AF6> {}
 unsafe impl SckPin<SPI3> for PC10<AF6> {}
@@ -235,14 +246,16 @@ unsafe impl SckPin<SPI3> for PC10<AF6> {}
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 unsafe impl SckPin<SPI4> for PE2<AF5> {}
 #[cfg(any(
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 unsafe impl SckPin<SPI4> for PE12<AF5> {}
 
@@ -259,6 +272,7 @@ unsafe impl MisoPin<SPI1> for PA13<AF6> {}
     feature = "stm32f358",
     feature = "stm32f373",
     feature = "stm32f378",
+    feature = "stm32f398",
 ))]
 unsafe impl MisoPin<SPI1> for PB4<AF5> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
@@ -274,6 +288,7 @@ unsafe impl MisoPin<SPI2> for PA9<AF5> {}
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f318",
+    feature = "stm32f398",
 ))]
 unsafe impl MisoPin<SPI2> for PA10<AF5> {}
 unsafe impl MisoPin<SPI2> for PB14<AF5> {}
@@ -291,6 +306,7 @@ unsafe impl MisoPin<SPI3> for PA2<AF6> {}
     feature = "stm32f318",
     feature = "stm32f373",
     feature = "stm32f378",
+    feature = "stm32f398",
 ))]
 unsafe impl MisoPin<SPI3> for PB4<AF6> {}
 unsafe impl MisoPin<SPI3> for PC11<AF6> {}
@@ -299,14 +315,16 @@ unsafe impl MisoPin<SPI3> for PC11<AF6> {}
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 unsafe impl MisoPin<SPI4> for PE5<AF5> {}
 #[cfg(any(
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 unsafe impl MisoPin<SPI4> for PE13<AF5> {}
 
@@ -329,6 +347,7 @@ unsafe impl MosiPin<SPI2> for PA10<AF5> {}
     feature = "stm32f303xd",
     feature = "stm32f303xe",
     feature = "stm32f318",
+    feature = "stm32f398",
 ))]
 unsafe impl MosiPin<SPI2> for PA11<AF5> {}
 unsafe impl MosiPin<SPI2> for PB15<AF5> {}
@@ -346,14 +365,16 @@ unsafe impl MosiPin<SPI3> for PC12<AF6> {}
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 unsafe impl MosiPin<SPI4> for PE6<AF5> {}
 #[cfg(any(
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 unsafe impl MosiPin<SPI4> for PE14<AF5> {}
 
@@ -566,7 +587,6 @@ hal! {
     feature = "stm32f358",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f398"
 ))]
 hal! {
     SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
@@ -578,7 +598,8 @@ hal! {
     feature = "stm32f302xd",
     feature = "stm32f302xe",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
+    feature = "stm32f398",
 ))]
 hal! {
     SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
