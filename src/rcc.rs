@@ -23,6 +23,7 @@ impl RccExt for RCC {
             ahb: AHB { _0: () },
             apb1: APB1 { _0: () },
             apb2: APB2 { _0: () },
+            bdcr: BDCR { _0: () },
             cfgr: CFGR {
                 hse: None,
                 hclk: None,
@@ -30,6 +31,8 @@ impl RccExt for RCC {
                 pclk2: None,
                 sysclk: None,
             },
+            cr: CR { _0: () },
+            csr: CSR { _0: () },
         }
     }
 }
@@ -42,8 +45,14 @@ pub struct Rcc {
     pub apb1: APB1,
     /// Advanced Peripheral Bus 2 (APB2) registers
     pub apb2: APB2,
+    /// RCC Backup Domain
+    pub bdcr: BDCR,
     /// Clock configuration
     pub cfgr: CFGR,
+    /// RCC Clock Control register
+    pub cr: CR,
+    /// RCC Control/Status register
+    pub csr: CSR,
 }
 
 impl Rcc {
@@ -229,6 +238,18 @@ mod usb_clocking {
 
     pub fn set_usbpre(w: &mut cfgr::W, usb_prescale: cfgr::USBPRE_A) -> &mut cfgr::W {
         w.usbpre().variant(usb_prescale)
+    }
+}
+
+/// Backup Domain Control register (RCC_BDCR)
+pub struct BDCR {
+    _0: (),
+}
+
+impl BDCR {
+    pub(crate) fn bdcr(&mut self) -> &rcc::BDCR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).bdcr }
     }
 }
 
@@ -483,6 +504,30 @@ impl CFGR {
             sysclk: Hertz(sysclk),
             usbclk_valid,
         }
+    }
+}
+
+/// RCC Clock Control register (RCC_CR)
+pub struct CR {
+    _0: (),
+}
+
+impl CR {
+    pub(crate) fn cr(&mut self) -> &rcc::CR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).cr }
+    }
+}
+
+/// RCC Control/Status register
+pub struct CSR {
+    _0: (),
+}
+
+impl CSR {
+    pub(crate) fn csr(&mut self) -> &rcc::CSR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).csr }
     }
 }
 
