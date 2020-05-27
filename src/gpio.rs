@@ -1,5 +1,6 @@
 //! General Purpose Input / Output
 
+use core::convert::Infallible;
 use core::marker::PhantomData;
 
 #[cfg(feature = "unproven")]
@@ -142,7 +143,7 @@ macro_rules! gpio {
         }
 
         impl<MODE> OutputPin for PXx<Output<MODE>> {
-            type Error = ();
+            type Error = Infallible;
 
             fn set_high(&mut self) -> Result<(), Self::Error> {
                 // NOTE(unsafe, write) atomic write to a stateless register
@@ -181,7 +182,7 @@ macro_rules! gpio {
 
         #[cfg(feature = "unproven")]
         impl<MODE> InputPin for PXx<Input<MODE>> {
-            type Error = ();
+            type Error = Infallible;
 
             fn is_high(&self) -> Result<bool, Self::Error> {
                 Ok(!self.is_low()?)
@@ -239,6 +240,7 @@ macro_rules! gpio {
             ))))]
             pub mod $gpiox {
                 use core::marker::PhantomData;
+                use core::convert::Infallible;
 
                 use crate::hal::digital::v2::OutputPin;
                 #[cfg(feature = "unproven")]
@@ -380,7 +382,7 @@ macro_rules! gpio {
                 }
 
                 impl<MODE> OutputPin for $PXx<Output<MODE>> {
-                    type Error = ();
+                    type Error = Infallible;
 
                     fn set_high(&mut self) -> Result<(), Self::Error> {
                         // NOTE(unsafe, write) atomic write to a stateless register
@@ -397,7 +399,7 @@ macro_rules! gpio {
 
                 #[cfg(feature = "unproven")]
                 impl<MODE> InputPin for $PXx<Input<MODE>> {
-                    type Error = ();
+                    type Error = Infallible;
 
                     fn is_high(&self) -> Result<bool, Self::Error> {
                         Ok(!self.is_low()?)
@@ -656,7 +658,7 @@ macro_rules! gpio {
                     }
 
                     impl<MODE> OutputPin for $PXi<Output<MODE>> {
-                        type Error = ();
+                        type Error = Infallible;
 
                         fn set_high(&mut self) -> Result<(), Self::Error> {
                             // NOTE(unsafe, write) atomic write to a stateless register
@@ -673,7 +675,7 @@ macro_rules! gpio {
 
                     #[cfg(feature = "unproven")]
                     impl<MODE> InputPin for $PXi<Input<MODE>> {
-                        type Error = ();
+                        type Error = Infallible;
 
                         fn is_high(&self) -> Result<bool, Self::Error> {
                             Ok(!self.is_low()?)

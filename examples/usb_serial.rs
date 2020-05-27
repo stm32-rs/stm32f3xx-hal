@@ -98,6 +98,6 @@ fn main() -> ! {
             _ => {}
         }
 
-        led.set_low(); // Turn off
+        led.set_low().ok(); // Turn off
     }
 }
