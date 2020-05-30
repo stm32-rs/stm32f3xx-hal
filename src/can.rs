@@ -8,7 +8,6 @@ use nb;
 use nb::Error;
 
 use core::sync::atomic::{AtomicU8, Ordering};
-use stm32f3::stm32f302::CAN;
 
 const EXID_MASK: u32 = 0b11111111111000000000000000000;
 const MAX_EXTENDED_ID: u32 = 0x1FFFFFFF;
@@ -295,7 +294,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
         &mut self,
         frame: &Self::Frame,
     ) -> Result<Option<Self::Frame>, nb::Error<Self::Error>> {
-        let can = unsafe { &*CAN::ptr() };
+        let can = can_register();
 
         for tx_idx in 0..3 {
             let free = match tx_idx {
@@ -347,14 +346,6 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
             // Request the frame be sent!
             tx.tir.modify(|_, w| w.txrq().set_bit());
 
-            // TODO: we can prob not wait for txok?
-            while match tx_idx {
-                0 => can.tsr.read().txok0().bit_is_clear(),
-                1 => can.tsr.read().txok1().bit_is_clear(),
-                2 => can.tsr.read().txok2().bit_is_clear(),
-                _ => unreachable!(),
-            } {}
-
             return Ok(None);
         }
 
@@ -364,10 +355,10 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
 
 impl Receiver for CanFifo {
     fn receive(&mut self) -> Result<Self::Frame, Error<Self::Error>> {
-        let can = unsafe { &*CAN::ptr() };
+        let can = can_register();
 
         let rx = &can.rx[self.idx];
-        if (can).rfr[self.idx].read().fmp().bits() > 0 {
+        if can.rfr[self.idx].read().fmp().bits() > 0 {
             let mut data: [u8; 8] = [0u8; 8];
 
             let len = rx.rdtr.read().dlc().bits() as usize;
@@ -410,66 +401,66 @@ impl Receiver for CanFifo {
     }
 
     fn set_filter(&mut self, filter: Self::Filter) {
-        // TODO: this likely needs to be in a critical section, is that OK?
+        cortex_m::interrupt::free(|_cs| {
+            let can = can_register();
 
-        let can = unsafe { &*CAN::ptr() };
+            // Filter init mode
+            can.fmr.modify(|_, w| w.finit().set_bit());
 
-        // Filter init mode
-        can.fmr.modify(|_, w| w.finit().set_bit());
+            can.fm1r.modify(|_, w| match filter.data {
+                CanFilterData::MaskFilter(_, _) => w.fbm0().clear_bit(),
+                CanFilterData::ExtendedMaskFilter(_, _) => w.fbm0().clear_bit(),
+                CanFilterData::AcceptAll => w.fbm0().clear_bit(),
+                CanFilterData::IdFilter(_) => w.fbm0().set_bit(),
+            });
 
-        can.fm1r.modify(|_, w| match filter.data {
-            CanFilterData::MaskFilter(_, _) => w.fbm0().clear_bit(),
-            CanFilterData::ExtendedMaskFilter(_, _) => w.fbm0().clear_bit(),
-            CanFilterData::AcceptAll => w.fbm0().clear_bit(),
-            CanFilterData::IdFilter(_) => w.fbm0().set_bit(),
+            can.fs1r.modify(|_, w| match filter.data {
+                CanFilterData::MaskFilter(_, _) => w.fsc0().clear_bit(),
+                CanFilterData::ExtendedMaskFilter(_, _) => w.fsc0().set_bit(),
+                CanFilterData::AcceptAll => w.fsc0().set_bit(),
+                CanFilterData::IdFilter(id) => match id {
+                    CanId::BaseId(_) => w.fsc0().clear_bit(),
+                    CanId::ExtendedId(_) => w.fsc0().set_bit(),
+                },
+            });
+
+            // Assign filter to this FIFO
+            can.ffa1r.modify(|_, w| match self.idx {
+                0 => w.ffa0().clear_bit(),
+                1 => w.ffa0().set_bit(),
+                _ => unreachable!(),
+            });
+
+            let index = filter
+                .index
+                .unwrap_or_else(|| FILTER_INDEX.fetch_add(1, Ordering::Acquire))
+                as usize;
+
+            assert!(index < 28, "Filter index out of range");
+
+            can.fb[index]
+                .fr1
+                .modify(|_, w| unsafe { w.bits(filter.data.fr1()) });
+
+            let fr2 = filter.data.fr2().unwrap_or(0);
+            can.fb[index].fr2.modify(|_, w| unsafe { w.bits(fr2) });
+
+            can.fa1r.modify(|_, w| {
+                // TODO: the rest of these
+                match index {
+                    0 => w.fact0().set_bit(),
+                    1 => w.fact1().set_bit(),
+                    2 => w.fact2().set_bit(),
+                    3 => w.fact3().set_bit(),
+                    4 => w.fact4().set_bit(),
+                    5 => w.fact5().set_bit(),
+                    _ => unimplemented!(),
+                }
+            });
+
+            // Disable init mode
+            can.fmr.modify(|_, w| w.finit().clear_bit());
         });
-
-        can.fs1r.modify(|_, w| match filter.data {
-            CanFilterData::MaskFilter(_, _) => w.fsc0().clear_bit(),
-            CanFilterData::ExtendedMaskFilter(_, _) => w.fsc0().set_bit(),
-            CanFilterData::AcceptAll => w.fsc0().set_bit(),
-            CanFilterData::IdFilter(id) => match id {
-                CanId::BaseId(_) => w.fsc0().clear_bit(),
-                CanId::ExtendedId(_) => w.fsc0().set_bit(),
-            },
-        });
-
-        // Assign filter to this FIFO
-        can.ffa1r.modify(|_, w| match self.idx {
-            0 => w.ffa0().clear_bit(),
-            1 => w.ffa0().set_bit(),
-            _ => unreachable!(),
-        });
-
-        let index = filter
-            .index
-            .unwrap_or_else(|| FILTER_INDEX.fetch_add(1, Ordering::Acquire))
-            as usize;
-
-        assert!(index < 28, "Filter index out of range");
-
-        can.fb[index]
-            .fr1
-            .modify(|_, w| unsafe { w.bits(filter.data.fr1()) });
-
-        let fr2 = filter.data.fr2().unwrap_or(0);
-        can.fb[index].fr2.modify(|_, w| unsafe { w.bits(fr2) });
-
-        can.fa1r.modify(|_, w| {
-            // TODO: the rest of these
-            match index {
-                0 => w.fact0().set_bit(),
-                1 => w.fact1().set_bit(),
-                2 => w.fact2().set_bit(),
-                3 => w.fact3().set_bit(),
-                4 => w.fact4().set_bit(),
-                5 => w.fact5().set_bit(),
-                _ => unimplemented!(),
-            }
-        });
-
-        // Disable init mode
-        can.fmr.modify(|_, w| w.finit().clear_bit());
     }
 
     fn clear_filter(&mut self) {
@@ -506,4 +497,9 @@ impl CanFrame {
             length: 0,
         }
     }
+}
+
+#[inline]
+fn can_register() -> &'static stm32::can::RegisterBlock {
+    return unsafe { &*stm32::CAN::ptr() };
 }

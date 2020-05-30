@@ -24,7 +24,10 @@ cortex-m-rt = "0.6"
 embedded-hal = "0.2"
 nb = "0.1"
 stm32f3 = "0.10"
-embedded-hal-can = "0.1.0"
+
+[dependencies.embedded-hal-can]
+version = "0.1.0"
+optional = true
 
 [dependencies.bare-metal]
 version = "0.2"
@@ -52,6 +55,7 @@ default = ["unproven"]
 device-selected = []
 direct-call-deprecated = []
 rt = ["stm32f3/rt"]
+can = ["embedded-hal-can"]
 # Any Changes here should be mirrored in README.md and src/lib.rs
 stm32f301 = ["stm32f3/stm32f301", "direct-call-deprecated"]
 stm32f301xb = ["stm32f301", "device-selected"]
@@ -96,7 +100,7 @@ required-features = ["stm32f303xc"]
 
 [[example]]
 name = "toggle"
-required-features = ["rt", "stm32f303xc"]
+required-features = ["rt", "stm32f302xc"]
 
 [[example]]
 name = "usb_serial"
@@ -108,4 +112,4 @@ required-features = ["stm32f303"]
 
 [[example]]
 name = "can"
-required-features = ["rt", "stm32f302xc"]
+required-features = ["rt", "can", "device-selected"]
