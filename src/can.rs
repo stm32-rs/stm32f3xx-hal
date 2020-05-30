@@ -4,6 +4,7 @@ use crate::gpio::gpioa;
 use crate::gpio::AF9;
 use crate::rcc::APB1;
 use crate::stm32;
+use arrayvec::ArrayVec;
 use nb;
 use nb::Error;
 
@@ -21,8 +22,7 @@ pub enum CanId {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanFrame {
     pub id: CanId,
-    pub data: [u8; 8],
-    pub length: usize,
+    pub data: ArrayVec<[u8; 8]>,
 }
 
 pub enum FilterMode {
@@ -110,8 +110,8 @@ impl embedded_hal_can::Frame for CanFrame {
 
     #[inline(always)]
     fn data(&self) -> Option<&[u8]> {
-        if self.length > 0 {
-            Some(&self.data[0..self.length])
+        if self.data.len() > 0 {
+            Some(&self.data.as_slice())
         } else {
             None
         }
@@ -320,7 +320,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
 
             if let Some(_) = frame.data() {
                 unsafe {
-                    for j in 0..frame.length {
+                    for j in 0..frame.data.len() {
                         let val = &frame.data[j];
                         match j {
                             0 => tx.tdlr.modify(|_, w| w.data0().bits(*val)),
@@ -335,7 +335,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                         }
                     }
 
-                    tx.tdtr.modify(|_, w| w.dlc().bits(frame.length as u8));
+                    tx.tdtr.modify(|_, w| w.dlc().bits(frame.data.len() as u8));
                 }
 
                 tx.tir.modify(|_, w| w.rtr().clear_bit());
@@ -359,7 +359,7 @@ impl Receiver for CanFifo {
 
         let rx = &can.rx[self.idx];
         if can.rfr[self.idx].read().fmp().bits() > 0 {
-            let mut data: [u8; 8] = [0u8; 8];
+            let mut data = ArrayVec::<[u8; 8]>::new();
 
             let len = rx.rdtr.read().dlc().bits() as usize;
 
@@ -368,14 +368,14 @@ impl Receiver for CanFifo {
 
             for i in 0..len {
                 match i {
-                    0 => data[i] = data_low.data0().bits(),
-                    1 => data[i] = data_low.data1().bits(),
-                    2 => data[i] = data_low.data2().bits(),
-                    3 => data[i] = data_low.data3().bits(),
-                    4 => data[i] = data_high.data4().bits(),
-                    5 => data[i] = data_high.data5().bits(),
-                    6 => data[i] = data_high.data6().bits(),
-                    7 => data[i] = data_high.data7().bits(),
+                    0 => data.push(data_low.data0().bits()),
+                    1 => data.push(data_low.data1().bits()),
+                    2 => data.push(data_low.data2().bits()),
+                    3 => data.push(data_low.data3().bits()),
+                    4 => data.push(data_high.data4().bits()),
+                    5 => data.push(data_high.data5().bits()),
+                    6 => data.push(data_high.data6().bits()),
+                    7 => data.push(data_high.data7().bits()),
                     _ => unreachable!(),
                 }
             }
@@ -392,7 +392,7 @@ impl Receiver for CanFifo {
             // Release the mailbox
             can.rfr[self.idx].modify(|_, w| w.rfom().set_bit());
 
-            let frame = CanFrame::data_frame_with_data(rcv_id, data, len);
+            let frame = CanFrame { id: rcv_id, data };
 
             return Ok(frame);
         }
@@ -469,32 +469,25 @@ impl Receiver for CanFifo {
 }
 
 impl CanFrame {
-    pub fn new_with_len(id: CanId, data: &[u8], length: usize) -> CanFrame {
+    pub fn new_with_len(id: CanId, src: &[u8], length: usize) -> CanFrame {
         assert!(length <= 8, "CAN Frames can have at most 8 data bytes");
 
-        let mut frame_data = [0u8; 8];
-        frame_data[0..length].clone_from_slice(&data[0..length]);
+        let mut data = ArrayVec::<[u8; 8]>::new();
 
-        CanFrame {
-            id,
-            data: frame_data,
-            length,
-        }
+        // The vector is always empty and the data size has alreay been checked, this will always succeed
+        data.try_extend_from_slice(src).unwrap();
+
+        CanFrame { id, data }
     }
 
     pub fn data_frame(id: CanId, data: &[u8]) -> CanFrame {
         CanFrame::new_with_len(id, data, data.len())
     }
 
-    pub fn data_frame_with_data(id: CanId, data: [u8; 8], length: usize) -> CanFrame {
-        CanFrame { id, data, length }
-    }
-
     pub fn remote_frame(id: CanId) -> CanFrame {
         CanFrame {
             id,
-            data: [0u8; 8],
-            length: 0,
+            data: ArrayVec::<_>::new(),
         }
     }
 }
