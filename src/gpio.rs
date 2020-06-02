@@ -398,6 +398,20 @@ macro_rules! gpio {
                 }
 
                 #[cfg(feature = "unproven")]
+                impl<MODE> InputPin for $PXx<Output<MODE>> {
+                    type Error = Infallible;
+
+                    fn is_high(&self) -> Result<bool, Self::Error> {
+                        Ok(!self.is_low()?)
+                    }
+
+                     fn is_low(&self) -> Result<bool, Self::Error> {
+                        // NOTE(unsafe) atomic read with no side effects
+                        Ok(unsafe { (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0 })
+                    }
+                }
+
+                #[cfg(feature = "unproven")]
                 impl<MODE> InputPin for $PXx<Input<MODE>> {
                     type Error = Infallible;
 
@@ -670,6 +684,20 @@ macro_rules! gpio {
                             // NOTE(unsafe, write) atomic write to a stateless register
                             unsafe { (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + $i))) }
                             Ok(())
+                        }
+                    }
+
+                    #[cfg(feature = "unproven")]
+                    impl<MODE> InputPin for $PXi<Output<MODE>> {
+                        type Error = Infallible;
+
+                        fn is_high(&self) -> Result<bool, Self::Error> {
+                            Ok(!self.is_low()?)
+                        }
+
+                         fn is_low(&self) -> Result<bool, Self::Error> {
+                            // NOTE(unsafe) atomic read with no side effects
+                            Ok(unsafe { (*$GPIOX::ptr()).idr.read().bits() & (1 << $i) == 0 })
                         }
                     }
 
