@@ -3,12 +3,11 @@
 use core::cmp;
 
 use crate::stm32::{
-    rcc::{self, cfgr},
-    PWR, RCC,
+    rcc::{self, cfgr, cfgr2},
+    RCC,
 };
 
 use crate::flash::ACR;
-use crate::rtc::RTCSrc;
 use crate::time::Hertz;
 
 /// Extension trait that constrains the `RCC` peripheral
@@ -53,87 +52,6 @@ pub struct Rcc {
     pub cr: CR,
     /// RCC Control/Status register
     pub csr: CSR,
-}
-
-impl Rcc {
-    pub(crate) fn enable_rtc(&mut self, src: &RTCSrc) {
-        match src {
-            RTCSrc::LSI => self.enable_lsi(),
-            RTCSrc::HSE => self.enable_hse(false),
-            RTCSrc::LSE => self.enable_lse(false),
-        }
-        self.unlock_rtc();
-        self.bdcr().modify(|_, w| {
-            w
-                // RTC Backup Domain reset bit set high
-                .bdrst()
-                .set_bit()
-        });
-        self.bdcr().modify(|_, w| {
-            w
-                // RTC clock source selection
-                .rtcsel()
-                .bits(*src as u8)
-                // Enable RTC
-                .rtcen()
-                .set_bit()
-                // RTC backup Domain reset bit set low
-                .bdrst()
-                .clear_bit()
-        });
-    }
-
-    pub(crate) fn unlock_rtc(&mut self) {
-        let pwr = unsafe { &(*PWR::ptr()) };
-        self.apb1.enr().modify(|_, w| {
-            w
-                // Enable the backup interface by setting PWREN
-                .pwren()
-                .set_bit()
-        });
-        pwr.cr.modify(|_, w| {
-            w
-                // Enable access to the backup registers
-                .dbp()
-                .set_bit()
-        });
-
-        while pwr.cr.read().dbp().bit_is_clear() {}
-    }
-
-    pub(crate) fn enable_lsi(&mut self) {
-        self.csr().write(|w| w.lsion().set_bit());
-        while self.csr().read().lsirdy().bit_is_clear() {}
-    }
-
-    pub(crate) fn enable_hsi(&mut self) {
-        self.cr().write(|w| w.hsion().set_bit());
-        while self.cr().read().hsirdy().bit_is_clear() {}
-    }
-
-    pub(crate) fn enable_hse(&mut self, bypass: bool) {
-        self.cr()
-            .write(|w| w.hseon().set_bit().hsebyp().bit(bypass));
-        while self.cr().read().hserdy().bit_is_clear() {}
-    }
-
-    pub(crate) fn enable_lse(&mut self, bypass: bool) {
-        self.bdcr()
-            .write(|w| w.lseon().set_bit().lsebyp().bit(bypass));
-        while self.bdcr().read().lserdy().bit_is_clear() {}
-    }
-
-    pub(crate) fn cr(&mut self) -> &rcc::CR {
-        unsafe { &(*RCC::ptr()).cr }
-    }
-
-    pub(crate) fn csr(&mut self) -> &rcc::CSR {
-        unsafe { &(*RCC::ptr()).csr }
-    }
-
-    pub(crate) fn bdcr(&mut self) -> &rcc::BDCR {
-        unsafe { &(*RCC::ptr()).bdcr }
-    }
 }
 
 /// AMBA High-performance Bus (AHB) registers

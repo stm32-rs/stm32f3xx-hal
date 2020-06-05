@@ -1,7 +1,7 @@
 /*!  Interface to the real time clock */
 
-use crate::rcc::Rcc;
-use crate::stm32::RTC;
+use crate::rcc::{APB1, BDCR, CR, CSR};
+use crate::stm32::{PWR, RTC};
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
 /// Invalid input error
@@ -12,7 +12,7 @@ pub enum Error {
 }
 
 /// RTC clock input source
-#[derive(Clone, Copy)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum RTCSrc {
     LSE = 0b01,
     LSI = 0b10,
@@ -20,10 +20,23 @@ pub enum RTCSrc {
 }
 
 /// RTC configuration struct
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct cfgRTC {
     src: RTCSrc,
     prediv_s: u16,
     prediv_a: u8,
+}
+
+/// LSI clock source with prescalers
+/// set clock frequency to 1 hz
+impl Default for cfgRTC {
+    fn default() -> Self {
+        cfgRTC {
+            src: RTCSrc::LSI,
+            prediv_s: 311,
+            prediv_a: 127,
+        }
+    }
 }
 
 impl cfgRTC {
@@ -42,32 +55,89 @@ pub struct Rtc {
 }
 
 impl Rtc {
-    /// initializes RTC, using the RTCSrc selected. The Prescalers will
-    /// be automatically set to produce a 1 hz clock source
-    pub fn rtc(regs: RTC, src: RTCSrc, rcc: &mut Rcc) -> Self {
-        let mut result = Rtc { regs };
+    pub fn rtc(
+        regs: RTC,
+        apb1: &mut APB1,
+        bdcr: &mut BDCR,
+        cr: &mut CR,
+        csr: &mut CSR,
+        cfg_rtc: cfgRTC,
+    ) -> Self {
+        match &cfg_rtc.src {
+            RTCSrc::LSI => Rtc::enable_lsi(csr),
+            RTCSrc::HSE => Rtc::enable_hse(cr, false),
+            RTCSrc::LSE => Rtc::enable_lse(bdcr, false),
+        }
+        Rtc::unlock_rtc(apb1);
+        Rtc::enable_rtc(bdcr, &cfg_rtc);
 
-        rcc.enable_rtc(&src);
-
-        result.regs.cr.modify(|_, w| {
-            w
-                // sets hour format to 24 hours
-                .fmt()
-                .clear_bit()
-        });
-
-        // Prescalers set to produce a 1 hz signal
-        let (prediv_s, prediv_a) = match src {
-            RTCSrc::LSI => (311, 127),
-            RTCSrc::HSE => (62992, 127),
-            RTCSrc::LSE => (255, 127),
-        };
-
+        let mut result = Self { regs };
+        result.set_12h_fmt();
         result.modify(|regs| {
-            regs.prer
-                .write(|w| unsafe { w.prediv_s().bits(prediv_s).prediv_a().bits(prediv_a) });
+            regs.prer.write(|w| unsafe {
+                w.prediv_s()
+                    .bits(cfg_rtc.prediv_s)
+                    .prediv_a()
+                    .bits(cfg_rtc.prediv_a)
+            });
         });
         result
+    }
+
+    fn enable_lsi(csr: &mut CSR) {
+        csr.csr().write(|w| w.lsion().set_bit());
+        while csr.csr().read().lsirdy().bit_is_clear() {}
+    }
+
+    fn enable_hse(cr: &mut CR, bypass: bool) {
+        cr.cr().write(|w| w.hseon().set_bit().hsebyp().bit(bypass));
+        while cr.cr().read().hserdy().bit_is_clear() {}
+    }
+
+    fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
+        bdcr.bdcr()
+            .write(|w| w.lseon().set_bit().lsebyp().bit(bypass));
+        while bdcr.bdcr().read().lserdy().bit_is_clear() {}
+    }
+
+    fn unlock_rtc(apb1: &mut APB1) {
+        let pwr = unsafe { &(*PWR::ptr()) };
+        apb1.enr().modify(|_, w| {
+            w
+                // Enable the backup interface by setting PWREN
+                .pwren()
+                .set_bit()
+        });
+        pwr.cr.modify(|_, w| {
+            w
+                // Enable access to the backup registers
+                .dbp()
+                .set_bit()
+        });
+
+        while pwr.cr.read().dbp().bit_is_clear() {}
+    }
+
+    fn enable_rtc(bdcr: &mut BDCR, cfg_rtc: &cfgRTC) {
+        bdcr.bdcr().modify(|_, w| {
+            w
+                // RTC Backup Domain reset bit set high
+                .bdrst()
+                .set_bit()
+        });
+
+        bdcr.bdcr().modify(|_, w| {
+            w
+                // RTC clock source selection
+                .rtcsel()
+                .bits(cfg_rtc.src as u8)
+                // Enable RTC
+                .rtcen()
+                .set_bit()
+                // RTC backup Domain reset bit set low
+                .bdrst()
+                .clear_bit()
+        });
     }
 
     /// Sets calendar clock to 24 hr format
@@ -297,7 +367,7 @@ impl Rtcc for Rtc {
         if self.is_24h_fmt() {
             return Ok(rtcc::Hours::H24(hours as u8));
         }
-        if hours < 12 {
+        if !tr.pm().bit() {
             return Ok(rtcc::Hours::AM(hours as u8));
         }
         Ok(rtcc::Hours::PM(hours as u8))
@@ -370,16 +440,6 @@ impl Rtcc for Rtc {
     }
 }
 
-pub trait RtcExt {
-    fn constrain(self, rcc: &mut Rcc) -> Rtc;
-}
-
-impl RtcExt for RTC {
-    fn constrain(self, rcc: &mut Rcc) -> Rtc {
-        Rtc::rtc(self, RTCSrc::LSI, rcc)
-    }
-}
-
 // Two 32-bit registers (RTC_TR and RTC_DR) contain the seconds, minutes, hours (12- or 24-hour format), day (day
 // of week), date (day of month), month, and year, expressed in binary coded decimal format
 // (BCD). The sub-seconds value is also available in binary format.
@@ -422,15 +482,3 @@ fn hours_to_u8(_hours: rtcc::Hours) -> u8 {
         panic!("_hours could not be destructured into rtc::Hours::H24(h)");
     }
 }
-// TODO: make unit tests for the bcd decode and encode functions
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-
-//     #[test]
-//     fn test_bcd_encode() {
-//         assert_eq!(bcd2_encode(5), (0, 5));
-//         assert_eq!(bcd2_encode(24), (2, 36));
-//     }
-
-// }
