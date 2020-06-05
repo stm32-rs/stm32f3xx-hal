@@ -28,8 +28,9 @@ def main():
     crate_info = cargo_meta["packages"][0]
 
     features = [
-        "{},rt".format(x) for x in crate_info["features"].keys()
-        if x not in ["device-selected", "rt", "default", "unproven"]
+        "{},rt".format(feature)
+        for feature, derived in crate_info["features"].items()
+        if "device-selected" in derived
     ]
 
     cargo_build_cmd = ['cargo', 'build', '--verbose']
