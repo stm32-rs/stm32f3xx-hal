@@ -9,13 +9,13 @@ use stm32f3xx_hal as hal;
 
 use cortex_m_rt::entry;
 
+use hal::pac;
 use hal::prelude::*;
 use hal::spi::{Mode, Phase, Polarity, Spi};
-use hal::stm32;
 
 #[entry]
 fn main() -> ! {
-    let dp = stm32::Peripherals::take().unwrap();
+    let dp = pac::Peripherals::take().unwrap();
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();

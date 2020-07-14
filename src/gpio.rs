@@ -121,7 +121,7 @@ macro_rules! gpio {
             ), not(any(
                 $(feature = $device_except,)*
             ))))]
-            use crate::stm32::$GPIOX;
+            use crate::pac::$GPIOX;
         )+
 
         pub enum Gpio {
@@ -249,7 +249,7 @@ macro_rules! gpio {
                 use crate::hal::digital::v2::StatefulOutputPin;
                 #[cfg(feature = "unproven")]
                 use crate::hal::digital::v2::toggleable;
-                use crate::stm32::{$gpioy, $GPIOX};
+                use crate::pac::{$gpioy, $GPIOX};
 
                 use crate::rcc::AHB;
                 #[allow(unused_imports)]

@@ -6,7 +6,7 @@ use core::ptr;
 
 use crate::hal::blocking::serial::write::Default;
 use crate::hal::serial;
-use crate::stm32::{USART1, USART2, USART3};
+use crate::pac::{USART1, USART2, USART3};
 use nb;
 
 use crate::gpio::gpioa::{PA10, PA2, PA3, PA9};

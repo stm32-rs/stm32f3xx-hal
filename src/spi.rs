@@ -4,7 +4,7 @@ use core::ptr;
 
 use crate::hal::spi::FullDuplex;
 pub use crate::hal::spi::{Mode, Phase, Polarity};
-use crate::stm32::{SPI1, SPI2, SPI3};
+use crate::pac::{SPI1, SPI2, SPI3};
 use nb;
 
 use crate::gpio::gpioa::{PA5, PA6, PA7};

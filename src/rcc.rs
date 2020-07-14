@@ -1,6 +1,6 @@
 //! Reset and Clock Control
 
-use crate::stm32::{
+use crate::pac::{
     rcc::{self, cfgr, cfgr2},
     RCC,
 };
@@ -100,7 +100,6 @@ const HSI: u32 = 8_000_000; // Hz
 #[cfg(any(feature = "stm32f301", feature = "stm32f334",))]
 mod usb_clocking {
     use crate::rcc::PllConfig;
-    use crate::stm32::rcc::cfgr;
 
     pub(crate) fn is_valid(
         _sysclk: u32,
@@ -127,8 +126,8 @@ mod usb_clocking {
     feature = "stm32f398",
 ))]
 mod usb_clocking {
+    use crate::pac::rcc::cfgr;
     use crate::rcc::PllConfig;
-    use crate::stm32::rcc::cfgr;
 
     /// Check for all clock options to be
     pub(crate) fn is_valid(

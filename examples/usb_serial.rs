@@ -5,16 +5,21 @@
 
 use panic_semihosting as _;
 
+use stm32f3xx_hal as hal;
+
 use cortex_m::asm::delay;
 use cortex_m_rt::entry;
-use stm32f3xx_hal::usb::{Peripheral, UsbBus};
-use stm32f3xx_hal::{hal::digital::v2::OutputPin, prelude::*, stm32};
+
+use hal::pac;
+use hal::prelude::*;
+use hal::usb::{Peripheral, UsbBus};
+
 use usb_device::prelude::*;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
 
 #[entry]
 fn main() -> ! {
-    let dp = stm32::Peripherals::take().unwrap();
+    let dp = pac::Peripherals::take().unwrap();
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
@@ -34,7 +39,7 @@ fn main() -> ! {
     let mut led = gpioe
         .pe13
         .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
-    led.set_low(); // Turn off
+    led.set_low().ok(); // Turn off
 
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
@@ -45,7 +50,7 @@ fn main() -> ! {
     let mut usb_dp = gpioa
         .pa12
         .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
-    usb_dp.set_low();
+    usb_dp.set_low().ok();
     delay(clocks.sysclk().0 / 100);
 
     let usb_dm = gpioa.pa11.into_af14(&mut gpioa.moder, &mut gpioa.afrh);
@@ -76,7 +81,7 @@ fn main() -> ! {
 
         match serial.read(&mut buf) {
             Ok(count) if count > 0 => {
-                led.set_high(); // Turn on
+                led.set_high().ok(); // Turn on
 
                 // Echo back in upper case
                 for c in buf[0..count].iter_mut() {

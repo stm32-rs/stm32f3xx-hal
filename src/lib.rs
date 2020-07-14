@@ -89,19 +89,19 @@ pub use nb;
 pub use nb::block;
 
 #[cfg(feature = "stm32f301")]
-pub use stm32f3::stm32f301 as stm32;
+pub use stm32f3::stm32f301 as pac;
 
 #[cfg(feature = "stm32f302")]
-pub use stm32f3::stm32f302 as stm32;
+pub use stm32f3::stm32f302 as pac;
 
 #[cfg(feature = "stm32f303")]
-pub use stm32f3::stm32f303 as stm32;
+pub use stm32f3::stm32f303 as pac;
 
 #[cfg(feature = "stm32f373")]
-pub use stm32f3::stm32f373 as stm32;
+pub use stm32f3::stm32f373 as pac;
 
 #[cfg(feature = "stm32f334")]
-pub use stm32f3::stm32f3x4 as stm32;
+pub use stm32f3::stm32f3x4 as pac;
 
 #[cfg(any(
     feature = "stm32f318",
@@ -110,11 +110,15 @@ pub use stm32f3::stm32f3x4 as stm32;
     feature = "stm32f378",
     feature = "stm32f398"
 ))]
-pub use stm32f3::stm32f3x8 as stm32;
+pub use stm32f3::stm32f3x8 as pac;
+
+#[cfg(feature = "device-selected")]
+#[deprecated(since = "0.5.0", note = "please use `pac` instead")]
+pub use crate::pac as stm32;
 
 // Enable use of interrupt macro
 #[cfg(feature = "rt")]
-pub use crate::stm32::interrupt;
+pub use crate::pac::interrupt;
 
 #[cfg(feature = "device-selected")]
 pub mod delay;
