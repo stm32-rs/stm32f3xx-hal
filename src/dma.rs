@@ -2,6 +2,9 @@
 //!
 //! Currently DMA is only supported for STM32F303 MCUs.
 
+// To learn about most of the ideas implemented here, check out the DMA section
+// of the Embedonomicon: https://docs.rust-embedded.org/embedonomicon/dma.html
+
 use crate::{
     pac::{self, dma1::ch::cr},
     rcc::AHB,
@@ -429,7 +432,14 @@ pub enum Event {
 pub trait Channel: private::Channel {
     /// Is the interrupt flag for the given event set?
     fn event_occurred(&self, event: Event) -> bool;
-    /// Clear the interrupt flag for the given event
+
+    /// Clear the interrupt flag for the given event.
+    ///
+    /// Passing `Event::Any` clears all interrupt flags.
+    ///
+    /// Note that the the global interrupt flag is not automatically cleared
+    /// even when all other flags are cleared. The only way to clear it is to
+    /// call this method with `Event::Any`.
     fn clear_event(&mut self, event: Event);
 
     /// Reset the control registers of this channel.
