@@ -39,7 +39,9 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
         B: WriteBuffer + 'static,
         T: Target<C>,
     {
-        let (ptr, len) = buffer.write_buffer();
+        // NOTE(unsafe) cannot call `&mut self` methods on `buffer` because its
+        // concrete type is unknown here
+        let (ptr, len) = unsafe { buffer.write_buffer() };
 
         channel.set_memory_address(ptr as u32, Increment::Enable);
         channel.set_transfer_length(len);
@@ -55,7 +57,9 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
         B: ReadBuffer + 'static,
         T: Target<C>,
     {
-        let (ptr, len) = buffer.read_buffer();
+        // NOTE(unsafe) cannot call `&mut self` methods on `buffer` because its
+        // concrete type is unknown here
+        let (ptr, len) = unsafe { buffer.read_buffer() };
 
         channel.set_memory_address(ptr as u32, Increment::Enable);
         channel.set_transfer_length(len);
@@ -142,7 +146,11 @@ impl<B, C: Channel, T> TransferInner<B, C, T> {
 /// The implementing type must be safe to use for DMA reads. This means:
 ///
 /// - It must be a pointer that references the actual buffer.
-/// - The requirements documented on `read_buffer` must be fulfilled.
+/// - The following requirements must be fulfilled by `read_buffer`:
+///   - The function must always return the same values, if called multiple
+///     times.
+///   - The memory specified by the returned pointer and size must not be
+///     freed as long as `self` is not dropped.
 pub unsafe trait ReadBuffer {
     type Word;
 
@@ -155,11 +163,9 @@ pub unsafe trait ReadBuffer {
     ///
     /// # Safety
     ///
-    /// - This function must always return the same values, if called multiple
-    ///   times.
-    /// - The memory specified by the returned pointer and size must not be
-    ///   freed as long as `self` is not dropped.
-    fn read_buffer(&self) -> (*const Self::Word, usize);
+    /// Once this method has been called, it is unsafe to call any `&mut self`
+    /// methods on this object as long as the returned value is used (for DMA).
+    unsafe fn read_buffer(&self) -> (*const Self::Word, usize);
 }
 
 /// Trait for buffers that can be given to DMA for writing.
@@ -170,7 +176,11 @@ pub unsafe trait ReadBuffer {
 ///
 /// - It must be a pointer that references the actual buffer.
 /// - `Target` must be a type that is valid for any possible byte pattern.
-/// - The requirements documented on `write_buffer` must be fulfilled.
+/// - The following requirements must be fulfilled by `write_buffer`:
+///   - The function must always return the same values, if called multiple
+///     times.
+///   - The memory specified by the returned pointer and size must not be
+///     freed as long as `self` is not dropped.
 pub unsafe trait WriteBuffer {
     type Word;
 
@@ -183,11 +193,9 @@ pub unsafe trait WriteBuffer {
     ///
     /// # Safety
     ///
-    /// - This function must always return the same values, if called multiple
-    ///   times.
-    /// - The memory specified by the returned pointer and size must not be
-    ///   freed as long as `self` is not dropped.
-    fn write_buffer(&mut self) -> (*mut Self::Word, usize);
+    /// Once this method has been called, it is unsafe to call any `&mut self`
+    /// methods on this object as long as the returned value is used (for DMA)..
+    unsafe fn write_buffer(&mut self) -> (*mut Self::Word, usize);
 }
 
 // Blanked implementations for common DMA buffer types.
@@ -199,7 +207,7 @@ where
 {
     type Word = T::Word;
 
-    fn read_buffer(&self) -> (*const Self::Word, usize) {
+    unsafe fn read_buffer(&self) -> (*const Self::Word, usize) {
         self.as_read_buffer()
     }
 }
@@ -211,7 +219,7 @@ where
 {
     type Word = T::Word;
 
-    fn write_buffer(&mut self) -> (*mut Self::Word, usize) {
+    unsafe fn write_buffer(&mut self) -> (*mut Self::Word, usize) {
         self.as_write_buffer()
     }
 }
