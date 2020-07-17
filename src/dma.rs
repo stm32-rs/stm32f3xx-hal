@@ -146,7 +146,7 @@ impl<B, C: Channel, T> TransferInner<B, C, T> {
     /// Stop this transfer
     fn stop(&mut self) {
         self.channel.disable();
-        atomic::compiler_fence(Ordering::Acquire);
+        atomic::compiler_fence(Ordering::SeqCst);
     }
 }
 
