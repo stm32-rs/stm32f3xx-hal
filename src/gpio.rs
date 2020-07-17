@@ -205,7 +205,7 @@ macro_rules! gpio {
             }
         }
 
-        
+
         #[cfg(feature = "unproven")]
         impl<MODE> InputPin for PXx<Output<MODE>> {
             type Error = Infallible;
