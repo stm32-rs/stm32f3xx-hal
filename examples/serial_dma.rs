@@ -9,11 +9,11 @@ use panic_semihosting as _;
 
 use cortex_m::singleton;
 use cortex_m_rt::entry;
-use stm32f3xx_hal::{prelude::*, serial::Serial, stm32};
+use stm32f3xx_hal::{pac, prelude::*, serial::Serial};
 
 #[entry]
 fn main() -> ! {
-    let dp = stm32::Peripherals::take().unwrap();
+    let dp = pac::Peripherals::take().unwrap();
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();

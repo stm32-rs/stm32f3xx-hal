@@ -3,9 +3,9 @@
 //! Currently DMA is only supported for STM32F303 MCUs.
 
 use crate::{
+    pac::{self, dma1::ch::cr},
     rcc::AHB,
     serial,
-    stm32::{self, dma1::ch::cr},
 };
 use cast::u16;
 use core::{
@@ -566,12 +566,12 @@ pub trait Channel: private::Channel {
 }
 
 mod private {
-    use crate::stm32;
+    use crate::pac;
 
     /// Channel methods private to this module
     pub trait Channel {
         /// Return the register block for this channel
-        fn ch(&self) -> &stm32::dma1::CH;
+        fn ch(&self) -> &pac::dma1::CH;
     }
 }
 
@@ -588,7 +588,7 @@ macro_rules! dma {
     ) => {
         pub mod $dmax {
             use super::*;
-            use crate::stm32::$DMAx;
+            use crate::pac::$DMAx;
 
             impl DmaExt for $DMAx {
                 type Channels = Channels;
@@ -625,7 +625,7 @@ macro_rules! dma {
                 }
 
                 impl private::Channel for $Ci {
-                    fn ch(&self) -> &stm32::dma1::CH {
+                    fn ch(&self) -> &pac::dma1::CH {
                         // NOTE(unsafe) $Ci grants exclusive access to this register
                         unsafe { &(*$DMAx::ptr()).$chi }
                     }
@@ -709,10 +709,10 @@ macro_rules! targets {
 
 #[cfg(feature = "stm32f303")]
 targets!(dma1,
-    serial::Rx<stm32::USART1> => C5,
-    serial::Tx<stm32::USART1> => C4,
-    serial::Rx<stm32::USART2> => C6,
-    serial::Tx<stm32::USART2> => C7,
-    serial::Rx<stm32::USART3> => C3,
-    serial::Tx<stm32::USART3> => C2,
+    serial::Rx<pac::USART1> => C5,
+    serial::Tx<pac::USART1> => C4,
+    serial::Rx<pac::USART2> => C6,
+    serial::Tx<pac::USART2> => C7,
+    serial::Rx<pac::USART3> => C3,
+    serial::Tx<pac::USART3> => C2,
 );
