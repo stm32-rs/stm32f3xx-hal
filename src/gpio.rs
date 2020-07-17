@@ -206,9 +206,8 @@ macro_rules! gpio {
             }
         }
 
-        
         #[cfg(feature = "unproven")]
-        impl<MODE> InputPin for PXx<Output<MODE>> {
+        impl InputPin for PXx<Output<OpenDrain>> {
             type Error = Infallible;
 
             fn is_high(&self) -> Result<bool, Self::Error> {
@@ -425,7 +424,7 @@ macro_rules! gpio {
                 }
 
                 #[cfg(feature = "unproven")]
-                impl<MODE> InputPin for $PXx<Output<MODE>> {
+                impl<MODE> InputPin for $PXx<Input<MODE>> {
                     type Error = Infallible;
 
                     fn is_high(&self) -> Result<bool, Self::Error> {
@@ -439,7 +438,7 @@ macro_rules! gpio {
                 }
 
                 #[cfg(feature = "unproven")]
-                impl<MODE> InputPin for $PXx<Input<MODE>> {
+                impl InputPin for $PXx<Output<OpenDrain>> {
                     type Error = Infallible;
 
                     fn is_high(&self) -> Result<bool, Self::Error> {
@@ -625,7 +624,7 @@ macro_rules! gpio {
                     }
 
                     #[cfg(feature = "unproven")]
-                    impl<MODE> InputPin for $PXi<Output<MODE>> {
+                    impl<MODE> InputPin for $PXi<Input<MODE>> {
                         type Error = Infallible;
 
                         fn is_high(&self) -> Result<bool, Self::Error> {
@@ -634,12 +633,12 @@ macro_rules! gpio {
 
                          fn is_low(&self) -> Result<bool, Self::Error> {
                             // NOTE(unsafe) atomic read with no side effects
-                            Ok(unsafe { (*$GPIOX::ptr()).idr.read().bits() & (1 << $i) == 0 })
+                            Ok(unsafe { (*$GPIOX::ptr()).idr.read().$idri().is_low()})
                         }
                     }
 
                     #[cfg(feature = "unproven")]
-                    impl<MODE> InputPin for $PXi<Input<MODE>> {
+                    impl InputPin for $PXi<Output<OpenDrain>> {
                         type Error = Infallible;
 
                         fn is_high(&self) -> Result<bool, Self::Error> {
