@@ -27,13 +27,21 @@ pub trait DmaExt {
     fn split(self, ahb: &mut AHB) -> Self::Channels;
 }
 
+/// Trait implemented by DMA targets.
+pub trait Target {
+    /// Enable DMA on the target
+    fn enable_dma(&mut self) {}
+    /// Disable DMA on the target
+    fn disable_dma(&mut self) {}
+}
+
 /// An in-progress one-shot DMA transfer
-pub struct Transfer<B, C: Channel, T> {
+pub struct Transfer<B, C: Channel, T: Target> {
     // This is always a `Some` outside of `drop`.
     inner: Option<TransferInner<B, C, T>>,
 }
 
-impl<B, C: Channel, T> Transfer<B, C, T> {
+impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     /// Start a DMA write transfer.
     ///
     /// # Panics
@@ -42,7 +50,7 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     pub fn start_write(mut buffer: B, mut channel: C, target: T) -> Self
     where
         B: WriteBuffer + 'static,
-        T: Target<C>,
+        T: OnChannel<C>,
     {
         // NOTE(unsafe) cannot call `&mut self` methods on `buffer` because its
         // concrete type is unknown here
@@ -65,7 +73,7 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     pub fn start_read(buffer: B, mut channel: C, target: T) -> Self
     where
         B: ReadBuffer + 'static,
-        T: Target<C>,
+        T: OnChannel<C>,
     {
         // NOTE(unsafe) cannot call `&mut self` methods on `buffer` because its
         // concrete type is unknown here
@@ -86,14 +94,15 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     ///
     /// - the given buffer will be valid for the duration of the transfer
     /// - the DMA channel is configured correctly for the given target and buffer
-    unsafe fn start(buffer: B, mut channel: C, target: T) -> Self
+    unsafe fn start(buffer: B, mut channel: C, mut target: T) -> Self
     where
-        T: Target<C>,
+        T: OnChannel<C>,
     {
         assert!(!channel.is_enabled());
 
         atomic::compiler_fence(Ordering::Release);
 
+        target.enable_dma();
         channel.enable();
 
         Self {
@@ -127,7 +136,7 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     }
 }
 
-impl<B, C: Channel, T> Drop for Transfer<B, C, T> {
+impl<B, C: Channel, T: Target> Drop for Transfer<B, C, T> {
     fn drop(&mut self) {
         if let Some(inner) = self.inner.as_mut() {
             inner.stop();
@@ -142,10 +151,12 @@ struct TransferInner<B, C, T> {
     target: T,
 }
 
-impl<B, C: Channel, T> TransferInner<B, C, T> {
+impl<B, C: Channel, T: Target> TransferInner<B, C, T> {
     /// Stop this transfer
     fn stop(&mut self) {
         self.channel.disable();
+        self.target.disable_dma();
+
         atomic::compiler_fence(Ordering::SeqCst);
     }
 }
@@ -674,7 +685,6 @@ macro_rules! dma {
     };
 }
 
-#[cfg(feature = "stm32f303")]
 dma!(
     DMA1, dma1, dma1en,
     channels: {
@@ -705,20 +715,25 @@ dma!(
     },
 );
 
-/// Marker trait for DMA targets and their channels
-pub unsafe trait Target<C: Channel> {}
+/// Marker trait mapping DMA targets to their channels
+///
+/// # Safety
+///
+/// `C` must be the correct DMA channel for the peripheral implementing
+/// this trait.
+pub unsafe trait OnChannel<C: Channel>: Target {}
 
-macro_rules! targets {
+macro_rules! on_channel {
     (
         $dma:ident,
         $( $target:ty => $C:ident, )+
     ) => {
-        $( unsafe impl Target<$dma::$C> for $target {} )+
+        $( unsafe impl OnChannel<$dma::$C> for $target {} )+
     };
 }
 
 #[cfg(feature = "stm32f303")]
-targets!(dma1,
+on_channel!(dma1,
     serial::Rx<pac::USART1> => C5,
     serial::Tx<pac::USART1> => C4,
     serial::Rx<pac::USART2> => C6,

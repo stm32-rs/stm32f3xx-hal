@@ -8,6 +8,7 @@ use crate::{
     time::Bps,
 };
 use core::{convert::Infallible, marker::PhantomData, ptr};
+use cortex_m::interrupt;
 use nb;
 
 #[cfg(any(
@@ -39,7 +40,7 @@ use crate::gpio::gpiod;
 use crate::gpio::gpioe;
 
 #[cfg(feature = "stm32f303")]
-pub use crate::dma;
+use crate::dma;
 
 /// Interrupt event
 pub enum Event {
@@ -242,11 +243,6 @@ macro_rules! hal {
                     // NOTE(write): uses all bits of this register.
                     usart.brr.write(|w| unsafe { w.bits(brr) });
 
-                    usart.cr3.modify(|_, w| {
-                        w.dmar().enabled();  // enable DMA for reception
-                        w.dmat().enabled()   // enable DMA for transmission
-                    });
-
                     usart.cr1.modify(|_, w| {
                         w.ue().enabled();  // enable USART
                         w.re().enabled();  // enable receiver
@@ -377,7 +373,7 @@ macro_rules! hal {
                     mut channel: C
                 ) -> dma::Transfer<B, C, Self>
                 where
-                    Self: dma::Target<C>,
+                    Self: dma::OnChannel<C>,
                     B: dma::WriteBuffer<Word = u8> + 'static,
                     C: dma::Channel,
                 {
@@ -398,7 +394,7 @@ macro_rules! hal {
                     mut channel: C
                 ) -> dma::Transfer<B, C, Self>
                 where
-                    Self: dma::Target<C>,
+                    Self: dma::OnChannel<C>,
                     B: dma::ReadBuffer<Word = u8> + 'static,
                     C: dma::Channel,
                 {
@@ -407,6 +403,44 @@ macro_rules! hal {
                     channel.set_peripheral_address(pa, dma::Increment::Disable);
 
                     dma::Transfer::start_read(buffer, channel, self)
+                }
+            }
+
+            #[cfg(feature = "stm32f303")]
+            impl dma::Target for Rx<$USARTX> {
+                fn enable_dma(&mut self) {
+                    // NOTE(unsafe) critical section prevents races
+                    interrupt::free(|_| unsafe {
+                        let cr3 = &(*$USARTX::ptr()).cr3;
+                        cr3.modify(|_, w| w.dmar().enabled());
+                    });
+                }
+
+                fn disable_dma(&mut self) {
+                    // NOTE(unsafe) critical section prevents races
+                    interrupt::free(|_| unsafe {
+                        let cr3 = &(*$USARTX::ptr()).cr3;
+                        cr3.modify(|_, w| w.dmar().disabled());
+                    });
+                }
+            }
+
+            #[cfg(feature = "stm32f303")]
+            impl dma::Target for Tx<$USARTX> {
+                fn enable_dma(&mut self) {
+                    // NOTE(unsafe) critical section prevents races
+                    interrupt::free(|_| unsafe {
+                        let cr3 = &(*$USARTX::ptr()).cr3;
+                        cr3.modify(|_, w| w.dmat().enabled());
+                    });
+                }
+
+                fn disable_dma(&mut self) {
+                    // NOTE(unsafe) critical section prevents races
+                    interrupt::free(|_| unsafe {
+                        let cr3 = &(*$USARTX::ptr()).cr3;
+                        cr3.modify(|_, w| w.dmat().disabled());
+                    });
                 }
             }
         )+
