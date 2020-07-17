@@ -34,6 +34,10 @@ pub struct Transfer<B, C: Channel, T> {
 
 impl<B, C: Channel, T> Transfer<B, C, T> {
     /// Start a DMA write transfer.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the buffer is longer than 65535 words.
     pub fn start_write(mut buffer: B, mut channel: C, target: T) -> Self
     where
         B: WriteBuffer + 'static,
@@ -42,6 +46,7 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
         // NOTE(unsafe) cannot call `&mut self` methods on `buffer` because its
         // concrete type is unknown here
         let (ptr, len) = unsafe { buffer.write_buffer() };
+        let len = u16(len).expect("buffer is too large");
 
         channel.set_memory_address(ptr as u32, Increment::Enable);
         channel.set_transfer_length(len);
@@ -52,6 +57,10 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     }
 
     /// Start a DMA read transfer.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the buffer is longer than 65535 words.
     pub fn start_read(buffer: B, mut channel: C, target: T) -> Self
     where
         B: ReadBuffer + 'static,
@@ -60,6 +69,7 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
         // NOTE(unsafe) cannot call `&mut self` methods on `buffer` because its
         // concrete type is unknown here
         let (ptr, len) = unsafe { buffer.read_buffer() };
+        let len = u16(len).expect("buffer is too large");
 
         channel.set_memory_address(ptr as u32, Increment::Enable);
         channel.set_transfer_length(len);
@@ -97,7 +107,7 @@ impl<B, C: Channel, T> Transfer<B, C, T> {
     /// Is this transfer complete?
     pub fn is_complete(&self) -> bool {
         let inner = self.inner.as_ref().unwrap();
-        inner.channel.event_occured(Event::TransferComplete)
+        inner.channel.event_occurred(Event::TransferComplete)
     }
 
     /// Stop this transfer and return ownership over its parts
@@ -420,7 +430,7 @@ pub enum Event {
 /// Trait implemented by all DMA channels
 pub trait Channel: private::Channel {
     /// Is the interrupt flag for the given event set?
-    fn event_occured(&self, event: Event) -> bool;
+    fn event_occurred(&self, event: Event) -> bool;
     /// Clear the interrupt flag for the given event
     fn clear_event(&mut self, event: Event);
 
@@ -471,14 +481,17 @@ pub trait Channel: private::Channel {
     /// # Panics
     ///
     /// Panics if this channel is enabled.
-    fn set_transfer_length(&mut self, len: usize) {
+    fn set_transfer_length(&mut self, len: u16) {
         assert!(!self.is_enabled());
 
-        let len = u16(len).expect("DMA transfer length too large");
         self.ch().ndtr.write(|w| w.ndt().bits(len));
     }
 
-    /// Set the word size
+    /// Set the word size.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the word size is not one of 8, 16, or 32 bits.
     fn set_word_size<W>(&mut self) {
         use cr::PSIZE_A::*;
 
@@ -621,7 +634,7 @@ macro_rules! dma {
                 }
 
                 impl Channel for $Ci {
-                    fn event_occured(&self, event: Event) -> bool {
+                    fn event_occurred(&self, event: Event) -> bool {
                         use Event::*;
 
                         // NOTE(unsafe) atomic read
