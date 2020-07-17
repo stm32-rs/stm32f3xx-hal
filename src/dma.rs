@@ -1,8 +1,6 @@
 //! Direct memory access (DMA) controller
-
-// Currently DMA is only supported for STM32F303 MCUs.
-// Remove these `allow`s once all models have support.
-#![cfg_attr(not(feature = "stm32f303"), allow(unused_imports, unused_macros))]
+//!
+//! Currently DMA is only supported for STM32F303 MCUs.
 
 use crate::{
     rcc::AHB,
