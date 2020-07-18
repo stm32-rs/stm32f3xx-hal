@@ -56,7 +56,6 @@ use crate::pac::{TIM15, TIM16, TIM17, TIM2, TIM6};
 use crate::pac::{TIM3, TIM7};
 
 use cast::{u16, u32};
-use nb;
 use void::Void;
 
 use crate::rcc::{Clocks, APB1, APB2};
