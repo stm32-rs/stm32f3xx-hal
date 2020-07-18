@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Implement `InputPin` for `Output<OpenDrain>` pins ([#114](https://github.com/stm32-rs/stm32f3xx-hal/pull/114))
+- Support for safe one-shot DMA transfers ([#86](https://github.com/stm32-rs/stm32f3xx-hal/pull/86))
+- DMA support for serial reception and transmission ([#86](https://github.com/stm32-rs/stm32f3xx-hal/pull/86))
 
 ### Fixed
 
