@@ -30,7 +30,7 @@ use crate::gpio::{gpioa, gpiob, gpioc, Analog};
 use crate::gpio::{gpiod, gpioe, gpiof};
 
 #[cfg(feature = "stm32f303")]
-use crate::stm32::{ADC1, ADC1_2, ADC2};
+use crate::pac::{ADC1, ADC1_2, ADC2};
 
 #[cfg(any(
     feature = "stm32f303xb",
@@ -38,7 +38,7 @@ use crate::stm32::{ADC1, ADC1_2, ADC2};
     feature = "stm32f303xd",
     feature = "stm32f303xe",
 ))]
-use crate::stm32::{ADC3, ADC3_4, ADC4};
+use crate::pac::{ADC3, ADC3_4, ADC4};
 
 /// ADC configuration
 ///
