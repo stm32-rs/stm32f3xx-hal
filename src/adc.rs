@@ -270,8 +270,8 @@ adc_pins!(ADC4,
     gpiod::PD12<Analog> => 9,
     gpiod::PD13<Analog> => 10,
     gpiod::PD14<Analog> => 11,
-    gpiob::PD8<Analog> => 12,
-    gpiob::PD9<Analog> => 13,
+    gpiod::PD8<Analog> => 12,
+    gpiod::PD9<Analog> => 13,
 );
 
 // Abstract implementation of ADC functionality
@@ -287,13 +287,19 @@ macro_rules! adc_hal {
                 /// Init a new ADC
                 ///
                 /// Enables the clock, performs a calibration and enables the ADC
+                ///
+                /// # Panics
+                /// If one of the following occurs:
+                /// * the clocksetting is not well defined.
+                /// * the clock was already enabled with a different setting
+                ///
                 pub fn $adcx(
                     rb: $ADC,
                     adc_common : &mut $ADC_COMMON,
                     ahb: &mut AHB,
                     ckmode: CKMODE,
                     clocks: Clocks,
-                ) -> Option<Self> {
+                ) -> Self {
                     let mut this_adc = Self {
                         rb,
                         clocks,
@@ -301,10 +307,10 @@ macro_rules! adc_hal {
                         operation_mode: None,
                     };
                     if !(this_adc.clocks_welldefined(clocks)) {
-                        return None;
+                        panic!("Clock settings not well defined");
                     }
                     if !(this_adc.enable_clock(ahb, adc_common)){
-                        return None;
+                        panic!("Clock already enabled with a different setting");
                     }
                     this_adc.set_align(Align::default());
                     this_adc.calibrate();
@@ -313,13 +319,19 @@ macro_rules! adc_hal {
                     // bit is cleared by hardware
                     this_adc.wait_adc_clk_cycles(4);
                     this_adc.enable();
-                    Some(this_adc)
+
+                    this_adc
                 }
 
                 /// Software can use CKMODE::SYNCDIV1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    !(self.ckmode == CKMODE::SYNCDIV1 && !(clocks.hclk().0 == clocks.sysclk().0))
+                    if (self.ckmode == CKMODE::SYNCDIV1)
+                    {
+                        clocks.hclk().0 == clocks.sysclk().0
+                    } else {
+                        true
+                    }
                 }
 
                 /// sets up adc in one shot mode for a single channel

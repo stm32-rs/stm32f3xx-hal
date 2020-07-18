@@ -27,10 +27,7 @@ fn main() -> ! {
         &mut rcc.ahb,
         adc::CKMODE::default(),
         clocks,
-        // If everything is set up correctly, we'll get `Some(adc1)`. to access it, we need to `unwrap`
-        // it. If there was an error, we'll get `None` and this unwrap will `panic!`.
-    )
-    .unwrap();
+    );
 
     // Set up pin PA0 as analog pin.
     // This pin is connected to the user button on the stm32f3discovery board.
