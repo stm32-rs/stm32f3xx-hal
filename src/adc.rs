@@ -15,7 +15,7 @@ use crate::{
     gpio::{gpioa, gpiob, gpioc},
     pac::{ADC1, ADC1_2, ADC2},
 };
-use stm32f3::stm32f303::adc1_2::ccr::CKMODE_A;
+use stm32f3::stm32f303::{adc1::cfgr::ALIGN_A, adc1_2::ccr::CKMODE_A};
 const MAX_ADVREGEN_STARTUP_US: u32 = 10;
 
 #[cfg(any(
@@ -35,7 +35,7 @@ use crate::{
 pub struct Adc<ADC> {
     pub rb: ADC,
     clocks: Clocks,
-    ckmode: CKMODE,
+    ckmode: CkMode,
     operation_mode: Option<OperationMode>,
 }
 
@@ -88,30 +88,29 @@ pub enum OperationMode {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-/// ADC CKMODE
+/// ADC CkMode
 // TODO: Add ASYNCHRONOUS mode
-pub enum CKMODE {
+pub enum CkMode {
     // ASYNCHRONOUS = 0,
     SYNCDIV1 = 1,
     SYNCDIV2 = 2,
     SYNCDIV4 = 4,
 }
 
-impl Default for CKMODE {
+impl Default for CkMode {
     fn default() -> Self {
-        CKMODE::SYNCDIV2
+        CkMode::SYNCDIV2
     }
 }
 
 // ADC3_2 returns a pointer to a adc1_2 type, so this from is ok for both.
-#[cfg(feature = "stm32f303")]
-impl From<CKMODE> for CKMODE_A {
-    fn from(ckmode: CKMODE) -> Self {
+impl From<CkMode> for CKMODE_A {
+    fn from(ckmode: CkMode) -> Self {
         match ckmode {
-            //CKMODE::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
-            CKMODE::SYNCDIV1 => CKMODE_A::SYNCDIV1,
-            CKMODE::SYNCDIV2 => CKMODE_A::SYNCDIV2,
-            CKMODE::SYNCDIV4 => CKMODE_A::SYNCDIV4,
+            //CkMode::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
+            CkMode::SYNCDIV1 => CKMODE_A::SYNCDIV1,
+            CkMode::SYNCDIV2 => CKMODE_A::SYNCDIV2,
+            CkMode::SYNCDIV4 => CKMODE_A::SYNCDIV4,
         }
     }
 }
@@ -130,12 +129,11 @@ impl Default for Align {
     }
 }
 
-impl Align {
-    /// Conversion to bits for ALIGN in ADCx_CFGR
-    fn bitvalue(&self) -> bool {
-        match self {
-            Align::Right => false,
-            Align::Left => true,
+impl From<Align> for ALIGN_A {
+    fn from(align: Align) -> ALIGN_A {
+        match align {
+            Align::Right => ALIGN_A::RIGHT,
+            Align::Left => ALIGN_A::LEFT,
         }
     }
 }
@@ -297,7 +295,7 @@ macro_rules! adc_hal {
                     rb: $ADC,
                     adc_common : &mut $ADC_COMMON,
                     ahb: &mut AHB,
-                    ckmode: CKMODE,
+                    ckmode: CkMode,
                     clocks: Clocks,
                 ) -> Self {
                     let mut this_adc = Self {
@@ -323,10 +321,10 @@ macro_rules! adc_hal {
                     this_adc
                 }
 
-                /// Software can use CKMODE::SYNCDIV1 only if
+                /// Software can use CkMode::SYNCDIV1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    if (self.ckmode == CKMODE::SYNCDIV1)
+                    if (self.ckmode == CkMode::SYNCDIV1)
                     {
                         clocks.hclk().0 == clocks.sysclk().0
                     } else {
@@ -355,7 +353,7 @@ macro_rules! adc_hal {
                 }
 
                 fn set_align(&self, align: Align) {
-                    self.rb.cfgr.modify(|_, w| w.align().bit(align.bitvalue()));
+                    self.rb.cfgr.modify(|_, w| w.align().variant(align.into()));
                 }
 
                 fn enable(&mut self) {
@@ -366,7 +364,6 @@ macro_rules! adc_hal {
                 fn disable(&mut self) {
                     self.rb.cr.modify(|_, w| w.aden().clear_bit());
                 }
-
 
                 /// Calibrate according to 15.3.8 in the Reference Manual
                 fn calibrate(&mut self) {
@@ -383,7 +380,6 @@ macro_rules! adc_hal {
 
                     while !self.rb.cr.read().adcal().is_complete() {}
                 }
-
 
                 fn wait_adc_clk_cycles(&self, cycles: u32) {
                     let adc_clk_cycle = self.clocks.hclk().0 / (self.ckmode as u32);

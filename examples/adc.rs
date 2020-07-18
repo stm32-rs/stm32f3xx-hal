@@ -25,7 +25,7 @@ fn main() -> ! {
         // correctly.
         &mut dp.ADC1_2,
         &mut rcc.ahb,
-        adc::CKMODE::default(),
+        adc::CkMode::default(),
         clocks,
     );
 
