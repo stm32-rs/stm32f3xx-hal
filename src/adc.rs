@@ -196,12 +196,12 @@ adc_pins!(ADC2,
     gpioa::PA6<Analog> => 3,
     gpioa::PA7<Analog> => 4,
     gpioc::PC4<Analog> => 5,
-    gpioc::PC5<Analog> => 11,
-    gpiob::PB2<Analog> => 12,
     gpioc::PC0<Analog> => 6,
     gpioc::PC1<Analog> => 7,
     gpioc::PC2<Analog> => 8,
     gpioc::PC3<Analog> => 9,
+    gpioc::PC5<Analog> => 11,
+    gpiob::PB2<Analog> => 12,
 );
 
 #[cfg(any(feature = "stm32f303x6", feature = "stm32f303x8"))]
@@ -234,19 +234,19 @@ adc_pins!(ADC3,
     gpiob::PB1<Analog> => 1,
     gpioe::PE9<Analog> => 2,
     gpioe::PE13<Analog> => 3,
+    // There is no ADC3 Channel #4
     gpiob::PB13<Analog> => 5,
-    gpiob::PB0<Analog> => 12,
-    gpioe::PE7<Analog> => 13,
-    gpioe::PE10<Analog> => 14,
-    gpioe::PE11<Analog> => 15,
-    gpioe::PE12<Analog> => 16,
-    // Shared channels (i.e. ADC34_INx)
     gpioe::PE8<Analog> => 6,
     gpiod::PD10<Analog> => 7,
     gpiod::PD11<Analog> => 8,
     gpiod::PD12<Analog> => 9,
     gpiod::PD13<Analog> => 10,
     gpiod::PD14<Analog> => 11,
+    gpiob::PB0<Analog> => 12,
+    gpioe::PE7<Analog> => 13,
+    gpioe::PE10<Analog> => 14,
+    gpioe::PE11<Analog> => 15,
+    gpioe::PE12<Analog> => 16,
 );
 
 // # ADC4 Pin/Channel mapping
@@ -264,15 +264,14 @@ adc_pins!(ADC4,
     gpiob::PB12<Analog> => 3,
     gpiob::PB14<Analog> => 4,
     gpiob::PB15<Analog> => 5,
-    gpiob::PB8<Analog> => 12,
-    gpiob::PB9<Analog> => 13,
-    // Shared channels (i.e. ADC34_INx)
     gpioe::PE8<Analog> => 6,
     gpiod::PD10<Analog> => 7,
     gpiod::PD11<Analog> => 8,
     gpiod::PD12<Analog> => 9,
     gpiod::PD13<Analog> => 10,
     gpiod::PD14<Analog> => 11,
+    gpiob::PD8<Analog> => 12,
+    gpiob::PD9<Analog> => 13,
 );
 
 // Abstract implementation of ADC functionality
