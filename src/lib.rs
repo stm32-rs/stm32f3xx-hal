@@ -6,10 +6,7 @@
    Please select one of the following
 
    (Note: `x` denotes any character in [a-z])
-   *   stm32f301xb
-   *   stm32f301xc
-   *   stm32f301xd
-   *   stm32f301xe
+   *   stm32f301
    *   stm32f318
    *   stm32f302xb
    *   stm32f302xc
@@ -43,10 +40,7 @@ compile_error!(
     Please select one of the following
 
     (Note: `x` denotes any character in [a-z])
-    *   stm32f301xb
-    *   stm32f301xc
-    *   stm32f301xd
-    *   stm32f301xe
+    *   stm32f301
     *   stm32f318
     *   stm32f302xb
     *   stm32f302xc
