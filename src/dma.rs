@@ -52,8 +52,10 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         B: WriteBuffer + 'static,
         T: OnChannel<C>,
     {
-        // NOTE(unsafe) cannot call `&mut self` methods on `buffer` because its
-        // concrete type is unknown here
+        // NOTE(unsafe) We don't know the concrete type of `buffer` here, all
+        // we can use are its `WriteBuffer` methods. Hence the only `&mut self`
+        // method we can call is `write_buffer`, which is allowed by
+        // `WriteBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.write_buffer() };
         let len = u16(len).expect("buffer is too large");
 
@@ -75,8 +77,10 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         B: ReadBuffer + 'static,
         T: OnChannel<C>,
     {
-        // NOTE(unsafe) cannot call `&mut self` methods on `buffer` because its
-        // concrete type is unknown here
+        // NOTE(unsafe) We don't know the concrete type of `buffer` here, all
+        // we can use are its `ReadBuffer` methods. Hence there are no
+        // `&mut self` methods we can call, so we are safe according to
+        // `ReadBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.read_buffer() };
         let len = u16(len).expect("buffer is too large");
 
@@ -168,11 +172,11 @@ impl<B, C: Channel, T: Target> TransferInner<B, C, T> {
 /// The implementing type must be safe to use for DMA reads. This means:
 ///
 /// - It must be a pointer that references the actual buffer.
-/// - The following requirements must be fulfilled by `read_buffer`:
-///   - The function must always return the same values, if called multiple
+/// - As long as no `&mut self` method is called on the implementing object:
+///   - `read_buffer` must always return the same value, if called multiple
 ///     times.
-///   - The memory specified by the returned pointer and size must not be
-///     freed as long as `self` is not dropped.
+///   - The memory specified by the pointer and size returned by `read_buffer`
+///     must not be freed as long as `self` is not dropped.
 pub unsafe trait ReadBuffer {
     type Word;
 
@@ -186,7 +190,7 @@ pub unsafe trait ReadBuffer {
     /// # Safety
     ///
     /// Once this method has been called, it is unsafe to call any `&mut self`
-    /// methods on this object as long as the returned value is used (for DMA).
+    /// methods on this object as long as the returned value is in use (by DMA).
     unsafe fn read_buffer(&self) -> (*const Self::Word, usize);
 }
 
@@ -198,11 +202,12 @@ pub unsafe trait ReadBuffer {
 ///
 /// - It must be a pointer that references the actual buffer.
 /// - `Target` must be a type that is valid for any possible byte pattern.
-/// - The following requirements must be fulfilled by `write_buffer`:
-///   - The function must always return the same values, if called multiple
+/// - As long as no `&mut self` method, except for `write_buffer`, is called on
+///   the implementing object:
+///   - `write_buffer` must always return the same value, if called multiple
 ///     times.
-///   - The memory specified by the returned pointer and size must not be
-///     freed as long as `self` is not dropped.
+///   - The memory specified by the pointer and size returned by `write_buffer`
+///     must not be freed as long as `self` is not dropped.
 pub unsafe trait WriteBuffer {
     type Word;
 
@@ -216,7 +221,8 @@ pub unsafe trait WriteBuffer {
     /// # Safety
     ///
     /// Once this method has been called, it is unsafe to call any `&mut self`
-    /// methods on this object as long as the returned value is used (for DMA)..
+    /// methods, except for `write_buffer`, on this object as long as the
+    /// returned value is in use (by DMA).
     unsafe fn write_buffer(&mut self) -> (*mut Self::Word, usize);
 }
 
