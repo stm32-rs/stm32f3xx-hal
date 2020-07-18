@@ -336,18 +336,22 @@ macro_rules! adc_hal {
 
                 /// sets up adc in one shot mode for a single channel
                 pub fn setup_oneshot(&mut self) {
-                    // stop and clear overrun events
-                    self.rb.cr.modify(|_, w| w.adstp().set_bit());
-                    self.rb.isr.modify(|_, w| w.ovr().clear_bit());
+                    self.rb.cr.modify(|_, w| w.adstp().stop());
+                    self.rb.isr.modify(|_, w| w.ovr().clear());
 
                     self.rb.cfgr.modify(|_, w| w
-                        .cont().clear_bit()
-                        .ovrmod().clear_bit()
+                        .cont().single()
+                        .ovrmod().preserve()
                     );
 
-                    self.rb.sqr1.modify(|_, w| w.l().bits(0));
+                    self.set_sequence_len(1);
 
                     self.operation_mode = Some(OperationMode::OneShot);
+                }
+
+                fn set_sequence_len(&mut self, len: u8) {
+                    debug_assert!(len <= 16);
+                    self.rb.sqr1.modify(|_, w| w.l().bits(len - 1));
                 }
 
                 fn set_align(&self, align: Align) {
@@ -355,8 +359,8 @@ macro_rules! adc_hal {
                 }
 
                 fn enable(&mut self) {
-                    self.rb.cr.modify(|_, w| w.aden().set_bit());
-                    while self.rb.isr.read().adrdy().bit_is_clear() {}
+                    self.rb.cr.modify(|_, w| w.aden().enable());
+                    while self.rb.isr.read().adrdy().is_not_ready() {}
                 }
 
                 fn disable(&mut self) {
@@ -374,11 +378,10 @@ macro_rules! adc_hal {
                     self.disable();
 
                     self.rb.cr.modify(|_, w| w
-                        // NOTE: needs to be adopted if implementing differential input
-                        .adcaldif().clear_bit()
-                        .adcal()   .set_bit());
+                        .adcaldif().single_ended()
+                        .adcal()   .calibration());
 
-                    while self.rb.cr.read().adcal().bit_is_set() {}
+                    while !self.rb.cr.read().adcal().is_complete() {}
                 }
 
 
@@ -407,7 +410,7 @@ macro_rules! adc_hal {
                     self.set_chan_smps(chan, SampleTime::default());
                     self.select_single_chan(chan);
 
-                    self.rb.cr.modify(|_, w| w.adstart().set_bit());
+                    self.rb.cr.modify(|_, w| w.adstart().start());
                     while self.rb.isr.read().eos().is_not_complete() {}
                     self.rb.isr.modify(|_, w| w.eos().clear());
                     return self.rb.dr.read().rdata().bits();
