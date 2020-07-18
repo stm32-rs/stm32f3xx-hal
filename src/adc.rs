@@ -412,22 +412,15 @@ macro_rules! adc_hal {
                     self.select_single_chan(chan);
 
                     self.rb.cr.modify(|_, w| w.adstart().set_bit());
-                    while self.rb.isr.read().eos().is_not_complete()
-                        {}
+                    while self.rb.isr.read().eos().is_not_complete() {}
                     self.rb.isr.modify(|_, w| w.eos().clear());
                     return self.rb.dr.read().rdata().bits();
                 }
 
                 fn ensure_oneshot(&mut self) {
-                    match self.operation_mode {
-                        Some(mode) =>
-                        {
-                            if mode != OperationMode::OneShot {
-                                self.setup_oneshot();
-                            }
-                        },
-                        _ => self.setup_oneshot(),
-                    };
+                    if self.operation_mode != Some(OperationMode::OneShot) {
+                        self.setup_oneshot();
+                    }
                 }
 
                 /// This should only be invoked with the defined channels for the particular
@@ -490,10 +483,12 @@ macro_rules! adc12_hal {
     )+) => {
         $(
             impl Adc<$ADC> {
+                /// Returns true iff
+                ///     the clock can be enabled with the given settings
+                ///  or the clock was already enabled with the same settings
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) -> bool {
-                    if ahb.enr().read().adc34en().is_enabled() &&
-                        (adc_common.ccr.read().ckmode().variant() != self.ckmode.into()) {
-                        return false;
+                    if ahb.enr().read().adc12en().is_enabled() {
+                        return (adc_common.ccr.read().ckmode().variant() == self.ckmode.into());
                     }
                     ahb.enr().modify(|_, w| w.adc12en().enabled());
                     adc_common.ccr.modify(|_, w| w
@@ -525,11 +520,11 @@ macro_rules! adc34_hal {
         $(
             impl Adc<$ADC> {
                 /// Returns true iff
-                ///     the clock was enabled
+                ///     the clock can be enabled with the given settings
                 ///  or the clock was already enabled with the same settings
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) -> bool {
                     if ahb.enr().read().adc34en().is_enabled() {
-                        return (adc_common.ccr.read().ckmode().variant() == self.ckmode.into())
+                        return (adc_common.ccr.read().ckmode().variant() == self.ckmode.into());
                     }
                     ahb.enr().modify(|_, w| w.adc34en().enabled());
                     adc_common.ccr.modify(|_, w| w
