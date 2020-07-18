@@ -1,49 +1,37 @@
-//! # Work in Progress
 //! API for the ADC (Analog to Digital Converter)
 //!
-//! Note that the more specific your hardware selection is
-//! (e.g. stm32f303**xc** instead of just stm32f303)
-//! the more functionality is accessible
-//! (in this case: ADC3 and ADC4 additionaly to ADC1 and ADC2).
-//!
 //! # Examples
-//! For a simple, working example check `adc.rs` in the examples folder.
+//! Check `adc.rs` in the examples folder.
+//! It can be built for the STM32F3Discovery running
+//! `cargo build --example adc --features=stm32f303xc`
+use crate::{
+    gpio::Analog,
+    rcc::{Clocks, AHB},
+};
 use cortex_m::asm;
 use embedded_hal::adc::{Channel, OneShot};
-#[cfg(feature = "stm32f303")]
+
+use crate::{
+    gpio::{gpioa, gpiob, gpioc},
+    pac::{ADC1, ADC1_2, ADC2},
+};
 use stm32f3::stm32f303::adc1_2::ccr::CKMODE_A;
-
-use crate::rcc::{Clocks, AHB};
-
-#[cfg(feature = "stm32f303")]
 const MAX_ADVREGEN_STARTUP_US: u32 = 10;
 
-#[cfg(feature = "stm32f303")]
-use crate::gpio::{gpioa, gpiob, gpioc, Analog};
-
 #[cfg(any(
     feature = "stm32f303xb",
     feature = "stm32f303xc",
     feature = "stm32f303xd",
     feature = "stm32f303xe",
 ))]
-use crate::gpio::{gpiod, gpioe, gpiof};
-
-#[cfg(feature = "stm32f303")]
-use crate::pac::{ADC1, ADC1_2, ADC2};
-
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
-use crate::pac::{ADC3, ADC3_4, ADC4};
+use crate::{
+    gpio::{gpiod, gpioe, gpiof},
+    pac::{ADC3, ADC3_4, ADC4},
+};
 
 /// ADC configuration
-///
-/// TODO: Remove `pub` from the register block once all functionalities are implemented.
-/// Leave it here until then as it allows easy access to the registers.
+// TODO: Remove `pub` from the register block once all functionalities are implemented.
+// Leave it here until then as it allows easy access to the registers.
 pub struct Adc<ADC> {
     pub rb: ADC,
     clocks: Clocks,
@@ -54,11 +42,11 @@ pub struct Adc<ADC> {
 /// ADC sampling time
 ///
 /// Each channel can be sampled with a different sample time.
-/// For Sampletime T_n the total conversion time (in ADC clock cycles) is
-/// 12.5 + (n + .5)
-///
-/// TODO: there are boundaries on how this can be set depending on the hardware.
-/// Check them and implement a sample time setting mechanism.
+/// There is always an overhead of 13 ADC clock cycles.
+/// E.g. For Sampletime T_19 the total conversion time (in ADC clock cycles) is
+/// 13 + 19 = 32 ADC Clock Cycles
+// TODO: there are boundaries on how this can be set depending on the hardware.
+// Check them and implement a sample time setting mechanism.
 pub enum SampleTime {
     T_1,
     T_2,
@@ -94,16 +82,14 @@ impl SampleTime {
 
 #[derive(Clone, Copy, PartialEq)]
 /// ADC operation mode
-///
-/// TODO: Implement other modes (DMA, Differential,…)
+// TODO: Implement other modes (DMA, Differential,…)
 pub enum OperationMode {
     OneShot,
 }
 
 #[derive(Clone, Copy, PartialEq)]
 /// ADC CKMODE
-///
-/// TODO: Add ASYNCHRONOUS mode
+// TODO: Add ASYNCHRONOUS mode
 pub enum CKMODE {
     // ASYNCHRONOUS = 0,
     SYNCDIV1 = 1,
@@ -119,7 +105,7 @@ impl Default for CKMODE {
 
 // ADC3_2 returns a pointer to a adc1_2 type, so this from is ok for both.
 #[cfg(feature = "stm32f303")]
-impl From<CKMODE> for stm32f3::stm32f303::adc1_2::ccr::CKMODE_A {
+impl From<CKMODE> for CKMODE_A {
     fn from(ckmode: CKMODE) -> Self {
         match ckmode {
             //CKMODE::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
@@ -289,10 +275,9 @@ adc_pins!(ADC4,
     gpiod::PD14<Analog> => 11_u8,
 );
 
-/// Abstract implementation of ADC functionality
-///
-/// Do not use directly. See adc12_hal for a applicable Macro.
-/// TODO: Extend/generalize beyond f303
+// Abstract implementation of ADC functionality
+// Do not use directly. See adc12_hal for a applicable Macro.
+// TODO: Extend/generalize beyond f303
 macro_rules! adc_hal {
     ($(
             $ADC:ident: ($adcx:ident, $ADC_COMMON:ident),
@@ -474,9 +459,8 @@ macro_rules! adc_hal {
     }
 }
 
-/// Macro to implement ADC functionallity for ADC1 and ADC2
-///
-/// TODO: Extend/differentiate beyond f303.
+// Macro to implement ADC functionallity for ADC1 and ADC2
+// TODO: Extend/differentiate beyond f303.
 macro_rules! adc12_hal {
     ($(
             $ADC:ident: ($adcx:ident),
@@ -504,9 +488,8 @@ macro_rules! adc12_hal {
     }
 }
 
-/// Macro to implement ADC functionallity for ADC3 and ADC4
-///
-/// TODO: Extend/differentiate beyond f303.
+// Macro to implement ADC functionallity for ADC3 and ADC4
+// TODO: Extend/differentiate beyond f303.
 #[cfg(any(
     feature = "stm32f303xb",
     feature = "stm32f303xc",
