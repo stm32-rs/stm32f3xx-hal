@@ -390,14 +390,13 @@ macro_rules! adc_hal {
                     // need to go through intermediate first
                     self.rb.cr.modify(|_, w| w.advregen().intermediate());
                     self.rb.cr.modify(|_, w| w.advregen().enabled());
-
                 }
 
                 /// wait for the advregen to startup.
                 ///
                 /// This is based on the MAX_ADVREGEN_STARTUP_US of the device.
                 fn wait_advregen_startup(&self) {
-                        asm::delay((MAX_ADVREGEN_STARTUP_US * 1_000_000) / self.clocks.sysclk().0);
+                    asm::delay((MAX_ADVREGEN_STARTUP_US * 1_000_000) / self.clocks.sysclk().0);
                 }
 
                 /// busy ADC read
