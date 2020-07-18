@@ -8,8 +8,6 @@ use crate::{
     time::Bps,
 };
 use core::{convert::Infallible, marker::PhantomData, ptr};
-use cortex_m::interrupt;
-use nb;
 
 #[cfg(any(
     feature = "stm32f302",
@@ -41,6 +39,8 @@ use crate::gpio::gpioe;
 
 #[cfg(feature = "stm32f303")]
 use crate::dma;
+#[cfg(feature = "stm32f303")]
+use cortex_m::interrupt;
 
 /// Interrupt event
 pub enum Event {
