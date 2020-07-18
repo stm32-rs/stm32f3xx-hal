@@ -50,8 +50,6 @@ panic-semihosting = "0.5"
 usb-device = "0.2"
 usbd-serial = "0.1"
 cortex-m-semihosting = "0.3"
-panic-halt = "0.2"
-
 
 [features]
 default = ["unproven"]
