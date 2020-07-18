@@ -207,6 +207,31 @@ macro_rules! gpio {
         }
 
         #[cfg(feature = "unproven")]
+        impl InputPin for PXx<Output<OpenDrain>> {
+            type Error = Infallible;
+
+            fn is_high(&self) -> Result<bool, Self::Error> {
+                Ok(!self.is_low()?)
+            }
+
+             fn is_low(&self) -> Result<bool, Self::Error> {
+                // NOTE(unsafe) atomic read with no side effects
+                Ok(unsafe {
+                    match &self.gpio {
+                        $(
+                            #[cfg(all(any(
+                                $(feature = $device,)+
+                            ), not(any(
+                                $(feature = $device_except,)*
+                            ))))]
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0,
+                        )+
+                    }
+                })
+            }
+        }
+
+        #[cfg(feature = "unproven")]
         impl <MODE> StatefulOutputPin for PXx<Output<MODE>> {
             fn is_set_high(&self) -> Result<bool, Self::Error> {
                 self.is_set_low().map(|b| !b)
@@ -413,6 +438,20 @@ macro_rules! gpio {
                 }
 
                 #[cfg(feature = "unproven")]
+                impl InputPin for $PXx<Output<OpenDrain>> {
+                    type Error = Infallible;
+
+                    fn is_high(&self) -> Result<bool, Self::Error> {
+                        Ok(!self.is_low()?)
+                    }
+
+                     fn is_low(&self) -> Result<bool, Self::Error> {
+                        // NOTE(unsafe) atomic read with no side effects
+                        Ok(unsafe { (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0 })
+                    }
+                }
+
+                #[cfg(feature = "unproven")]
                 impl<MODE> StatefulOutputPin for $PXx<Output<MODE>> {
                     fn is_set_high(&self) -> Result<bool, Self::Error> {
                         self.is_set_low().map(|b| !b)
@@ -586,6 +625,20 @@ macro_rules! gpio {
 
                     #[cfg(feature = "unproven")]
                     impl<MODE> InputPin for $PXi<Input<MODE>> {
+                        type Error = Infallible;
+
+                        fn is_high(&self) -> Result<bool, Self::Error> {
+                            Ok(!self.is_low()?)
+                        }
+
+                         fn is_low(&self) -> Result<bool, Self::Error> {
+                            // NOTE(unsafe) atomic read with no side effects
+                            Ok(unsafe { (*$GPIOX::ptr()).idr.read().$idri().is_low()})
+                        }
+                    }
+
+                    #[cfg(feature = "unproven")]
+                    impl InputPin for $PXi<Output<OpenDrain>> {
                         type Error = Infallible;
 
                         fn is_high(&self) -> Result<bool, Self::Error> {

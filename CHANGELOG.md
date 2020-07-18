@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Implement `InputPin` for `Output<OpenDrain>` pins ([#114](https://github.com/stm32-rs/stm32f3xx-hal/pull/114))
+
 ### Fixed
 
 - `PLL` was calculated wrong for devices, which do not divide `HSI` ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
@@ -28,7 +32,7 @@ let clocks = rcc
     .use_hse(32.mhz())
     .sysclk(72.mhz())
 ```
-  This is possible through utilizing the divider, which can devide the
+  This is possible through utilizing the divider, which can divide the
   external oscillator clock on most devices. Some devices have even the
   possibility to divide the internal oscillator clock.
 
