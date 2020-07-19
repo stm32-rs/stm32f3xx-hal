@@ -45,8 +45,6 @@ pub struct Adc<ADC> {
 /// There is always an overhead of 13 ADC clock cycles.
 /// E.g. For Sampletime T_19 the total conversion time (in ADC clock cycles) is
 /// 13 + 19 = 32 ADC Clock Cycles
-// TODO: there are boundaries on how this can be set depending on the hardware.
-// Check them and implement a sample time setting mechanism.
 pub enum SampleTime {
     T_1,
     T_2,
@@ -59,8 +57,9 @@ pub enum SampleTime {
 }
 
 impl Default for SampleTime {
+    /// T_1 is also the reset value.
     fn default() -> Self {
-        SampleTime::T_19
+        SampleTime::T_1
     }
 }
 
@@ -426,6 +425,7 @@ macro_rules! adc_hal {
                 }
 
                 /// Note: only allowed when ADSTART = 0
+                // TODO: there are boundaries on how this can be set depending on the hardware.
                 fn set_chan_smps(&self, chan: u8, smp: SampleTime) {
                     match chan {
                         1 => self.rb.smpr1.modify(|_, w| w.smp1().bits(smp.bitcode())),
