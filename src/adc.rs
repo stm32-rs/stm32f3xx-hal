@@ -324,8 +324,7 @@ macro_rules! adc_hal {
                 /// Software can use CkMode::SYNCDIV1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    if (self.ckmode == CkMode::SYNCDIV1)
-                    {
+                    if (self.ckmode == CkMode::SYNCDIV1) {
                         clocks.hclk().0 == clocks.sysclk().0
                     } else {
                         true
@@ -348,7 +347,7 @@ macro_rules! adc_hal {
                 }
 
                 fn set_sequence_len(&mut self, len: u8) {
-                    debug_assert!(len <= 16);
+                    assert!(len - 1 < 16, "ADC sequence length must be in 1..=16");
                     self.rb.sqr1.modify(|_, w| w.l().bits(len - 1));
                 }
 
@@ -362,7 +361,7 @@ macro_rules! adc_hal {
                 }
 
                 fn disable(&mut self) {
-                    self.rb.cr.modify(|_, w| w.aden().clear_bit());
+                    self.rb.cr.modify(|_, w| w.addis().disable());
                 }
 
                 /// Calibrate according to 15.3.8 in the Reference Manual
@@ -378,7 +377,7 @@ macro_rules! adc_hal {
                         .adcaldif().single_ended()
                         .adcal()   .calibration());
 
-                    while !self.rb.cr.read().adcal().is_complete() {}
+                    while self.rb.cr.read().adcal().is_calibration() {}
                 }
 
                 fn wait_adc_clk_cycles(&self, cycles: u32) {
