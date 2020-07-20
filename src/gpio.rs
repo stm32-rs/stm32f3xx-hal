@@ -11,7 +11,7 @@
 //! ```
 //!
 //! The resulting [Parts](gpioa/struct.Parts.html) struct contains one field for each
-//! pin, as well as some shared register.
+//! pin, as well as some shared registers.
 //!
 //! To use a pin, first use the relevant `into_...` function in the [pin](gpioa/struct.PA0.html).
 //!
@@ -19,8 +19,14 @@
 //! let pa0 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
 //! ```
 //!
-//! And finally, you can use the functions from the [InputPin](../prelude/trait._embedded_hal_digital_InputPin.html) or [OutputPin](../prelude/trait._embedded_hal_digital_OutputPin.html) traits in
+//! And finally, you can use the functions from the [InputPin] or [OutputPin] traits in
 //! `embedded_hal`
+//!
+//! For a complete example, see [examples/toggle.rs]
+//!
+//! [InputPin]: ../prelude/trait._embedded_hal_digital_InputPin.html
+//! [OutputPin]: ../prelude/trait._embedded_hal_digital_OutputPin.html
+//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.4.3/examples/toggle.rs
 
 use core::convert::Infallible;
 use core::marker::PhantomData;
