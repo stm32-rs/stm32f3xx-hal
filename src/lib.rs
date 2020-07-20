@@ -82,7 +82,7 @@ pub use embedded_hal as hal;
 pub use nb;
 pub use nb::block;
 
-#[cfg(feature = "stm32f301")]
+#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
 pub use stm32f3::stm32f301 as pac;
 
 #[cfg(feature = "stm32f302")]
@@ -91,19 +91,13 @@ pub use stm32f3::stm32f302 as pac;
 #[cfg(feature = "stm32f303")]
 pub use stm32f3::stm32f303 as pac;
 
-#[cfg(feature = "stm32f373")]
+#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 pub use stm32f3::stm32f373 as pac;
 
 #[cfg(feature = "stm32f334")]
 pub use stm32f3::stm32f3x4 as pac;
 
-#[cfg(any(
-    feature = "stm32f318",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f378",
-    feature = "stm32f398"
-))]
+#[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
 pub use stm32f3::stm32f3x8 as pac;
 
 #[cfg(feature = "device-selected")]

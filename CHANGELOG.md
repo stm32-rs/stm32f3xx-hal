@@ -45,6 +45,9 @@ let clocks = rcc
 - Split up `stm32f302` into sub-targets `stm32f302xb`,`stm32f302xc`,`stm32f302xd`,`stm32f302xe`
 - Bump `stm32f3` dependency to `0.11.0` ([#97](https://github.com/stm32-rs/stm32f3xx-hal/pull/97))
 - The `stm32f3` reexport is now renamed from `stm32` to `pac` ([#101](https://github.com/stm32-rs/stm32f3xx-hal/pull/101))
+- The correct `stm32f3` modules are now used for the `stm32f318` and `stm32f738`
+  targets. As a result, some previously (wrongly) supported peripherals have
+  been removed from these targets. ([#116](https://github.com/stm32-rs/stm32f3xx-hal/pull/116))
 
 ## [v0.4.3] - 2020-04-11
 

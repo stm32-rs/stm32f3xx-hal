@@ -97,7 +97,7 @@ impl APB2 {
 const HSI: u32 = 8_000_000; // Hz
 
 // some microcontrollers do not have USB
-#[cfg(any(feature = "stm32f301", feature = "stm32f334",))]
+#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f334",))]
 mod usb_clocking {
     use crate::rcc::PllConfig;
 
@@ -116,7 +116,6 @@ mod usb_clocking {
 }
 
 #[cfg(any(
-    feature = "stm32f318",
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f373",
