@@ -1,4 +1,26 @@
 //! General Purpose Input / Output
+//!
+//! To use the GPIO pins, you first need to configure the GPIO bank (GPIOA, GPIOB, ...) that you
+//! are interested in. This is done using the [GpioExt::split](trait.GpioExt.html#tymethod.split) function.
+//!
+//! ```
+//! let dp = pac::Peripherals::take().unwrap();
+//! let rcc = dp.RCC.constrain();
+//!
+//! let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+//! ```
+//!
+//! The resulting [Parts](gpioa/struct.Parts.html) struct contains one field for each
+//! pin, as well as some shared register.
+//!
+//! To use a pin, first use the relevant `into_...` function in the [pin](gpioa/struct.PA0.html).
+//!
+//! ```rust
+//! let pa0 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
+//! ```
+//!
+//! And finally, you can use the functions from the [InputPin](../prelude/trait._embedded_hal_digital_InputPin.html) or [OutputPin](../prelude/trait._embedded_hal_digital_OutputPin.html) traits in
+//! `embedded_hal`
 
 use core::convert::Infallible;
 use core::marker::PhantomData;
