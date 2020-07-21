@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.5.0] - 2020-07-21
+
 ### Added
 
 - Implement `InputPin` for `Output<OpenDrain>` pins ([#114](https://github.com/stm32-rs/stm32f3xx-hal/pull/114))
 - Support for safe one-shot DMA transfers ([#86](https://github.com/stm32-rs/stm32f3xx-hal/pull/86))
 - DMA support for serial reception and transmission ([#86](https://github.com/stm32-rs/stm32f3xx-hal/pull/86))
-- ADC support for `stm32f303` devices.
+- ADC support for `stm32f303` devices ([#47](https://github.com/stm32-rs/stm32f3xx-hal/pull/47))
 
 ### Fixed
 
@@ -189,7 +191,8 @@ let clocks = rcc
 
 - Support `stm32f303` device
 
-[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.3...HEAD
+[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.5.0...HEAD
+[v0.5.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.3...v0.5.0
 [v0.4.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.1...v0.4.2
 [v0.4.1]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.0...v0.4.1
