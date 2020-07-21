@@ -33,7 +33,9 @@ impl RccExt for RCC {
 
 /// Constrained RCC peripheral
 ///
-/// An instance of this struct is aquired by calling the [constrain](trait.RccExt.html#tymethod.constrain) function on the [pac::RCC](../pac/struct.RCC.html) struct.
+/// An instance of this struct is aquired by calling the
+/// [constrain](trait.RccExt.html#tymethod.constrain) function on the
+/// [pac::RCC](../pac/struct.RCC.html) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
