@@ -27,6 +27,7 @@ use crate::time::Hertz;
 
 /// I2C error
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Bus error
     Bus,
@@ -36,8 +37,6 @@ pub enum Error {
     // Pec, // SMBUS mode only
     // Timeout, // SMBUS mode only
     // Alert, // SMBUS mode only
-    #[doc(hidden)]
-    _Extensible,
 }
 
 // FIXME these should be "closed" traits
