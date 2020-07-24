@@ -15,9 +15,6 @@ version = "0.5.0"
 features = ["stm32f303xc", "rt", "stm32-usbd"]
 targets = ["thumbv7em-none-eabihf"]
 
-[badges]
-travis-ci = { repository = "stm32-rs/stm32f3xx-hal" }
-
 [dependencies]
 cortex-m = "0.6"
 cortex-m-rt = "0.6"
