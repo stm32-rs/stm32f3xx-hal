@@ -1,6 +1,6 @@
 //! Reset and Clock Control
 
-use crate::stm32::{
+use crate::pac::{
     rcc::{self, cfgr, cfgr2},
     RCC,
 };
@@ -106,10 +106,9 @@ impl APB2 {
 const HSI: u32 = 8_000_000; // Hz
 
 // some microcontrollers do not have USB
-#[cfg(any(feature = "stm32f301", feature = "stm32f334",))]
+#[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f334",))]
 mod usb_clocking {
     use crate::rcc::PllConfig;
-    use crate::stm32::rcc::cfgr;
 
     pub(crate) fn is_valid(
         _sysclk: u32,
@@ -126,7 +125,6 @@ mod usb_clocking {
 }
 
 #[cfg(any(
-    feature = "stm32f318",
     feature = "stm32f302",
     feature = "stm32f303",
     feature = "stm32f373",
@@ -136,8 +134,8 @@ mod usb_clocking {
     feature = "stm32f398",
 ))]
 mod usb_clocking {
+    use crate::pac::rcc::cfgr;
     use crate::rcc::PllConfig;
-    use crate::stm32::rcc::cfgr;
 
     /// Check for all clock options to be
     pub(crate) fn is_valid(
@@ -461,32 +459,23 @@ impl CFGR {
     fn get_sysclk(&self) -> (u32, cfgr::SW_A, Option<PllConfig>) {
         // If a sysclk is given, check if the PLL has to be used,
         // else select the system clock source, which is either HSI or HSE.
-        if let Some(sysclk) = self.sysclk {
-            if let Some(hseclk) = self.hse {
-                if sysclk == hseclk {
-                    // No need to use the PLL
-                    // PLL is needed for USB, but we can make this assumption, to not use PLL here,
-                    // because the two valid USB clocks, 72 Mhz and 48 Mhz, can't be generated
-                    // directly from neither the internal rc (8 Mhz)  nor the external
-                    // Oscillator (max 32 Mhz), without using the PLL.
-                    (hseclk, cfgr::SW_A::HSE, None)
-                } else {
-                    let clock_with_pll = self.calc_pll(sysclk);
-                    (clock_with_pll.0, cfgr::SW_A::PLL, Some(clock_with_pll.1))
-                }
-            } else if sysclk == HSI {
-                // No need to use the PLL
-                (HSI, cfgr::SW_A::HSE, None)
-            } else {
-                let clock_with_pll = self.calc_pll(sysclk);
-                (clock_with_pll.0, cfgr::SW_A::PLL, Some(clock_with_pll.1))
+        match (self.sysclk, self.hse) {
+            // No need to use the PLL
+            // PLL is needed for USB, but we can make this assumption, to not use PLL here,
+            // because the two valid USB clocks, 72 Mhz and 48 Mhz, can't be generated
+            // directly from neither the internal rc (8 Mhz)  nor the external
+            // Oscillator (max 32 Mhz), without using the PLL.
+            (Some(sysclk), Some(hse)) if sysclk == hse => (hse, cfgr::SW_A::HSE, None),
+            // No need to use the PLL
+            (Some(sysclk), None) if sysclk == HSI => (HSI, cfgr::SW_A::HSI, None),
+            (Some(sysclk), _) => {
+                let (sysclk, pll_config) = self.calc_pll(sysclk);
+                (sysclk, cfgr::SW_A::PLL, Some(pll_config))
             }
-        } else if let Some(hseclk) = self.hse {
             // Use HSE as system clock
-            (hseclk, cfgr::SW_A::HSE, None)
-        } else {
+            (None, Some(hse)) => (hse, cfgr::SW_A::HSE, None),
             // Use HSI as system clock
-            (HSI, cfgr::SW_A::HSI, None)
+            (None, None) => (HSI, cfgr::SW_A::HSI, None),
         }
     }
 

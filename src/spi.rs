@@ -4,8 +4,7 @@ use core::ptr;
 
 use crate::hal::spi::FullDuplex;
 pub use crate::hal::spi::{Mode, Phase, Polarity};
-use crate::stm32::{SPI1, SPI2, SPI3};
-use nb;
+use crate::pac::{SPI1, SPI2, SPI3};
 
 use crate::gpio::gpioa::{PA5, PA6, PA7};
 #[cfg(any(
@@ -16,7 +15,6 @@ use crate::gpio::gpioa::{PA5, PA6, PA7};
     feature = "stm32f328",
     feature = "stm32f334",
     feature = "stm32f358",
-    feature = "stm32f378",
     feature = "stm32f398"
 ))]
 use crate::gpio::gpiob::PB13;
@@ -39,7 +37,6 @@ use crate::rcc::APB1;
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303",
-    feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f334",
     feature = "stm32f358",
@@ -52,6 +49,7 @@ use crate::time::Hertz;
 
 /// SPI error
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Overrun occurred
     Overrun,
@@ -59,8 +57,6 @@ pub enum Error {
     ModeFault,
     /// CRC error
     Crc,
-    #[doc(hidden)]
-    _Extensible,
 }
 
 // FIXME these should be "closed" traits
@@ -84,7 +80,6 @@ unsafe impl SckPin<SPI1> for PA5<AF5> {}
     feature = "stm32f328",
     feature = "stm32f334",
     feature = "stm32f358",
-    feature = "stm32f378",
     feature = "stm32f398"
 ))]
 unsafe impl SckPin<SPI2> for PB13<AF5> {}
@@ -256,7 +251,7 @@ hal! {
     SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
 }
 
-#[cfg(feature = "stm32f301")]
+#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
 hal! {
     SPI2: (spi2, APB1, spi2en, spi2rst, pclk1),
     SPI3: (spi3, APB1, spi3en, spi3rst, pclk1),
@@ -265,7 +260,6 @@ hal! {
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303",
-    feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f358",
     feature = "stm32f373",
