@@ -15,9 +15,6 @@ version = "0.5.0"
 features = ["stm32f303xc", "rt", "stm32-usbd"]
 targets = ["thumbv7em-none-eabihf"]
 
-[badges]
-travis-ci = { repository = "stm32-rs/stm32f3xx-hal" }
-
 [dependencies]
 cortex-m = "0.6"
 cortex-m-rt = "0.6"
@@ -53,10 +50,13 @@ cortex-m-semihosting = "0.3"
 
 [features]
 default = ["unproven"]
+unproven = ["embedded-hal/unproven"]
 device-selected = []
 direct-call-deprecated = []
 rt = ["stm32f3/rt"]
-# Any Changes here should be mirrored in README.md and src/lib.rs
+
+# Any Changes here should be mirrored in README.md, src/lib.rs, and
+# .github/workflows/ci.yml.
 stm32f301 = ["stm32f3/stm32f301", "device-selected"]
 stm32f318 = ["stm32f3/stm32f301", "device-selected"]
 stm32f302 = ["stm32f3/stm32f302", "direct-call-deprecated"]
@@ -77,7 +77,6 @@ stm32f334 = ["stm32f3/stm32f3x4", "device-selected"]
 stm32f328 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f358 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f398 = ["stm32f3/stm32f3x8", "device-selected"]
-unproven = ["embedded-hal/unproven"]
 
 [profile.dev]
 debug = true
