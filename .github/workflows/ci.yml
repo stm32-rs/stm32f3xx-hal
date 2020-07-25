@@ -49,7 +49,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=${{ matrix.mcu }},${{ matrix.features }}
+          args: --features=${{ matrix.mcu }},${{ matrix.features }} --examples
 
   clippy:
     name: Clippy
