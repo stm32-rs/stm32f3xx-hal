@@ -5,20 +5,24 @@
 
 use panic_semihosting as _;
 
+use stm32f3xx_hal as hal;
+
 use cortex_m_rt::entry;
+
 //use cortex_m_semihosting::hprintln;
-use embedded_hal::PwmPin;
-use stm32f3::stm32f303;
-use stm32f3xx_hal::flash::FlashExt;
-use stm32f3xx_hal::gpio::GpioExt;
-use stm32f3xx_hal::pwm::{tim16, tim2, tim3, tim8};
-use stm32f3xx_hal::rcc::RccExt;
-use stm32f3xx_hal::time::U32Ext;
+use hal::hal::PwmPin;
+
+use hal::flash::FlashExt;
+use hal::gpio::GpioExt;
+use hal::pac;
+use hal::pwm::{tim16, tim2, tim3, tim8};
+use hal::rcc::RccExt;
+use hal::time::U32Ext;
 
 #[entry]
 fn main() -> ! {
     // Get our peripherals
-    let dp = stm32f303::Peripherals::take().unwrap();
+    let dp = pac::Peripherals::take().unwrap();
 
     // Configure our clocks
     let mut flash = dp.FLASH.constrain();
