@@ -1,6 +1,6 @@
 # stm32f3xx-hal
 
-[![Build Status](https://travis-ci.com/stm32-rs/stm32f3xx-hal.svg)](https://travis-ci.com/stm32-rs/stm32f3xx-hal)
+[![Build Status](https://github.com/stm32-rs/stm32f3xx-hal/workflows/CI/badge.svg)](https://github.com/stm32-rs/stm32f3xx-hal/actions)
 [![Crate](https://img.shields.io/crates/v/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
 [![Docs](https://docs.rs/stm32f3xx-hal/badge.svg)](https://docs.rs/stm32f3xx-hal)
 

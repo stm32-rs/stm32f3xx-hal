@@ -49,9 +49,9 @@ fn main() -> ! {
 
     // Create an `u8` array, which can be transfered via SPI.
     let msg_send: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
-    // Clone the array, as it would be mutually shared in `transfer` while simultaniously would be
+    // Copy the array, as it would be mutually shared in `transfer` while simultaneously would be
     // immutable shared in `assert_eq`.
-    let mut msg_sending = msg_send.clone();
+    let mut msg_sending = msg_send;
     // Transfer the content of the array via SPI and receive it's output.
     // When MOSI and MISO pins are connected together, `msg_received` should receive the content.
     // from `msg_sending`
