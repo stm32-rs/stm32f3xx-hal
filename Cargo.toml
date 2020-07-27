@@ -117,4 +117,4 @@ required-features = ["stm32f303"]
 
 [[example]]
 name = "can"
-required-features = ["rt", "can", "device-selected"]
+required-features = ["rt", "can", "stm32f303"]
