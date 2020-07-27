@@ -10,8 +10,8 @@ use nb::Error;
 
 use core::sync::atomic::{AtomicU8, Ordering};
 
-const EXID_MASK: u32 = 0b11111111111000000000000000000;
-const MAX_EXTENDED_ID: u32 = 0x1FFFFFFF;
+const EXID_MASK: u32 = 0b11111_11111100_00000000_00000000;
+const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CanId {
