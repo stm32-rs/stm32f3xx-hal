@@ -1,3 +1,4 @@
+//! Controller Area Network
 pub use embedded_hal_can::{self, Filter, Frame, Id, Receiver, Transmitter};
 
 use crate::gpio::gpioa;
@@ -12,23 +13,29 @@ use core::sync::atomic::{AtomicU8, Ordering};
 const EXID_MASK: u32 = 0b11111_11111100_00000000_00000000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
+/// A CAN identifier, which can be either 11 or 27 (extended) bits. u16 and u32 respectively are used here despite the fact that the upper bits are unused.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CanId {
     BaseId(u16),
     ExtendedId(u32),
 }
 
+/// A CAN frame consisting of a destination ID and up to 8 bytes of data.
+///
+/// Currently, we always allocate a fixed size array for each frame regardless of actual size, but this could be improved in the future using const-generics.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanFrame {
     pub id: CanId,
     pub data: Vec<u8, U8>,
 }
 
+/// Represents the operating mode of a CAN filter, which can either contain a list of identifiers, or a mask to match on.
 pub enum FilterMode {
     Mask,
     List,
 }
 
+/// A fully specified CAN filter with its associated list of of IDs or mask.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum CanFilterData {
     IdFilter(CanId),
@@ -51,16 +58,19 @@ pub struct Can {
     _tx: gpioa::PA12<AF9>,
 }
 
+/// A CAN FIFO which is used to receive and buffer messages from the CAN network that match on of the assigned filters.
 pub struct CanFifo {
     idx: usize,
 }
 
+/// A CAN transmitter which is used to send messages to the CAN network.
 pub struct CanTransmitter {
     _can: stm32::CAN,
     _rx: gpioa::PA11<AF9>,
     _tx: gpioa::PA12<AF9>,
 }
 
+/// CAN Interrupt events
 pub enum Event {
     Fifo0Fmp,
     Fifo1Fmp,
@@ -145,10 +155,12 @@ impl embedded_hal_can::Filter for CanFilter {
 }
 
 impl CanFilter {
+    /// Create a new filter with no assigned index. To actually active the filter call `Receiver::set_filter`, which will assign an index.
     pub fn new(data: CanFilterData) -> CanFilter {
         CanFilter { data, index: None }
     }
 
+    /// Create a new filter with a specified filter index.
     pub fn new_with_index(index: u8, data: CanFilterData) -> CanFilter {
         CanFilter {
             data,
@@ -246,6 +258,7 @@ impl Can {
         }
     }
 
+    /// Enable CAN event interrupts for `Event`
     pub fn listen(&mut self, event: Event) {
         self.can.ier.modify(|_, w| match event {
             Event::Fifo0Fmp => w.fmpie0().set_bit(),
@@ -256,6 +269,7 @@ impl Can {
         });
     }
 
+    /// Split the CAN peripheral into a transmitter and associated FIFOs.
     pub fn split(self) -> (CanTransmitter, CanFifo, CanFifo) {
         let fifo0 = CanFifo { idx: 0 };
         let fifo1 = CanFifo { idx: 1 };
