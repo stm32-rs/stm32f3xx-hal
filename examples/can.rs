@@ -37,7 +37,7 @@ fn main() -> ! {
         .pclk2(16.mhz())
         .freeze(&mut flash.acr);
 
-    // Configure CAN RX and TX pins (AF7)
+    // Configure CAN RX and TX pins (AF9)
     let can_rx = gpioa.pa11.into_af9(&mut gpioa.moder, &mut gpioa.afrh);
     let can_tx = gpioa.pa12.into_af9(&mut gpioa.moder, &mut gpioa.afrh);
 

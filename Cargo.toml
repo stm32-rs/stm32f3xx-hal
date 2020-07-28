@@ -29,9 +29,8 @@ stm32f3 = "0.10"
 version = "0.1.0"
 optional = true
 
-[dependencies.arrayvec]
-version = "0.5.1"
-default-features = false
+[dependencies.heapless]
+version = "0.5.5"
 optional = true
 
 [dependencies.bare-metal]
@@ -60,7 +59,7 @@ default = ["unproven"]
 device-selected = []
 direct-call-deprecated = []
 rt = ["stm32f3/rt"]
-can = ["embedded-hal-can", "arrayvec"]
+can = ["embedded-hal-can", "heapless"]
 # Any Changes here should be mirrored in README.md and src/lib.rs
 stm32f301 = ["stm32f3/stm32f301", "direct-call-deprecated"]
 stm32f301xb = ["stm32f301", "device-selected"]
@@ -105,7 +104,7 @@ required-features = ["stm32f303xc"]
 
 [[example]]
 name = "toggle"
-required-features = ["rt", "stm32f302xc"]
+required-features = ["rt", "stm32f303xc"]
 
 [[example]]
 name = "usb_serial"

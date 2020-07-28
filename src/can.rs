@@ -4,9 +4,8 @@ use crate::gpio::gpioa;
 use crate::gpio::AF9;
 use crate::rcc::APB1;
 use crate::stm32;
-use arrayvec::ArrayVec;
-use nb;
-use nb::Error;
+use heapless::{consts::U8, Vec};
+use nb::{self, Error};
 
 use core::sync::atomic::{AtomicU8, Ordering};
 
@@ -22,7 +21,7 @@ pub enum CanId {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanFrame {
     pub id: CanId,
-    pub data: ArrayVec<[u8; 8]>,
+    pub data: Vec<u8, U8>,
 }
 
 pub enum FilterMode {
@@ -111,7 +110,7 @@ impl embedded_hal_can::Frame for CanFrame {
     #[inline(always)]
     fn data(&self) -> Option<&[u8]> {
         if self.data.len() > 0 {
-            Some(&self.data.as_slice())
+            Some(&self.data)
         } else {
             None
         }
@@ -294,7 +293,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
         &mut self,
         frame: &Self::Frame,
     ) -> Result<Option<Self::Frame>, nb::Error<Self::Error>> {
-        let can = can_register();
+        let can = unsafe { &*stm32::CAN::ptr() };
 
         for tx_idx in 0..3 {
             let free = match tx_idx {
@@ -319,9 +318,11 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
             }
 
             if let Some(_) = frame.data() {
-                unsafe {
-                    for j in 0..frame.data.len() {
-                        let val = &frame.data[j];
+                for j in 0..frame.data.len() {
+                    let val = &frame.data[j];
+
+                    // NOTE(unsafe): full 8bit write is unsafe via the svd2rust api
+                    unsafe {
                         match j {
                             0 => tx.tdlr.modify(|_, w| w.data0().bits(*val)),
                             1 => tx.tdlr.modify(|_, w| w.data1().bits(*val)),
@@ -334,9 +335,11 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                             _ => unreachable!(),
                         }
                     }
-
-                    tx.tdtr.modify(|_, w| w.dlc().bits(frame.data.len() as u8));
                 }
+
+                // NOTE(unsafe): full 8bit write is unsafe via the svd2rust api
+                tx.tdtr
+                    .modify(|_, w| unsafe { w.dlc().bits(frame.data.len() as u8) });
 
                 tx.tir.modify(|_, w| w.rtr().clear_bit());
             } else {
@@ -355,11 +358,11 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
 
 impl Receiver for CanFifo {
     fn receive(&mut self) -> Result<Self::Frame, Error<Self::Error>> {
-        let can = can_register();
+        let can = unsafe { &*stm32::CAN::ptr() };
 
         let rx = &can.rx[self.idx];
         if can.rfr[self.idx].read().fmp().bits() > 0 {
-            let mut data = ArrayVec::<[u8; 8]>::new();
+            let mut data = Vec::<_, U8>::new();
 
             let len = rx.rdtr.read().dlc().bits() as usize;
 
@@ -368,14 +371,14 @@ impl Receiver for CanFifo {
 
             for i in 0..len {
                 match i {
-                    0 => data.push(data_low.data0().bits()),
-                    1 => data.push(data_low.data1().bits()),
-                    2 => data.push(data_low.data2().bits()),
-                    3 => data.push(data_low.data3().bits()),
-                    4 => data.push(data_high.data4().bits()),
-                    5 => data.push(data_high.data5().bits()),
-                    6 => data.push(data_high.data6().bits()),
-                    7 => data.push(data_high.data7().bits()),
+                    0 => data.push(data_low.data0().bits()).unwrap(),
+                    1 => data.push(data_low.data1().bits()).unwrap(),
+                    2 => data.push(data_low.data2().bits()).unwrap(),
+                    3 => data.push(data_low.data3().bits()).unwrap(),
+                    4 => data.push(data_high.data4().bits()).unwrap(),
+                    5 => data.push(data_high.data5().bits()).unwrap(),
+                    6 => data.push(data_high.data6().bits()).unwrap(),
+                    7 => data.push(data_high.data7().bits()).unwrap(),
                     _ => unreachable!(),
                 }
             }
@@ -402,7 +405,7 @@ impl Receiver for CanFifo {
 
     fn set_filter(&mut self, filter: Self::Filter) {
         cortex_m::interrupt::free(|_cs| {
-            let can = can_register();
+            let can = unsafe { &*stm32::CAN::ptr() };
 
             // Filter init mode
             can.fmr.modify(|_, w| w.finit().set_bit());
@@ -472,10 +475,10 @@ impl CanFrame {
     pub fn new_with_len(id: CanId, src: &[u8], length: usize) -> CanFrame {
         assert!(length <= 8, "CAN Frames can have at most 8 data bytes");
 
-        let mut data = ArrayVec::<[u8; 8]>::new();
+        let mut data = Vec::<u8, U8>::new();
 
         // The vector is always empty and the data size has alreay been checked, this will always succeed
-        data.try_extend_from_slice(src).unwrap();
+        data.extend_from_slice(src).unwrap();
 
         CanFrame { id, data }
     }
@@ -487,12 +490,7 @@ impl CanFrame {
     pub fn remote_frame(id: CanId) -> CanFrame {
         CanFrame {
             id,
-            data: ArrayVec::<_>::new(),
+            data: Vec::<_, _>::new(),
         }
     }
-}
-
-#[inline]
-fn can_register() -> &'static stm32::can::RegisterBlock {
-    return unsafe { &*stm32::CAN::ptr() };
 }
