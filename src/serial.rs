@@ -7,6 +7,7 @@ use crate::{
     rcc::{Clocks, APB1, APB2},
     time::Bps,
 };
+use cfg_if::cfg_if;
 use core::{convert::Infallible, marker::PhantomData, ptr};
 
 #[cfg(any(
@@ -37,10 +38,12 @@ use crate::gpio::gpiod;
 ))]
 use crate::gpio::gpioe;
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-use crate::dma;
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-use cortex_m::interrupt;
+cfg_if! {
+    if #[cfg(any(feature = "stm32f302", feature = "stm32f303"))] {
+        use crate::dma;
+        use cortex_m::interrupt;
+    }
+}
 
 /// Interrupt event
 pub enum Event {
@@ -74,129 +77,41 @@ pub unsafe trait RxPin<USART> {}
 unsafe impl TxPin<USART1> for gpioa::PA9<AF7> {}
 unsafe impl TxPin<USART1> for gpiob::PB6<AF7> {}
 unsafe impl TxPin<USART1> for gpioc::PC4<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl TxPin<USART1> for gpioe::PE0<AF7> {}
-
 unsafe impl RxPin<USART1> for gpioa::PA10<AF7> {}
 unsafe impl RxPin<USART1> for gpiob::PB7<AF7> {}
 unsafe impl RxPin<USART1> for gpioc::PC5<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART1> for gpioe::PE1<AF7> {}
 
 unsafe impl TxPin<USART2> for gpioa::PA2<AF7> {}
-// unsafe impl TxPin<USART2> for gpioa::PA14<AF7> {}
-// unsafe impl TxPin<USART2> for gpiob::PB3<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl TxPin<USART2> for gpiod::PD5<AF7> {}
-
+unsafe impl TxPin<USART2> for gpiob::PB3<AF7> {}
 unsafe impl RxPin<USART2> for gpioa::PA3<AF7> {}
-// unsafe impl RxPin<USART2> for gpioa::PA15<AF7> {}
-// unsafe impl RxPin<USART2> for gpiob::PB4<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART2> for gpiod::PD6<AF7> {}
+unsafe impl RxPin<USART2> for gpiob::PB4<AF7> {}
 
 unsafe impl TxPin<USART3> for gpiob::PB10<AF7> {}
 unsafe impl TxPin<USART3> for gpioc::PC10<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl TxPin<USART3> for gpiod::PD8<AF7> {}
-
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f318",
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART3> for gpiob::PB11<AF7> {}
 unsafe impl RxPin<USART3> for gpioc::PC11<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART3> for gpiod::PD9<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART3> for gpioe::PE15<AF7> {}
+
+cfg_if! {
+    if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))] {
+        use crate::gpio::{gpiod, gpioe};
+
+        unsafe impl TxPin<USART1> for gpioe::PE0<AF7> {}
+        unsafe impl RxPin<USART1> for gpioe::PE1<AF7> {}
+
+        unsafe impl TxPin<USART2> for gpiod::PD5<AF7> {}
+        unsafe impl RxPin<USART2> for gpiod::PD6<AF7> {}
+
+        unsafe impl TxPin<USART3> for gpiod::PD8<AF7> {}
+        unsafe impl RxPin<USART3> for gpiod::PD9<AF7> {}
+        unsafe impl RxPin<USART3> for gpioe::PE15<AF7> {}
+    }
+}
+cfg_if! {
+    if #[cfg(not(feature = "gpio-f373"))] {
+        unsafe impl TxPin<USART2> for gpioa::PA14<AF7> {}
+        unsafe impl RxPin<USART2> for gpioa::PA15<AF7> {}
+        unsafe impl RxPin<USART3> for gpiob::PB11<AF7> {}
+    }
+}
 
 /// Serial abstraction
 pub struct Serial<USART, PINS> {
