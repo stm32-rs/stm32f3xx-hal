@@ -13,7 +13,7 @@
 //! The resulting [Parts](gpioa/struct.Parts.html) struct contains one field for each
 //! pin, as well as some shared registers.
 //!
-//! To use a pin, first use the relevant `into_...` function in the [pin](gpioa/struct.PA0.html).
+//! To use a pin, first use the relevant `into_...` method of the [pin](gpioa/struct.PA0.html).
 //!
 //! ```rust
 //! let pa0 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
