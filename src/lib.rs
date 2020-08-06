@@ -6,10 +6,7 @@
    Please select one of the following
 
    (Note: `x` denotes any character in [a-z])
-   *   stm32f301xb
-   *   stm32f301xc
-   *   stm32f301xd
-   *   stm32f301xe
+   *   stm32f301
    *   stm32f318
    *   stm32f302xb
    *   stm32f302xc
@@ -45,10 +42,7 @@ compile_error!(
     Please select one of the following
 
     (Note: `x` denotes any character in [a-z])
-    *   stm32f301xb
-    *   stm32f301xc
-    *   stm32f301xd
-    *   stm32f301xe
+    *   stm32f301
     *   stm32f318
     *   stm32f302xb
     *   stm32f302xc
@@ -90,36 +84,38 @@ pub use embedded_hal as hal;
 pub use nb;
 pub use nb::block;
 
-#[cfg(feature = "stm32f301")]
-pub use stm32f3::stm32f301 as stm32;
+#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+pub use stm32f3::stm32f301 as pac;
 
 #[cfg(feature = "stm32f302")]
-pub use stm32f3::stm32f302 as stm32;
+pub use stm32f3::stm32f302 as pac;
 
 #[cfg(feature = "stm32f303")]
-pub use stm32f3::stm32f303 as stm32;
+pub use stm32f3::stm32f303 as pac;
 
-#[cfg(feature = "stm32f373")]
-pub use stm32f3::stm32f373 as stm32;
+#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+pub use stm32f3::stm32f373 as pac;
 
 #[cfg(feature = "stm32f334")]
-pub use stm32f3::stm32f3x4 as stm32;
+pub use stm32f3::stm32f3x4 as pac;
 
-#[cfg(any(
-    feature = "stm32f318",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f378",
-    feature = "stm32f398"
-))]
-pub use stm32f3::stm32f3x8 as stm32;
+#[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+pub use stm32f3::stm32f3x8 as pac;
+
+#[cfg(feature = "device-selected")]
+#[deprecated(since = "0.5.0", note = "please use `pac` instead")]
+pub use crate::pac as stm32;
 
 // Enable use of interrupt macro
 #[cfg(feature = "rt")]
-pub use crate::stm32::interrupt;
+pub use crate::pac::interrupt;
 
+#[cfg(feature = "stm32f303")]
+pub mod adc;
 #[cfg(feature = "device-selected")]
 pub mod delay;
+#[cfg(feature = "stm32f303")]
+pub mod dma;
 #[cfg(feature = "device-selected")]
 pub mod flash;
 #[cfg(feature = "device-selected")]

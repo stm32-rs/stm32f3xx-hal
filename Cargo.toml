@@ -9,14 +9,11 @@ name = "stm32f3xx-hal"
 readme = "README.md"
 repository = "https://github.com/stm32-rs/stm32f3xx-hal"
 documentation = "https://docs.rs/stm32f3xx-hal"
-version = "0.4.3"
+version = "0.5.0"
 
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "stm32-usbd"]
 targets = ["thumbv7em-none-eabihf"]
-
-[badges]
-travis-ci = { repository = "stm32-rs/stm32f3xx-hal" }
 
 [dependencies]
 cortex-m = "0.6"
@@ -38,35 +35,39 @@ version = "0.2"
 features = ["const-fn"]
 
 [dependencies.cast]
-default-features = false
 version = "0.2"
-
-[dependencies.void]
 default-features = false
+
+[dependencies.stable_deref_trait]
 version = "1"
+default-features = false
 
 [dependencies.stm32-usbd]
 version = "0.5"
 optional = true
 
+[dependencies.void]
+version = "1"
+default-features = false
+
 [dev-dependencies]
 panic-semihosting = "0.5"
 usb-device = "0.2"
 usbd-serial = "0.1"
+cortex-m-semihosting = "0.3"
 
 [features]
 default = ["unproven"]
+unproven = ["embedded-hal/unproven"]
 device-selected = []
 direct-call-deprecated = []
 rt = ["stm32f3/rt"]
 can = ["embedded-hal-can", "heapless"]
-# Any Changes here should be mirrored in README.md and src/lib.rs
-stm32f301 = ["stm32f3/stm32f301", "direct-call-deprecated"]
-stm32f301xb = ["stm32f301", "device-selected"]
-stm32f301xc = ["stm32f301", "device-selected"]
-stm32f301xd = ["stm32f301", "device-selected"]
-stm32f301xe = ["stm32f301", "device-selected"]
-stm32f318 = ["stm32f3/stm32f3x8", "device-selected"]
+
+# Any Changes here should be mirrored in README.md, src/lib.rs, and
+# .github/workflows/ci.yml.
+stm32f301 = ["stm32f3/stm32f301", "device-selected"]
+stm32f318 = ["stm32f3/stm32f301", "device-selected"]
 stm32f302 = ["stm32f3/stm32f302", "direct-call-deprecated"]
 stm32f302xb = ["stm32f302", "device-selected"]
 stm32f302xc = ["stm32f302", "device-selected"]
@@ -82,12 +83,11 @@ stm32f303xe = ["stm32f303", "stm32-usbd/ram_access_2x16", "device-selected"]
 stm32f303x6 = ["stm32f303", "device-selected"]
 stm32f303x8 = ["stm32f303", "device-selected"]
 stm32f373 = ["stm32f3/stm32f373", "device-selected"]
-stm32f378 = ["stm32f3/stm32f3x8", "device-selected"]
+stm32f378 = ["stm32f3/stm32f373", "device-selected"]
 stm32f334 = ["stm32f3/stm32f3x4", "device-selected"]
 stm32f328 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f358 = ["stm32f3/stm32f3x8", "device-selected"]
 stm32f398 = ["stm32f3/stm32f3x8", "device-selected"]
-unproven = ["embedded-hal/unproven"]
 
 [profile.dev]
 debug = true
@@ -117,3 +117,11 @@ required-features = ["stm32f303"]
 [[example]]
 name = "can"
 required-features = ["rt", "can", "stm32f303"]
+
+[[example]]
+name = "serial_dma"
+required-features = ["stm32f303"]
+
+[[example]]
+name = "adc"
+required-features = ["stm32f303"]

@@ -2,7 +2,7 @@
 
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 
-use crate::stm32::{DBGMCU, IWDG};
+use crate::pac::{DBGMCU, IWDG};
 use crate::time::MilliSeconds;
 
 const LSI_KHZ: u32 = 40;

@@ -5,7 +5,7 @@
 //! See <https://github.com/stm32-rs/stm32f3xx-hal/tree/master/examples>
 //! for usage examples.
 
-use crate::stm32::{RCC, USB};
+use crate::pac::{RCC, USB};
 use stm32_usbd::UsbPeripheral;
 
 use crate::gpio::gpioa::{PA11, PA12};

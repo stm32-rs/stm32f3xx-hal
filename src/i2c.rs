@@ -1,6 +1,6 @@
 //! Inter-Integrated Circuit (I2C) bus
 
-use crate::stm32::{I2C1, I2C2};
+use crate::pac::{I2C1, I2C2};
 use cast::u8;
 
 use crate::gpio::gpioa::{PA10, PA9};
@@ -12,7 +12,6 @@ use crate::gpio::gpiob::{PB6, PB7, PB8, PB9};
     feature = "stm32f303xc",
     feature = "stm32f303xd",
     feature = "stm32f303xe",
-    feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f358",
     feature = "stm32f398",
@@ -28,6 +27,7 @@ use crate::time::Hertz;
 
 /// I2C error
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Bus error
     Bus,
@@ -37,8 +37,6 @@ pub enum Error {
     // Pec, // SMBUS mode only
     // Timeout, // SMBUS mode only
     // Alert, // SMBUS mode only
-    #[doc(hidden)]
-    _Extensible,
 }
 
 // FIXME these should be "closed" traits
@@ -61,7 +59,6 @@ unsafe impl SclPin<I2C2> for PF1<AF4> {}
     feature = "stm32f303xc",
     feature = "stm32f303xd",
     feature = "stm32f303xe",
-    feature = "stm32f318",
     feature = "stm32f328",
     feature = "stm32f358",
     feature = "stm32f398",

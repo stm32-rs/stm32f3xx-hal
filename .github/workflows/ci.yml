@@ -1,0 +1,87 @@
+# Note: The checkout@v2 action sometimes checks out the wrong commit:
+#   https://github.com/actions/checkout/issues/237
+# Until that is fixed we use checkout@v1 here instead.
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mcu:
+          - stm32f301
+          - stm32f318
+          - stm32f302xb
+          - stm32f302xc
+          - stm32f302xd
+          - stm32f302xe
+          - stm32f303xb
+          - stm32f303xc
+          - stm32f303xd
+          - stm32f303xe
+          - stm32f303x6
+          - stm32f303x8
+          - stm32f373
+          - stm32f378
+          - stm32f334
+          - stm32f328
+          - stm32f358
+          - stm32f398
+        features: ["rt"]
+        include:
+          - mcu: stm32f303xc
+            features: rt,stm32-usbd
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --features=${{ matrix.mcu }},${{ matrix.features }} --examples
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+          components: clippy
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: >
+            --features=stm32f303xc,rt,stm32-usbd --examples
+            -- -D warnings
+
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+          components: rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check

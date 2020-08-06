@@ -1,28 +1,14 @@
 //! Serial
 
-use core::convert::Infallible;
-use core::marker::PhantomData;
-use core::ptr;
+use crate::{
+    gpio::{gpioa, gpiob, gpioc, AF7},
+    hal::{blocking, serial},
+    pac::{USART1, USART2, USART3},
+    rcc::{Clocks, APB1, APB2},
+    time::Bps,
+};
+use core::{convert::Infallible, marker::PhantomData, ptr};
 
-use crate::hal::blocking::serial::write::Default;
-use crate::hal::serial;
-use crate::stm32::{USART1, USART2, USART3};
-use nb;
-
-use crate::gpio::gpioa::{PA10, PA2, PA3, PA9};
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f318",
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::gpio::gpiob::PB11;
-use crate::gpio::gpiob::{PB10, PB6, PB7};
-use crate::gpio::gpioc::{PC10, PC11, PC4, PC5};
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -36,7 +22,7 @@ use crate::gpio::gpioc::{PC10, PC11, PC4, PC5};
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-use crate::gpio::gpiod::{PD5, PD6, PD8, PD9};
+use crate::gpio::gpiod;
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -49,11 +35,12 @@ use crate::gpio::gpiod::{PD5, PD6, PD8, PD9};
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-use crate::gpio::gpioe::{PE0, PE1, PE15};
+use crate::gpio::gpioe;
 
-use crate::gpio::AF7;
-use crate::rcc::{Clocks, APB1, APB2};
-use crate::time::Bps;
+#[cfg(feature = "stm32f303")]
+use crate::dma;
+#[cfg(feature = "stm32f303")]
+use cortex_m::interrupt;
 
 /// Interrupt event
 pub enum Event {
@@ -65,6 +52,7 @@ pub enum Event {
 
 /// Serial error
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// Framing error
     Framing,
@@ -74,8 +62,6 @@ pub enum Error {
     Overrun,
     /// Parity check error
     Parity,
-    #[doc(hidden)]
-    _Extensible,
 }
 
 // FIXME these should be "closed" traits
@@ -85,9 +71,9 @@ pub unsafe trait TxPin<USART> {}
 /// RX pin - DO NOT IMPLEMENT THIS TRAIT
 pub unsafe trait RxPin<USART> {}
 
-unsafe impl TxPin<USART1> for PA9<AF7> {}
-unsafe impl TxPin<USART1> for PB6<AF7> {}
-unsafe impl TxPin<USART1> for PC4<AF7> {}
+unsafe impl TxPin<USART1> for gpioa::PA9<AF7> {}
+unsafe impl TxPin<USART1> for gpiob::PB6<AF7> {}
+unsafe impl TxPin<USART1> for gpioc::PC4<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -100,11 +86,11 @@ unsafe impl TxPin<USART1> for PC4<AF7> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl TxPin<USART1> for PE0<AF7> {}
+unsafe impl TxPin<USART1> for gpioe::PE0<AF7> {}
 
-unsafe impl RxPin<USART1> for PA10<AF7> {}
-unsafe impl RxPin<USART1> for PB7<AF7> {}
-unsafe impl RxPin<USART1> for PC5<AF7> {}
+unsafe impl RxPin<USART1> for gpioa::PA10<AF7> {}
+unsafe impl RxPin<USART1> for gpiob::PB7<AF7> {}
+unsafe impl RxPin<USART1> for gpioc::PC5<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -117,11 +103,11 @@ unsafe impl RxPin<USART1> for PC5<AF7> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl RxPin<USART1> for PE1<AF7> {}
+unsafe impl RxPin<USART1> for gpioe::PE1<AF7> {}
 
-unsafe impl TxPin<USART2> for PA2<AF7> {}
-// unsafe impl TxPin<USART2> for PA14<AF7> {}
-// unsafe impl TxPin<USART2> for PB3<AF7> {}
+unsafe impl TxPin<USART2> for gpioa::PA2<AF7> {}
+// unsafe impl TxPin<USART2> for gpioa::PA14<AF7> {}
+// unsafe impl TxPin<USART2> for gpiob::PB3<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -135,11 +121,11 @@ unsafe impl TxPin<USART2> for PA2<AF7> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl TxPin<USART2> for PD5<AF7> {}
+unsafe impl TxPin<USART2> for gpiod::PD5<AF7> {}
 
-unsafe impl RxPin<USART2> for PA3<AF7> {}
-// unsafe impl RxPin<USART2> for PA15<AF7> {}
-// unsafe impl RxPin<USART2> for PB4<AF7> {}
+unsafe impl RxPin<USART2> for gpioa::PA3<AF7> {}
+// unsafe impl RxPin<USART2> for gpioa::PA15<AF7> {}
+// unsafe impl RxPin<USART2> for gpiob::PB4<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -153,10 +139,10 @@ unsafe impl RxPin<USART2> for PA3<AF7> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl RxPin<USART2> for PD6<AF7> {}
+unsafe impl RxPin<USART2> for gpiod::PD6<AF7> {}
 
-unsafe impl TxPin<USART3> for PB10<AF7> {}
-unsafe impl TxPin<USART3> for PC10<AF7> {}
+unsafe impl TxPin<USART3> for gpiob::PB10<AF7> {}
+unsafe impl TxPin<USART3> for gpioc::PC10<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -170,7 +156,7 @@ unsafe impl TxPin<USART3> for PC10<AF7> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl TxPin<USART3> for PD8<AF7> {}
+unsafe impl TxPin<USART3> for gpiod::PD8<AF7> {}
 
 #[cfg(any(
     feature = "stm32f301",
@@ -182,8 +168,8 @@ unsafe impl TxPin<USART3> for PD8<AF7> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl RxPin<USART3> for PB11<AF7> {}
-unsafe impl RxPin<USART3> for PC11<AF7> {}
+unsafe impl RxPin<USART3> for gpiob::PB11<AF7> {}
+unsafe impl RxPin<USART3> for gpioc::PC11<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -197,7 +183,7 @@ unsafe impl RxPin<USART3> for PC11<AF7> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl RxPin<USART3> for PD9<AF7> {}
+unsafe impl RxPin<USART3> for gpiod::PD9<AF7> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xb",
@@ -210,7 +196,7 @@ unsafe impl RxPin<USART3> for PD9<AF7> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl RxPin<USART3> for PE15<AF7> {}
+unsafe impl RxPin<USART3> for gpioe::PE15<AF7> {}
 
 /// Serial abstraction
 pub struct Serial<USART, PINS> {
@@ -251,21 +237,16 @@ macro_rules! hal {
                     apb.rstr().modify(|_, w| w.$usartXrst().set_bit());
                     apb.rstr().modify(|_, w| w.$usartXrst().clear_bit());
 
-                    // disable hardware flow control
-                    // TODO enable DMA
-                    // usart.cr3.write(|w| w.rtse().clear_bit().ctse().clear_bit());
-
                     let brr = clocks.$pclkX().0 / baud_rate.0;
                     assert!(brr >= 16, "impossible baud rate");
                     // NOTE(write): uses all bits of this register.
                     usart.brr.write(|w| unsafe { w.bits(brr) });
 
-                    // UE: enable USART
-                    // RE: enable receiver
-                    // TE: enable transceiver
-                    usart
-                        .cr1
-                        .modify(|_, w| w.ue().set_bit().re().set_bit().te().set_bit());
+                    usart.cr1.modify(|_, w| {
+                        w.ue().enabled();  // enable USART
+                        w.re().enabled();  // enable receiver
+                        w.te().enabled()   // enable transmitter
+                    });
 
                     Serial { usart, pins }
                 }
@@ -380,7 +361,87 @@ macro_rules! hal {
                 }
             }
 
-            impl Default<u8> for Tx<$USARTX> {}
+            impl blocking::serial::write::Default<u8> for Tx<$USARTX> {}
+
+            #[cfg(feature = "stm32f303")]
+            impl Rx<$USARTX> {
+                /// Fill the buffer with received data using DMA.
+                pub fn read_exact<B, C>(
+                    self,
+                    buffer: B,
+                    mut channel: C
+                ) -> dma::Transfer<B, C, Self>
+                where
+                    Self: dma::OnChannel<C>,
+                    B: dma::WriteBuffer<Word = u8> + 'static,
+                    C: dma::Channel,
+                {
+                    // NOTE(unsafe) taking the address of a register
+                    let pa = unsafe { &(*$USARTX::ptr()).rdr } as *const _ as u32;
+                    channel.set_peripheral_address(pa, dma::Increment::Disable);
+
+                    dma::Transfer::start_write(buffer, channel, self)
+                }
+            }
+
+            #[cfg(feature = "stm32f303")]
+            impl Tx<$USARTX> {
+                /// Transmit all data in the buffer using DMA.
+                pub fn write_all<B, C>(
+                    self,
+                    buffer: B,
+                    mut channel: C
+                ) -> dma::Transfer<B, C, Self>
+                where
+                    Self: dma::OnChannel<C>,
+                    B: dma::ReadBuffer<Word = u8> + 'static,
+                    C: dma::Channel,
+                {
+                    // NOTE(unsafe) taking the address of a register
+                    let pa = unsafe { &(*$USARTX::ptr()).tdr } as *const _ as u32;
+                    channel.set_peripheral_address(pa, dma::Increment::Disable);
+
+                    dma::Transfer::start_read(buffer, channel, self)
+                }
+            }
+
+            #[cfg(feature = "stm32f303")]
+            impl dma::Target for Rx<$USARTX> {
+                fn enable_dma(&mut self) {
+                    // NOTE(unsafe) critical section prevents races
+                    interrupt::free(|_| unsafe {
+                        let cr3 = &(*$USARTX::ptr()).cr3;
+                        cr3.modify(|_, w| w.dmar().enabled());
+                    });
+                }
+
+                fn disable_dma(&mut self) {
+                    // NOTE(unsafe) critical section prevents races
+                    interrupt::free(|_| unsafe {
+                        let cr3 = &(*$USARTX::ptr()).cr3;
+                        cr3.modify(|_, w| w.dmar().disabled());
+                    });
+                }
+            }
+
+            #[cfg(feature = "stm32f303")]
+            impl dma::Target for Tx<$USARTX> {
+                fn enable_dma(&mut self) {
+                    // NOTE(unsafe) critical section prevents races
+                    interrupt::free(|_| unsafe {
+                        let cr3 = &(*$USARTX::ptr()).cr3;
+                        cr3.modify(|_, w| w.dmat().enabled());
+                    });
+                }
+
+                fn disable_dma(&mut self) {
+                    // NOTE(unsafe) critical section prevents races
+                    interrupt::free(|_| unsafe {
+                        let cr3 = &(*$USARTX::ptr()).cr3;
+                        cr3.modify(|_, w| w.dmat().disabled());
+                    });
+                }
+            }
         )+
     }
 }
