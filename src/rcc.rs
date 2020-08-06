@@ -524,18 +524,17 @@ impl CFGR {
 
         assert!(pclk2 <= 72_000_000);
 
-        // adjust flash wait states
-        unsafe {
-            acr.acr().modify(|_, w| {
-                w.latency().bits(if sysclk <= 24_000_000 {
-                    0b000
-                } else if sysclk <= 48_000_000 {
-                    0b001
-                } else {
-                    0b010
-                })
-            })
-        }
+        // Adjust flash wait states according to the
+        // HCLK frequency (cpu core clock)
+        acr.acr().modify(|_, w| {
+            if hclk <= 24_000_000 {
+                w.latency().ws0()
+            } else if hclk <= 48_000_000 {
+                w.latency().ws1()
+            } else {
+                w.latency().ws2()
+            }
+        });
 
         let (usbpre, usbclk_valid) = usb_clocking::is_valid(sysclk, self.hse, pclk1, &pll_config);
 
