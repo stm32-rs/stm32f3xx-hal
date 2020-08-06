@@ -8,6 +8,7 @@ use crate::pac::{
     spi1::cr2::{DS_A, FRXTH_A},
     SPI1, SPI2, SPI3,
 };
+use crate::stm32::spi1;
 
 use crate::gpio::gpioa::{PA5, PA6, PA7};
 #[cfg(any(
@@ -186,17 +187,7 @@ macro_rules! hal {
                             Polarity::IdleHigh => w.cpol().idle_high(),
                         };
 
-                        match clocks.$pclkX().0 / freq.into().0 {
-                            0 => unreachable!(),
-                            1..=2 => w.br().div2(),
-                            3..=5 => w.br().div4(),
-                            6..=11 => w.br().div8(),
-                            12..=23 => w.br().div16(),
-                            24..=39 => w.br().div32(),
-                            40..=95 => w.br().div64(),
-                            96..=191 => w.br().div128(),
-                            _ => w.br().div256(),
-                        };
+                        w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq.into()));
 
                         w.spe()
                             .enabled()
@@ -219,6 +210,34 @@ macro_rules! hal {
                 pub fn free(self) -> ($SPIX, (SCK, MISO, MOSI)) {
                     (self.spi, self.pins)
                 }
+
+                /// Change the baud rate of the SPI
+                pub fn reclock<F>(&mut self, freq: F, clocks: Clocks)
+                    where F: Into<Hertz>
+                {
+                    self.spi.cr1.modify(|_, w| w.spe().disabled());
+                    self.spi.cr1.modify(|_, w| {
+                        w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq.into()));
+                        w.spe().enabled()
+                    });
+                }
+
+                fn compute_baud_rate(clocks: Hertz, freq: Hertz) -> spi1::cr1::BR_A {
+                    use spi1::cr1::BR_A;
+                    match clocks.0 / freq.0 {
+                        0 => unreachable!(),
+                        1..=2 => BR_A::DIV2,
+                        3..=5 => BR_A::DIV4,
+                        6..=11 => BR_A::DIV8,
+                        12..=23 => BR_A::DIV16,
+                        24..=39 => BR_A::DIV32,
+                        40..=95 => BR_A::DIV64,
+                        96..=191 => BR_A::DIV128,
+                        _ => BR_A::DIV256,
+                    }
+                }
+
+
             }
 
             impl<PINS, WORD> FullDuplex<WORD> for Spi<$SPIX, PINS, WORD> {
