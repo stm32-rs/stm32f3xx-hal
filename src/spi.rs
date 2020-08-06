@@ -4,7 +4,10 @@ use core::ptr;
 
 use crate::hal::spi::FullDuplex;
 pub use crate::hal::spi::{Mode, Phase, Polarity};
-use crate::pac::{SPI1, SPI2, SPI3};
+use crate::pac::{
+    spi1::cr2::{DS_A, FRXTH_A},
+    SPI1, SPI2, SPI3,
+};
 
 use crate::gpio::gpioa::{PA5, PA6, PA7};
 #[cfg(any(
@@ -104,36 +107,33 @@ unsafe impl MosiPin<SPI2> for PB15<AF5> {}
 unsafe impl MosiPin<SPI3> for PB5<AF6> {}
 unsafe impl MosiPin<SPI3> for PC12<AF6> {}
 
-pub trait WordSize {
-    fn get_word_size() -> u8;
+pub trait Word {
+    fn register_config() -> (FRXTH_A, DS_A);
 }
 
-pub struct WordSizeEight;
-pub struct WordSizeSixteen;
-
-impl WordSize for WordSizeEight {
-    fn get_word_size() -> u8 {
-        8
+impl Word for u8 {
+    fn register_config() -> (FRXTH_A, DS_A) {
+        (FRXTH_A::QUARTER, DS_A::EIGHTBIT)
     }
 }
 
-impl WordSize for WordSizeSixteen {
-    fn get_word_size() -> u8 {
-        16
+impl Word for u16 {
+    fn register_config() -> (FRXTH_A, DS_A) {
+        (FRXTH_A::HALF, DS_A::SIXTEENBIT)
     }
 }
 
 /// SPI peripheral operating in full duplex master mode
-pub struct Spi<SPI, PINS, WORDSIZE = WordSizeEight> {
+pub struct Spi<SPI, PINS, WORD = u8> {
     spi: SPI,
     pins: PINS,
-    _word: PhantomData<WORDSIZE>,
+    _word: PhantomData<WORD>,
 }
 
 macro_rules! hal {
     ($($SPIX:ident: ($spiX:ident, $APBX:ident, $spiXen:ident, $spiXrst:ident, $pclkX:ident),)+) => {
         $(
-            impl<SCK, MISO, MOSI, WORDSIZE> Spi<$SPIX, (SCK, MISO, MOSI), WORDSIZE> {
+            impl<SCK, MISO, MOSI, WORD> Spi<$SPIX, (SCK, MISO, MOSI), WORD> {
                 /// Configures the SPI peripheral to operate in full duplex master mode
                 pub fn $spiX<F>(
                     spi: $SPIX,
@@ -148,23 +148,20 @@ macro_rules! hal {
                     SCK: SckPin<$SPIX>,
                     MISO: MisoPin<$SPIX>,
                     MOSI: MosiPin<$SPIX>,
-                    WORDSIZE: WordSize,
+                    WORD: Word,
                 {
                     // enable or reset $SPIX
                     apb2.enr().modify(|_, w| w.$spiXen().enabled());
                     apb2.rstr().modify(|_, w| w.$spiXrst().reset());
                     apb2.rstr().modify(|_, w| w.$spiXrst().clear_bit());
 
-
-                    if (WORDSIZE::get_word_size() == 8) {
-                        // FRXTH: RXNE event is generated if the FIFO level is greater than or equal to
-                        //        8-bit
-                        // DS: 8-bit data size
-                        // SSOE: Slave Select output disabled
-                        spi.cr2.write(|w| w.frxth().quarter().ds().eight_bit().ssoe().disabled());
-                    } else {
-                        spi.cr2.write(|w| w.frxth().half().ds().sixteen_bit().ssoe().disabled());
-                    }
+                    let (frxth, ds) = WORD::register_config();
+                    spi.cr2.write(|w| {
+                        w.frxth().variant(frxth);
+                        w.ds().variant(ds);
+                        // Slave Select output disabled
+                        w.ssoe().disabled()
+                    });
 
                     // CPHA: phase
                     // CPOL: polarity
@@ -224,10 +221,10 @@ macro_rules! hal {
                 }
             }
 
-            impl<PINS> FullDuplex<u8> for Spi<$SPIX, PINS, WordSizeEight> {
+            impl<PINS, WORD> FullDuplex<WORD> for Spi<$SPIX, PINS, WORD> {
                 type Error = Error;
 
-                fn read(&mut self) -> nb::Result<u8, Error> {
+                fn read(&mut self) -> nb::Result<WORD, Error> {
                     let sr = self.spi.sr.read();
 
                     Err(if sr.ovr().is_overrun() {
@@ -237,17 +234,16 @@ macro_rules! hal {
                     } else if sr.crcerr().is_no_match() {
                         nb::Error::Other(Error::Crc)
                     } else if sr.rxne().is_not_empty() {
-                        // NOTE(read_volatile) read only 1 byte (the svd2rust API only allows
-                        // reading a half-word)
-                        return Ok(unsafe {
-                            ptr::read_volatile(&self.spi.dr as *const _ as *const u8)
-                        });
+                        let read_ptr = &self.spi.dr as *const _ as *const WORD;
+                        // NOTE(unsafe) read from register owned by this Spi struct
+                        let value = unsafe { ptr::read_volatile(read_ptr) };
+                        return Ok(value);
                     } else {
                         nb::Error::WouldBlock
                     })
                 }
 
-                fn send(&mut self, byte: u8) -> nb::Result<(), Error> {
+                fn send(&mut self, word: WORD) -> nb::Result<(), Error> {
                     let sr = self.spi.sr.read();
 
                     Err(if sr.ovr().is_overrun() {
@@ -257,8 +253,9 @@ macro_rules! hal {
                     } else if sr.crcerr().is_no_match() {
                         nb::Error::Other(Error::Crc)
                     } else if sr.txe().is_empty() {
-                        // NOTE(write_volatile) see note above
-                        unsafe { ptr::write_volatile(&self.spi.dr as *const _ as *mut u8, byte) }
+                        let write_ptr = &self.spi.dr as *const _ as *mut WORD;
+                        // NOTE(unsafe) write to register owned by this Spi struct
+                        unsafe { ptr::write_volatile(write_ptr, word) };
                         return Ok(());
                     } else {
                         nb::Error::WouldBlock
@@ -266,53 +263,8 @@ macro_rules! hal {
                 }
             }
 
-            impl<PINS> crate::hal::blocking::spi::transfer::Default<u8> for Spi<$SPIX, PINS, WordSizeEight> {}
-
-            impl<PINS> crate::hal::blocking::spi::write::Default<u8> for Spi<$SPIX, PINS, WordSizeEight> {}
-
-            impl<PINS> FullDuplex<u16> for Spi<$SPIX, PINS, WordSizeSixteen> {
-                type Error = Error;
-
-                fn read(&mut self) -> nb::Result<u16, Error> {
-                    let sr = self.spi.sr.read();
-
-                    Err(if sr.ovr().is_overrun() {
-                        nb::Error::Other(Error::Overrun)
-                    } else if sr.modf().is_fault() {
-                        nb::Error::Other(Error::ModeFault)
-                    } else if sr.crcerr().is_no_match() {
-                        nb::Error::Other(Error::Crc)
-                    } else if sr.rxne().is_not_empty() {
-                        return Ok(unsafe {
-                            ptr::read_volatile(&self.spi.dr as *const _ as *const u16)
-                        });
-                    } else {
-                        nb::Error::WouldBlock
-                    })
-                }
-
-                fn send(&mut self, byte: u16) -> nb::Result<(), Error> {
-                    let sr = self.spi.sr.read();
-
-                    Err(if sr.ovr().is_overrun() {
-                        nb::Error::Other(Error::Overrun)
-                    } else if sr.modf().is_fault() {
-                        nb::Error::Other(Error::ModeFault)
-                    } else if sr.crcerr().is_no_match() {
-                        nb::Error::Other(Error::Crc)
-                    } else if sr.txe().is_empty() {
-                        // NOTE(write_volatile) see note above
-                        unsafe { ptr::write_volatile(&self.spi.dr as *const _ as *mut u16, byte) }
-                        return Ok(());
-                    } else {
-                        nb::Error::WouldBlock
-                    })
-                }
-            }
-
-            impl<PINS> crate::hal::blocking::spi::transfer::Default<u16> for Spi<$SPIX, PINS, WordSizeSixteen> {}
-
-            impl<PINS> crate::hal::blocking::spi::write::Default<u16> for Spi<$SPIX, PINS, WordSizeSixteen> {}
+            impl<PINS, WORD> crate::hal::blocking::spi::transfer::Default<WORD> for Spi<$SPIX, PINS, WORD> {}
+            impl<PINS, WORD> crate::hal::blocking::spi::write::Default<WORD> for Spi<$SPIX, PINS, WORD> {}
         )+
     }
 }
