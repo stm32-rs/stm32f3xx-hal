@@ -22,7 +22,7 @@ fn gen_gpio_ip(ip: &gpio::Ip) -> Result<()> {
     let ports = merge_pins_by_port(&ip.pins)?;
 
     println!(r#"#[cfg(feature = "{}")]"#, feature);
-    gen_gpio_macro_call(&ports)?;
+    gen_gpio_macro_call(&ports, &feature)?;
     Ok(())
 }
 
@@ -59,17 +59,17 @@ fn merge_pins_by_port(pins: &[gpio::Pin]) -> Result<Vec<Port>> {
     Ok(ports)
 }
 
-fn gen_gpio_macro_call(ports: &[Port]) -> Result<()> {
+fn gen_gpio_macro_call(ports: &[Port], feature: &str) -> Result<()> {
     println!("gpio!([");
     for port in ports {
-        gen_port(port)?;
+        gen_port(port, feature)?;
     }
     println!("]);");
     Ok(())
 }
 
-fn gen_port(port: &Port) -> Result<()> {
-    let pac_module = get_port_pac_module(port);
+fn gen_port(port: &Port, feature: &str) -> Result<()> {
+    let pac_module = get_port_pac_module(port, feature);
 
     println!("    {{");
     println!(
@@ -89,12 +89,13 @@ fn gen_port(port: &Port) -> Result<()> {
     Ok(())
 }
 
-fn get_port_pac_module(port: &Port) -> &'static str {
+fn get_port_pac_module(port: &Port, feature: &str) -> &'static str {
     // The registers in ports A and B have different reset values due to the
     // presence of debug pins, so they get dedicated PAC modules.
     match port.id {
         'A' => "gpioa",
         'B' => "gpiob",
+        'D' if feature == "gpio-f373" => "gpiod",
         _ => "gpioc",
     }
 }
