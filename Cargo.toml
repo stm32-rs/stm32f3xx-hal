@@ -1,6 +1,9 @@
 [package]
 edition = "2018"
-authors = ["Jorge Aparicio <jorge@japaric.io>", "Dylan Frankland <dylan@frankland.io>"]
+authors = [
+    "Jorge Aparicio <jorge@japaric.io>",
+    "Dylan Frankland <dylan@frankland.io>",
+]
 categories = ["embedded", "hardware-support", "no-std"]
 description = "Peripheral access API for STM32F3 series microcontrollers"
 keywords = ["arm", "cortex-m", "stm32f3xx", "hal"]

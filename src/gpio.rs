@@ -1175,7 +1175,7 @@ gpio!([
         ],
     },
     {
-        port: (D/d, pac: gpioc),
+        port: (D/d, pac: gpiod),
         pins: [
             0 => { reset: Input<Floating>, afr: L/l, af: [1, 2, 7] },
             1 => { reset: Input<Floating>, afr: L/l, af: [1, 2, 7] },
