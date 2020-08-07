@@ -65,12 +65,12 @@
     ch4.enable();
   ```
 
-  All three pins will output a 50hz period. gpioa::PA6 and PB4 will share a
+  All three pins will output a 50hz period. PA6 and PB4 will share a
   duty cycle, but the duty cycle for PB1 can be controlled
   independently.
 
   ```
-    // Affect gpioa::PA6 and PB4
+    // Affect PA6 and PB4
     ch1.set_duty_cycle(1000);
 
     // Affect only PB1
@@ -146,9 +146,9 @@
         .output_to(pa8);
   ```
 
-  Once we've connected a complementary pin (gpioa::PA7) we are now _only_
-  allowed to use other complementary pins.  gpioa::PA8 is a valid choice if
-  we have no pins in use, but it cannot be used once we've used gpioa::PA7.
+  Once we've connected a complementary pin (PA7) we are now _only_
+  allowed to use other complementary pins.  PA8 is a valid choice if
+  we have no pins in use, but it cannot be used once we've used PA7.
 */
 
 use crate::{
