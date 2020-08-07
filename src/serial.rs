@@ -293,7 +293,8 @@ macro_rules! hal {
                 {
                     // NOTE(unsafe) taking the address of a register
                     let pa = unsafe { &(*$USARTX::ptr()).rdr } as *const _ as u32;
-                    channel.set_peripheral_address(pa, dma::Increment::Disable);
+                    // NOTE(unsafe) usage of a valid peripheral address
+                    unsafe { channel.set_peripheral_address(pa, dma::Increment::Disable) };
 
                     dma::Transfer::start_write(buffer, channel, self)
                 }
@@ -314,7 +315,8 @@ macro_rules! hal {
                 {
                     // NOTE(unsafe) taking the address of a register
                     let pa = unsafe { &(*$USARTX::ptr()).tdr } as *const _ as u32;
-                    channel.set_peripheral_address(pa, dma::Increment::Disable);
+                    // NOTE(unsafe) usage of a valid peripheral address
+                    unsafe { channel.set_peripheral_address(pa, dma::Increment::Disable) };
 
                     dma::Transfer::start_read(buffer, channel, self)
                 }
