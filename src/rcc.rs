@@ -32,6 +32,15 @@ impl RccExt for RCC {
 }
 
 /// Constrained RCC peripheral
+///
+/// An instance of this struct is aquired by calling the
+/// [constrain](trait.RccExt.html#tymethod.constrain) function on the
+/// [pac::RCC](../pac/struct.RCC.html) struct.
+///
+/// ```
+/// let dp = pac::Peripherals::take().unwrap();
+/// let rcc = dp.RCC.constrain();
+/// ```
 pub struct Rcc {
     /// AMBA High-performance Bus (AHB) registers
     pub ahb: AHB,
@@ -44,6 +53,14 @@ pub struct Rcc {
 }
 
 /// AMBA High-performance Bus (AHB) registers
+///
+/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+///
+/// ```
+/// let dp = pac::Peripherals::take().unwrap();
+/// let rcc = dp.RCC.constrain();
+/// use_ahb(&mut rcc.ahb)
+/// ```
 pub struct AHB {
     _0: (),
 }
@@ -61,6 +78,14 @@ impl AHB {
 }
 
 /// Advanced Peripheral Bus 1 (APB1) registers
+///
+/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+///
+/// ```
+/// let dp = pac::Peripherals::take().unwrap();
+/// let rcc = dp.RCC.constrain();
+/// use_ahb(&mut rcc.apb1)
+/// ```
 pub struct APB1 {
     _0: (),
 }
@@ -78,6 +103,14 @@ impl APB1 {
 }
 
 /// Advanced Peripheral Bus 2 (APB2) registers
+///
+/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+///
+/// ```
+/// let dp = pac::Peripherals::take().unwrap();
+/// let rcc = dp.RCC.constrain();
+/// use_ahb(&mut rcc.apb2)
+/// ```
 pub struct APB2 {
     _0: (),
 }
@@ -158,6 +191,14 @@ mod usb_clocking {
 }
 
 /// Clock configuration
+///
+/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+///
+/// ```
+/// let dp = pac::Peripherals::take().unwrap();
+/// let rcc = dp.RCC.constrain();
+/// use_ahb(&mut rcc.cfgr)
+/// ```
 pub struct CFGR {
     hse: Option<u32>,
     hclk: Option<u32>,
