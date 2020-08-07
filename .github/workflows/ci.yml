@@ -1,7 +1,3 @@
-# Note: The checkout@v2 action sometimes checks out the wrong commit:
-#   https://github.com/actions/checkout/issues/237
-# Until that is fixed we use checkout@v1 here instead.
-
 name: CI
 
 on:
@@ -39,7 +35,7 @@ jobs:
           - mcu: stm32f303xc
             features: rt,stm32-usbd
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -49,13 +45,13 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=${{ matrix.mcu }},${{ matrix.features }} --examples
+          args: --features=${{ matrix.mcu }},${{ matrix.features }} --lib --examples
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
@@ -67,14 +63,14 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: >
-            --features=stm32f303xc,rt,stm32-usbd --examples
+            --features=stm32f303xc,rt,stm32-usbd --lib --examples
             -- -D warnings
 
   rustfmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
