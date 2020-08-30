@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Support for 16-bit words with SPI ([#107](https://github.com/stm32-rs/stm32f3xx-hal/pull/107))
 - SPI support for reclock after initialization ([#98](https://github.com/stm32-rs/stm32f3xx-hal/pull/98))
+- Support for `stm32f302x6` and `stm32f302x8` devices ([#132](https://github.com/stm32-rs/stm32f3xx-hal/pull/132))
 
 ## [v0.5.0] - 2020-07-21
 
