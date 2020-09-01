@@ -37,9 +37,9 @@ use crate::gpio::gpiod;
 ))]
 use crate::gpio::gpioe;
 
-#[cfg(feature = "stm32f303")]
+#[cfg(any(feature = "stm32f303", feature = "stm32f302"))]
 use crate::dma;
-#[cfg(feature = "stm32f303")]
+#[cfg(any(feature = "stm32f303", feature = "stm32f302"))]
 use cortex_m::interrupt;
 
 /// Interrupt event
@@ -363,7 +363,7 @@ macro_rules! hal {
 
             impl blocking::serial::write::Default<u8> for Tx<$USARTX> {}
 
-            #[cfg(feature = "stm32f303")]
+            #[cfg(any(feature = "stm32f303", feature = "stm32f302"))]
             impl Rx<$USARTX> {
                 /// Fill the buffer with received data using DMA.
                 pub fn read_exact<B, C>(
@@ -384,7 +384,7 @@ macro_rules! hal {
                 }
             }
 
-            #[cfg(feature = "stm32f303")]
+            #[cfg(any(feature = "stm32f303", feature = "stm32f302"))]
             impl Tx<$USARTX> {
                 /// Transmit all data in the buffer using DMA.
                 pub fn write_all<B, C>(
@@ -405,7 +405,7 @@ macro_rules! hal {
                 }
             }
 
-            #[cfg(feature = "stm32f303")]
+            #[cfg(any(feature = "stm32f303", feature = "stm32f302"))]
             impl dma::Target for Rx<$USARTX> {
                 fn enable_dma(&mut self) {
                     // NOTE(unsafe) critical section prevents races
@@ -424,7 +424,7 @@ macro_rules! hal {
                 }
             }
 
-            #[cfg(feature = "stm32f303")]
+            #[cfg(any(feature = "stm32f303", feature = "stm32f302"))]
             impl dma::Target for Tx<$USARTX> {
                 fn enable_dma(&mut self) {
                     // NOTE(unsafe) critical section prevents races
