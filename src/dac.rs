@@ -20,12 +20,12 @@
 
 use crate::{pac, rcc::APB1};
 
-pub trait DacTrait {
+pub trait DacTrait<P> {
     /// Enable the DAC.
     fn enable(&mut self, p: &mut APB1);  // todo: generalize periph clock
 
     /// Disable the DAC.
-    fn disable(&mut self);
+    fn disable(&mut self, p: &mut APB1);
 
     /// Output a constant signal, given a bit word.
     fn set_value(&mut self, value: u32);
@@ -108,7 +108,7 @@ impl DacTrait for Dac {
                 apb1.enr().modify(|_, w| w.dac1en().set_bit());
                 self.regs.cr.modify(|_, w| w.en1().set_bit());
                 
-            },
+            }
             DacId::Two => {
                 apb1.enr().modify(|_, w| w.dac2en().set_bit());
                 self.regs.cr.modify(|_, w| w.en2().set_bit());
@@ -116,10 +116,16 @@ impl DacTrait for Dac {
         }
     }
 
-    fn disable(&mut self) {
+    fn disable(&mut self, apb1: &mut APB1) {
         match self.id {
-            DacId::One => self.regs.cr.modify(|_, w| w.en1().clear_bit()),
-            DacId::Two => self.regs.cr.modify(|_, w| w.en2().clear_bit()),
+            DacId::One => {
+                self.regs.cr.modify(|_, w| w.en1().clear_bit());
+                apb1.enr().modify(|_, w| w.dac1en().clear_bit());
+            }
+            DacId::Two => {
+                self.regs.cr.modify(|_, w| w.en2().clear_bit());
+                apb1.enr().modify(|_, w| w.dac2en().clear_bit());
+            }
         }
     }
 
