@@ -473,7 +473,10 @@ hal! {
     feature = "stm32f303xc",
     feature = "stm32f303xd",
     feature = "stm32f303xe",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 hal! {
     USART4: (usart4, APB1, usart4en, usart4rst, pclk2),
+    USART5: (usart5, APB1, usart5en, usart5rst, pclk2),
 }
