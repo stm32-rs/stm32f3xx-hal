@@ -447,12 +447,14 @@ macro_rules! hal {
 }
 
 #[cfg(any(
+    feature = "stm32f302",
     feature = "stm32f301",
     feature = "stm32f318",
     feature = "stm32f303",
     feature = "stm32f373",
     feature = "stm32f378",
     feature = "stm32f328",
+    feature = "stm32f334",
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
@@ -462,8 +464,16 @@ hal! {
     USART3: (usart3, APB1, usart3en, usart3rst, pclk1),
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f334"))]
+#[cfg(any(
+    feature = "stm32f302xb",
+    feature = "stm32f302xc",
+    feature = "stm32f302xd",
+    feature = "stm32f302xe",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
 hal! {
-    USART1: (usart1, APB2, usart1en, usart1rst, pclk2),
-    USART2: (usart2, APB1, usart2en, usart2rst, pclk1),
+    USART4: (usart4, APB1, usart4en, usart4rst, pclk2),
 }
