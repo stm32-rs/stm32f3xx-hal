@@ -18,7 +18,7 @@
 //! A trait used to identify a digital-to-analog converter, and its
 //! most fundamental features.
 
-use crate::rcc::APB1;
+use crate::{pac, rcc::APB1};
 
 pub trait DacTrait {
     /// Enable the DAC.
@@ -34,8 +34,6 @@ pub trait DacTrait {
     fn set_voltage(&mut self, volts: f32);
 }
 
-use crate::stm32;
-
 #[derive(Clone, Copy, Debug)]
 pub enum DacId {
     One,
@@ -50,7 +48,7 @@ pub enum DacBits {
 }
 
 pub struct Dac {
-    regs: stm32::DAC,
+    regs: pac::DAC,
     id: DacId,
     bits: DacBits,
     vref: f32,
@@ -58,7 +56,7 @@ pub struct Dac {
 
 impl Dac {
     /// Create a new DAC instances
-    pub fn new(regs: stm32::DAC, id: DacId, bits: DacBits, vref: f32) -> Self {
+    pub fn new(regs: pac::DAC, id: DacId, bits: DacBits, vref: f32) -> Self {
         Self { regs, id, bits, vref }
     }
 
