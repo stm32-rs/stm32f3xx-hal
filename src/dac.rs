@@ -9,7 +9,6 @@
 //! ```
 //!
 
-
 // todo: DAC trait that will go in a PR to embeddd hal.
 // [PR](https://github.com/rust-embedded/embedded-hal/pull/247)
 
@@ -22,7 +21,7 @@ use crate::{pac, rcc::APB1};
 
 pub trait DacTrait {
     /// Enable the DAC.
-    fn enable(&mut self, p: &mut APB1);  // todo: generalize periph clock
+    fn enable(&mut self, p: &mut APB1); // todo: generalize periph clock
 
     /// Disable the DAC.
     fn disable(&mut self, p: &mut APB1);
@@ -37,7 +36,7 @@ pub trait DacTrait {
 #[derive(Clone, Copy, Debug)]
 pub enum DacId {
     One,
-    Two
+    Two,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -57,7 +56,12 @@ pub struct Dac {
 impl Dac {
     /// Create a new DAC instances
     pub fn new(regs: pac::DAC, id: DacId, bits: DacBits, vref: f32) -> Self {
-        Self { regs, id, bits, vref }
+        Self {
+            regs,
+            id,
+            bits,
+            vref,
+        }
     }
 
     //// Independent trigger with single LFSR generation
@@ -107,7 +111,6 @@ impl DacTrait for Dac {
             DacId::One => {
                 apb1.enr().modify(|_, w| w.dac1en().set_bit());
                 self.regs.cr.modify(|_, w| w.en1().set_bit());
-                
             }
             DacId::Two => {
                 apb1.enr().modify(|_, w| w.dac2en().set_bit());
@@ -132,20 +135,16 @@ impl DacTrait for Dac {
     /// Set the DAC value as an integer.
     fn set_value(&mut self, val: u32) {
         match self.id {
-            DacId::One => {
-                match self.bits {
-                    DacBits::EightR => self.regs.dhr8r1.modify(|_, w| unsafe { w.bits(val)}),
-                    DacBits::TwelveL => self.regs.dhr12l1.modify(|_, w| unsafe { w.bits(val)}),
-                    DacBits::TwelveR => self.regs.dhr12r1.modify(|_, w| unsafe { w.bits(val)}),
-                }
-            }
-            DacId::Two => {
-                match self.bits {
-                    DacBits::EightR => self.regs.dhr8r2.modify(|_, w| unsafe { w.bits(val)}),
-                    DacBits::TwelveL => self.regs.dhr12l2.modify(|_, w| unsafe { w.bits(val)}),
-                    DacBits::TwelveR => self.regs.dhr12r2.modify(|_, w| unsafe { w.bits(val)}),
-                }
-            }
+            DacId::One => match self.bits {
+                DacBits::EightR => self.regs.dhr8r1.modify(|_, w| unsafe { w.bits(val) }),
+                DacBits::TwelveL => self.regs.dhr12l1.modify(|_, w| unsafe { w.bits(val) }),
+                DacBits::TwelveR => self.regs.dhr12r1.modify(|_, w| unsafe { w.bits(val) }),
+            },
+            DacId::Two => match self.bits {
+                DacBits::EightR => self.regs.dhr8r2.modify(|_, w| unsafe { w.bits(val) }),
+                DacBits::TwelveL => self.regs.dhr12l2.modify(|_, w| unsafe { w.bits(val) }),
+                DacBits::TwelveR => self.regs.dhr12r2.modify(|_, w| unsafe { w.bits(val) }),
+            },
         }
     }
 

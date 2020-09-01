@@ -4,13 +4,13 @@
 use cortex_m;
 use cortex_m_rt::entry;
 use embedded_hal::blocking::delay::DelayMs;
-use stm32f3xx_hal as hal;
 use hal::{
+    dac::{Dac, DacBits, DacId, DacTrait},
     delay::Delay,
-    prelude::*,
     pac,
-    dac::{Dac, DacBits, DacId, DacTrait}
+    prelude::*,
 };
+use stm32f3xx_hal as hal;
 
 #[entry]
 fn main() -> ! {
