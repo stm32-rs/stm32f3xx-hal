@@ -494,10 +494,14 @@ dma!(
 );
 
 #[cfg(any(
+    feature = "stm32f302xb",
+    feature = "stm32f302xc",
+    feature = "stm32f302xd",
+    feature = "stm32f302xe",
     feature = "stm32f303xb",
     feature = "stm32f303xc",
     feature = "stm32f303xd",
-    feature = "stm32f303xe"
+    feature = "stm32f303xe",
 ))]
 dma!(
     DMA2, dma2, dma2en,
