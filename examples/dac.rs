@@ -12,13 +12,8 @@ use hal::{
     dac::{Dac, DacBits, DacId, DacTrait}
 };
 
-// Handle panics and println.
-use rtt_target::{rprintln, rtt_init_print};
-
 #[entry]
 fn main() -> ! {
-    // Enable RTT debug output (printing)
-    rtt_init_print!();
     // Set up CPU peripherals
     let mut cp = cortex_m::Peripherals::take().unwrap();
 
