@@ -20,7 +20,7 @@
 
 use crate::{pac, rcc::APB1};
 
-pub trait DacTrait<P> {
+pub trait DacTrait {
     /// Enable the DAC.
     fn enable(&mut self, p: &mut APB1);  // todo: generalize periph clock
 
