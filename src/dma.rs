@@ -531,7 +531,7 @@ macro_rules! on_channel {
     };
 }
 
-#[cfg(feature = "stm32f303")]
+#[cfg(any(feature = "stm32f303", feature = "stm32f302"))]
 on_channel!(dma1,
     serial::Rx<pac::USART1> => C5,
     serial::Tx<pac::USART1> => C4,
@@ -539,4 +539,19 @@ on_channel!(dma1,
     serial::Tx<pac::USART2> => C7,
     serial::Rx<pac::USART3> => C3,
     serial::Tx<pac::USART3> => C2,
+);
+
+#[cfg(any(
+    feature = "stm32f302xb",
+    feature = "stm32f302xc",
+    feature = "stm32f302xd",
+    feature = "stm32f302xe",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+))]
+on_channel!(dma2,
+    serial::Rx<pac::USART4> => C3,
+    serial::Tx<pac::USART4> => C5,
 );
