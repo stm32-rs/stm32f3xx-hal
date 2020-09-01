@@ -43,8 +43,3 @@ fn main() -> ! {
         delay.delay_ms(1_000_u16);
     }
 }
-
-#[panic_handler]
-fn my_panic(_info: &core::panic::PanicInfo) -> ! {
-    loop {}
-}
