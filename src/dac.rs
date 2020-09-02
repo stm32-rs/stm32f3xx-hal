@@ -49,6 +49,33 @@ pub enum DacBits {
     TwelveR,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub enum Trigger {
+    Tim6,
+    Tim3_8,
+    Tim7,
+    Tim15,
+    Tim2,
+    Tim4,  // Not available on DAC 2.
+    Exti9,
+    Swtrig,
+}
+
+impl Trigger {
+    pub fn bits(&self) -> u8 {
+        match self {
+            Self::Tim6 => 0b000,
+            Self::Tim3_8 => 0b001,
+            Self::Tim7 => 0b010,
+            Self::Tim15 => 0b011,
+            Self::Tim2 => 0b100,
+            Self::Tim4 => 0b101,
+            Self::Exti9 => 0b110,
+            Self::Swtrig => 0b111,
+        }
+    }
+}
+
 pub struct Dac {
     regs: pac::DAC,
     id: DacId,
@@ -67,44 +94,54 @@ impl Dac {
         }
     }
 
-    //// Independent trigger with single LFSR generation
-    // pub fn trigger_lfsr(&mut self) {
-    //     // todo: incomplete
-    //     match self.id {
-    //         DacId::One => {
-    //             self.regs.cr.modify(|_, w| w.ten1().set_bit());
-    //             self.regs.cr.modify(|_, w| unsafe { w.tsel1().bits(0)});
-    //             self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b01)});
-    //             self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0)});
-    //         }
-    //         DacId::Two => {
-    //             self.regs.cr.modify(|_, w| w.ten2().set_bit());
-    //             self.regs.cr.modify(|_, w| unsafe { w.tsel2().bits(0)});
-    //             self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b01)});
-    //             self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0)});
-    //         }
-    //     }
-    //
-    // }
-    //
-    // /// Independent trigger with single triangle generation
-    // pub fn trigger_triangle(&mut self) {
-    //     // todo: incomplete
-    //     match self.id {
-    //         DacId::One => {
-    //             self.regs.cr.modify(|_, w| w.ten1().set_bit());
-    //             self.regs.cr.modify(|_, w| unsafe { w.tsel1().bits(0)});
-    //             // self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b1x)});
-    //             self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0)});
-    //         }
-    //         DacId::Two => {
-    //             self.regs.cr.modify(|_, w| w.ten2().set_bit());
-    //             self.regs.cr.modify(|_, w| unsafe { w.tsel2().bits(0)});
-    //             // self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b1x)});
-    //             self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0)});
-    //         }
-    //     }
-    // }
+    // Select and activate a trigger. See f303 Reference manual, section 16.5.4.
+    pub fn set_trigger(&mut self, trigger: Trigger) {
+        match self.id {
+            DacId::One => {
+                self.regs.cr.modify(|_, w| w.ten1().set_bit());
+                self.regs.cr.modify(|_, w| unsafe { w.tsel1().bits(trigger.bits())});
+            }
+            DacId::Two => {
+                self.regs.cr.modify(|_, w| w.ten2().set_bit());
+                self.regs.cr.modify(|_, w| unsafe { w.tsel2().bits(trigger.bits())});
+            }
+        }
+    }
+
+    /// Independent trigger with single LFSR generation
+    /// See f303 Reference Manual section 16.5.2
+    pub fn trigger_lfsr(&mut self, trigger: Trigger, data: u32) {
+        // todo: This may not be correct.
+        match self.id {
+            DacId::One => {
+                self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b01)});
+                self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0b01)});
+            }
+            DacId::Two => {
+                self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b01)});
+                self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0b01)});
+            }
+        }
+        self.set_trigger(trigger);
+        self.set_value(data);
+    }
+    
+    /// Independent trigger with single triangle generation
+    pub fn trigger_triangle(&mut self, trigger: Trigger, data: u32) {
+        // todo: This may not be correct.
+        match self.id {
+            DacId::One => {
+                self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b10)});
+                self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0b10)});
+            }
+            DacId::Two => {
+                self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b10)});
+                self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0b10)});
+            }
+        }
+        self.set_trigger(trigger);
+        self.set_value(data);
+    }
 }
 
 pub struct DacError {}
