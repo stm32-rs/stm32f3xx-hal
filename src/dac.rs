@@ -22,18 +22,19 @@ use crate::{pac, rcc::APB1};
 pub trait SingleChannelDac {
     /// Error type returned by DAC methods
     type Error;
+    type Word;
 
     /// Enable the DAC.
-    fn enable(&mut self, p: &mut APB1) -> Result<(), Self::Error>; // todo: generalize periph clock
+    fn try_enable(&mut self, p: &mut APB1) -> Result<(), Self::Error>; // todo: generalize periph clock
 
     /// Disable the DAC.
-    fn disable(&mut self, p: &mut APB1) -> Result<(), Self::Error>;
+    fn try_disable(&mut self, p: &mut APB1) -> Result<(), Self::Error>;
 
     /// Output a constant signal, given a bit word.
-    fn set_value(&mut self, value: u32) -> Result<(), Self::Error>;
+    fn try_set_value(&mut self, value: Self::Word) -> Result<(), Self::Error>;
 
-    /// Set a constant signal, given a voltage.
-    fn set_voltage(&mut self, volts: f32) -> Result<(), Self::Error>;
+    /// Output a constant signal, given a voltage
+    fn try_set_voltage(&mut self, volts: f32) -> Result<(), Self::Error>;
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -56,7 +57,7 @@ pub enum Trigger {
     Tim7,
     Tim15,
     Tim2,
-    Tim4,  // Not available on DAC 2.
+    Tim4, // Not available on DAC 2.
     Exti9,
     Swtrig,
 }
@@ -99,48 +100,57 @@ impl Dac {
         match self.id {
             DacId::One => {
                 self.regs.cr.modify(|_, w| w.ten1().set_bit());
-                self.regs.cr.modify(|_, w| unsafe { w.tsel1().bits(trigger.bits())});
+                self.regs
+                    .cr
+                    .modify(|_, w| unsafe { w.tsel1().bits(trigger.bits()) });
             }
             DacId::Two => {
                 self.regs.cr.modify(|_, w| w.ten2().set_bit());
-                self.regs.cr.modify(|_, w| unsafe { w.tsel2().bits(trigger.bits())});
+                self.regs
+                    .cr
+                    .modify(|_, w| unsafe { w.tsel2().bits(trigger.bits()) });
             }
         }
     }
 
     /// Independent trigger with single LFSR generation
     /// See f303 Reference Manual section 16.5.2
-    pub fn trigger_lfsr(&mut self, trigger: Trigger, data: u32) {
+    pub fn trigger_lfsr(&mut self, trigger: Trigger, data: u32) -> Result<(), DacError> {
         // todo: This may not be correct.
         match self.id {
             DacId::One => {
-                self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b01)});
-                self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0b01)});
+                self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b01) });
+                self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0b01) });
             }
             DacId::Two => {
-                self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b01)});
-                self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0b01)});
+                self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b01) });
+                self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0b01) });
             }
         }
         self.set_trigger(trigger);
-        self.set_value(data);
+        self.try_set_value(data)?;
+
+        Ok(())
     }
-    
+
     /// Independent trigger with single triangle generation
-    pub fn trigger_triangle(&mut self, trigger: Trigger, data: u32) {
+    /// See f303 Reference Manual section 16.5.2
+    pub fn trigger_triangle(&mut self, trigger: Trigger, data: u32) -> Result<(), DacError> {
         // todo: This may not be correct.
         match self.id {
             DacId::One => {
-                self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b10)});
-                self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0b10)});
+                self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b10) });
+                self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0b10) });
             }
             DacId::Two => {
-                self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b10)});
-                self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0b10)});
+                self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b10) });
+                self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0b10) });
             }
         }
         self.set_trigger(trigger);
-        self.set_value(data);
+        self.try_set_value(data)?;
+
+        Ok(())
     }
 }
 
@@ -148,9 +158,10 @@ pub struct DacError {}
 
 impl SingleChannelDac for Dac {
     type Error = DacError;
+    type Word = u32;
 
     /// Enable the DAC.
-    fn enable(&mut self, apb1: &mut APB1) -> Result<(), DacError> {
+    fn try_enable(&mut self, apb1: &mut APB1) -> Result<(), DacError> {
         match self.id {
             DacId::One => {
                 apb1.enr().modify(|_, w| w.dac1en().set_bit());
@@ -165,7 +176,7 @@ impl SingleChannelDac for Dac {
         Ok(())
     }
 
-    fn disable(&mut self, apb1: &mut APB1) -> Result<(), DacError> {
+    fn try_disable(&mut self, apb1: &mut APB1) -> Result<(), DacError> {
         match self.id {
             DacId::One => {
                 self.regs.cr.modify(|_, w| w.en1().clear_bit());
@@ -181,7 +192,7 @@ impl SingleChannelDac for Dac {
     }
 
     /// Set the DAC value as an integer.
-    fn set_value(&mut self, val: u32) -> Result<(), DacError> {
+    fn try_set_value(&mut self, val: u32) -> Result<(), DacError> {
         match self.id {
             DacId::One => match self.bits {
                 DacBits::EightR => self.regs.dhr8r1.modify(|_, w| unsafe { w.bits(val) }),
@@ -199,14 +210,14 @@ impl SingleChannelDac for Dac {
     }
 
     /// Set the DAC voltage. `v` is in Volts.
-    fn set_voltage(&mut self, volts: f32) -> Result<(), DacError> {
+    fn try_set_voltage(&mut self, volts: f32) -> Result<(), DacError> {
         let val = match self.bits {
             DacBits::EightR => ((volts / self.vref) * 255.) as u32,
             DacBits::TwelveL => ((volts / self.vref) * 4_095.) as u32,
             DacBits::TwelveR => ((volts / self.vref) * 4_095.) as u32,
         };
 
-        self.set_value(val);
+        self.try_set_value(val)?;
 
         Ok(())
     }

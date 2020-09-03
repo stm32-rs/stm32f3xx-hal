@@ -34,9 +34,9 @@ fn main() -> ! {
     let mut _dac_pin = gpioa.pa4.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
 
     let mut dac = Dac::new(dp.DAC, DacId::One, DacBits::EightR, 3.3);
-    dac.enable(&mut rcc.apb1);
+    dac.try_enable(&mut rcc.apb1).ok();
 
-    dac.set_voltage(1.5);
+    dac.try_set_voltage(1.5).ok();
     // dac.set_value(128);  // or equivalently
 
     loop {
