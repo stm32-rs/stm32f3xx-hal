@@ -114,8 +114,6 @@ pub use crate::pac::interrupt;
 
 #[cfg(feature = "stm32f303")]
 pub mod adc;
-#[cfg(feature = "stm32f303")]
-pub mod dac;
 #[cfg(feature = "device-selected")]
 pub mod delay;
 #[cfg(feature = "stm32f303")]
@@ -132,6 +130,8 @@ pub mod prelude;
 pub mod pwm;
 #[cfg(feature = "device-selected")]
 pub mod rcc;
+#[cfg(feature = "device-selected")]
+pub mod rtc;
 #[cfg(feature = "device-selected")]
 pub mod serial;
 #[cfg(feature = "device-selected")]
