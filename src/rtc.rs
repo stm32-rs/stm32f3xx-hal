@@ -34,11 +34,10 @@ impl Rtc {
         enable(bdcr);
         result.set_24h_fmt();
 
-        // todo: Put back. currently crashing.
-        // result.regs.prer.modify(|_, w| unsafe {
-        //     w.prediv_s().bits(prediv_s);
-        //     w.prediv_a().bits(prediv_a)
-        // });
+        result.regs.prer.modify(|_, w| unsafe {
+            w.prediv_s().bits(prediv_s);
+            w.prediv_a().bits(prediv_a)
+        });
 
         result
     }
