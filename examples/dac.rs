@@ -1,6 +1,8 @@
 #![no_main]
 #![no_std]
 
+use panic_semihosting;
+
 use cortex_m;
 use cortex_m_rt::entry;
 use embedded_hal::blocking::delay::DelayMs;

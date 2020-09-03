@@ -133,8 +133,6 @@ pub mod pwm;
 #[cfg(feature = "device-selected")]
 pub mod rcc;
 #[cfg(feature = "device-selected")]
-pub mod rtc;
-#[cfg(feature = "device-selected")]
 pub mod serial;
 #[cfg(feature = "device-selected")]
 pub mod spi;
