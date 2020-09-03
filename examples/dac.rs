@@ -5,7 +5,7 @@ use cortex_m;
 use cortex_m_rt::entry;
 use embedded_hal::blocking::delay::DelayMs;
 use hal::{
-    dac::{Dac, DacBits, DacId, DacTrait},
+    dac::{Dac, DacBits, DacId, SingleChannelDac},
     delay::Delay,
     pac,
     prelude::*,
@@ -37,7 +37,7 @@ fn main() -> ! {
     dac.try_enable(&mut rcc.apb1).ok();
 
     dac.try_set_voltage(1.5).ok();
-    // dac.set_value(128);  // or equivalently
+    // dac.try_set_value(128).ok();  // or equivalently
 
     loop {
         delay.delay_ms(1_000_u16);
