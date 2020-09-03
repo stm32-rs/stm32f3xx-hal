@@ -2,6 +2,7 @@
 
 use crate::rcc::{APB1, BDCR};
 use crate::stm32::{PWR, RTC};
+use core::convert::TryInto;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
 /// Invalid input error
@@ -28,64 +29,18 @@ impl Rtc {
             prediv_a,
         };
 
-        Self::unlock(apb1);
-        Self::enable(bdcr);
+        enable_lse(bdcr, false);
+        unlock(apb1);
+        enable(bdcr);
         result.set_24h_fmt();
 
-        result.modify(|regs| {
-            regs.prer
-                .write(|w| unsafe { w.prediv_s().bits(prediv_s).prediv_a().bits(prediv_a) });
-        });
+        // todo: Put back. currently crashing.
+        // result.regs.prer.modify(|_, w| unsafe {
+        //     w.prediv_s().bits(prediv_s);
+        //     w.prediv_a().bits(prediv_a)
+        // });
 
         result
-    }
-
-    /// Enable the low frequency external oscillator. This is the only mode currently
-    /// supported, to avoid
-    fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
-        bdcr.bdcr()
-            .modify(|_, w| w.lseon().set_bit().lsebyp().bit(bypass));
-        while bdcr.bdcr().read().lserdy().bit_is_clear() {}
-    }
-
-    fn unlock(apb1: &mut APB1) {
-        let pwr = unsafe { &(*PWR::ptr()) };
-        apb1.enr().modify(|_, w| {
-            w
-                // Enable the backup interface by setting PWREN
-                .pwren()
-                .set_bit()
-        });
-        pwr.cr.modify(|_, w| {
-            w
-                // Enable access to the backup registers
-                .dbp()
-                .set_bit()
-        });
-
-        while pwr.cr.read().dbp().bit_is_clear() {}
-    }
-
-    fn enable(bdcr: &mut BDCR) {
-        bdcr.bdcr().modify(|_, w| {
-            w
-                // RTC Backup Domain reset bit set high
-                .bdrst()
-                .set_bit()
-        });
-
-        bdcr.bdcr().modify(|_, w| {
-            w
-                // RTC clock source selection
-                .rtcsel()
-                .bits(LSE_BITS)
-                // Enable RTC
-                .rtcen()
-                .set_bit()
-                // RTC backup Domain reset bit set low
-                .bdrst()
-                .clear_bit()
-        });
     }
 
     /// Sets calendar clock to 24 hr format
@@ -395,11 +350,14 @@ impl Rtcc for Rtc {
 // The following helper functions encode into BCD format from integer and
 // decode to an integer from a BCD value respectively.
 fn bcd2_encode(word: u32) -> (u8, u8) {
-    (word / 10, word % 10)
+    (
+        (word / 10).try_into().unwrap(),
+        (word % 10).try_into().unwrap(),
+    )
 }
 
 fn bcd2_decode(fst: u8, snd: u8) -> u32 {
-    fst * 10 + snd
+    (fst * 10 + snd).into()
 }
 
 fn hours_to_register(hours: Hours) -> Result<(u8, u8), Error> {
@@ -416,4 +374,52 @@ fn hours_to_u8(hours: rtcc::Hours) -> u8 {
     } else {
         panic!("hours could not be destructured into rtc::Hours::H24(h)");
     }
+}
+
+/// Enable the low frequency external oscillator. This is the only mode currently
+/// supported, to avoid
+fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
+    bdcr.bdcr()
+        .modify(|_, w| w.lseon().set_bit().lsebyp().bit(bypass));
+    while bdcr.bdcr().read().lserdy().bit_is_clear() {}
+}
+
+fn unlock(apb1: &mut APB1) {
+    let pwr = unsafe { &(*PWR::ptr()) };
+    apb1.enr().modify(|_, w| {
+        w
+            // Enable the backup interface by setting PWREN
+            .pwren()
+            .set_bit()
+    });
+    pwr.cr.modify(|_, w| {
+        w
+            // Enable access to the backup registers
+            .dbp()
+            .set_bit()
+    });
+
+    while pwr.cr.read().dbp().bit_is_clear() {}
+}
+
+fn enable(bdcr: &mut BDCR) {
+    bdcr.bdcr().modify(|_, w| {
+        w
+            // RTC Backup Domain reset bit set high
+            .bdrst()
+            .set_bit()
+    });
+
+    bdcr.bdcr().modify(|_, w| {
+        w
+            // RTC clock source selection
+            .rtcsel()
+            .bits(LSE_BITS)
+            // Enable RTC
+            .rtcen()
+            .set_bit()
+            // RTC backup Domain reset bit set low
+            .bdrst()
+            .clear_bit()
+    });
 }
