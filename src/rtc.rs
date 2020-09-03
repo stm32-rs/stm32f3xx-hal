@@ -61,7 +61,7 @@ impl Rtc {
     /// when modifying an RTC register
     fn modify<F>(&mut self, mut closure: F)
     where
-        F: FnMut(&mut RTC) -> (),
+        F: FnMut(&mut RTC),
     {
         // Disable write protection
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
@@ -91,7 +91,7 @@ impl Rtcc for Rtc {
         let (ht, hu) = bcd2_encode(time.hour());
         let (mnt, mnu) = bcd2_encode(time.minute());
         let (st, su) = bcd2_encode(time.second());
-        Ok(self.modify(|regs| {
+        self.modify(|regs| {
             regs.tr.write(|w| unsafe {
                 w.ht()
                     .bits(ht)
@@ -108,7 +108,9 @@ impl Rtcc for Rtc {
                     .pm()
                     .clear_bit()
             });
-        }))
+        });
+
+        Ok(())
     }
 
     fn set_seconds(&mut self, seconds: u8) -> Result<(), Self::Error> {
@@ -116,7 +118,9 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (st, su) = bcd2_encode(seconds as u32);
-        Ok(self.modify(|regs| regs.tr.write(|w| unsafe { w.st().bits(st).su().bits(su) })))
+        self.modify(|regs| regs.tr.write(|w| unsafe { w.st().bits(st).su().bits(su) }));
+
+        Ok(())
     }
 
     fn set_minutes(&mut self, minutes: u8) -> Result<(), Self::Error> {
@@ -124,10 +128,12 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (mnt, mnu) = bcd2_encode(minutes as u32);
-        Ok(self.modify(|regs| {
+        self.modify(|regs| {
             regs.tr
                 .write(|w| unsafe { w.mnt().bits(mnt).mnu().bits(mnu) })
-        }))
+        });
+
+        Ok(())
     }
 
     fn set_hours(&mut self, hours: rtcc::Hours) -> Result<(), Self::Error> {
@@ -135,20 +141,24 @@ impl Rtcc for Rtc {
         match hours {
             Hours::H24(_h) => {
                 self.set_24h_fmt();
-                Ok(self.modify(|regs| regs.tr.write(|w| unsafe { w.ht().bits(ht).hu().bits(hu) })))
+                self.modify(|regs| regs.tr.write(|w| unsafe { w.ht().bits(ht).hu().bits(hu) }));
             }
             Hours::AM(_h) | Hours::PM(_h) => {
                 self.set_12h_fmt();
-                Ok(self.modify(|regs| regs.tr.write(|w| unsafe { w.ht().bits(ht).hu().bits(hu) })))
+                self.modify(|regs| regs.tr.write(|w| unsafe { w.ht().bits(ht).hu().bits(hu) }));
             }
         }
+
+        Ok(())
     }
 
     fn set_weekday(&mut self, weekday: u8) -> Result<(), Self::Error> {
         if (weekday < 1) || (weekday > 7) {
             return Err(Error::InvalidInputData);
         }
-        Ok(self.modify(|regs| regs.dr.write(|w| unsafe { w.wdu().bits(weekday) })))
+        self.modify(|regs| regs.dr.write(|w| unsafe { w.wdu().bits(weekday) }));
+
+        Ok(())
     }
 
     fn set_day(&mut self, day: u8) -> Result<(), Self::Error> {
@@ -156,7 +166,9 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (dt, du) = bcd2_encode(day as u32);
-        Ok(self.modify(|regs| regs.dr.write(|w| unsafe { w.dt().bits(dt).du().bits(du) })))
+        self.modify(|regs| regs.dr.write(|w| unsafe { w.dt().bits(dt).du().bits(du) }));
+
+        Ok(())
     }
 
     fn set_month(&mut self, month: u8) -> Result<(), Self::Error> {
@@ -164,10 +176,12 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (mt, mu) = bcd2_encode(month as u32);
-        Ok(self.modify(|regs| {
+        self.modify(|regs| {
             regs.dr
                 .write(|w| unsafe { w.mt().bit(mt > 0).mu().bits(mu) })
-        }))
+        });
+
+        Ok(())
     }
 
     fn set_year(&mut self, year: u16) -> Result<(), Self::Error> {
@@ -175,7 +189,9 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (yt, yu) = bcd2_encode(year as u32);
-        Ok(self.modify(|regs| regs.dr.write(|w| unsafe { w.yt().bits(yt).yu().bits(yu) })))
+        self.modify(|regs| regs.dr.write(|w| unsafe { w.yt().bits(yt).yu().bits(yu) }));
+
+        Ok(())
     }
 
     /// set date using NaiveDate (ISO 8601 calendar date without timezone)
@@ -185,7 +201,7 @@ impl Rtcc for Rtc {
         let (mt, mu) = bcd2_encode(date.month());
         let (dt, du) = bcd2_encode(date.day());
 
-        Ok(self.modify(|regs| {
+        self.modify(|regs| {
             regs.dr.write(|w| unsafe {
                 w.dt()
                     .bits(dt)
@@ -200,7 +216,9 @@ impl Rtcc for Rtc {
                     .yu()
                     .bits(yu)
             });
-        }))
+        });
+
+        Ok(())
     }
 
     fn set_datetime(&mut self, date: &NaiveDateTime) -> Result<(), Self::Error> {
@@ -231,7 +249,7 @@ impl Rtcc for Rtc {
                     .bits(yu)
             });
         });
-        Ok(self.modify(|regs| {
+        self.modify(|regs| {
             regs.tr.write(|w| unsafe {
                 w.ht()
                     .bits(ht)
@@ -248,7 +266,9 @@ impl Rtcc for Rtc {
                     .pm()
                     .clear_bit()
             });
-        }))
+        });
+
+        Ok(())
     }
 
     fn get_seconds(&mut self) -> Result<u8, Self::Error> {

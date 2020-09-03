@@ -106,9 +106,7 @@ impl Dac {
             }
             DacId::Two => {
                 self.regs.cr.modify(|_, w| w.ten2().set_bit());
-                self.regs
-                    .cr
-                    .modify(|_, w| unsafe { w.tsel2().bits(trigger.bits()) });
+                self.regs.cr.modify(|_, w| w.tsel2().bits(trigger.bits()));
             }
         }
     }
@@ -120,11 +118,11 @@ impl Dac {
         match self.id {
             DacId::One => {
                 self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b01) });
-                self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0b01) });
+                self.regs.cr.modify(|_, w| w.mamp1().bits(0b01));
             }
             DacId::Two => {
                 self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b01) });
-                self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0b01) });
+                self.regs.cr.modify(|_, w| w.mamp2().bits(0b01));
             }
         }
         self.set_trigger(trigger);
@@ -140,11 +138,11 @@ impl Dac {
         match self.id {
             DacId::One => {
                 self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b10) });
-                self.regs.cr.modify(|_, w| unsafe { w.mamp1().bits(0b10) });
+                self.regs.cr.modify(|_, w| w.mamp1().bits(0b10));
             }
             DacId::Two => {
                 self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b10) });
-                self.regs.cr.modify(|_, w| unsafe { w.mamp2().bits(0b10) });
+                self.regs.cr.modify(|_, w| w.mamp2().bits(0b10));
             }
         }
         self.set_trigger(trigger);
