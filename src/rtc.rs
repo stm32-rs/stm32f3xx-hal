@@ -191,7 +191,7 @@ impl Rtcc for Rtc {
     }
 
     fn set_weekday(&mut self, weekday: u8) -> Result<(), Self::Error> {
-        if (weekday < 1) | (weekday > 7) {
+        if (weekday < 1) || (weekday > 7) {
             return Err(Error::InvalidInputData);
         }
         Ok(self.modify(|regs| regs.dr.write(|w| unsafe { w.wdu().bits(weekday) })))
@@ -392,34 +392,21 @@ impl Rtcc for Rtc {
 // of week), date (day of month), month, and year, expressed in binary coded decimal format
 // (BCD). The sub-seconds value is also available in binary format.
 //
-// The following helper functions are encode into BCD format from integer and
+// The following helper functions encode into BCD format from integer and
 // decode to an integer from a BCD value respectively.
 fn bcd2_encode(word: u32) -> (u8, u8) {
-    let mut value = word as u8;
-    let mut bcd_high: u8 = 0;
-    while value >= 10 {
-        bcd_high += 1;
-        value -= 10;
-    }
-    // let bcd_low = ((bcd_high << 4) | value) as u8;
-    let bcd_low = value as u8;
-    (bcd_high, bcd_low)
+    (word / 10, word % 10)
 }
 
 fn bcd2_decode(fst: u8, snd: u8) -> u32 {
-    let value = snd | fst << 4;
-    let value = (value & 0x0F) + ((value & 0xF0) >> 4) * 10;
-    value as u32
+    fst * 10 + snd
 }
 
 fn hours_to_register(hours: Hours) -> Result<(u8, u8), Error> {
     match hours {
-        Hours::H24(h) if h > 23 => Err(Error::InvalidInputData),
-        Hours::H24(h) => Ok(bcd2_encode(h as u32)),
-        Hours::AM(h) if h < 1 || h > 12 => Err(Error::InvalidInputData),
-        Hours::AM(h) => Ok(bcd2_encode(h as u32)),
-        Hours::PM(h) if h < 1 || h > 12 => Err(Error::InvalidInputData),
-        Hours::PM(h) => Ok(bcd2_encode(h as u32)),
+        Hours::H24(h @ 0..=23) => Ok(bcd2_encode(h as u32)),
+        Hours::AM(h @ 1..=12) | Hours::AM(h @ 1..=12) => Ok(bcd2_encode(h as u32)),
+        _ => Err(Error::InvalidInputData),
     }
 }
 
