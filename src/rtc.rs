@@ -361,8 +361,9 @@ fn bcd2_decode(fst: u8, snd: u8) -> u32 {
 
 fn hours_to_register(hours: Hours) -> Result<(u8, u8), Error> {
     match hours {
-        Hours::H24(h @ 0..=23) => Ok(bcd2_encode(h as u32)),
-        Hours::AM(h @ 1..=12) | Hours::AM(h @ 1..=12) => Ok(bcd2_encode(h as u32)),
+        Hours::H24(h) => Ok(bcd2_encode(h as u32)),
+        Hours::AM(h) => Ok(bcd2_encode((h - 1) as u32)),
+        Hours::PM(h) => Ok(bcd2_encode((h + 11) as u32)),
     }
 }
 
