@@ -8,17 +8,17 @@ source code of the stm32f3xx-hal crate.
 For more information on how the STM32CubeMX database is structured, check out
 the README in the [cube-parse](https://github.com/dbrgn/cube-parse) repository.
 
-Because by default cargo tries to use the `thumbv7em-none-eabihf` target, due
-to what's specified in the `.cargo/config`, you need to manually specify your
-host's target when building `codegen`, e.g.:
+Because by default cargo tries to use the `x86_64-unknown-linux-gnu` target,
+when building `codegen`, due to what's specified in the `.cargo/config`, you
+need to manually specify your host's target if it differs from that, e.g.:
 
 ```
-$ cargo run --target x86_64-unknown-linux-gnu -- help
+$ cargo run --target x86_64-apple-darwin -- help
 ```
 
 `codgen` can generate the following code:
 
-- GPIO mappings
+- [GPIO mappings](#gpio-mappings)
 
 ## GPIO mappings
 
@@ -27,12 +27,12 @@ invocations at the end of `src/gpio.rs`. Re-generating those macro-invocations
 is simply a matter of deleting the old ones and then executing:
 
 ```
-$ cargo run --target $host_target -- gpio $cubemx_db_path >> ../src/gpio.rs
+$ cargo run -- gpio $cubemx_db_path >> ../src/gpio.rs
 ```
 
-`$cubemx_db_path` must be the path to the `db/mcu` directory under an
+`$cubemx_db_path` must be the path to the `db/` directory under an
 STM32CubeMX installation. With a default Linux install, this would be
-`/opt/stm32cubemx/db/mcu`.
+`/opt/stm32cubemx/db`.
 
 The generated `gpio!` invocations are gated by features whose names are derived
 from the respective GPIO internal peripheral (IP) version:
