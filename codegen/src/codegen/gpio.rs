@@ -80,7 +80,7 @@ fn gen_port(port: &Port, feature: &str) -> Result<()> {
     );
     println!("        pins: [");
 
-    for pin in port.pins.iter() {
+    for pin in &port.pins {
         gen_pin(pin)?;
     }
 
@@ -130,7 +130,7 @@ fn get_pin_reset_mode(pin: &gpio::Pin) -> Result<&'static str> {
 
 fn get_pin_af_numbers(pin: &gpio::Pin) -> Result<Vec<u8>> {
     let mut numbers = Vec::new();
-    for signal in pin.pin_signals.iter() {
+    for signal in &pin.pin_signals {
         numbers.push(signal.af()?);
     }
 
