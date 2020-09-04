@@ -141,21 +141,13 @@ impl Rtcc for Rtc {
     fn set_hours(&mut self, hours: Hours) -> Result<(), Self::Error> {
         let (ht, hu) = hours_to_register(hours)?;
         match hours {
-            Hours::H24(_h) => {
-                self.set_24h_fmt();
-                self.modify(|regs| {
-                    regs.tr
-                        .modify(|_, w| unsafe { w.ht().bits(ht).hu().bits(hu) })
-                });
-            }
-            Hours::AM(_h) | Hours::PM(_h) => {
-                self.set_12h_fmt();
-                self.modify(|regs| {
-                    regs.tr
-                        .modify(|_, w| unsafe { w.ht().bits(ht).hu().bits(hu) })
-                });
-            }
+            Hours::H24(_h) => self.set_24h_fmt(),
+            Hours::AM(_h) | Hours::PM(_h) => self.set_12h_fmt(),
         }
+
+        self.regs
+            .tr
+            .modify(|_, w| unsafe { w.ht().bits(ht).hu().bits(hu) });
 
         Ok(())
     }
@@ -228,8 +220,6 @@ impl Rtcc for Rtc {
     }
 
     fn set_datetime(&mut self, date: &NaiveDateTime) -> Result<(), Self::Error> {
-        // Check if unsigned integer affects encoding to bcd
-
         self.set_24h_fmt();
         let (yt, yu) = bcd2_encode((date.year() - 1970) as u32);
         let (mt, mu) = bcd2_encode(date.month());
@@ -289,7 +279,7 @@ impl Rtcc for Rtc {
         self.set_24h_fmt();
         let seconds = self.get_seconds().unwrap();
         let minutes = self.get_minutes().unwrap();
-        let hours = hours_to_u8(self.get_hours().unwrap());
+        let hours = hours_to_u8(self.get_hours()?)?;
 
         Ok(NaiveTime::from_hms(
             hours.into(),
@@ -340,7 +330,7 @@ impl Rtcc for Rtc {
 
         let seconds = self.get_seconds().unwrap();
         let minutes = self.get_minutes().unwrap();
-        let hours = hours_to_u8(self.get_hours().unwrap());
+        let hours = hours_to_u8(self.get_hours()?)?;
 
         Ok(
             NaiveDate::from_ymd(year.into(), month.into(), day.into()).and_hms(
@@ -377,11 +367,12 @@ fn hours_to_register(hours: Hours) -> Result<(u8, u8), Error> {
     }
 }
 
-fn hours_to_u8(hours: Hours) -> u8 {
+fn hours_to_u8(hours: Hours) -> Result<u8, Error> {
+    
     if let Hours::H24(h) = hours {
-        h
+        Ok(h)
     } else {
-        panic!("hours could not be destructured into rtc::Hours::H24(h)");
+        Err(Error::InvalidInputData)
     }
 }
 
