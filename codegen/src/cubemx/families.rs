@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use serde::Deserialize;
 
 pub fn load(db: &Db) -> Result<Families> {
-    db.load("families")
+    db.load_mcu("families")
 }
 
 pub fn load_f3(db: &Db) -> Result<Family> {

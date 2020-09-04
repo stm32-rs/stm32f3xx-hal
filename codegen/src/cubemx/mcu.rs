@@ -3,7 +3,7 @@ use anyhow::Result;
 use serde::Deserialize;
 
 pub fn load(db: &Db, name: &str) -> Result<Mcu> {
-    db.load(name)
+    db.load_mcu(name)
 }
 
 #[derive(Debug, Deserialize)]

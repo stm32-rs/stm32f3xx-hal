@@ -1,13 +1,14 @@
-use super::ip_path;
 use crate::cubemx::Db;
 use anyhow::{bail, Context, Result};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
+use std::path::PathBuf;
 
 pub fn load(db: &Db, version: &str) -> Result<Ip> {
     let name = format!("GPIO-{}_Modes", version);
-    db.load(ip_path(&name))
+    let ip_path: PathBuf = ["IP", &name].iter().collect();
+    db.load_mcu(&ip_path)
 }
 
 #[derive(Debug, Deserialize)]
