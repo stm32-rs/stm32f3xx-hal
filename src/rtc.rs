@@ -368,7 +368,6 @@ fn hours_to_register(hours: Hours) -> Result<(u8, u8), Error> {
 }
 
 fn hours_to_u8(hours: Hours) -> Result<u8, Error> {
-    
     if let Hours::H24(h) = hours {
         Ok(h)
     } else {
