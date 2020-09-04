@@ -668,9 +668,8 @@ macro_rules! gpio {
         }
     };
 }
-
-// The below mappings were auto-generated with the `codegen` crate.
-// Do not edit them manually!
+// auto-generated using codegen
+// STM32CubeMX DB release: DB.6.0.0
 
 #[cfg(feature = "gpio-f302")]
 gpio!([

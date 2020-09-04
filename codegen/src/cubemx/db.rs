@@ -23,4 +23,11 @@ impl Db {
         serde_xml_rs::de::from_reader(file)
             .with_context(|| format!("cannot parse DB file: {:?}", path))
     }
+
+    pub fn load_mcu<'de, P: AsRef<Path>, T: Deserialize<'de>>(&self, name: P) -> Result<T> {
+        let mut mcu_path = PathBuf::new();
+        mcu_path.push("mcu");
+        mcu_path.push(name);
+        self.load(&mcu_path)
+    }
 }

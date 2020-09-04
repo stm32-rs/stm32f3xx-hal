@@ -1,6 +1,7 @@
 pub mod families;
 pub mod ip;
 pub mod mcu;
+pub mod package;
 
 mod db;
 
