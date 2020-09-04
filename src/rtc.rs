@@ -1,5 +1,5 @@
 //! Interface to the real time clock. See STM32F303 reference manual, section 27.
-//! For more details, see 
+//! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
 
 use crate::rcc::{APB1, BDCR};
@@ -24,7 +24,7 @@ pub struct Rtc {
 impl Rtc {
     /// Create and enable a new RTC, and configure its clock source and prescalers.
     /// From AN4759, Table 7, when using the LSE (The only clock source this module
-    /// supports currently), set `prediv_s` to 255, and `prediv_a` to 127 to get a 
+    /// supports currently), set `prediv_s` to 255, and `prediv_a` to 127 to get a
     /// calendar clock of 1Hz.
     pub fn new(regs: RTC, prediv_s: u16, prediv_a: u8, apb1: &mut APB1, bdcr: &mut BDCR) -> Self {
         let mut result = Self {
