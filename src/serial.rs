@@ -463,20 +463,3 @@ hal! {
     USART2: (usart2, APB1, usart2en, usart2rst, pclk1),
     USART3: (usart3, APB1, usart3en, usart3rst, pclk1),
 }
-
-#[cfg(any(
-    feature = "stm32f302xb",
-    feature = "stm32f302xc",
-    feature = "stm32f302xd",
-    feature = "stm32f302xe",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-hal! {
-    USART4: (usart4, APB1, usart4en, usart4rst, pclk1),
-    USART5: (usart5, APB1, usart5en, usart5rst, pclk1),
-}
