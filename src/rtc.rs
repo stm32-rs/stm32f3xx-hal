@@ -96,9 +96,9 @@ impl Rtcc for Rtc {
     /// Hour format is 24h
     fn set_time(&mut self, time: &NaiveTime) -> Result<(), Self::Error> {
         self.set_24h_fmt();
-        let (ht, hu) = bcd2_encode(time.hour());
-        let (mnt, mnu) = bcd2_encode(time.minute());
-        let (st, su) = bcd2_encode(time.second());
+        let (ht, hu) = bcd2_encode(time.hour())?;
+        let (mnt, mnu) = bcd2_encode(time.minute())?;
+        let (st, su) = bcd2_encode(time.second())?;
         self.regs.tr.modify(|_, w| unsafe {
             w.ht().bits(ht);
             w.hu().bits(hu);
@@ -116,7 +116,7 @@ impl Rtcc for Rtc {
         if seconds > 59 {
             return Err(Error::InvalidInputData);
         }
-        let (st, su) = bcd2_encode(seconds as u32);
+        let (st, su) = bcd2_encode(seconds as u32)?;
         self.modify(|regs| {
             regs.tr
                 .modify(|_, w| unsafe { w.st().bits(st).su().bits(su) })
@@ -129,7 +129,7 @@ impl Rtcc for Rtc {
         if minutes > 59 {
             return Err(Error::InvalidInputData);
         }
-        let (mnt, mnu) = bcd2_encode(minutes as u32);
+        let (mnt, mnu) = bcd2_encode(minutes as u32)?;
         self.modify(|regs| {
             regs.tr
                 .modify(|_, w| unsafe { w.mnt().bits(mnt).mnu().bits(mnu) })
@@ -165,7 +165,7 @@ impl Rtcc for Rtc {
         if (day < 1) || (day > 31) {
             return Err(Error::InvalidInputData);
         }
-        let (dt, du) = bcd2_encode(day as u32);
+        let (dt, du) = bcd2_encode(day as u32)?;
         self.modify(|regs| {
             regs.dr
                 .modify(|_, w| unsafe { w.dt().bits(dt).du().bits(du) })
@@ -178,7 +178,7 @@ impl Rtcc for Rtc {
         if (month < 1) || (month > 12) {
             return Err(Error::InvalidInputData);
         }
-        let (mt, mu) = bcd2_encode(month as u32);
+        let (mt, mu) = bcd2_encode(month as u32)?;
         self.modify(|regs| {
             regs.dr
                 .modify(|_, w| unsafe { w.mt().bit(mt > 0).mu().bits(mu) })
@@ -191,7 +191,7 @@ impl Rtcc for Rtc {
         if (year < 1970) || (year > 2038) {
             return Err(Error::InvalidInputData);
         }
-        let (yt, yu) = bcd2_encode(year as u32);
+        let (yt, yu) = bcd2_encode(year as u32)?;
         self.modify(|regs| {
             regs.dr
                 .modify(|_, w| unsafe { w.yt().bits(yt).yu().bits(yu) })
@@ -200,12 +200,16 @@ impl Rtcc for Rtc {
         Ok(())
     }
 
-    /// set date using NaiveDate (ISO 8601 calendar date without timezone)
-    /// WeekDay is set using set_weekday method
+    /// Set the date using NaiveDate (ISO 8601 calendar date without timezone).
+    /// WeekDay is set using the `set_weekday` method
     fn set_date(&mut self, date: &NaiveDate) -> Result<(), Self::Error> {
-        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32);
-        let (mt, mu) = bcd2_encode(date.month());
-        let (dt, du) = bcd2_encode(date.day());
+        if date.year() < 1970 {
+            return Err(Error::InvalidInputData);
+        }
+
+        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32)?;
+        let (mt, mu) = bcd2_encode(date.month())?;
+        let (dt, du) = bcd2_encode(date.day())?;
 
         self.regs.dr.modify(|_, w| unsafe {
             w.dt().bits(dt);
@@ -220,14 +224,18 @@ impl Rtcc for Rtc {
     }
 
     fn set_datetime(&mut self, date: &NaiveDateTime) -> Result<(), Self::Error> {
-        self.set_24h_fmt();
-        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32);
-        let (mt, mu) = bcd2_encode(date.month());
-        let (dt, du) = bcd2_encode(date.day());
+        if date.year() < 1970 {
+            return Err(Error::InvalidInputData);
+        }
 
-        let (ht, hu) = bcd2_encode(date.hour());
-        let (mnt, mnu) = bcd2_encode(date.minute());
-        let (st, su) = bcd2_encode(date.second());
+        self.set_24h_fmt();
+        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32)?;
+        let (mt, mu) = bcd2_encode(date.month())?;
+        let (dt, du) = bcd2_encode(date.day())?;
+
+        let (ht, hu) = bcd2_encode(date.hour())?;
+        let (mnt, mnu) = bcd2_encode(date.minute())?;
+        let (st, su) = bcd2_encode(date.second())?;
 
         self.regs.dr.modify(|_, w| unsafe {
             w.dt().bits(dt);
@@ -348,11 +356,21 @@ impl Rtcc for Rtc {
 //
 // The following helper functions encode into BCD format from integer and
 // decode to an integer from a BCD value respectively.
-fn bcd2_encode(word: u32) -> (u8, u8) {
-    (
-        (word / 10).try_into().unwrap(),
-        (word % 10).try_into().unwrap(),
-    )
+fn bcd2_encode(word: u32) -> Result<(u8, u8), Error> {
+    let l = match (word / 10).try_into() {
+        Ok(v) => v,
+        Err(_) => {
+            return Err(Error::InvalidInputData);
+        }
+    };
+    let r = match (word % 10).try_into() {
+        Ok(v) => v,
+        Err(_) => {
+            return Err(Error::InvalidInputData);
+        }
+    };
+
+    Ok((l, r))
 }
 
 fn bcd2_decode(fst: u8, snd: u8) -> u32 {
@@ -361,9 +379,9 @@ fn bcd2_decode(fst: u8, snd: u8) -> u32 {
 
 fn hours_to_register(hours: Hours) -> Result<(u8, u8), Error> {
     match hours {
-        Hours::H24(h) => Ok(bcd2_encode(h as u32)),
-        Hours::AM(h) => Ok(bcd2_encode((h - 1) as u32)),
-        Hours::PM(h) => Ok(bcd2_encode((h + 11) as u32)),
+        Hours::H24(h) => Ok(bcd2_encode(h as u32))?,
+        Hours::AM(h) => Ok(bcd2_encode((h - 1) as u32))?,
+        Hours::PM(h) => Ok(bcd2_encode((h + 11) as u32))?,
     }
 }
 
