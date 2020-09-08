@@ -99,7 +99,7 @@ impl Rtcc for Rtc {
         let (ht, hu) = bcd2_encode(time.hour())?;
         let (mnt, mnu) = bcd2_encode(time.minute())?;
         let (st, su) = bcd2_encode(time.second())?;
-        self.regs.tr.modify(|_, w| unsafe {
+        self.regs.tr.write(|w| unsafe {
             w.ht().bits(ht);
             w.hu().bits(hu);
             w.mnt().bits(mnt);
@@ -211,7 +211,7 @@ impl Rtcc for Rtc {
         let (mt, mu) = bcd2_encode(date.month())?;
         let (dt, du) = bcd2_encode(date.day())?;
 
-        self.regs.dr.modify(|_, w| unsafe {
+        self.regs.dr.write(|w| unsafe {
             w.dt().bits(dt);
             w.du().bits(du);
             w.mt().bit(mt > 0);
@@ -237,7 +237,7 @@ impl Rtcc for Rtc {
         let (mnt, mnu) = bcd2_encode(date.minute())?;
         let (st, su) = bcd2_encode(date.second())?;
 
-        self.regs.dr.modify(|_, w| unsafe {
+        self.regs.dr.write(|w| unsafe {
             w.dt().bits(dt);
             w.du().bits(du);
             w.mt().bit(mt > 0);
@@ -246,7 +246,7 @@ impl Rtcc for Rtc {
             w.yu().bits(yu)
         });
 
-        self.regs.tr.modify(|_, w| unsafe {
+        self.regs.tr.write(|w| unsafe {
             w.ht().bits(ht);
             w.hu().bits(hu);
             w.mnt().bits(mnt);
