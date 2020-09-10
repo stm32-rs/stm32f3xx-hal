@@ -531,7 +531,6 @@ macro_rules! on_channel {
     };
 }
 
-#[cfg(any(feature = "stm32f303", feature = "stm32f302"))]
 on_channel!(dma1,
     serial::Rx<pac::USART1> => C5,
     serial::Tx<pac::USART1> => C4,
