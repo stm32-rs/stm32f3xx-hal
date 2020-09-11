@@ -43,6 +43,12 @@ from the respective GPIO internal peripheral (IP) version:
 - gpio-f333
 - gpio-f373
 
+`codegen` collects those IP versions from the relevant GPIO IP description
+files (located at `$cubemx_db_path/mcu/IP/GPIO-*.xml`). The root `<IP>` element
+has a `Version` attribute with a value in the form of "STM32Fxxx_gpio_v1_0".
+The feature name is constructed by dropping the parts constant between all
+version strings and prepending "gpio-".
+
 Note that the GPIO IP version names don't necessarily match the MCUs they are
 used in. For example, the GPIOs in `STM32F302xB` MCUs have the IP version
 "STM32F303_gpio_v1_0". The MCU features of the `stm32f3xx-hal` also select the
