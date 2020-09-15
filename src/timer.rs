@@ -197,8 +197,8 @@ pub enum OutputCompare {
     Inactive = 0b0010,
     ForceInactive = 0b0100,
     ForceActive = 0b0101,
-    PwmMode1 = 0b0110,
-    PwmMode2 = 0b0111,
+    Pwm1 = 0b0110,
+    Pwm2 = 0b0111,
     RetriggerableOpmMode1 = 0b1000,
     RetriggerableOpmMode2 = 0b1001,
     CombinedPwm1 = 0b1100,
@@ -486,22 +486,25 @@ macro_rules! gp_timer {
                     }
                 }
 
-                /// Set a channel to output to a specific pin.  todo WIP
-                // pub fn output_to_pin(&mut self, channel: Channel, pin: Pin) {
-
-                //     output_to_pa8, PA8, AF
-
-                //     self.tim.$ccmrz_output().modify(|_, w| {
-                //         w
-                //             // Select PWM Mode 1 for CHy
-                //             .$ocym()
-                //             .bits(0b0110)
-                //             // set pre-load enable so that updates to the duty cycle
-                //             // propagate but _not_ in the middle of a cycle.
-                //             .$ocype()
-                //             .set_bit()
-                //     });
-                // }
+                /// Set preload mode.
+                /// OC1PE: Output Compare 1 preload enable
+                /// 0: Preload register on TIMx_CCR1 disabled. TIMx_CCR1 can be written at anytime, the
+                /// new value is taken in account immediately.
+                /// 1: Preload register on TIMx_CCR1 enabled. Read/Write operations access the preload
+                /// register. TIMx_CCR1 preload value is loaded in the active register at each update event.
+                /// Note: 1: These bits can not be modified as long as LOCK level 3 has been programmed
+                /// (LOCK bits in TIMx_BDTR register) and CC1S=’00’ (the channel is configured in
+                /// output).
+                /// 2: The PWM mode can be used without validating the preload register only in one
+                /// pulse mode (OPM bit set in TIMx_CR1 register). Else the behavior is not guaranteed.
+                pub fn set_preload(&mut self, channel: Channel, value: bool) {
+                    match channel {
+                        Channel::One => self.tim.ccmr1_output().modify(|_, w| w.oc1pe().bit(value)),
+                        Channel::Two => self.tim.ccmr1_output().modify(|_, w| w.oc2pe().bit(value)),
+                        Channel::Three => self.tim.ccmr2_output().modify(|_, w| w.oc3pe().bit(value)),
+                        Channel::Four => self.tim.ccmr2_output().modify(|_, w| w.oc4pe().bit(value)),
+                    }
+                }
 
                 /// Disables the timer.
                 pub fn disable(&mut self, channel: Channel) {
