@@ -18,9 +18,11 @@ targets = ["thumbv7em-none-eabihf"]
 [dependencies]
 cortex-m = "0.6"
 cortex-m-rt = "0.6"
+embedded-dma = "0.1"
 embedded-hal = "0.2"
 nb = "0.1"
 stm32f3 = "0.11"
+rtcc = "0.2"
 
 [dependencies.bare-metal]
 version = "0.2"
@@ -28,10 +30,6 @@ features = ["const-fn"]
 
 [dependencies.cast]
 version = "0.2"
-default-features = false
-
-[dependencies.stable_deref_trait]
-version = "1"
 default-features = false
 
 [dependencies.stm32-usbd]
