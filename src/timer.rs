@@ -89,6 +89,17 @@ pub enum Channel {
     Four,
 }
 
+/// Capture/Compare selection.
+/// This bit-field defines the direction of the channel (input/output) as well as the used input.
+#[repr(u8)]
+#[derive(Clone, Copy, Debug)]
+pub enum CaptureCompare {
+    Output = 0b00,
+    InputTi1 = 0b01,
+    InputTi2 = 0b10,
+    InputTrc = 0b11,
+}
+
 /// Capture/Compare output polarity. Defaults to `ActiveHigh` in hardware.
 #[derive(Clone, Copy, Debug)]
 pub enum Polarity {
@@ -180,7 +191,7 @@ pub enum Pin {
 /// 1111: Asymmetric PWM mode 2 - OC1REF has the same behavior as in PWM mode 2.
 /// OC1REFC outputs OC1REF when the counter is counting up, OC2REF when it is counting
 /// down
-pub enum OutputCompareMode {
+pub enum OutputCompare {
     Frozen = 0b0000,
     Active = 0b0001,
     Inactive = 0b0010,
@@ -444,7 +455,7 @@ macro_rules! gp_timer {
                     self.tim.arr.write(|w| w.arr().bits(word));
                 }
 
-                /// Set Output Compare Mode. See docs on the `OutputCompareMode` enum.
+                /// Set output polarity. See docs on the `Polarity` enum.
                 pub fn set_polarity(&mut self, channel: Channel, polarity: Polarity) {
                     match channel {
                         Channel::One => self.tim.ccer.modify(|_, w| w.cc1p().bit(polarity.bit())),
@@ -454,8 +465,19 @@ macro_rules! gp_timer {
                     }
                 }
 
-                /// Set Output Compare Mode. See docs on the `OutputCompareMode` enum.
-                pub fn set_output_compare_mode(&mut self, channel: Channel, mode: OutputCompareMode) {
+                /// Set Output Compare Mode. See docs on the `CaptureCompare` enum.
+                pub fn set_capture_compare(&mut self, channel: Channel, mode: CaptureCompare) {
+                    match channel {
+                        // Note: CC1S bits are writable only when the channel is OFF (CC1E = 0 in TIMx_CCER)
+                        Channel::One => self.tim.ccmr1_output().modify( unsafe { |_, w| w.cc1s().bits(mode as u8)} ),
+                        Channel::Two => self.tim.ccmr1_output().modify(unsafe {|_, w| w.cc2s().bits(mode as u8)}),
+                        Channel::Three => self.tim.ccmr2_output().modify(unsafe {|_, w| w.cc3s().bits(mode as u8)}),
+                        Channel::Four => self.tim.ccmr2_output().modify(unsafe {|_, w| w.cc4s().bits(mode as u8)}),
+                    }
+                }
+
+                /// Set Output Compare Mode. See docs on the `OutputCompare` enum.
+                pub fn set_output_compare(&mut self, channel: Channel, mode: OutputCompare) {
                     match channel {
                         Channel::One => self.tim.ccmr1_output().modify(|_, w| w.oc1m().bits(mode as u8)),
                         Channel::Two => self.tim.ccmr1_output().modify(|_, w| w.oc2m().bits(mode as u8)),
@@ -465,7 +487,7 @@ macro_rules! gp_timer {
                 }
 
                 /// Set a channel to output to a specific pin.  todo WIP
-                // pub fn output_to_pin(&mut self, pin: Pin) {
+                // pub fn output_to_pin(&mut self, channel: Channel, pin: Pin) {
 
                 //     output_to_pa8, PA8, AF
 
