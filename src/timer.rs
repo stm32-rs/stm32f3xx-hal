@@ -107,6 +107,35 @@ impl Polarity {
 }
 
 #[derive(Clone, Copy, Debug)]
+pub enum Pin {
+    Pa0,
+    Pa1,
+    Pa2,
+    Pa4,
+    Pa6,
+    Pa7,
+    Pb0,
+    Pb3,
+    Pb4,
+    Pb6,
+    Pb7,
+    Pb10,
+    Pb11,
+    Pc6,
+    Pc7,
+    Pc8,
+    Pc9,
+    Pd4,
+    Pd7,
+    Pd8,
+    Pd9,
+    Pe6,
+    Pe7,
+    Pe8,
+    Pe9,
+}
+
+#[derive(Clone, Copy, Debug)]
 #[repr(u8)]
 /// See F303 ref man, section 21.4.7.
 /// These bits define the behavior of the output reference signal OC1REF from which OC1 and
@@ -161,10 +190,10 @@ pub enum OutputCompareMode {
     PwmMode2 = 0b0111,
     RetriggerableOpmMode1 = 0b1000,
     RetriggerableOpmMode2 = 0b1001,
-    CombinedPwmMode1 = 0b1100,
-    CombinedPwmMode2 = 0b1101,
-    AsymmetricPwmMode1 = 0b1110,
-    AsymmetricPwmMode2 = 0b1111,
+    CombinedPwm1 = 0b1100,
+    CombinedPwm2 = 0b1101,
+    AsymmetricPwm1 = 0b1110,
+    AsymmetricPwm2 = 0b1111,
 }
 
 macro_rules! hal {
@@ -376,6 +405,17 @@ macro_rules! gp_timer {
                     self.tim.cr1.modify(|_, w| w.cen().disabled());
                 }
 
+                /// Clears Update Interrupt Flag
+                pub fn clear_update_interrupt_flag(&mut self) {
+                    self.tim.sr.modify(|_, w| w.uif().clear());
+                }
+
+                /// Releases the TIM peripheral
+                pub fn release(mut self) -> $TIMX {
+                    self.stop();
+                    self.tim
+                }
+
                 /// Set timer alignment to Edge, or one of 3 center modes.
                 /// STM32F303 ref man, section 21.4.1:
                 /// Bits 6:5 CMS: Center-aligned mode selection
@@ -404,17 +444,6 @@ macro_rules! gp_timer {
                     self.tim.arr.write(|w| w.arr().bits(word));
                 }
 
-                /// Clears Update Interrupt Flag
-                pub fn clear_update_interrupt_flag(&mut self) {
-                    self.tim.sr.modify(|_, w| w.uif().clear());
-                }
-
-                /// Releases the TIM peripheral
-                pub fn release(mut self) -> $TIMX {
-                    self.stop();
-                    self.tim
-                }
-
                 /// Set Output Compare Mode. See docs on the `OutputCompareMode` enum.
                 pub fn set_polarity(&mut self, channel: Channel, polarity: Polarity) {
                     match channel {
@@ -434,6 +463,23 @@ macro_rules! gp_timer {
                         Channel::Four => self.tim.ccmr2_output().modify(|_, w| w.oc4m().bits(mode as u8)),
                     }
                 }
+
+                /// Set a channel to output to a specific pin.  todo WIP
+                // pub fn output_to_pin(&mut self, pin: Pin) {
+
+                //     output_to_pa8, PA8, AF
+
+                //     self.tim.$ccmrz_output().modify(|_, w| {
+                //         w
+                //             // Select PWM Mode 1 for CHy
+                //             .$ocym()
+                //             .bits(0b0110)
+                //             // set pre-load enable so that updates to the duty cycle
+                //             // propagate but _not_ in the middle of a cycle.
+                //             .$ocype()
+                //             .set_bit()
+                //     });
+                // }
 
                 /// Disables the timer.
                 pub fn disable(&mut self, channel: Channel) {
