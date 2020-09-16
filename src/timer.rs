@@ -118,35 +118,6 @@ impl Polarity {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum Pin {
-    Pa0,
-    Pa1,
-    Pa2,
-    Pa4,
-    Pa6,
-    Pa7,
-    Pb0,
-    Pb3,
-    Pb4,
-    Pb6,
-    Pb7,
-    Pb10,
-    Pb11,
-    Pc6,
-    Pc7,
-    Pc8,
-    Pc9,
-    Pd4,
-    Pd7,
-    Pd8,
-    Pd9,
-    Pe6,
-    Pe7,
-    Pe8,
-    Pe9,
-}
-
-#[derive(Clone, Copy, Debug)]
 #[repr(u8)]
 /// See F303 ref man, section 21.4.7.
 /// These bits define the behavior of the output reference signal OC1REF from which OC1 and
@@ -207,7 +178,118 @@ pub enum OutputCompare {
     AsymmetricPwm2 = 0b1111,
 }
 
-macro_rules! hal {
+macro_rules! basic_timer {
+    ($({
+        $TIMX:ident: ($tim:ident, $timXen:ident, $timXrst:ident),
+        $APB:ident: ($apb:ident, $pclkX:ident),
+    },)+) => {
+        $(
+            impl PclkSrc for $TIMX {
+                fn get_clk(clocks: &Clocks) -> Hertz {
+                    clocks.$pclkX()
+                }
+            }
+
+            impl Periodic for Timer<$TIMX> {}
+
+            impl CountDown for Timer<$TIMX> {
+                type Time = Hertz;
+
+                fn start<T>(&mut self, timeout: T)
+                where
+                    T: Into<Hertz>,
+                {
+                    self.stop();
+
+                    let frequency = timeout.into().0;
+                    let timer_clock = $TIMX::get_clk(&self.clocks);
+                    let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
+                        / frequency;
+                    let psc = u16((ticks - 1) / (1 << 16)).unwrap();
+
+                    // NOTE(write): uses all bits in this register.
+                    self.tim.psc.write(|w| w.psc().bits(psc));
+
+                    let arr = u16(ticks / u32(psc + 1)).unwrap();
+
+                    // TODO (sh3rm4n)
+                    // self.tim.arr.write(|w| { w.arr().bits(arr) });
+                    self.tim.arr.write(|w| unsafe { w.bits(u32(arr)) });
+
+                    // Trigger an update event to load the prescaler value to the clock
+                    // NOTE(write): uses all bits in this register.
+                    self.tim.egr.write(|w| w.ug().update());
+                    // The above line raises an update event which will indicate
+                    // that the timer is already finished. Since this is not the case,
+                    // it should be cleared
+                    self.clear_update_interrupt_flag();
+
+                    // start counter
+                    self.tim.cr1.modify(|_, w| w.cen().enabled());
+                }
+
+                fn wait(&mut self) -> nb::Result<(), Void> {
+                    if self.tim.sr.read().uif().is_clear() {
+                        Err(nb::Error::WouldBlock)
+                    } else {
+                        self.clear_update_interrupt_flag();
+                        Ok(())
+                    }
+                }
+            }
+
+            impl Timer<$TIMX> {
+                /// Configures a TIM peripheral as a periodic count down timer
+                pub fn $tim<T>(tim: $TIMX, timeout: T, clocks: Clocks, $apb: &mut $APB) -> Self
+                where
+                    T: Into<Hertz>,
+                {
+                    // enable and reset peripheral to a clean slate state
+                    $apb.enr().modify(|_, w| w.$timXen().enabled());
+                    $apb.rstr().modify(|_, w| w.$timXrst().reset());
+                    $apb.rstr().modify(|_, w| w.$timXrst().clear_bit());
+
+                    let mut timer = Timer { clocks, tim };
+                    timer.start(timeout);
+
+                    timer
+                }
+
+                /// Starts listening for an `event`
+                pub fn listen(&mut self, event: Event) {
+                    match event {
+                        Event::Update => self.tim.dier.write(|w| w.uie().enabled()),
+                    }
+                }
+
+                /// Stops listening for an `event`
+                pub fn unlisten(&mut self, event: Event) {
+                    match event {
+                        Event::Update => self.tim.dier.write(|w| w.uie().disabled()),
+                    }
+                }
+
+                /// Stops the timer
+                pub fn stop(&mut self) {
+                    self.tim.cr1.modify(|_, w| w.cen().disabled());
+                }
+
+                /// Clears Update Interrupt Flag
+                pub fn clear_update_interrupt_flag(&mut self) {
+                    self.tim.sr.modify(|_, w| w.uif().clear());
+                }
+
+                /// Releases the TIM peripheral
+                pub fn release(mut self) -> $TIMX {
+                    self.stop();
+                    self.tim
+                }
+            }
+        )+
+    }
+}
+
+macro_rules! advanced_timer {
     ($({
         $TIMX:ident: ($tim:ident, $timXen:ident, $timXrst:ident),
         $APB:ident: ($apb:ident, $pclkX:ident),
@@ -555,62 +637,144 @@ macro_rules! gp_timer {
             }
         )+
     }
+
+
+    }
+macro_rules! gp_timer2 {
+        ($({
+            $TIMX:ident: ($tim:ident, $timXen:ident, $timXrst:ident),
+            $APB:ident: ($apb:ident, $pclkX:ident),
+        },)+) => {
+            $(
+                impl PclkSrc for $TIMX {
+                    fn get_clk(clocks: &Clocks) -> Hertz {
+                        clocks.$pclkX()
+                    }
+                }
+
+                impl Periodic for Timer<$TIMX> {}
+
+                impl CountDown for Timer<$TIMX> {
+                    type Time = Hertz;
+
+                    fn start<T>(&mut self, timeout: T)
+                    where
+                        T: Into<Hertz>,
+                    {
+                        self.stop();
+
+                        let frequency = timeout.into().0;
+                        let timer_clock = $TIMX::get_clk(&self.clocks);
+                        let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
+                            / frequency;
+                        let psc = u16((ticks - 1) / (1 << 16)).unwrap();
+
+                        // NOTE(write): uses all bits in this register.
+                        self.tim.psc.write(|w| w.psc().bits(psc));
+
+                        let arr = u16(ticks / u32(psc + 1)).unwrap();
+
+                        // TODO (sh3rm4n)
+                        // self.tim.arr.write(|w| { w.arr().bits(arr) });
+                        self.tim.arr.write(|w| unsafe { w.bits(u32(arr)) });
+
+                        // Trigger an update event to load the prescaler value to the clock
+                        // NOTE(write): uses all bits in this register.
+                        self.tim.egr.write(|w| w.ug().update());
+                        // The above line raises an update event which will indicate
+                        // that the timer is already finished. Since this is not the case,
+                        // it should be cleared
+                        self.clear_update_interrupt_flag();
+
+                        // start counter
+                        self.tim.cr1.modify(|_, w| w.cen().enabled());
+                    }
+
+                    fn wait(&mut self) -> nb::Result<(), Void> {
+                        if self.tim.sr.read().uif().is_clear() {
+                            Err(nb::Error::WouldBlock)
+                        } else {
+                            self.clear_update_interrupt_flag();
+                            Ok(())
+                        }
+                    }
+                }
+
+                impl Timer<$TIMX> {
+                    /// Configures a TIM peripheral as a periodic count down timer
+                    pub fn $tim<T>(tim: $TIMX, timeout: T, clocks: Clocks, $apb: &mut $APB) -> Self
+                    where
+                        T: Into<Hertz>,
+                    {
+                        // enable and reset peripheral to a clean slate state
+                        $apb.enr().modify(|_, w| w.$timXen().enabled());
+                        $apb.rstr().modify(|_, w| w.$timXrst().reset());
+                        $apb.rstr().modify(|_, w| w.$timXrst().clear_bit());
+
+                        let mut timer = Timer { clocks, tim };
+                        timer.start(timeout);
+
+                        timer
+                    }
+
+                    /// Starts listening for an `event`
+                    pub fn listen(&mut self, event: Event) {
+                        match event {
+                            Event::Update => self.tim.dier.write(|w| w.uie().enabled()),
+                        }
+                    }
+
+                    /// Stops listening for an `event`
+                    pub fn unlisten(&mut self, event: Event) {
+                        match event {
+                            Event::Update => self.tim.dier.write(|w| w.uie().disabled()),
+                        }
+                    }
+
+                    /// Stops the timer
+                    pub fn stop(&mut self) {
+                        self.tim.cr1.modify(|_, w| w.cen().disabled());
+                    }
+
+                    /// Clears Update Interrupt Flag
+                    pub fn clear_update_interrupt_flag(&mut self) {
+                        self.tim.sr.modify(|_, w| w.uif().clear());
+                    }
+
+                    /// Releases the TIM peripheral
+                    pub fn release(mut self) -> $TIMX {
+                        self.stop();
+                        self.tim
+                    }
+                }
+            )+
+        }
 }
 
+// Basic timers: Tim6, 7. Count up only, no CC channels.
+// General purpose timers: Tim2, 3, 4. Count up and down, and have 4 CC channels
+// General purpose timers: Tim15, 16, 17. Count up only, and have 2, 1, 1 CC channels
+// Advanced-control timers: Tim1, 8, 20. Count up and down, and have 4 CC channels.
+// Tim 5, 13, 14, 18, 19? What are these rare timers? Currently unhandled
+
 #[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
-hal! {
-    {
-        TIM1: (tim1, tim1en, tim1rst),
-        APB2: (apb2, pclk2),
-    },
+basic_timer! {
     {
         TIM6: (tim6, tim6en, tim6rst),
         APB1: (apb1, pclk1),
     },
-    {
-        TIM15: (tim15, tim15en, tim15rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM16: (tim16, tim16en, tim16rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM17: (tim17, tim17en, tim17rst),
-        APB2: (apb2, pclk2),
-    },
 }
 
 #[cfg(feature = "stm32f302")]
-hal! {
-    {
-        TIM1: (tim1, tim1en, tim1rst),
-        APB2: (apb2, pclk2),
-    },
+basic_timer! {
     {
         TIM6: (tim6, tim6en, tim6rst),
         APB1: (apb1,pclk1),
     },
-    {
-        TIM15: (tim15, tim15en, tim15rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM16: (tim16, tim16en, tim16rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM17: (tim17, tim17en, tim17rst),
-        APB2: (apb2, pclk2),
-    },
 }
 
 #[cfg(feature = "stm32f303")]
-hal! {
-    {
-        TIM1: (tim1, tim1en, tim1rst),
-        APB2: (apb2, pclk2),
-    },
+basic_timer! {
     {
         TIM6: (tim6, tim6en, tim6rst),
         APB1: (apb1, pclk1),
@@ -619,20 +783,83 @@ hal! {
         TIM7: (tim7, tim7en, tim7rst),
         APB1: (apb1, pclk1),
     },
+}
+
+#[cfg(feature = "stm32f334")]
+basic_timer! {
+    {
+        TIM6: (tim6, tim6en, tim6rst),
+        APB1: (apb1, pclk1)
+    },
+    {
+        TIM7: (tim7, tim7en, tim7rst),
+        APB1: (apb1, pclk1),
+    },
+}
+
+#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+basic_timer! {
+    // todo TIM5??
+    // {
+    //     TIM5: (tim5, tim5en, tim5rst),
+    //     APB1: (apb1, pclk1),
+    // },
+    {
+        TIM6: (tim6, tim6en, tim6rst),
+        APB1: (apb1, pclk1),
+    },
+    {
+        TIM7: (tim7, tim7en, tim7rst),
+        APB1: (apb1, pclk1),
+    },
+    // todo: 18/19??
+
+    // {
+    //     TIM18: (tim18, tim18en, tim18rst),
+    //     APB1: (apb1, pclk1),
+    // },
+    // {
+    //     TIM19: (tim19, tim19en, tim19rst),
+    //     APB2: (apb2, pclk2),
+    // },
+}
+
+#[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+basic_timer! {
+    {
+        TIM6: (tim6, tim6en, tim6rst),
+        APB1: (apb1, pclk1),
+    },
+    {
+        TIM7: (tim7, tim7en, tim7rst),
+        APB1: (apb1, pclk1),
+    },
+}
+
+#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+advanced_timer! {
+    {
+        TIM1: (tim1, tim1en, tim1rst),
+        APB2: (apb2, pclk2),
+    },
+}
+
+#[cfg(feature = "stm32f302")]
+advanced_timer! {
+    {
+        TIM1: (tim1, tim1en, tim1rst),
+        APB2: (apb2, pclk2),
+    },
+}
+
+#[cfg(feature = "stm32f303")]
+advanced_timer! {
+    {
+        TIM1: (tim1, tim1en, tim1rst),
+        APB2: (apb2, pclk2),
+    },
     {
         TIM8: (tim8, tim8en, tim8rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM15: (tim15, tim15en, tim15rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM16: (tim16, tim16en, tim16rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM17: (tim17, tim17en, tim17rst),
         APB2: (apb2, pclk2),
     },
     {
@@ -642,109 +869,49 @@ hal! {
 }
 
 #[cfg(feature = "stm32f334")]
-hal! {
+advanced_timer! {
     {
         TIM1: (tim1, tim1en, tim1rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM6: (tim6, tim6en, tim6rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM7: (tim7, tim7en, tim7rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM15: (tim15, tim15en, tim15rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM16: (tim16, tim16en, tim16rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM17: (tim17, tim17en, tim17rst),
         APB2: (apb2, pclk2),
     },
 }
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-hal! {
-    {
-        TIM5: (tim5, tim5en, tim5rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM6: (tim6, tim6en, tim6rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM7: (tim7, tim7en, tim7rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM12: (tim12, tim12en, tim12rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM13: (tim13, tim13en, tim13rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM14: (tim14, tim14en, tim14rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM15: (tim15, tim15en, tim15rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM16: (tim16, tim16en, tim16rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM17: (tim17, tim17en, tim17rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM18: (tim18, tim18en, tim18rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM19: (tim19, tim19en, tim19rst),
-        APB2: (apb2, pclk2),
-    },
+advanced_timer! {
+    // { todo
+    //     TIM5: (tim5, tim5en, tim5rst),
+    //     APB1: (apb1, pclk1),
+    // },
+    // {
+    //     TIM12: (tim12, tim12en, tim12rst),
+    //     APB1: (apb1, pclk1),
+    // },
+    // {
+    //     TIM13: (tim13, tim13en, tim13rst),
+    //     APB1: (apb1, pclk1),
+    // },
+    // {
+    //     TIM14: (tim14, tim14en, tim14rst),
+    //     APB1: (apb1, pclk1),
+    // },
+    // {
+    //     TIM18: (tim18, tim18en, tim18rst),
+    //     APB1: (apb1, pclk1),
+    // },
+    // {
+    //     TIM19: (tim19, tim19en, tim19rst),
+    //     APB2: (apb2, pclk2),
+    // },
 }
 
 #[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
-hal! {
+advanced_timer! {
     {
         TIM1: (tim1, tim1en, tim1rst),
         APB2: (apb2, pclk2),
     },
     {
-        TIM6: (tim6, tim6en, tim6rst),
-        APB1: (apb1, pclk1),
-    },
-    {
-        TIM7: (tim7, tim7en, tim7rst),
-        APB1: (apb1, pclk1),
-    },
-    {
         TIM8: (tim8, tim8en, tim8rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM15: (tim15, tim15en, tim15rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM16: (tim16, tim16en, tim16rst),
-        APB2: (apb2, pclk2),
-    },
-    {
-        TIM17: (tim17, tim17en, tim17rst),
         APB2: (apb2, pclk2),
     },
     {
@@ -758,7 +925,22 @@ gp_timer! {
     {
         TIM2: (tim2, tim2en, tim2rst),
         APB1: (apb1, pclk1),
-        u16
+        u16,
+    },
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+        u16,
     },
 }
 
@@ -767,7 +949,22 @@ gp_timer! {
     {
         TIM2: (tim2, tim2en, tim2rst),
         APB1: (apb1, pclk1),
-        u16
+        u16,
+    },
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+        u16,
     },
 }
 
@@ -840,4 +1037,106 @@ gp_timer! {
         APB1: (apb1, pclk1),
         u16,
     },
+}
+
+#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+gp_timer2! {
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+}
+
+#[cfg(feature = "stm32f302")]
+gp_timer2! {
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+}
+
+#[cfg(feature = "stm32f303")]
+gp_timer2! {
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2, pclk2),
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+    },
+}
+
+#[cfg(feature = "stm32f334")]
+gp_timer2! {
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2, pclk2),
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+    }
+}
+
+#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+gp_timer2! {
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2, pclk2),
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+    }
+}
+
+#[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+gp_timer2! {
+    {
+        TIM15: (tim15, tim15en, tim15rst),
+        APB2: (apb2, pclk2),
+    },
+    {
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+    }
 }
