@@ -33,7 +33,7 @@ fn main() -> ! {
     timer.set_preload(Channel::One, true);
 
     // An example where we set Asymmetric PWM mode, that serves
-    // more generally to highlight features and API.
+    // more generally to highlight features and the timer API.
     
     timer.set_output_compare(Channel::One, OutputCompare::Pwm1);
     timer.set_output_compare(Channel::Two, OutputCompare::Pwm1);
