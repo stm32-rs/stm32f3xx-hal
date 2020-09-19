@@ -92,6 +92,10 @@ name = "pwm"
 required-features = ["stm32f303xc"]
 
 [[example]]
+name = "pwm2"
+required-features = ["stm32f303xc"]
+
+[[example]]
 name = "toggle"
 required-features = ["rt", "stm32f303xc"]
 
