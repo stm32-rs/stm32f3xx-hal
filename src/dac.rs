@@ -17,6 +17,8 @@
 //! A trait used to identify a digital-to-analog converter, and its
 //! most fundamental features.
 
+use core::fmt;
+
 use crate::{pac, rcc::APB1};
 
 pub trait SingleChannelDac {
@@ -24,17 +26,8 @@ pub trait SingleChannelDac {
     type Error;
     type Word;
 
-    /// Enable the DAC.
-    fn try_enable(&mut self, p: &mut APB1) -> Result<(), Self::Error>; // todo: generalize periph clock
-
-    /// Disable the DAC.
-    fn try_disable(&mut self, p: &mut APB1) -> Result<(), Self::Error>;
-
     /// Output a constant signal, given a bit word.
     fn try_set_value(&mut self, value: Self::Word) -> Result<(), Self::Error>;
-
-    /// Output a constant signal, given a voltage
-    fn try_set_voltage(&mut self, volts: f32) -> Result<(), Self::Error>;
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -95,6 +88,61 @@ impl Dac {
         }
     }
 
+    /// Enable the DAC.
+    pub fn enable(&mut self, apb1: &mut APB1) {
+        match self.id {
+            DacId::One => {
+                apb1.enr().modify(|_, w| w.dac1en().set_bit());
+                self.regs.cr.modify(|_, w| w.en1().set_bit());
+            }
+            DacId::Two => {
+                apb1.enr().modify(|_, w| w.dac2en().set_bit());
+                self.regs.cr.modify(|_, w| w.en2().set_bit());
+            }
+        }
+    }
+
+    /// Disable the DAC
+    pub fn disable(&mut self, apb1: &mut APB1) {
+        match self.id {
+            DacId::One => {
+                self.regs.cr.modify(|_, w| w.en1().clear_bit());
+                apb1.enr().modify(|_, w| w.dac1en().clear_bit());
+            }
+            DacId::Two => {
+                self.regs.cr.modify(|_, w| w.en2().clear_bit());
+                apb1.enr().modify(|_, w| w.dac2en().clear_bit());
+            }
+        }
+    }
+
+    /// Set the DAC value as an integer.
+    pub fn set_value(&mut self, val: u32) {
+        match self.id {
+            DacId::One => match self.bits {
+                DacBits::EightR => self.regs.dhr8r1.modify(|_, w| unsafe { w.bits(val) }),
+                DacBits::TwelveL => self.regs.dhr12l1.modify(|_, w| unsafe { w.bits(val) }),
+                DacBits::TwelveR => self.regs.dhr12r1.modify(|_, w| unsafe { w.bits(val) }),
+            },
+            DacId::Two => match self.bits {
+                DacBits::EightR => self.regs.dhr8r2.modify(|_, w| unsafe { w.bits(val) }),
+                DacBits::TwelveL => self.regs.dhr12l2.modify(|_, w| unsafe { w.bits(val) }),
+                DacBits::TwelveR => self.regs.dhr12r2.modify(|_, w| unsafe { w.bits(val) }),
+            },
+        }
+    }
+
+    /// Set the DAC voltage. `v` is in Volts.
+    pub fn set_voltage(&mut self, volts: f32) {
+        let val = match self.bits {
+            DacBits::EightR => ((volts / self.vref) * 255.) as u32,
+            DacBits::TwelveL => ((volts / self.vref) * 4_095.) as u32,
+            DacBits::TwelveR => ((volts / self.vref) * 4_095.) as u32,
+        };
+
+        self.set_value(val);
+    }
+
     // Select and activate a trigger. See f303 Reference manual, section 16.5.4.
     pub fn set_trigger(&mut self, trigger: Trigger) {
         match self.id {
@@ -113,7 +161,7 @@ impl Dac {
 
     /// Independent trigger with single LFSR generation
     /// See f303 Reference Manual section 16.5.2
-    pub fn trigger_lfsr(&mut self, trigger: Trigger, data: u32) -> Result<(), DacError> {
+    pub fn trigger_lfsr(&mut self, trigger: Trigger, data: u32) {
         // todo: This may not be correct.
         match self.id {
             DacId::One => {
@@ -126,14 +174,12 @@ impl Dac {
             }
         }
         self.set_trigger(trigger);
-        self.try_set_value(data)?;
-
-        Ok(())
+        self.set_value(data);
     }
 
     /// Independent trigger with single triangle generation
     /// See f303 Reference Manual section 16.5.2
-    pub fn trigger_triangle(&mut self, trigger: Trigger, data: u32) -> Result<(), DacError> {
+    pub fn trigger_triangle(&mut self, trigger: Trigger, data: u32) {
         // todo: This may not be correct.
         match self.id {
             DacId::One => {
@@ -146,9 +192,17 @@ impl Dac {
             }
         }
         self.set_trigger(trigger);
-        self.try_set_value(data)?;
+        self.try_set_value(data);
+    }
+}
 
-        Ok(())
+impl fmt::Debug for Dac {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Dac")
+            .field("id", &self.id)
+            .field("bits", &self.bits)
+            .field("vret", &self.vref)
+            .finish()
     }
 }
 
@@ -158,65 +212,8 @@ impl SingleChannelDac for Dac {
     type Error = DacError;
     type Word = u32;
 
-    /// Enable the DAC.
-    fn try_enable(&mut self, apb1: &mut APB1) -> Result<(), DacError> {
-        match self.id {
-            DacId::One => {
-                apb1.enr().modify(|_, w| w.dac1en().set_bit());
-                self.regs.cr.modify(|_, w| w.en1().set_bit());
-            }
-            DacId::Two => {
-                apb1.enr().modify(|_, w| w.dac2en().set_bit());
-                self.regs.cr.modify(|_, w| w.en2().set_bit());
-            }
-        }
-
-        Ok(())
-    }
-
-    fn try_disable(&mut self, apb1: &mut APB1) -> Result<(), DacError> {
-        match self.id {
-            DacId::One => {
-                self.regs.cr.modify(|_, w| w.en1().clear_bit());
-                apb1.enr().modify(|_, w| w.dac1en().clear_bit());
-            }
-            DacId::Two => {
-                self.regs.cr.modify(|_, w| w.en2().clear_bit());
-                apb1.enr().modify(|_, w| w.dac2en().clear_bit());
-            }
-        }
-
-        Ok(())
-    }
-
     /// Set the DAC value as an integer.
     fn try_set_value(&mut self, val: u32) -> Result<(), DacError> {
-        match self.id {
-            DacId::One => match self.bits {
-                DacBits::EightR => self.regs.dhr8r1.modify(|_, w| unsafe { w.bits(val) }),
-                DacBits::TwelveL => self.regs.dhr12l1.modify(|_, w| unsafe { w.bits(val) }),
-                DacBits::TwelveR => self.regs.dhr12r1.modify(|_, w| unsafe { w.bits(val) }),
-            },
-            DacId::Two => match self.bits {
-                DacBits::EightR => self.regs.dhr8r2.modify(|_, w| unsafe { w.bits(val) }),
-                DacBits::TwelveL => self.regs.dhr12l2.modify(|_, w| unsafe { w.bits(val) }),
-                DacBits::TwelveR => self.regs.dhr12r2.modify(|_, w| unsafe { w.bits(val) }),
-            },
-        }
-
-        Ok(())
-    }
-
-    /// Set the DAC voltage. `v` is in Volts.
-    fn try_set_voltage(&mut self, volts: f32) -> Result<(), DacError> {
-        let val = match self.bits {
-            DacBits::EightR => ((volts / self.vref) * 255.) as u32,
-            DacBits::TwelveL => ((volts / self.vref) * 4_095.) as u32,
-            DacBits::TwelveR => ((volts / self.vref) * 4_095.) as u32,
-        };
-
-        self.try_set_value(val)?;
-
-        Ok(())
+        Ok(self.set_value(val))
     }
 }

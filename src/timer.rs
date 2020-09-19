@@ -163,6 +163,9 @@ impl Polarity {
 /// OC1REFC outputs OC1REF when the counter is counting up, OC2REF when it is counting
 /// down
 pub enum OutputCompare {
+    // In our current implementation, the left bit here is ignored due to how
+    // the `ocxm` fields are split between left most, and right three bits.
+    // see `left_fit()` method below.
     Frozen = 0b0000,
     Active = 0b0001,
     Inactive = 0b0010,
@@ -176,6 +179,25 @@ pub enum OutputCompare {
     CombinedPwm2 = 0b1101,
     AsymmetricPwm1 = 0b1110,
     AsymmetricPwm2 = 0b1111,
+}
+
+impl OutputCompare {
+    /// A workaround due to the `ccmrx_output.ocym` fields being split into
+    /// the left most, and first 3.
+    /// Get the left bit, as a boolean. For the right three, we just
+    /// parse the variant as a u8, and the left bit is ignored when setting
+    /// in the 3-bit field.
+    pub fn left_bit(&self) -> bool {
+        match self {
+            Self::RetriggerableOpmMode1 => true,
+            Self::RetriggerableOpmMode2 => true,
+            Self::CombinedPwm1 => true,
+            Self::CombinedPwm2 => true,
+            Self::AsymmetricPwm1 => true,
+            Self::AsymmetricPwm2 => true,
+            _ => false,
+        }
+    }
 }
 
 macro_rules! basic_timer {
@@ -682,10 +704,22 @@ macro_rules! gp_timer {
                 /// Set Output Compare Mode. See docs on the `OutputCompare` enum.
                 pub fn set_output_compare(&mut self, channel: Channel, mode: OutputCompare) {
                     match channel {
-                        Channel::One => self.tim.ccmr1_output().modify(|_, w| w.oc1m().bits(mode as u8)),
-                        Channel::Two => self.tim.ccmr1_output().modify(|_, w| w.oc2m().bits(mode as u8)),
-                        Channel::Three => self.tim.ccmr2_output().modify(|_, w| w.oc3m().bits(mode as u8)),
-                        Channel::Four => self.tim.ccmr2_output().modify(|_, w| w.oc4m().bits(mode as u8)),
+                        Channel::One => {
+                            self.tim.ccmr1_output().modify(|_, w| w.oc1m().bits(mode as u8));
+                            self.tim.ccmr1_output().modify(|_, w| w.oc1m_3().bit(mode.left_bit()));
+                        }
+                        Channel::Two => {
+                            self.tim.ccmr1_output().modify(|_, w| w.oc2m().bits(mode as u8));
+                            self.tim.ccmr1_output().modify(|_, w| w.oc2m_3().bit(mode.left_bit()));
+                        }
+                        Channel::Three => {
+                            self.tim.ccmr2_output().modify(|_, w| w.oc3m().bits(mode as u8));
+                            self.tim.ccmr2_output().modify(|_, w| w.oc3m_3().bit(mode.left_bit()));
+                        }
+                        Channel::Four => {
+                            self.tim.ccmr2_output().modify(|_, w| w.oc4m().bits(mode as u8));
+                            self.tim.ccmr2_output().modify(|_, w| w.oc4m_3().bit(mode.left_bit()));
+                        }
                     }
                 }
 
