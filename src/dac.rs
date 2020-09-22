@@ -214,7 +214,7 @@ impl SingleChannelDac for Dac {
 
     /// Set the DAC value as an integer.
     fn try_set_value(&mut self, val: u32) -> Result<(), DacError> {
-        self.set_value(val)
+        self.set_value(val);
         Ok(())
     }
 }
