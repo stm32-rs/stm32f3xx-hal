@@ -28,6 +28,7 @@ impl RccExt for RCC {
                 pclk2: None,
                 sysclk: None,
             },
+            cr: CR { _0: () },
         }
     }
 }
@@ -53,7 +54,23 @@ pub struct Rcc {
     pub bdcr: BDCR,
     /// Clock configuration
     pub cfgr: CFGR,
+    /// RCC Clock Control register
+    pub cr: CR,
 }
+
+// impl Rcc {  // todo: not working
+//     /// Enable bypass mode for the HSE. This disables the output, and lets you use that
+//     /// pin for GPIO
+//     fn set_hse_bypass(&mut self, value: bool) {
+//         self.cr.modify(|_, w| w.hseon().set_bit().hsebyp().bit(true))
+//     }
+
+//     /// Enable bypass mode for the LSE. This disables the output, and lets you use that
+//     /// pin for GPIO
+//     fn set_lse_bypass(&mut self, value: bool) {
+//         self.bdcr.modify(|_, w| w.lseon().set_bit().lsebyp().bit(true))
+//     }
+// }
 
 /// AMBA High-performance Bus (AHB) registers
 ///
@@ -196,6 +213,18 @@ mod usb_clocking {
 /// Backup Domain Control register (RCC_BDCR)
 pub struct BDCR {
     _0: (),
+}
+
+/// RCC Clock Control register (RCC_CR)
+pub struct CR {
+    _0: (),
+}
+
+impl CR {
+    pub(crate) fn cr(&mut self) -> &rcc::CR {
+        // NOTE(unsafe) this proxy grants exclusive access to this register
+        unsafe { &(*RCC::ptr()).cr }
+    }
 }
 
 impl BDCR {

@@ -192,7 +192,7 @@ impl Dac {
             }
         }
         self.set_trigger(trigger);
-        self.try_set_value(data);
+        self.set_value(data);
     }
 }
 
@@ -214,6 +214,7 @@ impl SingleChannelDac for Dac {
 
     /// Set the DAC value as an integer.
     fn try_set_value(&mut self, val: u32) -> Result<(), DacError> {
-        Ok(self.set_value(val))
+        self.set_value(val)
+        Ok(())
     }
 }
