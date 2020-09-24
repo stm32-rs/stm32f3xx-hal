@@ -15,6 +15,15 @@ pub enum Error {
 
 pub const LSE_BITS: u8 = 0b01;
 
+
+/// See AN4759, table 13.
+#[derive(Clone, Copy, Debug)]
+pub struct ClockConfig {
+    One,
+    Two,
+    Three,
+}
+
 pub struct Rtc {
     pub regs: RTC,
 }
@@ -62,6 +71,62 @@ impl Rtc {
     /// Reads current hour format selection
     pub fn is_24h_fmt(&self) -> bool {
         self.regs.cr.read().fmt().bit()
+    }
+
+    /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11.
+    /// `sleep_time` is in ms.
+    pub fn setup_auto_wakeup(&mut self, clock_cfg: ClockConfig, sleep_time: u32) {
+        // todo: RTC2 vice 3?
+
+        // Disable the RTC registers Write protection.
+        // Write 0xCA and then 0x53 into the RTC_WPR register. RTC registers can then be modified.
+        self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
+        self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
+.
+        // Disabled the wakeup timer. Clear WUTE bit in RTC_CR register
+        self.regs.cr.modify(|_, w| w.wute().clear_bit());
+
+        // Ensure access to Wakeup auto-reload counter and bits WUCKSEL[2:0] is allowed.
+        // Poll WUTWF until it is set in RTC_ISR (RTC2)/RTC_ICSR (RTC3)
+
+        while !self.regs.isr.read().wutwf().bit_is_set() {}
+
+        // Program the value into the wakeup timer
+        // Set WUT[15:0] in RTC_WUTR register. For RTC3 the user must also program 
+        // WUTOCLR bits.
+        // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
+        // todo check ref man register table
+        let sleep_for_cycles = lfe_freq * time_ms / 1_000;
+        self.regs.wutr.modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles) });
+
+        // Select the desired clock source. Program WUCKSEL[2:0] bits in RTC_CR register.
+        // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
+        // todo: Check register docs and see what to set here.
+
+        // See AN4759, Table 13.
+        let word = if sleep_time <= 32_000 {
+            0b0xx   // Configuration 1
+        } else if sleep_time < 64_800_000 {
+            0b10x   // Configuration 2
+        } else {
+            0b11x  // Configuration 3
+        };
+
+        let word = match clock_ccfg {
+            ClockConfig::One => 0b0xx,
+            ClockConfig::Two => 0b10x,
+            ClockConfig::Three => 0b11x,
+        }
+
+        self.regs.cr.modify(|_, w| unsafe { w.wcksel().bits(word) });
+
+        // Re-enable the wakeup timer. Set WUTE bit in RTC_CR register.
+        // The wakeup timer restarts counting down.
+        self.regs.cr.modify(|_, w| w.wute().set_bit());
+
+        // Enable the RTC registers Write protection. Write 0xFF into the
+        // RTC_WPR register. RTC registers can no more be modified.
+        self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
     }
 
     /// As described in Section 27.3.7 in RM0316,
