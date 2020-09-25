@@ -2,11 +2,11 @@
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
 
-use cortex_m::peripheral::NVIC;
 use crate::interrupt::RTC_WKUP;
 use crate::pac::{EXTI, PWR, RTC};
 use crate::rcc::{APB1, BDCR};
 use core::convert::TryInto;
+use cortex_m::peripheral::NVIC;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
 /// Invalid input error
@@ -16,7 +16,6 @@ pub enum Error {
 }
 
 pub const LSE_BITS: u8 = 0b01;
-
 
 /// See AN4759, table 13.
 #[derive(Clone, Copy, Debug)]
@@ -51,7 +50,7 @@ impl Rtc {
         let mut result = Self { regs };
 
         reset(bdcr);
-        unlock(apb1, pwr);  // Must unlock before setting up the LSE.
+        unlock(apb1, pwr); // Must unlock before setting up the LSE.
         setup_lse(bdcr, bypass);
         enable(bdcr);
 
@@ -92,7 +91,6 @@ impl Rtc {
         exti.ftsr1.modify(|_, w| w.tr20().bit(false));
         unsafe { NVIC::unmask(RTC_WKUP) };
 
-
         // Disable the RTC registers Write protection.
         // Write 0xCA and then 0x53 into the RTC_WPR register. RTC registers can then be modified.
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
@@ -107,13 +105,15 @@ impl Rtc {
         while !self.regs.isr.read().wutwf().bit_is_set() {}
 
         // Program the value into the wakeup timer
-        // Set WUT[15:0] in RTC_WUTR register. For RTC3 the user must also program 
+        // Set WUT[15:0] in RTC_WUTR register. For RTC3 the user must also program
         // WUTOCLR bits.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
         // todo check ref man register table
         let lfe_freq = 32_768;
         let sleep_for_cycles = lfe_freq * sleep_time / 1_000;
-        self.regs.wutr.modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
+        self.regs
+            .wutr
+            .modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
 
         // Select the desired clock source. Program WUCKSEL[2:0] bits in RTC_CR register.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
@@ -506,4 +506,3 @@ fn reset(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.bdrst().enabled());
     bdcr.bdcr().modify(|_, w| w.bdrst().disabled());
 }
-
