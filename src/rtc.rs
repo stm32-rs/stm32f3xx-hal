@@ -17,10 +17,20 @@ pub enum Error {
 
 pub const LSE_BITS: u8 = 0b01;
 
+/// See ref man, section 27.6.3, or AN4769, section 2.4.2.
+/// To be used with WakeupPrescaler
+#[derive(Clone, Copy, Debug)]
+enum WakeupDivision {
+    Sixteen,
+    Eight,
+    Four,
+    Two,
+}
+
 /// See AN4759, table 13.
 #[derive(Clone, Copy, Debug)]
 pub enum ClockConfig {
-    One,
+    One(WakeupDivision),
     Two,
     Three,
 }
@@ -50,8 +60,8 @@ impl Rtc {
         let mut result = Self { regs };
 
         reset(bdcr);
-        unlock(apb1, pwr); // Must unlock before setting up the LSE.
-        setup_lse(bdcr, bypass);
+        unlock(apb1, pwr); // Must unlock before enabling LSE.
+        enable_lse(bdcr, bypass);
         enable(bdcr);
 
         result.set_24h_fmt();
@@ -121,14 +131,23 @@ impl Rtc {
 
         // See AN4759, Table 13.
         let word = match clock_cfg {
-            // ClockConfig::One => 0b0xx, // todo temp
-            ClockConfig::One => 0b000,
-            // ClockConfig::Two => 0b10x,
+            ClockConfig::One(division) => match division {
+                WakeupDivision::Sixteen => 0b000,
+                WakeupDivision::Eight => 0b001,
+                WakeupDivision::Four => 0b010,
+                WakeupDivision::Two => 0b011,
+            },
+            // for 2 and 3, what does `x` mean in the docs? Best guess is it doesn't matter.
             ClockConfig::Two => 0b100,
-            // ClockConfig::Three => 0b11x,
             ClockConfig::Three => 0b110,
         };
 
+        // 000: RTC/16 clock is selected
+        // 001: RTC/8 clock is selected
+        // 010: RTC/4 clock is selected
+        // 011: RTC/2 clock is selected
+        // 10x: ck_spre (usually 1 Hz) clock is selected
+        // 11x: ck_spre (usually 1 Hz) clock is selected and 216 is added to the WUT counter value
         self.regs.cr.modify(|_, w| unsafe { w.wcksel().bits(word) });
 
         // Re-enable the wakeup timer. Set WUTE bit in RTC_CR register.
@@ -469,14 +488,13 @@ fn hours_to_u8(hours: Hours) -> Result<u8, Error> {
     }
 }
 
-/// Setup the low frequency external oscillator. This is the only mode currently
+/// Enable the low frequency external oscillator. This is the only mode currently
 /// supported, to avoid exposing the `CR` and `CRS` registers.
-fn setup_lse(bdcr: &mut BDCR, bypass: bool) {
+fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
     bdcr.bdcr().modify(|_, w| w.lseon().set_bit());
     bdcr.bdcr().modify(|_, w| w.lsebyp().bit(bypass));
 
     while bdcr.bdcr().read().lserdy().bit_is_clear() {}
-    bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
 }
 
 fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
@@ -496,12 +514,12 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
     while pwr.cr.read().dbp().bit_is_clear() {}
 }
 
-/// Enable the RTC.
+/// Enables the RTC, and sets LSE as the timing source.
 fn enable(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.rtcen().enabled());
 }
 
-/// Reset the entire RTC domain
+/// Resets the entire RTC domain
 fn reset(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.bdrst().enabled());
     bdcr.bdcr().modify(|_, w| w.bdrst().disabled());
