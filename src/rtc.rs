@@ -51,8 +51,8 @@ impl Rtc {
         let mut result = Self { regs };
 
         reset(bdcr);
-        unlock(apb1, pwr);  // Must unlock before enabling LSE.
-        enable_lse(bdcr, bypass);
+        unlock(apb1, pwr);  // Must unlock before setting up the LSE.
+        setup_lse(bdcr, bypass);
         enable(bdcr);
 
         result.set_24h_fmt();
@@ -81,7 +81,7 @@ impl Rtc {
 
     /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11.
     /// `sleep_time` is in ms.
-    pub fn setup_auto_wakeup(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
+    pub fn set_auto_wakeup(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
         // todo: RTC2 vice 3?
 
         // Setup interrupt line 20
@@ -469,13 +469,14 @@ fn hours_to_u8(hours: Hours) -> Result<u8, Error> {
     }
 }
 
-/// Enable the low frequency external oscillator. This is the only mode currently
+/// Setup the low frequency external oscillator. This is the only mode currently
 /// supported, to avoid exposing the `CR` and `CRS` registers.
-fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
+fn setup_lse(bdcr: &mut BDCR, bypass: bool) {
     bdcr.bdcr().modify(|_, w| w.lseon().set_bit());
     bdcr.bdcr().modify(|_, w| w.lsebyp().bit(bypass));
 
     while bdcr.bdcr().read().lserdy().bit_is_clear() {}
+    bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
 }
 
 fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
@@ -495,13 +496,12 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
     while pwr.cr.read().dbp().bit_is_clear() {}
 }
 
-/// Enables the RTC, and sets LSE as the timing source.
+/// Enable the RTC.
 fn enable(bdcr: &mut BDCR) {
-    bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
     bdcr.bdcr().modify(|_, w| w.rtcen().enabled());
 }
 
-/// Resets the entire RTC domain
+/// Reset the entire RTC domain
 fn reset(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.bdrst().enabled());
     bdcr.bdcr().modify(|_, w| w.bdrst().disabled());
