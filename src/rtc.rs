@@ -20,7 +20,7 @@ pub const LSE_BITS: u8 = 0b01;
 /// See ref man, section 27.6.3, or AN4769, section 2.4.2.
 /// To be used with WakeupPrescaler
 #[derive(Clone, Copy, Debug)]
-enum WakeupDivision {
+pub enum WakeupDivision {
     Sixteen,
     Eight,
     Four,
@@ -123,7 +123,8 @@ impl Rtc {
         let sleep_for_cycles = lfe_freq * sleep_time / 1_000;
         self.regs
             .wutr
-            .modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
+            // .modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
+            .modify(|_, w| unsafe { w.wut().bits(2048) });
 
         // Select the desired clock source. Program WUCKSEL[2:0] bits in RTC_CR register.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
