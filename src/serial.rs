@@ -10,34 +10,6 @@ use crate::{
 use cfg_if::cfg_if;
 use core::{convert::Infallible, marker::PhantomData, ptr};
 
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::gpio::gpiod;
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::gpio::gpioe;
-
 cfg_if! {
     if #[cfg(any(feature = "stm32f302", feature = "stm32f303"))] {
         use crate::dma;
