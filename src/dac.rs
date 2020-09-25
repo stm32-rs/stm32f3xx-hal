@@ -1,26 +1,27 @@
 //! Configure the internal DAC on the stm32f3xx.
 //! Incomplete, but includes basic operation.
 //!
-//! You should have the approprite dac pin set up as an analog input, to prevent
+//! You should have the appropriate DAC pin set up as an analog input, to prevent
 //! parasitic power consumption. For example:
 //! ```rust
 //! let _dac1_pin = gpioa.pa4.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
 //! let _dac2_pin = gpioa.pa5.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
 //! ```
-//!
-
-// todo: DAC trait that will go in a PR to embeddd hal.
-// [PR](https://github.com/rust-embedded/embedded-hal/pull/247)
-
-//! Digital-analog conversion traits
-//!
-//! A trait used to identify a digital-to-analog converter, and its
-//! most fundamental features.
 
 use core::fmt;
 
-use crate::{pac, rcc::APB1};
+use crate::{
+    gpio::{
+        gpioa::{PA4, PA5},
+        Analog,
+    },
+    pac,
+    rcc::APB1,
+};
 
+/// todo: DAC trait that will go in a PR to `embeddd-hal`.
+/// Once merged and released in that crate, remove from this module.
+/// [PR](https://github.com/rust-embedded/embedded-hal/pull/247)
 pub trait SingleChannelDac {
     /// Error type returned by DAC methods
     type Error;
@@ -30,28 +31,51 @@ pub trait SingleChannelDac {
     fn try_set_value(&mut self, value: Self::Word) -> Result<(), Self::Error>;
 }
 
+/// This is an abstraction to ensure that the DAC output pin is configured
+/// as an analog output.
+pub trait Pins {}
+impl Pins for PA4<Analog> {}
+impl Pins for PA5<Analog> {}
+impl Pins for (PA4<Analog>, PA5<Analog>) {}
+
 #[derive(Clone, Copy, Debug)]
-pub enum DacId {
+/// Select the channel
+pub enum Channel {
+    /// Channel 1
     One,
+    /// Channel 2
     Two,
 }
 
 #[derive(Clone, Copy, Debug)]
+/// Three options are available to set DAC precision.
 pub enum DacBits {
+    /// Eight bit precision, right-aligned.
     EightR,
+    /// 12-bit precision, left-aligned.
     TwelveL,
+    /// 12-bit precision, right-aligned.
     TwelveR,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
+/// Select a trigger, used by some features.
 pub enum Trigger {
+    /// Timer 6
     Tim6,
+    /// Timers 3 or 8
     Tim3_8,
+    /// Timer 7
     Tim7,
+    /// Timer 15
     Tim15,
+    /// Timger 2
     Tim2,
-    Tim4, // Not available on DAC 2.
+    /// Tim4 is Not available on DAC 2.
+    Tim4,
+    /// Eg, for interrupts
     Exti9,
+    /// A software trigger
     Swtrig,
 }
 
@@ -72,17 +96,23 @@ impl Trigger {
 
 pub struct Dac {
     regs: pac::DAC,
-    id: DacId,
+    channel: Channel,
     bits: DacBits,
     vref: f32,
 }
 
 impl Dac {
-    /// Create a new DAC instances
-    pub fn new(regs: pac::DAC, id: DacId, bits: DacBits, vref: f32) -> Self {
+    /// Create a new DAC instance
+    pub fn new<P: Pins>(
+        regs: pac::DAC,
+        _pins: P,
+        channel: Channel,
+        bits: DacBits,
+        vref: f32,
+    ) -> Self {
         Self {
             regs,
-            id,
+            channel,
             bits,
             vref,
         }
@@ -90,41 +120,41 @@ impl Dac {
 
     /// Enable the DAC.
     pub fn enable(&mut self, apb1: &mut APB1) {
-        match self.id {
-            DacId::One => {
-                apb1.enr().modify(|_, w| w.dac1en().set_bit());
-                self.regs.cr.modify(|_, w| w.en1().set_bit());
+        match self.channel {
+            Channel::One => {
+                apb1.enr().modify(|_, w| w.dac1en().enabled());
+                self.regs.cr.modify(|_, w| w.en1().enabled());
             }
-            DacId::Two => {
-                apb1.enr().modify(|_, w| w.dac2en().set_bit());
-                self.regs.cr.modify(|_, w| w.en2().set_bit());
+            Channel::Two => {
+                apb1.enr().modify(|_, w| w.dac2en().enabled());
+                self.regs.cr.modify(|_, w| w.en2().enabled());
             }
         }
     }
 
     /// Disable the DAC
     pub fn disable(&mut self, apb1: &mut APB1) {
-        match self.id {
-            DacId::One => {
-                self.regs.cr.modify(|_, w| w.en1().clear_bit());
-                apb1.enr().modify(|_, w| w.dac1en().clear_bit());
+        match self.channel {
+            Channel::One => {
+                self.regs.cr.modify(|_, w| w.en1().disabled());
+                apb1.enr().modify(|_, w| w.dac1en().disabled());
             }
-            DacId::Two => {
-                self.regs.cr.modify(|_, w| w.en2().clear_bit());
-                apb1.enr().modify(|_, w| w.dac2en().clear_bit());
+            Channel::Two => {
+                self.regs.cr.modify(|_, w| w.en2().disabled());
+                apb1.enr().modify(|_, w| w.dac2en().disabled());
             }
         }
     }
 
     /// Set the DAC value as an integer.
     pub fn set_value(&mut self, val: u32) {
-        match self.id {
-            DacId::One => match self.bits {
+        match self.channel {
+            Channel::One => match self.bits {
                 DacBits::EightR => self.regs.dhr8r1.modify(|_, w| unsafe { w.bits(val) }),
                 DacBits::TwelveL => self.regs.dhr12l1.modify(|_, w| unsafe { w.bits(val) }),
                 DacBits::TwelveR => self.regs.dhr12r1.modify(|_, w| unsafe { w.bits(val) }),
             },
-            DacId::Two => match self.bits {
+            Channel::Two => match self.bits {
                 DacBits::EightR => self.regs.dhr8r2.modify(|_, w| unsafe { w.bits(val) }),
                 DacBits::TwelveL => self.regs.dhr12l2.modify(|_, w| unsafe { w.bits(val) }),
                 DacBits::TwelveR => self.regs.dhr12r2.modify(|_, w| unsafe { w.bits(val) }),
@@ -145,14 +175,14 @@ impl Dac {
 
     // Select and activate a trigger. See f303 Reference manual, section 16.5.4.
     pub fn set_trigger(&mut self, trigger: Trigger) {
-        match self.id {
-            DacId::One => {
+        match self.channel {
+            Channel::One => {
                 self.regs.cr.modify(|_, w| w.ten1().set_bit());
                 self.regs
                     .cr
                     .modify(|_, w| unsafe { w.tsel1().bits(trigger.bits()) });
             }
-            DacId::Two => {
+            Channel::Two => {
                 self.regs.cr.modify(|_, w| w.ten2().set_bit());
                 self.regs.cr.modify(|_, w| w.tsel2().bits(trigger.bits()));
             }
@@ -163,12 +193,12 @@ impl Dac {
     /// See f303 Reference Manual section 16.5.2
     pub fn trigger_lfsr(&mut self, trigger: Trigger, data: u32) {
         // todo: This may not be correct.
-        match self.id {
-            DacId::One => {
+        match self.channel {
+            Channel::One => {
                 self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b01) });
                 self.regs.cr.modify(|_, w| w.mamp1().bits(0b01));
             }
-            DacId::Two => {
+            Channel::Two => {
                 self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b01) });
                 self.regs.cr.modify(|_, w| w.mamp2().bits(0b01));
             }
@@ -181,12 +211,12 @@ impl Dac {
     /// See f303 Reference Manual section 16.5.2
     pub fn trigger_triangle(&mut self, trigger: Trigger, data: u32) {
         // todo: This may not be correct.
-        match self.id {
-            DacId::One => {
+        match self.channel {
+            Channel::One => {
                 self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b10) });
                 self.regs.cr.modify(|_, w| w.mamp1().bits(0b10));
             }
-            DacId::Two => {
+            Channel::Two => {
                 self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b10) });
                 self.regs.cr.modify(|_, w| w.mamp2().bits(0b10));
             }
@@ -199,7 +229,7 @@ impl Dac {
 impl fmt::Debug for Dac {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Dac")
-            .field("id", &self.id)
+            .field("channel", &self.channel)
             .field("bits", &self.bits)
             .field("vret", &self.vref)
             .finish()
