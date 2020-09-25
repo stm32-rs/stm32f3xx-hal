@@ -2,11 +2,11 @@
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
 
-use cortex_m::peripheral::NVIC;
 use crate::interrupt::RTC_WKUP;
 use crate::pac::{EXTI, PWR, RTC};
 use crate::rcc::{APB1, BDCR};
 use core::convert::TryInto;
+use cortex_m::peripheral::NVIC;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
 /// Invalid input error
@@ -17,11 +17,20 @@ pub enum Error {
 
 pub const LSE_BITS: u8 = 0b01;
 
+/// See ref man, section 27.6.3, or AN4769, section 2.4.2.
+/// To be used with WakeupPrescaler
+#[derive(Clone, Copy, Debug)]
+enum WakeupDivision {
+    Sixteen,
+    Eight,
+    Four,
+    Two,
+}
 
 /// See AN4759, table 13.
 #[derive(Clone, Copy, Debug)]
 pub enum ClockConfig {
-    One,
+    One(WakeupDivision),
     Two,
     Three,
 }
@@ -51,7 +60,7 @@ impl Rtc {
         let mut result = Self { regs };
 
         reset(bdcr);
-        unlock(apb1, pwr);  // Must unlock before enabling LSE.
+        unlock(apb1, pwr); // Must unlock before enabling LSE.
         enable_lse(bdcr, bypass);
         enable(bdcr);
 
@@ -81,7 +90,7 @@ impl Rtc {
 
     /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11.
     /// `sleep_time` is in ms.
-    pub fn setup_auto_wakeup(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
+    pub fn set_auto_wakeup(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
         // todo: RTC2 vice 3?
 
         // Setup interrupt line 20
@@ -91,7 +100,6 @@ impl Rtc {
         exti.rtsr1.modify(|_, w| w.tr20().bit(true));
         exti.ftsr1.modify(|_, w| w.tr20().bit(false));
         unsafe { NVIC::unmask(RTC_WKUP) };
-
 
         // Disable the RTC registers Write protection.
         // Write 0xCA and then 0x53 into the RTC_WPR register. RTC registers can then be modified.
@@ -107,13 +115,15 @@ impl Rtc {
         while !self.regs.isr.read().wutwf().bit_is_set() {}
 
         // Program the value into the wakeup timer
-        // Set WUT[15:0] in RTC_WUTR register. For RTC3 the user must also program 
+        // Set WUT[15:0] in RTC_WUTR register. For RTC3 the user must also program
         // WUTOCLR bits.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
         // todo check ref man register table
         let lfe_freq = 32_768;
         let sleep_for_cycles = lfe_freq * sleep_time / 1_000;
-        self.regs.wutr.modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
+        self.regs
+            .wutr
+            .modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
 
         // Select the desired clock source. Program WUCKSEL[2:0] bits in RTC_CR register.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
@@ -121,14 +131,23 @@ impl Rtc {
 
         // See AN4759, Table 13.
         let word = match clock_cfg {
-            // ClockConfig::One => 0b0xx, // todo temp
-            ClockConfig::One => 0b000,
-            // ClockConfig::Two => 0b10x,
+            ClockConfig::One(division) => match division {
+                WakeupDivision::Sixteen => 0b000,
+                WakeupDivision::Eight => 0b001,
+                WakeupDivision::Four => 0b010,
+                WakeupDivision::Two => 0b011,
+            },
+            // for 2 and 3, what does `x` mean in the docs? Best guess is it doesn't matter.
             ClockConfig::Two => 0b100,
-            // ClockConfig::Three => 0b11x,
             ClockConfig::Three => 0b110,
         };
 
+        // 000: RTC/16 clock is selected
+        // 001: RTC/8 clock is selected
+        // 010: RTC/4 clock is selected
+        // 011: RTC/2 clock is selected
+        // 10x: ck_spre (usually 1 Hz) clock is selected
+        // 11x: ck_spre (usually 1 Hz) clock is selected and 216 is added to the WUT counter value
         self.regs.cr.modify(|_, w| unsafe { w.wcksel().bits(word) });
 
         // Re-enable the wakeup timer. Set WUTE bit in RTC_CR register.
@@ -497,7 +516,6 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
 
 /// Enables the RTC, and sets LSE as the timing source.
 fn enable(bdcr: &mut BDCR) {
-    bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
     bdcr.bdcr().modify(|_, w| w.rtcen().enabled());
 }
 
@@ -506,4 +524,3 @@ fn reset(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.bdrst().enabled());
     bdcr.bdcr().modify(|_, w| w.bdrst().disabled());
 }
-
