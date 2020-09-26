@@ -156,8 +156,7 @@ impl Rtc {
         let sleep_for_cycles = lfe_freq * sleep_time / 1_000;
         self.regs
             .wutr
-            // .modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
-            .modify(|_, w| unsafe { w.wut().bits(10_048) });
+            .modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
 
         // Select the desired clock source. Program WUCKSEL[2:0] bits in RTC_CR register.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
