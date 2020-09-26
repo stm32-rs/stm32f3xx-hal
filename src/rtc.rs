@@ -9,6 +9,37 @@ use core::convert::TryInto;
 use cortex_m::peripheral::NVIC;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
+/// To enable RTC wakeup interrupts, run this in the main body of your program, eg:
+/// `make_rtc_interrupt_handler!(RTC_WKUP);`
+#[macro_export]
+macro_rules! make_rtc_interrupt_handler {
+    ($line:ident) => {
+        #[interrupt]
+        fn $line() {
+            free(|cs| {
+                // Clear the wake up timer flag, after disabling write protections.
+                unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xCA)) };
+                unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0x53)) };
+                unsafe { (*pac::RTC::ptr()).cr.modify(|_, w| w.wute().clear_bit()) };
+
+                unsafe { (*pac::RTC::ptr()).isr.modify(|_, w| w.init().set_bit()) };
+                while unsafe { (*pac::RTC::ptr()).isr.read().initf().bit_is_clear() } {}
+
+                unsafe { (*pac::RTC::ptr()).isr.modify(|_, w| w.wutf().clear_bit()) };
+
+                unsafe { (*pac::RTC::ptr()).isr.modify(|_, w| w.init().clear_bit()) };
+                while !unsafe { (*pac::RTC::ptr()).isr.read().initf().bit_is_clear() } {}
+
+                unsafe { (*pac::RTC::ptr()).cr.modify(|_, w| w.wute().set_bit()) };
+                unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xFF)) };
+
+                // Reset pending bit for interrupt line
+                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr1().set_bit()) };
+            });
+        }
+    };
+}
+
 /// Invalid input error
 #[derive(Debug)]
 pub enum Error {
@@ -88,17 +119,20 @@ impl Rtc {
         self.regs.cr.read().fmt().bit()
     }
 
-    /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11.
+    /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11, and more broadly,
+    /// section 2.4.1. See also reference manual, section 27.5.
+    /// In addition to running this function, set up the interrupt handling function by
+    /// adding the line `make_rtc_interrupt_handler!(RTC_WKUP);` somewhere in the body
+    /// of your program.
     /// `sleep_time` is in ms.
     pub fn set_auto_wakeup(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
-        // todo: RTC2 vice 3?
-
-        // Setup interrupt line 20
+        // Configure and enable the EXTI line corresponding to the Wakeup timer even in
+        // interrupt mode and select the rising edge sensitivity.
         exti.imr1.modify(|_, w| w.mr20().unmasked());
-        // Set up trigger on rising edge.
-        // Reverse these true/false values to set to trigger on falling edge.
         exti.rtsr1.modify(|_, w| w.tr20().bit(true));
         exti.ftsr1.modify(|_, w| w.tr20().bit(false));
+
+        // Configure and Enable the RTC_WKUP IRQ channel in the NVIC.
         unsafe { NVIC::unmask(RTC_WKUP) };
 
         // Disable the RTC registers Write protection.
@@ -106,12 +140,11 @@ impl Rtc {
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
         self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
 
-        // Disabled the wakeup timer. Clear WUTE bit in RTC_CR register
+        // Disable the wakeup timer. Clear WUTE bit in RTC_CR register
         self.regs.cr.modify(|_, w| w.wute().clear_bit());
 
         // Ensure access to Wakeup auto-reload counter and bits WUCKSEL[2:0] is allowed.
         // Poll WUTWF until it is set in RTC_ISR (RTC2)/RTC_ICSR (RTC3)
-
         while !self.regs.isr.read().wutwf().bit_is_set() {}
 
         // Program the value into the wakeup timer
@@ -124,7 +157,7 @@ impl Rtc {
         self.regs
             .wutr
             // .modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
-            .modify(|_, w| unsafe { w.wut().bits(2048) });
+            .modify(|_, w| unsafe { w.wut().bits(10_048) });
 
         // Select the desired clock source. Program WUCKSEL[2:0] bits in RTC_CR register.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
@@ -155,9 +188,22 @@ impl Rtc {
         // The wakeup timer restarts counting down.
         self.regs.cr.modify(|_, w| w.wute().set_bit());
 
+        // Enable the wakeup timer interrupt.
+        self.regs.cr.modify(|_, w| w.wutie().set_bit());
+
         // Enable the RTC registers Write protection. Write 0xFF into the
         // RTC_WPR register. RTC registers can no more be modified.
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
+    }
+
+    /// Clears the wakeup flag. Must be cleared manually after every RTC wakeup.
+    /// Alternatively, you could handle this in the EXTI handler function.
+    pub fn clear_wakeup_flag(&mut self) {
+        self.modify(|regs| {
+            regs.cr.modify(|_, w| w.wute().clear_bit());
+            regs.isr.modify(|_, w| w.wutf().clear_bit());
+            regs.cr.modify(|_, w| w.wute().set_bit());
+        });
     }
 
     /// As described in Section 27.3.7 in RM0316,
