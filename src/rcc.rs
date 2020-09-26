@@ -20,7 +20,6 @@ impl RccExt for RCC {
             ahb: AHB { _0: () },
             apb1: APB1 { _0: () },
             apb2: APB2 { _0: () },
-            bdcr: BDCR { _0: () },
             cfgr: CFGR {
                 hse: None,
                 hclk: None,
@@ -28,7 +27,6 @@ impl RccExt for RCC {
                 pclk2: None,
                 sysclk: None,
             },
-            cr: CR { _0: () },
         }
     }
 }
@@ -50,27 +48,9 @@ pub struct Rcc {
     pub apb1: APB1,
     /// Advanced Peripheral Bus 2 (APB2) registers
     pub apb2: APB2,
-    /// RCC Backup Domain
-    pub bdcr: BDCR,
     /// Clock configuration
     pub cfgr: CFGR,
-    /// RCC Clock Control register
-    pub cr: CR,
 }
-
-// impl Rcc {  // todo: not working
-//     /// Enable bypass mode for the HSE. This disables the output, and lets you use that
-//     /// pin for GPIO
-//     fn set_hse_bypass(&mut self, value: bool) {
-//         self.cr.modify(|_, w| w.hseon().set_bit().hsebyp().bit(true))
-//     }
-
-//     /// Enable bypass mode for the LSE. This disables the output, and lets you use that
-//     /// pin for GPIO
-//     fn set_lse_bypass(&mut self, value: bool) {
-//         self.bdcr.modify(|_, w| w.lseon().set_bit().lsebyp().bit(true))
-//     }
-// }
 
 /// AMBA High-performance Bus (AHB) registers
 ///
@@ -207,30 +187,6 @@ mod usb_clocking {
 
     pub(crate) fn set_usbpre(w: &mut cfgr::W, usb_prescale: cfgr::USBPRE_A) -> &mut cfgr::W {
         w.usbpre().variant(usb_prescale)
-    }
-}
-
-/// Backup Domain Control register (RCC_BDCR)
-pub struct BDCR {
-    _0: (),
-}
-
-/// RCC Clock Control register (RCC_CR)
-pub struct CR {
-    _0: (),
-}
-
-impl CR {
-    pub(crate) fn cr(&mut self) -> &rcc::CR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).cr }
-    }
-}
-
-impl BDCR {
-    pub(crate) fn bdcr(&mut self) -> &rcc::BDCR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).bdcr }
     }
 }
 
