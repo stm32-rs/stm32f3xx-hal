@@ -162,7 +162,7 @@ impl Rtc {
 
     /// As described in Section 27.3.7 in RM0316,
     /// this function is used to disable write protection
-    /// when modifying an RTC register
+    /// when modifying an RTC register.
     fn modify<F>(&mut self, mut closure: F)
     where
         F: FnMut(&mut RTC),
@@ -182,6 +182,7 @@ impl Rtc {
         self.regs.isr.modify(|_, w| w.init().clear_bit());
         // wait for last write to be done
         while !self.regs.isr.read().initf().bit_is_clear() {}
+        self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
     }
 }
 
@@ -195,14 +196,17 @@ impl Rtcc for Rtc {
         let (ht, hu) = bcd2_encode(time.hour())?;
         let (mnt, mnu) = bcd2_encode(time.minute())?;
         let (st, su) = bcd2_encode(time.second())?;
-        self.regs.tr.write(|w| unsafe {
-            w.ht().bits(ht);
-            w.hu().bits(hu);
-            w.mnt().bits(mnt);
-            w.mnu().bits(mnu);
-            w.st().bits(st);
-            w.su().bits(su);
-            w.pm().clear_bit()
+
+        self.modify(|regs| {
+            regs.tr.write(|w| unsafe {
+                w.ht().bits(ht);
+                w.hu().bits(hu);
+                w.mnt().bits(mnt);
+                w.mnu().bits(mnu);
+                w.st().bits(st);
+                w.su().bits(su);
+                w.pm().clear_bit()
+            })
         });
 
         Ok(())
@@ -517,6 +521,7 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
 
 /// Enables the RTC, and sets LSE as the timing source.
 fn enable(bdcr: &mut BDCR) {
+    bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
     bdcr.bdcr().modify(|_, w| w.rtcen().enabled());
 }
 
