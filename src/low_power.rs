@@ -5,11 +5,12 @@
 use cortex_m::peripheral::SCB;
 /// Enter `Sleep now` mode: the lightest of the 3 low-power states avail on the
 /// STM32f3.
-/// TO exit: Interrupt. Refer to Table 82.
+
 use stm32f3xx_hal::pac::PWR;
 
 /// Enter `Sleep Now` low-power mode: Sleep is the lights of the 3-low power states available.
 /// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
+/// To exit: Interrupt. Refer to Table 82.
 /// Ref man, table 18.
 pub fn sleep_now(scb: &mut SCB) {
     // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
@@ -23,6 +24,7 @@ pub fn sleep_now(scb: &mut SCB) {
 
 /// Enter `Sleep on exit` low-power mode: Sleep is the lights of the 3-low power states available.
 /// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
+/// To exit: Interrupt. Refer to Table 82.
 // Ref man, table 19.
 pub fn sleep_on_exit(scb: &mut SCB) {
     // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
