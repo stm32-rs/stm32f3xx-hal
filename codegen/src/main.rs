@@ -2,36 +2,27 @@ mod codegen;
 mod cubemx;
 
 use anyhow::Result;
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use cubemx::Db;
+use std::path::PathBuf;
+use structopt::StructOpt;
 
-fn parse_args() -> ArgMatches<'static> {
-    App::new("codegen")
-        .about("Code generation for the stm32f3xx-hal crate")
-        .setting(AppSettings::SubcommandRequiredElseHelp)
-        .subcommand(
-            SubCommand::with_name("gpio")
-                .about("Generate GPIO mappings from an STM32CubeMX database")
-                .arg(
-                    Arg::with_name("db_path")
-                        .help("Path of the STM32CubeMX MCU database (.../db/mcs/)")
-                        .required(true),
-                ),
-        )
-        .get_matches()
+#[derive(StructOpt)]
+#[structopt(about = "Code generation for the stm32f3xx-hal crate")]
+enum Command {
+    #[structopt(about = "Generate GPIO mappings from an STM32CubeMX database")]
+    Gpio {
+        #[structopt(parse(from_os_str), help = "Path of the STM32CubeMX MCU database")]
+        db_path: PathBuf,
+    },
 }
 
 fn main() -> Result<()> {
-    let args = parse_args();
-
-    match args.subcommand() {
-        ("gpio", Some(args)) => handle_gpio(args),
-        _ => unreachable!(),
+    match Command::from_args() {
+        Command::Gpio { db_path } => handle_gpio(db_path),
     }
 }
 
-fn handle_gpio(args: &ArgMatches) -> Result<()> {
-    let db_path = args.value_of("db_path").unwrap();
+fn handle_gpio(db_path: PathBuf) -> Result<()> {
     let db = cubemx::Db::new(db_path);
 
     emit_autogen_comment(&db)?;
