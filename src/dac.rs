@@ -1,12 +1,5 @@
 //! Configure the internal DAC on the stm32f3xx.
 //! Incomplete, but includes basic operation.
-//!
-//! You should have the appropriate DAC pin set up as an analog input, to prevent
-//! parasitic power consumption. For example:
-//! ```rust
-//! let _dac1_pin = gpioa.pa4.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
-//! let _dac2_pin = gpioa.pa5.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
-//! ```
 
 use core::fmt;
 
@@ -36,7 +29,6 @@ pub trait SingleChannelDac {
 pub trait Pins {}
 impl Pins for PA4<Analog> {}
 impl Pins for PA5<Analog> {}
-impl Pins for (PA4<Analog>, PA5<Analog>) {}
 
 #[derive(Clone, Copy, Debug)]
 /// Select the channel
@@ -120,15 +112,10 @@ impl Dac {
 
     /// Enable the DAC.
     pub fn enable(&mut self, apb1: &mut APB1) {
+        apb1.enr().modify(|_, w| w.dac1en().enabled());
         match self.channel {
-            Channel::One => {
-                apb1.enr().modify(|_, w| w.dac1en().enabled());
-                self.regs.cr.modify(|_, w| w.en1().enabled());
-            }
-            Channel::Two => {
-                apb1.enr().modify(|_, w| w.dac2en().enabled());
-                self.regs.cr.modify(|_, w| w.en2().enabled());
-            }
+            Channel::One => self.regs.cr.modify(|_, w| w.en1().enabled()),
+            Channel::Two => self.regs.cr.modify(|_, w| w.en2().enabled()),
         }
     }
 
@@ -177,13 +164,13 @@ impl Dac {
     pub fn set_trigger(&mut self, trigger: Trigger) {
         match self.channel {
             Channel::One => {
-                self.regs.cr.modify(|_, w| w.ten1().set_bit());
+                self.regs.cr.modify(|_, w| w.ten1().enabled());
                 self.regs
                     .cr
                     .modify(|_, w| unsafe { w.tsel1().bits(trigger.bits()) });
             }
             Channel::Two => {
-                self.regs.cr.modify(|_, w| w.ten2().set_bit());
+                self.regs.cr.modify(|_, w| w.ten2().enabled());
                 self.regs.cr.modify(|_, w| w.tsel2().bits(trigger.bits()));
             }
         }
