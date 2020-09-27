@@ -3,7 +3,7 @@
 //! and more importantly, 7.3: `Low-power modes` of reference manual.
 
 use cortex_m::peripheral::SCB;
-use stm32f3xx_hal::pac::PWR;
+use crate::pac::PWR;
 
 /// Enter `Sleep Now` low-power mode: Sleep is the lights of the 3-low power states available.
 /// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
