@@ -3,9 +3,6 @@
 //! and more importantly, 7.3: `Low-power modes` of reference manual.
 
 use cortex_m::peripheral::SCB;
-/// Enter `Sleep now` mode: the lightest of the 3 low-power states avail on the
-/// STM32f3.
-
 use stm32f3xx_hal::pac::PWR;
 
 /// Enter `Sleep Now` low-power mode: Sleep is the lights of the 3-low power states available.
