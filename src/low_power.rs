@@ -6,7 +6,7 @@ use cortex_m::peripheral::SCB;
 /// Enter `Sleep now` mode: the lightest of the 3 low-power states avail on the
 /// STM32f3.
 /// TO exit: Interrupt. Refer to Table 82.
-use stm32f3xx_hal::pac::PWR;
+use crate::pac::PWR;
 
 /// Ref man, table 18.
 pub fn sleep_now(scb: &mut SCB) {
