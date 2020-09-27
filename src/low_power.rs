@@ -6,8 +6,10 @@ use cortex_m::peripheral::SCB;
 /// Enter `Sleep now` mode: the lightest of the 3 low-power states avail on the
 /// STM32f3.
 /// TO exit: Interrupt. Refer to Table 82.
-use crate::pac::PWR;
+use stm32f3xx_hal::pac::PWR;
 
+/// Enter `Sleep Now` low-power mode: Sleep is the lights of the 3-low power states available.
+/// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
 /// Ref man, table 18.
 pub fn sleep_now(scb: &mut SCB) {
     // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
@@ -19,6 +21,8 @@ pub fn sleep_now(scb: &mut SCB) {
     scb.clear_sleeponexit();
 }
 
+/// Enter `Sleep on exit` low-power mode: Sleep is the lights of the 3-low power states available.
+/// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
 // Ref man, table 19.
 pub fn sleep_on_exit(scb: &mut SCB) {
     // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
@@ -30,10 +34,10 @@ pub fn sleep_on_exit(scb: &mut SCB) {
     scb.set_sleeponexit();
 }
 
-/// Enter `Stop` mode: the middle of the 3 low-power states avail on the
-/// STM32f3.
+/// Enter `Stop` mode: the middle of the 3 low-power states available.
 /// To exit:  Any EXTI Line configured in Interrupt mode (the corresponding EXTI
 /// Interrupt vector must be enabled in the NVIC). Refer to Table 82.
+/// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
 /// Ref man, table 20.
 pub fn stop(scb: &mut SCB, pwr: &mut PWR) {
     //WFI (Wait for Interrupt) or WFE (Wait for Event) while:
@@ -55,10 +59,10 @@ pub fn stop(scb: &mut SCB, pwr: &mut PWR) {
     pwr.cr.modify(|_, w| w.lpds().set_bit());
 }
 
-/// Enter `Standby` mode: the lowest-power of the 3 low-power states avail on the
-/// STM32f3.
+/// Enter `Standby` mode: the lowest-power of the 3 low-power states available.
 /// To exit: WKUP pin rising edge, RTC alarm event’s rising edge, external Reset in
 /// NRST pin, IWDG Reset.
+/// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
 /// Ref man, table 21.
 pub fn standby(scb: &mut SCB, pwr: &mut PWR) {
     // WFI (Wait for Interrupt) or WFE (Wait for Event) while:
