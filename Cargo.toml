@@ -16,11 +16,15 @@ features = ["stm32f303xc", "rt", "stm32-usbd"]
 targets = ["thumbv7em-none-eabihf"]
 
 [dependencies]
+cfg-if = "0.1"
 cortex-m = "0.6"
 cortex-m-rt = "0.6"
+embedded-dma = "0.1"
 embedded-hal = "0.2"
 nb = "0.1"
-stm32f3 = "0.11"
+paste = "1"
+rtcc = "0.2"
+stm32f3 = "0.12"
 
 [dependencies.embedded-hal-can]
 version = "0.1.0"
@@ -36,10 +40,6 @@ features = ["const-fn"]
 
 [dependencies.cast]
 version = "0.2"
-default-features = false
-
-[dependencies.stable_deref_trait]
-version = "1"
 default-features = false
 
 [dependencies.stm32-usbd]
@@ -64,30 +64,36 @@ direct-call-deprecated = []
 rt = ["stm32f3/rt"]
 can = ["embedded-hal-can", "heapless"]
 
+gpio-f302 = []
+gpio-f303 = []
+gpio-f303e = []
+gpio-f333 = []
+gpio-f373 = []
+
 # Any Changes here should be mirrored in README.md, src/lib.rs, and
 # .github/workflows/ci.yml.
-stm32f301 = ["stm32f3/stm32f301", "device-selected"]
-stm32f318 = ["stm32f3/stm32f301", "device-selected"]
+stm32f301 = ["gpio-f302", "stm32f3/stm32f301", "device-selected"]
+stm32f318 = ["gpio-f302", "stm32f3/stm32f301", "device-selected"]
 stm32f302 = ["stm32f3/stm32f302", "direct-call-deprecated"]
-stm32f302xb = ["stm32f302", "device-selected"]
-stm32f302xc = ["stm32f302", "device-selected"]
-stm32f302xd = ["stm32f302", "device-selected"]
-stm32f302xe = ["stm32f302", "device-selected"]
-stm32f302x6 = ["stm32f302", "device-selected"]
-stm32f302x8 = ["stm32f302", "device-selected"]
+stm32f302x6 = ["stm32f302", "gpio-f302", "device-selected"]
+stm32f302x8 = ["stm32f302", "gpio-f302", "device-selected"]
+stm32f302xb = ["stm32f302", "gpio-f303", "device-selected"]
+stm32f302xc = ["stm32f302", "gpio-f303", "device-selected"]
+stm32f302xd = ["stm32f302", "gpio-f303e", "device-selected"]
+stm32f302xe = ["stm32f302", "gpio-f303e", "device-selected"]
 stm32f303 = ["stm32f3/stm32f303", "direct-call-deprecated"]
-stm32f303xb = ["stm32f303", "stm32-usbd/ram_access_1x16", "device-selected"]
-stm32f303xc = ["stm32f303", "stm32-usbd/ram_access_1x16", "device-selected"]
-stm32f303xd = ["stm32f303", "stm32-usbd/ram_access_2x16", "device-selected"]
-stm32f303xe = ["stm32f303", "stm32-usbd/ram_access_2x16", "device-selected"]
-stm32f303x6 = ["stm32f303", "device-selected"]
-stm32f303x8 = ["stm32f303", "device-selected"]
-stm32f373 = ["stm32f3/stm32f373", "device-selected"]
-stm32f378 = ["stm32f3/stm32f373", "device-selected"]
-stm32f334 = ["stm32f3/stm32f3x4", "device-selected"]
-stm32f328 = ["stm32f3/stm32f3x8", "device-selected"]
-stm32f358 = ["stm32f3/stm32f3x8", "device-selected"]
-stm32f398 = ["stm32f3/stm32f3x8", "device-selected"]
+stm32f303x6 = ["stm32f303", "gpio-f333", "device-selected"]
+stm32f303x8 = ["stm32f303", "gpio-f333", "device-selected"]
+stm32f303xb = ["stm32f303", "gpio-f303", "stm32-usbd/ram_access_1x16", "device-selected"]
+stm32f303xc = ["stm32f303", "gpio-f303", "stm32-usbd/ram_access_1x16", "device-selected"]
+stm32f303xd = ["stm32f303", "gpio-f303e", "stm32-usbd/ram_access_2x16", "device-selected"]
+stm32f303xe = ["stm32f303", "gpio-f303e", "stm32-usbd/ram_access_2x16", "device-selected"]
+stm32f373 = ["gpio-f373", "stm32f3/stm32f373", "device-selected"]
+stm32f378 = ["gpio-f373", "stm32f3/stm32f373", "device-selected"]
+stm32f334 = ["gpio-f333", "stm32f3/stm32f3x4", "device-selected"]
+stm32f328 = ["gpio-f333", "stm32f3/stm32f3x8", "device-selected"]
+stm32f358 = ["gpio-f303", "stm32f3/stm32f3x8", "device-selected"]
+stm32f398 = ["gpio-f303e", "stm32f3/stm32f3x8", "device-selected"]
 
 [profile.dev]
 debug = true

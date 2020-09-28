@@ -7,40 +7,15 @@ use crate::{
     rcc::{Clocks, APB1, APB2},
     time::Bps,
 };
+use cfg_if::cfg_if;
 use core::{convert::Infallible, marker::PhantomData, ptr};
 
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::gpio::gpiod;
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::gpio::gpioe;
-
-#[cfg(feature = "stm32f303")]
-use crate::dma;
-#[cfg(feature = "stm32f303")]
-use cortex_m::interrupt;
+cfg_if! {
+    if #[cfg(any(feature = "stm32f302", feature = "stm32f303"))] {
+        use crate::dma;
+        use cortex_m::interrupt;
+    }
+}
 
 /// Interrupt event
 pub enum Event {
@@ -74,129 +49,41 @@ pub unsafe trait RxPin<USART> {}
 unsafe impl TxPin<USART1> for gpioa::PA9<AF7> {}
 unsafe impl TxPin<USART1> for gpiob::PB6<AF7> {}
 unsafe impl TxPin<USART1> for gpioc::PC4<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl TxPin<USART1> for gpioe::PE0<AF7> {}
-
 unsafe impl RxPin<USART1> for gpioa::PA10<AF7> {}
 unsafe impl RxPin<USART1> for gpiob::PB7<AF7> {}
 unsafe impl RxPin<USART1> for gpioc::PC5<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART1> for gpioe::PE1<AF7> {}
 
 unsafe impl TxPin<USART2> for gpioa::PA2<AF7> {}
-// unsafe impl TxPin<USART2> for gpioa::PA14<AF7> {}
-// unsafe impl TxPin<USART2> for gpiob::PB3<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl TxPin<USART2> for gpiod::PD5<AF7> {}
-
+unsafe impl TxPin<USART2> for gpiob::PB3<AF7> {}
 unsafe impl RxPin<USART2> for gpioa::PA3<AF7> {}
-// unsafe impl RxPin<USART2> for gpioa::PA15<AF7> {}
-// unsafe impl RxPin<USART2> for gpiob::PB4<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART2> for gpiod::PD6<AF7> {}
+unsafe impl RxPin<USART2> for gpiob::PB4<AF7> {}
 
 unsafe impl TxPin<USART3> for gpiob::PB10<AF7> {}
 unsafe impl TxPin<USART3> for gpioc::PC10<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl TxPin<USART3> for gpiod::PD8<AF7> {}
-
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f318",
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART3> for gpiob::PB11<AF7> {}
 unsafe impl RxPin<USART3> for gpioc::PC11<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f334",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART3> for gpiod::PD9<AF7> {}
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-unsafe impl RxPin<USART3> for gpioe::PE15<AF7> {}
+
+cfg_if! {
+    if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))] {
+        use crate::gpio::{gpiod, gpioe};
+
+        unsafe impl TxPin<USART1> for gpioe::PE0<AF7> {}
+        unsafe impl RxPin<USART1> for gpioe::PE1<AF7> {}
+
+        unsafe impl TxPin<USART2> for gpiod::PD5<AF7> {}
+        unsafe impl RxPin<USART2> for gpiod::PD6<AF7> {}
+
+        unsafe impl TxPin<USART3> for gpiod::PD8<AF7> {}
+        unsafe impl RxPin<USART3> for gpiod::PD9<AF7> {}
+        unsafe impl RxPin<USART3> for gpioe::PE15<AF7> {}
+    }
+}
+cfg_if! {
+    if #[cfg(not(feature = "gpio-f373"))] {
+        unsafe impl TxPin<USART2> for gpioa::PA14<AF7> {}
+        unsafe impl RxPin<USART2> for gpioa::PA15<AF7> {}
+        unsafe impl RxPin<USART3> for gpiob::PB11<AF7> {}
+    }
+}
 
 /// Serial abstraction
 pub struct Serial<USART, PINS> {
@@ -363,7 +250,7 @@ macro_rules! hal {
 
             impl blocking::serial::write::Default<u8> for Tx<$USARTX> {}
 
-            #[cfg(feature = "stm32f303")]
+            #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
             impl Rx<$USARTX> {
                 /// Fill the buffer with received data using DMA.
                 pub fn read_exact<B, C>(
@@ -378,13 +265,14 @@ macro_rules! hal {
                 {
                     // NOTE(unsafe) taking the address of a register
                     let pa = unsafe { &(*$USARTX::ptr()).rdr } as *const _ as u32;
-                    channel.set_peripheral_address(pa, dma::Increment::Disable);
+                    // NOTE(unsafe) usage of a valid peripheral address
+                    unsafe { channel.set_peripheral_address(pa, dma::Increment::Disable) };
 
                     dma::Transfer::start_write(buffer, channel, self)
                 }
             }
 
-            #[cfg(feature = "stm32f303")]
+            #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
             impl Tx<$USARTX> {
                 /// Transmit all data in the buffer using DMA.
                 pub fn write_all<B, C>(
@@ -399,13 +287,14 @@ macro_rules! hal {
                 {
                     // NOTE(unsafe) taking the address of a register
                     let pa = unsafe { &(*$USARTX::ptr()).tdr } as *const _ as u32;
-                    channel.set_peripheral_address(pa, dma::Increment::Disable);
+                    // NOTE(unsafe) usage of a valid peripheral address
+                    unsafe { channel.set_peripheral_address(pa, dma::Increment::Disable) };
 
                     dma::Transfer::start_read(buffer, channel, self)
                 }
             }
 
-            #[cfg(feature = "stm32f303")]
+            #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
             impl dma::Target for Rx<$USARTX> {
                 fn enable_dma(&mut self) {
                     // NOTE(unsafe) critical section prevents races
@@ -424,7 +313,7 @@ macro_rules! hal {
                 }
             }
 
-            #[cfg(feature = "stm32f303")]
+            #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
             impl dma::Target for Tx<$USARTX> {
                 fn enable_dma(&mut self) {
                     // NOTE(unsafe) critical section prevents races
@@ -446,24 +335,8 @@ macro_rules! hal {
     }
 }
 
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f318",
-    feature = "stm32f303",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
 hal! {
     USART1: (usart1, APB2, usart1en, usart1rst, pclk2),
     USART2: (usart2, APB1, usart2en, usart2rst, pclk1),
     USART3: (usart3, APB1, usart3en, usart3rst, pclk1),
-}
-
-#[cfg(any(feature = "stm32f302", feature = "stm32f334"))]
-hal! {
-    USART1: (usart1, APB2, usart1en, usart1rst, pclk2),
-    USART2: (usart2, APB1, usart2en, usart2rst, pclk1),
 }
