@@ -2,8 +2,8 @@
 //! Reference section 3.7: `Power management` of the user manual,
 //! and more importantly, 7.3: `Low-power modes` of reference manual.
 
-use cortex_m::peripheral::SCB;
 use crate::pac::PWR;
+use cortex_m::peripheral::SCB;
 
 /// Enter `Sleep now` low-power mode: Sleep is the lights of the 3-low power states available.
 /// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
