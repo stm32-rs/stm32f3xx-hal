@@ -5,7 +5,7 @@
 use cortex_m::peripheral::SCB;
 use crate::pac::PWR;
 
-/// Enter `Sleep Now` low-power mode: Sleep is the lights of the 3-low power states available.
+/// Enter `Sleep now` low-power mode: Sleep is the lights of the 3-low power states available.
 /// Run this function, then set WFE or WFI, eg: `cortex_m::asm::wfi();`
 /// To exit: Interrupt. Refer to Table 82.
 /// Ref man, table 18.
