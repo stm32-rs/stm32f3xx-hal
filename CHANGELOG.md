@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for `stm32f302x6` and `stm32f302x8` devices ([#132](https://github.com/stm32-rs/stm32f3xx-hal/pull/132))
 - Support for the onboard real-time clock (RTC) ([#136](https://github.com/stm32-rs/stm32f3xx-hal/pull/136))
 - Enable DMA for USART on `stm32f302` devices ([#139](https://github.com/stm32-rs/stm32f3xx-hal/pull/139))
+- Basic CAN bus support ([#100](https://github.com/stm32-rs/stm32f3xx-hal/pull/100))
 
 ### Changed
 
