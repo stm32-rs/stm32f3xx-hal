@@ -10,12 +10,8 @@
 //! This is incomplete, and for now only handles GPIO interrupts, and configuring
 //! EXTI lines.
 
+use crate::pac::{interrupt, EXTI, SYSCFG};
 use cortex_m::peripheral::NVIC;
-use stm32f3xx_hal::{
-    interrupt,
-    pac::{EXTI, SYSCFG},
-};
-
 
 #[derive(Copy, Clone, Debug)]
 pub enum GpioReg {
