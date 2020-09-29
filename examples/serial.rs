@@ -33,6 +33,9 @@ fn main() -> ! {
         let data_to_send = [2, 3, 4, 5];
         tx.bwrite_all(&data_to_send);
 
+        // Send a string
+        tx.write_str("Don't panic.");
+
         // Receive multiple bytes as an array.
         let data_recieved = rx.read();
     }
