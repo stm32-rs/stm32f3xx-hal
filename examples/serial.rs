@@ -7,9 +7,9 @@
 
 use panic_semihosting as _;
 
-use crate::{pac, prelude::*, serial::Serial};
 use cortex_m::singleton;
 use cortex_m_rt::entry;
+use stm32f3xx_hal::{pac, prelude::*, serial::Serial};
 
 #[entry]
 fn main() -> ! {
