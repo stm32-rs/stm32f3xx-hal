@@ -104,6 +104,10 @@ name = "spi"
 required-features = ["stm32f303"]
 
 [[example]]
+name = "serial"
+required-features = ["stm32f303"]
+
+[[example]]
 name = "serial_dma"
 required-features = ["stm32f303"]
 
