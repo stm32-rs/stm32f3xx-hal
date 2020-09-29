@@ -25,11 +25,15 @@ fn main() -> ! {
     let (mut tx, mut rx) = serial.split();
 
     loop {
-        // Send bytes over the U[S]ART pins
+        // Send a single byte.
+        let single_byte_to_send = 8;
+        tx.write(single_byte_to_send);
+
+        // Send multiple bytes over the U[S]ART pins.
         let data_to_send = [2, 3, 4, 5];
         tx.bwrite_all(&data_to_send);
 
-        // Receive data.
+        // Receive multiple bytes as an array.
         let data_recieved = rx.read();
     }
 }
