@@ -7,9 +7,9 @@
 
 use panic_semihosting as _;
 
+use crate::{pac, prelude::*, serial::Serial};
 use cortex_m::singleton;
 use cortex_m_rt::entry;
-use crate::{pac, prelude::*, serial::Serial};
 
 #[entry]
 fn main() -> ! {
@@ -20,6 +20,7 @@ fn main() -> ! {
     let clocks = rcc.cfgr.freeze(&mut flash.acr);
 
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+
     // Setup UART pins.
     let uart_pins = (
         gpioa.pa9.into_af7(&mut gpioa.moder, &mut gpioa.afrh),
