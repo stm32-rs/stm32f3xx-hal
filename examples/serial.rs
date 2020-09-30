@@ -7,7 +7,6 @@
 
 use panic_semihosting as _;
 
-use cortex_m::singleton;
 use cortex_m_rt::entry;
 use stm32f3xx_hal::{pac, prelude::*, serial::Serial};
 
@@ -40,7 +39,7 @@ fn main() -> ! {
         tx.bwrite_all(&data_to_send);
 
         // Send a string
-        tx.write_str("Don't panic.");
+        // tx.write_str("Don't panic.");
 
         // Receive multiple bytes as an array.
         let data_recieved = rx.read();
