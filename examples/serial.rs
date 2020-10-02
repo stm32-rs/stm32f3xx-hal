@@ -42,6 +42,6 @@ fn main() -> ! {
         // tx.write_str("Don't panic.");
 
         // Receive multiple bytes as an array.
-        let data_recieved = rx.read();
+        let _data_recieved = rx.read();
     }
 }
