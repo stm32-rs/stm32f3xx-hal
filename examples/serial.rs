@@ -32,11 +32,11 @@ fn main() -> ! {
     loop {
         // Send a single byte.
         let single_byte_to_send = 8;
-        tx.write(single_byte_to_send);
+        tx.write(single_byte_to_send).ok();
 
         // Send multiple bytes over the U[S]ART pins.
         let data_to_send = [2, 3, 4, 5];
-        tx.bwrite_all(&data_to_send);
+        tx.bwrite_all(&data_to_send).ok();
 
         // Send a string
         // tx.write_str("Don't panic.");
