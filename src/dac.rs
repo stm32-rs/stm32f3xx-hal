@@ -222,9 +222,8 @@ impl fmt::Debug for Dac {
 
 pub struct DacError {}
 
-impl SingleChannelDac for Dac {
+impl SingleChannelDac<u32> for Dac {
     type Error = DacError;
-    type Word = u32;
 
     /// Set the DAC value as an integer.
     fn try_set_value(&mut self, val: u32) -> Result<(), DacError> {
