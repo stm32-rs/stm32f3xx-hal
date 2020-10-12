@@ -12,16 +12,13 @@ use crate::{
     rcc::APB1,
 };
 
-/// todo: DAC trait that will go in a PR to `embeddd-hal`.
-/// Once merged and released in that crate, remove from this module.
-/// [PR](https://github.com/rust-embedded/embedded-hal/pull/247)
-pub trait SingleChannelDac {
+/// Trait representing a single-channel digital-to-analog converter (DAC).
+pub trait SingleChannelDac<Word> {
     /// Error type returned by DAC methods
     type Error;
-    type Word;
 
     /// Output a constant signal, given a bit word.
-    fn try_set_value(&mut self, value: Self::Word) -> Result<(), Self::Error>;
+    fn try_set_value(&mut self, value: Word) -> Result<(), Self::Error>;
 }
 
 /// This is an abstraction to ensure that the DAC output pin is configured
