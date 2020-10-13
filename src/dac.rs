@@ -58,9 +58,9 @@ pub enum Trigger {
     Tim7,
     /// Timer 15
     Tim15,
-    /// Timger 2
+    /// Timer 2
     Tim2,
-    /// Tim4 is Not available on DAC 2.
+    /// Timer 4
     Tim4,
     /// Eg, for interrupts
     Exti9,
@@ -118,16 +118,8 @@ impl Dac {
 
     /// Disable the DAC
     pub fn disable(&mut self, apb1: &mut APB1) {
-        match self.channel {
-            Channel::One => {
-                self.regs.cr.modify(|_, w| w.en1().disabled());
-                apb1.enr().modify(|_, w| w.dac1en().disabled());
-            }
-            Channel::Two => {
-                self.regs.cr.modify(|_, w| w.en2().disabled());
-                apb1.enr().modify(|_, w| w.dac2en().disabled());
-            }
-        }
+        self.regs.cr.modify(|_, w| w.en1().disabled());
+        apb1.enr().modify(|_, w| w.dac1en().disabled());
     }
 
     /// Set the DAC value as an integer.

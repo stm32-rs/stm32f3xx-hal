@@ -126,7 +126,7 @@ pub mod flash;
 pub mod gpio;
 #[cfg(feature = "device-selected")]
 pub mod i2c;
-#[cfg(feature = "stm32f303")]
+#[cfg(feature = "rt")]
 pub mod interrupt_;
 #[cfg(feature = "device-selected")]
 pub mod low_power;

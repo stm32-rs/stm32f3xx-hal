@@ -2,8 +2,7 @@
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
 
-use crate::interrupt_::RTC_WKUP;
-use crate::pac::{EXTI, PWR, RTC};
+use crate::pac::{interrupt::RTC_WKUP, EXTI, PWR, RTC};
 use crate::rcc::{APB1, BDCR};
 use core::convert::TryInto;
 use cortex_m::peripheral::NVIC;
