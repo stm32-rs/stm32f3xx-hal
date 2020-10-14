@@ -1,8 +1,6 @@
 //! Configure the internal DAC on the stm32f3xx.
 //! Incomplete, but includes basic operation.
 
-use core::fmt;
-
 use crate::{
     gpio::{
         gpioa::{PA4, PA5},
@@ -27,7 +25,7 @@ pub trait Pins {}
 impl Pins for PA4<Analog> {}
 impl Pins for PA5<Analog> {}
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 /// Select the channel
 pub enum Channel {
     /// Channel 1
@@ -36,7 +34,7 @@ pub enum Channel {
     Two,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 /// Three options are available to set DAC precision.
 pub enum DacBits {
     /// Eight bit precision, right-aligned.
@@ -199,16 +197,6 @@ impl Dac {
         }
         self.set_trigger(trigger);
         self.set_value(data);
-    }
-}
-
-impl fmt::Debug for Dac {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Dac")
-            .field("channel", &self.channel)
-            .field("bits", &self.bits)
-            .field("vret", &self.vref)
-            .finish()
     }
 }
 
