@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Breaking changes
+
+- `rcc.cfgr.freeze(...)` is now fallible
+  - As the clock tree can be configured in many wrong ways,
+    this change will make it obvious, that the clock is misconfigured.
+    No more nasty hidden asserts in `rcc`
+
 ### Added
 
 - Support for 16-bit words with SPI ([#107](https://github.com/stm32-rs/stm32f3xx-hal/pull/107))

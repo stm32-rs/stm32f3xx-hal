@@ -16,7 +16,7 @@ fn main() -> ! {
     // Get peripherals, clocks and freeze them
     let mut dp = pac::Peripherals::take().unwrap();
     let mut rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.freeze(&mut dp.FLASH.constrain().acr);
+    let clocks = rcc.cfgr.freeze(&mut dp.FLASH.constrain().acr).unwrap();
 
     // set up adc1
     let mut adc1 = adc::Adc::adc1(

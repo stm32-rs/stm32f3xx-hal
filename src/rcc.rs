@@ -1,5 +1,7 @@
 //! Reset and Clock Control
 
+use core::default;
+
 use crate::pac::{
     rcc::{self, cfgr, cfgr2},
     RCC,
@@ -7,6 +9,16 @@ use crate::pac::{
 
 use crate::flash::ACR;
 use crate::time::Hertz;
+use crate::time::U32Ext;
+
+#[derive(Copy, Clone, Debug)]
+pub enum RccError {
+    PllMaxExceeded,
+    Pclk1MaxExceeded,
+    Pclk2MaxExceeded,
+    SysclkMaxExceeded,
+    HclkMaxExceeded,
+}
 
 /// Extension trait that constrains the `RCC` peripheral
 pub trait RccExt {
@@ -357,7 +369,7 @@ impl CFGR {
         feature = "stm32f303xe",
         feature = "stm32f398"
     )))]
-    fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
+    fn calc_pll(&self, sysclk: u32) -> Result<(u32, PllConfig), RccError> {
         let pllsrcclk = self.hse.unwrap_or(HSI / 2);
         // Get the optimal value for the pll divisor (PLL_DIV) and multiplier (PLL_MUL)
         // Only for HSE PLL_DIV can be changed
@@ -377,22 +389,26 @@ impl CFGR {
                 divisor *= 2;
             }
 
-            // PLL_MUL maximal value is 16
-            assert!(divisor <= 16);
-            // PRE_DIV maximal value is 16
-            assert!(multiplier <= 16);
+            // PLL_MUL and PLLD_DIV maximal values are 16
+            if multiplier <= 16 || divisor <= 16 {
+                return Err(RccError::PllMaxExceeded);
+            }
 
             (multiplier, Some(divisor))
         }
         // HSI division is always divided by 2 and has no adjustable division
         else {
             let pll_mul = sysclk / pllsrcclk;
-            assert!(pll_mul <= 16);
+            if pll_mul <= 16 {
+                return Err(RccError::PllMaxExceeded);
+            }
             (pll_mul, None)
         };
 
         let sysclk = (pllsrcclk / pll_div.unwrap_or(1)) * pll_mul;
-        assert!(sysclk <= 72_000_000);
+        if sysclk <= 72_000_000 {
+            return Err(RccError::SysclkMaxExceeded);
+        }
 
         let pll_src = if self.hse.is_some() {
             cfgr::PLLSRC_A::HSE_DIV_PREDIV
@@ -404,14 +420,14 @@ impl CFGR {
         let pll_mul_bits = into_pll_mul(pll_mul as u8);
         let pll_div_bits = pll_div.map(|pll_div| into_pre_div(pll_div as u8));
 
-        (
+        Ok((
             sysclk,
             PllConfig {
                 src: pll_src,
                 mul: pll_mul_bits,
                 div: pll_div_bits,
             },
-        )
+        ))
     }
 
     /// Calculate the values for the pll multiplier (PLLMUL) and the pll divisor (PLLDIV).
@@ -423,7 +439,7 @@ impl CFGR {
     /// the external oscillator (HSE).
     /// After this the system clock frequency (SYSCLK) can be changed via a division and a
     /// multiplication block.
-    /// It can be divided from with values 1..16  and multiplied from 2..16.
+    /// It can be divided from with values `1..16`  and multiplied from `2..16`.
     ///
     /// To determine the optimal values, the greatest common divisor is calculated and the
     /// limitations of the possible values are taken into considiration.
@@ -434,7 +450,7 @@ impl CFGR {
         feature = "stm32f303xe",
         feature = "stm32f398",
     ))]
-    fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
+    fn calc_pll(&self, sysclk: u32) -> Result<(u32, PllConfig), RccError> {
         let pllsrcclk = self.hse.unwrap_or(HSI);
 
         let (pll_mul, pll_div) = {
@@ -451,17 +467,18 @@ impl CFGR {
                 divisor *= 2;
             }
 
-            // PLL_MUL maximal value is 16
-            assert!(multiplier <= 16);
-
-            // PRE_DIV maximal value is 16
-            assert!(divisor <= 16);
+            // PLL_MUL and PLLD_DIV maximal values are 16
+            if multiplier <= 16 || divisor <= 16 {
+                return Err(RccError::PllMaxExceeded);
+            }
 
             (multiplier, divisor)
         };
 
         let sysclk = (pllsrcclk / pll_div) * pll_mul;
-        assert!(sysclk <= 72_000_000);
+        if sysclk <= 72_000_000 {
+            return Err(RccError::SysclkMaxExceeded);
+        }
 
         // Select hardware clock source of the PLL
         // TODO Check whether HSI_DIV2 could be useful
@@ -475,14 +492,14 @@ impl CFGR {
         let pll_mul_bits = into_pll_mul(pll_mul as u8);
         let pll_div_bits = into_pre_div(pll_div as u8);
 
-        (
+        Ok((
             sysclk,
             PllConfig {
                 src: pll_src,
                 mul: pll_mul_bits,
                 div: Some(pll_div_bits),
             },
-        )
+        ))
     }
 
     /// Get the system clock, the system clock source and the pll_options, if needed.
@@ -490,10 +507,10 @@ impl CFGR {
     /// The system clock source is determined by the chosen system clock and the provided hardware
     /// clock.
     /// This function does only chose the PLL if needed, otherwise it will use the oscillator clock as system clock.
-    fn get_sysclk(&self) -> (u32, cfgr::SW_A, Option<PllConfig>) {
+    fn get_sysclk(&self) -> Result<(u32, cfgr::SW_A, Option<PllConfig>), RccError> {
         // If a sysclk is given, check if the PLL has to be used,
         // else select the system clock source, which is either HSI or HSE.
-        match (self.sysclk, self.hse) {
+        Ok(match (self.sysclk, self.hse) {
             // No need to use the PLL
             // PLL is needed for USB, but we can make this assumption, to not use PLL here,
             // because the two valid USB clocks, 72 Mhz and 48 Mhz, can't be generated
@@ -503,23 +520,22 @@ impl CFGR {
             // No need to use the PLL
             (Some(sysclk), None) if sysclk == HSI => (HSI, cfgr::SW_A::HSI, None),
             (Some(sysclk), _) => {
-                let (sysclk, pll_config) = self.calc_pll(sysclk);
+                let (sysclk, pll_config) = self.calc_pll(sysclk)?;
                 (sysclk, cfgr::SW_A::PLL, Some(pll_config))
             }
             // Use HSE as system clock
             (None, Some(hse)) => (hse, cfgr::SW_A::HSE, None),
             // Use HSI as system clock
             (None, None) => (HSI, cfgr::SW_A::HSI, None),
-        }
+        })
     }
 
     /// Freezes the clock configuration, making it effective
-    pub fn freeze(self, acr: &mut ACR) -> Clocks {
-        let (sysclk, sysclk_source, pll_config) = self.get_sysclk();
+    pub fn freeze(self, acr: &mut ACR) -> Result<Clocks, RccError> {
+        let (sysclk, sysclk_source, pll_config) = self.get_sysclk()?;
 
-        let (hpre_bits, hpre) = self
-            .hclk
-            .map(|hclk| match sysclk / hclk {
+        let (hpre_bits, hpre) = if let Some(hclk) = self.hclk {
+            match sysclk.checked_div(hclk).ok_or(RccError::HclkMaxExceeded)? {
                 0 => unreachable!(),
                 1 => (cfgr::HPRE_A::DIV1, 1),
                 2 => (cfgr::HPRE_A::DIV2, 2),
@@ -529,45 +545,56 @@ impl CFGR {
                 40..=95 => (cfgr::HPRE_A::DIV64, 64),
                 96..=191 => (cfgr::HPRE_A::DIV128, 128),
                 192..=383 => (cfgr::HPRE_A::DIV256, 256),
+                // TODO: Add Error case, if result is to high
                 _ => (cfgr::HPRE_A::DIV512, 512),
-            })
-            .unwrap_or((cfgr::HPRE_A::DIV1, 1));
+            }
+        } else {
+            (cfgr::HPRE_A::DIV1, 1)
+        };
 
         let hclk: u32 = sysclk / hpre;
 
-        assert!(hclk <= 72_000_000);
+        if hclk <= 72_000_000 {
+            return Err(RccError::HclkMaxExceeded);
+        }
 
-        let (ppre1_bits, ppre1) = self
-            .pclk1
-            .map(|pclk1| match hclk / pclk1 {
+        let (ppre1_bits, ppre1) = if let Some(pclk1) = self.pclk1 {
+            match hclk.checked_div(pclk1).ok_or(RccError::Pclk1MaxExceeded)? {
                 0 => unreachable!(),
                 1 => (cfgr::PPRE1_A::DIV1, 1),
                 2 => (cfgr::PPRE1_A::DIV2, 2),
                 3..=5 => (cfgr::PPRE1_A::DIV4, 4),
                 6..=11 => (cfgr::PPRE1_A::DIV8, 8),
                 _ => (cfgr::PPRE1_A::DIV16, 16),
-            })
-            .unwrap_or((cfgr::PPRE1_A::DIV1, 1));
+            }
+        } else {
+            (cfgr::PPRE1_A::DIV1, 1)
+        };
 
         let pclk1 = hclk / u32::from(ppre1);
 
-        assert!(pclk1 <= 36_000_000);
+        if pclk1 <= 36_000_000 {
+            return Err(RccError::Pclk1MaxExceeded);
+        }
 
-        let (ppre2_bits, ppre2) = self
-            .pclk2
-            .map(|pclk2| match hclk / pclk2 {
+        let (ppre2_bits, ppre2) = if let Some(pclk2) = self.pclk2 {
+            match hclk.checked_div(pclk2).ok_or(RccError::Pclk2MaxExceeded)? {
                 0 => unreachable!(),
                 1 => (cfgr::PPRE2_A::DIV1, 1),
                 2 => (cfgr::PPRE2_A::DIV2, 2),
                 3..=5 => (cfgr::PPRE2_A::DIV4, 4),
                 6..=11 => (cfgr::PPRE2_A::DIV8, 8),
                 _ => (cfgr::PPRE2_A::DIV16, 16),
-            })
-            .unwrap_or((cfgr::PPRE2_A::DIV1, 1));
+            }
+        } else {
+            (cfgr::PPRE2_A::DIV1, 1)
+        };
 
         let pclk2 = hclk / u32::from(ppre2);
 
-        assert!(pclk2 <= 72_000_000);
+        if pclk2 <= 72_000_000 {
+            return Err(RccError::Pclk2MaxExceeded);
+        }
 
         // Adjust flash wait states according to the
         // HCLK frequency (cpu core clock)
@@ -624,7 +651,7 @@ impl CFGR {
                 .variant(sysclk_source)
         });
 
-        Clocks {
+        Ok(Clocks {
             hclk: Hertz(hclk),
             pclk1: Hertz(pclk1),
             pclk2: Hertz(pclk2),
@@ -632,7 +659,7 @@ impl CFGR {
             ppre2,
             sysclk: Hertz(sysclk),
             usbclk_valid,
-        }
+        })
     }
 }
 
@@ -684,5 +711,20 @@ impl Clocks {
     /// Returns whether the USBCLK clock frequency is valid for the USB peripheral
     pub fn usbclk_valid(&self) -> bool {
         self.usbclk_valid
+    }
+}
+
+// FIXME: Meh this is a public contructor now :(
+impl default::Default for Clocks {
+    fn default() -> Self {
+        Self {
+            hclk: 8.mhz().into(),
+            pclk1: 8.mhz().into(),
+            pclk2: 8.mhz().into(),
+            ppre1: 1,
+            ppre2: 1,
+            sysclk: 8.mhz().into(),
+            usbclk_valid: false,
+        }
     }
 }

@@ -30,7 +30,8 @@ fn main() -> ! {
         .sysclk(48.mhz())
         .pclk1(24.mhz())
         .pclk2(24.mhz())
-        .freeze(&mut flash.acr);
+        .freeze(&mut flash.acr)
+        .unwrap();
 
     assert!(clocks.usbclk_valid());
 
