@@ -20,11 +20,19 @@ pub trait SingleChannelDac<Word> {
     fn try_set_value(&mut self, value: Word) -> Result<(), Self::Error>;
 }
 
-/// This is an abstraction to ensure that the DAC output pin is configured
-/// as an analog output.
-pub trait Pins {}
-impl Pins for PA4<Analog> {}
-impl Pins for PA5<Analog> {}
+/// This is an abstraction to select the correct DAC channel for a given
+/// (analog) output pin.
+pub trait Pin {
+    const CHANNEL: Channel;
+}
+
+impl Pin for PA4<Analog> {
+    const CHANNEL: Channel = Channel::One;
+}
+
+impl Pin for PA5<Analog> {
+    const CHANNEL: Channel = Channel::Two;
+}
 
 #[derive(Clone, Copy)]
 /// Select the channel
@@ -83,16 +91,10 @@ pub struct Dac {
 
 impl Dac {
     /// Create a new DAC instance
-    pub fn new<P: Pins>(
-        regs: pac::DAC,
-        _pins: P,
-        channel: Channel,
-        bits: DacBits,
-        vref: f32,
-    ) -> Self {
+    pub fn new<P: Pin>(regs: pac::DAC, _pin: P, bits: DacBits, vref: f32) -> Self {
         Self {
             regs,
-            channel,
+            channel: P::CHANNEL,
             bits,
             vref,
         }
