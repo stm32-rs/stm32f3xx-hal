@@ -59,7 +59,7 @@ pub enum Trigger {
 }
 
 impl Trigger {
-    pub fn bits(&self) -> u8 {
+    fn bits(&self) -> u8 {
         match self {
             Self::Timer6 => 0b000,
             Self::Timer3Or8 => 0b001,
@@ -100,15 +100,18 @@ impl Dac {
     /// Enable the DAC.
     pub fn enable(&mut self, apb1: &mut APB1) {
         apb1.enr().modify(|_, w| w.dac1en().enabled());
-        match self.channel {
-            Channel::One => self.regs.cr.modify(|_, w| w.en1().enabled()),
-            Channel::Two => self.regs.cr.modify(|_, w| w.en2().enabled()),
-        }
+        self.regs.cr.modify(|_, w| match self.channel {
+            Channel::One => w.en1().enabled(),
+            Channel::Two => w.en2().enabled(),
+        });
     }
 
     /// Disable the DAC
     pub fn disable(&mut self, apb1: &mut APB1) {
-        self.regs.cr.modify(|_, w| w.en1().disabled());
+        self.regs.cr.modify(|_, w| match self.channel {
+            Channel::One => w.en1().disabled(),
+            Channel::Two => w.en2().disabled(),
+        });
         apb1.enr().modify(|_, w| w.dac1en().disabled());
     }
 
@@ -141,34 +144,33 @@ impl Dac {
 
     // Select and activate a trigger. See f303 Reference manual, section 16.5.4.
     pub fn set_trigger(&mut self, trigger: Trigger) {
-        match self.channel {
+        self.regs.cr.modify(|_, w| match self.channel {
             Channel::One => {
-                self.regs.cr.modify(|_, w| w.ten1().enabled());
-                self.regs
-                    .cr
-                    .modify(|_, w| unsafe { w.tsel1().bits(trigger.bits()) });
+                w.ten1().enabled();
+                unsafe { w.tsel1().bits(trigger.bits()) }
             }
             Channel::Two => {
-                self.regs.cr.modify(|_, w| w.ten2().enabled());
-                self.regs.cr.modify(|_, w| w.tsel2().bits(trigger.bits()));
+                w.ten2().enabled();
+                w.tsel2().bits(trigger.bits())
             }
-        }
+        });
     }
 
     /// Independent trigger with single LFSR generation
     /// See f303 Reference Manual section 16.5.2
     pub fn trigger_lfsr(&mut self, trigger: Trigger, data: u32) {
         // todo: This may not be correct.
-        match self.channel {
+        self.regs.cr.modify(|_, w| match self.channel {
             Channel::One => {
-                self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b01) });
-                self.regs.cr.modify(|_, w| w.mamp1().bits(0b01));
+                w.wave1().noise();
+                w.mamp1().bits(0b01)
             }
             Channel::Two => {
-                self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b01) });
-                self.regs.cr.modify(|_, w| w.mamp2().bits(0b01));
+                w.wave2().noise();
+                w.mamp2().bits(0b01)
             }
-        }
+        });
+
         self.set_trigger(trigger);
         self.set_value(data);
     }
@@ -177,16 +179,17 @@ impl Dac {
     /// See f303 Reference Manual section 16.5.2
     pub fn trigger_triangle(&mut self, trigger: Trigger, data: u32) {
         // todo: This may not be correct.
-        match self.channel {
+        self.regs.cr.modify(|_, w| match self.channel {
             Channel::One => {
-                self.regs.cr.modify(|_, w| unsafe { w.wave1().bits(0b10) });
-                self.regs.cr.modify(|_, w| w.mamp1().bits(0b10));
+                w.wave1().triangle();
+                w.mamp1().bits(0b10)
             }
             Channel::Two => {
-                self.regs.cr.modify(|_, w| unsafe { w.wave2().bits(0b10) });
-                self.regs.cr.modify(|_, w| w.mamp2().bits(0b10));
+                w.wave2().triangle();
+                w.mamp2().bits(0b10)
             }
-        }
+        });
+
         self.set_trigger(trigger);
         self.set_value(data);
     }
