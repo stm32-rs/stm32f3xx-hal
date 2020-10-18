@@ -46,37 +46,29 @@ pub enum DacBits {
 }
 
 #[derive(Clone, Copy)]
-/// Select a trigger, used by some features.
+/// Select an external event to trigger the DAC.
 pub enum Trigger {
-    /// Timer 6
-    Tim6,
-    /// Timers 3 or 8
-    Tim3_8,
-    /// Timer 7
-    Tim7,
-    /// Timer 15
-    Tim15,
-    /// Timer 2
-    Tim2,
-    /// Timer 4
-    Tim4,
-    /// Eg, for interrupts
+    Timer2,
+    Timer3Or8,
+    Timer4,
+    Timer6,
+    Timer7,
+    Timer15,
     Exti9,
-    /// A software trigger
-    Swtrig,
+    SoftwareTriggger,
 }
 
 impl Trigger {
     pub fn bits(&self) -> u8 {
         match self {
-            Self::Tim6 => 0b000,
-            Self::Tim3_8 => 0b001,
-            Self::Tim7 => 0b010,
-            Self::Tim15 => 0b011,
-            Self::Tim2 => 0b100,
-            Self::Tim4 => 0b101,
+            Self::Timer6 => 0b000,
+            Self::Timer3Or8 => 0b001,
+            Self::Timer7 => 0b010,
+            Self::Timer15 => 0b011,
+            Self::Timer2 => 0b100,
+            Self::Timer4 => 0b101,
             Self::Exti9 => 0b110,
-            Self::Swtrig => 0b111,
+            Self::SoftwareTriggger => 0b111,
         }
     }
 }
