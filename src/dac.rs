@@ -155,44 +155,6 @@ impl Dac {
             }
         });
     }
-
-    /// Independent trigger with single LFSR generation
-    /// See f303 Reference Manual section 16.5.2
-    pub fn trigger_lfsr(&mut self, trigger: Trigger, data: u32) {
-        // todo: This may not be correct.
-        self.regs.cr.modify(|_, w| match self.channel {
-            Channel::One => {
-                w.wave1().noise();
-                w.mamp1().bits(0b01)
-            }
-            Channel::Two => {
-                w.wave2().noise();
-                w.mamp2().bits(0b01)
-            }
-        });
-
-        self.set_trigger(trigger);
-        self.set_value(data);
-    }
-
-    /// Independent trigger with single triangle generation
-    /// See f303 Reference Manual section 16.5.2
-    pub fn trigger_triangle(&mut self, trigger: Trigger, data: u32) {
-        // todo: This may not be correct.
-        self.regs.cr.modify(|_, w| match self.channel {
-            Channel::One => {
-                w.wave1().triangle();
-                w.mamp1().bits(0b10)
-            }
-            Channel::Two => {
-                w.wave2().triangle();
-                w.mamp2().bits(0b10)
-            }
-        });
-
-        self.set_trigger(trigger);
-        self.set_value(data);
-    }
 }
 
 pub struct DacError {}
