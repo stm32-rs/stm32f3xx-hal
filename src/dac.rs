@@ -9,6 +9,7 @@ use crate::{
     pac,
     rcc::APB1,
 };
+use core::convert::Infallible;
 
 /// Trait representing a single-channel digital-to-analog converter (DAC).
 pub trait SingleChannelDac<Word> {
@@ -157,13 +158,11 @@ impl Dac {
     }
 }
 
-pub struct DacError {}
-
 impl SingleChannelDac<u32> for Dac {
-    type Error = DacError;
+    type Error = Infallible;
 
     /// Set the DAC value as an integer.
-    fn try_set_value(&mut self, val: u32) -> Result<(), DacError> {
+    fn try_set_value(&mut self, val: u32) -> Result<(), Infallible> {
         self.set_value(val);
         Ok(())
     }
