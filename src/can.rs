@@ -122,15 +122,19 @@ impl canbus::Frame for CanFrame {
 impl canbus::Filter for CanFilter {
     type Id = CanId;
 
+    /// Construct a filter which filters messages for a specific identified
     fn from_id(id: Self::Id) -> Self {
         CanFilter::new(CanFilterData::IdFilter(id))
     }
 
+    /// Construct an "empty" filter which will accept all messages
     fn accept_all() -> Self {
         CanFilter::new(CanFilterData::AcceptAll)
     }
 
     // TODO: Constructing filters like this is fairly limiting because ideally we would have the full "filter state" available, so for non-extended filters this could be 2 masks and filters or 4 ids for id lists
+
+    /// Constuct a mask filter. This method accepts two parameters, the mask which designates which bits are actually matched againts and the filter, with the actual bits to match.
     fn from_mask(mask: u32, filter: u32) -> Self {
         assert!(
             mask < MAX_EXTENDED_ID,
@@ -407,6 +411,7 @@ impl Receiver for CanFifo {
         Err(nb::Error::WouldBlock)
     }
 
+    /// Sets a filter in the next open filter register.
     fn set_filter(&mut self, filter: Self::Filter) {
         // TODO: this likely needs to be in a critical section, is that OK?
 
