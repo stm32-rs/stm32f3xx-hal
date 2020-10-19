@@ -287,7 +287,7 @@ impl Can {
         return (transmitter, fifo0, fifo1);
     }
 
-    pub fn release(self) -> (stm32::CAN, gpioa::PA11<AF9>, gpioa::PA12<AF9>) {
+    pub fn free(self) -> (stm32::CAN, gpioa::PA11<AF9>, gpioa::PA12<AF9>) {
         (self.can, self._rx, self._tx)
     }
 }
