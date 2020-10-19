@@ -369,11 +369,9 @@ impl CFGR {
             let mut divisor = pllsrcclk / common_divisor;
 
             // Check if the multiplier can be represented by PLL_MUL
-            // or if the divisor can be represented by PRE_DIV
-            if multiplier == 1 || divisor == 1 {
+            if multiplier == 1 {
                 // PLL_MUL minimal value is 2
                 multiplier *= 2;
-                // PRE_DIV minimal value is 2
                 divisor *= 2;
             }
 

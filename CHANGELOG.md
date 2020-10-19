@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Introduced auto-generated GPIO mappings based on the STM32CubeMX database
   ([#129](https://github.com/stm32-rs/stm32f3xx-hal/pull/129))
 
+- Fixed [#151][] not being 
+  able to generate 72 MHz HCLK for stm32f303xc devices ([#152](https://github.com/stm32-rs/stm32f3xx-hal/pull/152))
+
+[#151]: https://github.com/stm32-rs/stm32f3xx-hal/issues/151
+
 ## [v0.5.0] - 2020-07-21
 
 ### Added
