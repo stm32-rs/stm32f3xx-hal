@@ -13,10 +13,14 @@ use cast::u8;
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// Bus error
-    Bus,
     /// Arbitration loss
     Arbitration,
+    /// Bus error
+    Bus,
+    /// Bus busy
+    Busy,
+    /// Not Acknowledge received
+    Nack,
     // Overrun, // slave mode only
     // Pec, // SMBUS mode only
     // Timeout, // SMBUS mode only
@@ -57,15 +61,21 @@ macro_rules! busy_wait {
     ($i2c:expr, $flag:ident, $variant:ident) => {
         loop {
             let isr = $i2c.isr.read();
+            let icr = &$i2c.icr;
 
-            if isr.$flag().$variant() {
-                break;
-            } else if isr.berr().is_error() {
-                return Err(Error::Bus);
-            } else if isr.arlo().is_lost() {
+            if isr.arlo().is_lost() {
+                icr.write(|w| w.arlocf().clear());
                 return Err(Error::Arbitration);
-            } else {
-                // try again
+            } else if isr.berr().is_error() {
+                icr.write(|w| w.berrcf().clear());
+                return Err(Error::Bus);
+            } else if isr.nackf().is_nack() {
+                while $i2c.isr.read().stopf().is_no_stop() {}
+                icr.write(|w| w.nackcf().clear());
+                icr.write(|w| w.stopcf().clear());
+                return Err(Error::Nack);
+            } else if isr.$flag().$variant() {
+                break;
             }
         }
     };
@@ -184,8 +194,10 @@ macro_rules! hal {
                     // TODO support transfers of more than 255 bytes
                     assert!(buffer.len() < 256 && buffer.len() > 0);
 
-                    // TODO do we have to explicitly wait here if the bus is busy (e.g. another
-                    // master is communicating)?
+                    // Detect Bus busy
+                    if self.i2c.isr.read().busy().is_busy() {
+                        return Err(Error::Busy);
+                    }
 
                     // START and prepare to receive `bytes`
                     self.i2c.cr2.write(|w| {
@@ -209,6 +221,10 @@ macro_rules! hal {
                     }
 
                     // automatic STOP
+                    // Wait until the last transmission is finished
+                    busy_wait!(self.i2c, stopf, is_stop);
+
+                    self.i2c.icr.write(|w| w.stopcf().clear());
 
                     Ok(())
                 }
@@ -220,6 +236,11 @@ macro_rules! hal {
                 fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<(), Error> {
                     // TODO support transfers of more than 255 bytes
                     assert!(bytes.len() < 256 && bytes.len() > 0);
+
+                    // Detect Bus busy
+                    if self.i2c.isr.read().busy().is_busy() {
+                        return Err(Error::Busy);
+                    }
 
                     // START and prepare to send `bytes`
                     self.i2c.cr2.modify(|_, w| {
@@ -245,10 +266,11 @@ macro_rules! hal {
                         self.i2c.txdr.write(|w| w.txdata().bits(*byte));
                     }
 
-                    // Wait until the last transmission is finished ???
-                    // busy_wait!(self.i2c, busy);
-
                     // automatic STOP
+                    // Wait until the last transmission is finished
+                    busy_wait!(self.i2c, stopf, is_stop);
+
+                    self.i2c.icr.write(|w| w.stopcf().clear());
 
                     Ok(())
                 }
@@ -267,8 +289,10 @@ macro_rules! hal {
                     assert!(bytes.len() < 256 && bytes.len() > 0);
                     assert!(buffer.len() < 256 && buffer.len() > 0);
 
-                    // TODO do we have to explicitly wait here if the bus is busy (e.g. another
-                    // master is communicating)?
+                    // Detect Bus busy
+                    if self.i2c.isr.read().busy().is_busy() {
+                        return Err(Error::Busy);
+                    }
 
                     // START and prepare to send `bytes`
                     self.i2c.cr2.modify(|_, w| {
@@ -319,6 +343,10 @@ macro_rules! hal {
                     }
 
                     // automatic STOP
+                    // Wait until the last transmission is finished
+                    busy_wait!(self.i2c, stopf, is_stop);
+
+                    self.i2c.icr.write(|w| w.stopcf().clear());
 
                     Ok(())
                 }
