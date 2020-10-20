@@ -26,7 +26,8 @@ fn main() -> ! {
         .use_hse(8.mhz())
         .sysclk(48.mhz())
         .pclk1(24.mhz())
-        .freeze(&mut flash.acr);
+        .freeze(&mut flash.acr)
+        .unwrap();
 
     // Configure pins for SPI
     let sck = gpioa.pa5.into_af5(&mut gpioa.moder, &mut gpioa.afrl);
