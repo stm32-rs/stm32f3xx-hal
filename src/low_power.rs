@@ -79,8 +79,9 @@ pub fn standby(scb: &mut SCB, pwr: &mut PWR) {
     // 1: Enter Standby mode when the CPU enters Deepsleep.
     pwr.cr.modify(|_, w| w.pdds().set_bit());
 
-    // Clear WUF bit in Power Control/Status register (PWR_CSR)
-    pwr.cr.modify(|_, w| w.cwuf().clear_bit());
+    // Clear WUF bit in Power Control/Status register (PWR_CSR) (Must do this by setting CWUF bit in
+    // PWR_CR.)
+    pwr.cr.modify(|_, w| w.cwuf().set_bit());
 
     wfi();
 }

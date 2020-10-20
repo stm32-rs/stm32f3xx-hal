@@ -570,9 +570,14 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
 }
 
 /// Enables the RTC, and sets LSE as the timing source.
-fn enable(bdcr: &mut BDCR) {
+pub fn enable(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
     bdcr.bdcr().modify(|_, w| w.rtcen().enabled());
+}
+
+/// Disables the RTC.
+pub fn disable(bdcr: &mut BDCR) {
+    bdcr.bdcr().modify(|_, w| w.rtcen().disabled());
 }
 
 /// Resets the entire RTC domain
