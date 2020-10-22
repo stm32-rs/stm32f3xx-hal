@@ -64,7 +64,7 @@ pub enum Trigger {
     Timer7,
     Timer15,
     Exti9,
-    SoftwareTriggger,
+    SoftwareTrigger,
 }
 
 impl Trigger {
@@ -77,7 +77,7 @@ impl Trigger {
             Self::Timer2 => 0b100,
             Self::Timer4 => 0b101,
             Self::Exti9 => 0b110,
-            Self::SoftwareTriggger => 0b111,
+            Self::SoftwareTrigger => 0b111,
         }
     }
 }
@@ -134,7 +134,7 @@ impl Dac {
         }
     }
 
-    /// Set the DAC voltage. `v` is in Volts.
+    /// Set the DAC voltage.
     pub fn set_voltage(&mut self, volts: f32) {
         let val = match self.bits {
             DacBits::EightR => ((volts / self.vref) * 255.) as u32,
@@ -156,6 +156,14 @@ impl Dac {
                 w.ten2().enabled();
                 w.tsel2().bits(trigger.bits())
             }
+        });
+    }
+
+    /// Takes the value stored via set_value or set_voltage and converts it to output on the Pin.
+    pub fn trigger_software_trigger(&mut self) {
+        self.regs.swtrigr.write(|w| match self.channel {
+            Channel::One => w.swtrig1().enabled(),
+            Channel::Two => w.swtrig2().enabled(),
         });
     }
 }

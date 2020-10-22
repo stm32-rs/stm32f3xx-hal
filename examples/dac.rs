@@ -3,9 +3,11 @@
 
 use panic_semihosting as _;
 
+use cortex_m::asm;
+
 use cortex_m_rt::entry;
 use stm32f3xx_hal::{
-    dac::{Dac, DacBits},
+    dac::{Dac, DacBits, Trigger},
     pac,
     prelude::*,
 };
@@ -28,13 +30,44 @@ fn main() -> ! {
     let dac_pin = gpioa.pa4.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
 
     // Set up the DAC
-    let mut dac = Dac::new(dp.DAC, dac_pin, DacBits::EightR, 3.3);
+    let reference_voltage = 2.915;
+    let mut dac = Dac::new(dp.DAC, dac_pin, DacBits::EightR, reference_voltage);
     dac.enable(&mut rcc.apb1);
 
-    dac.set_voltage(1.5);
-    // dac.set_value(128);  // or equivalently
+    // primitively wait about one second on a default stm32f3discovery
+    let wait = 8_000_000;
+    asm::delay(wait);
 
+    // directly set the output voltage to 1.5 V (valid values: 0..=reference_voltage)
+    dac.set_voltage(1.5);
+    asm::delay(3 * wait);
+
+    // equivalently:
+    dac.set_value(256 / 2);
+
+    // set the output off for 3 seconds
+    dac.set_value(0);
+    asm::delay(3 * wait);
+
+    // setup a trigger. From now on, setting a value or voltage will be stored but not converted
+    dac.set_trigger(Trigger::SoftwareTrigger);
+
+    // this is never converted:
+    dac.set_voltage(1.5);
+    asm::delay(wait);
+
+    // toggle the dac value every 2 seconds
     loop {
-        continue;
+        dac.set_value(0);
+        asm::delay(wait);
+
+        dac.trigger_software_trigger();
+        asm::delay(wait);
+
+        dac.set_value(255);
+        asm::delay(wait);
+
+        dac.trigger_software_trigger();
+        asm::delay(wait);
     }
 }
