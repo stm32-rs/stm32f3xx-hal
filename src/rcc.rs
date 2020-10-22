@@ -87,7 +87,7 @@ impl AHB {
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
 /// let rcc = dp.RCC.constrain();
-/// use_ahb(&mut rcc.apb1)
+/// use_apb1(&mut rcc.apb1)
 /// ```
 pub struct APB1 {
     _0: (),
@@ -112,7 +112,7 @@ impl APB1 {
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
 /// let rcc = dp.RCC.constrain();
-/// use_ahb(&mut rcc.apb2)
+/// use_apb2(&mut rcc.apb2)
 /// ```
 pub struct APB2 {
     _0: (),
@@ -212,7 +212,7 @@ impl BDCR {
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
 /// let rcc = dp.RCC.constrain();
-/// use_ahb(&mut rcc.cfgr)
+/// use_cfgr(&mut rcc.cfgr)
 /// ```
 pub struct CFGR {
     hse: Option<u32>,
@@ -376,9 +376,10 @@ impl CFGR {
             }
 
             // PLL_MUL maximal value is 16
-            assert!(divisor <= 16);
-            // PRE_DIV maximal value is 16
             assert!(multiplier <= 16);
+
+            // PRE_DIV maximal value is 16
+            assert!(divisor <= 16);
 
             (multiplier, Some(divisor))
         }
