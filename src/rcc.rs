@@ -21,13 +21,7 @@ impl RccExt for RCC {
             apb1: APB1 { _0: () },
             apb2: APB2 { _0: () },
             bdcr: BDCR { _0: () },
-            cfgr: CFGR {
-                hse: None,
-                hclk: None,
-                pclk1: None,
-                pclk2: None,
-                sysclk: None,
-            },
+            cfgr: CFGR::default(),
         }
     }
 }
@@ -214,8 +208,11 @@ impl BDCR {
 /// let rcc = dp.RCC.constrain();
 /// use_cfgr(&mut rcc.cfgr)
 /// ```
+#[derive(Default)]
 pub struct CFGR {
     hse: Option<u32>,
+    hse_bypass: bool,
+    css: bool,
     hclk: Option<u32>,
     pclk1: Option<u32>,
     pclk2: Option<u32>,
@@ -286,13 +283,34 @@ fn into_pre_div(div: u8) -> cfgr2::PREDIV_A {
 }
 
 impl CFGR {
-    /// Uses HSE (external oscillator) instead of HSI (internal RC oscillator) as the clock source.
+    /// Enable HSE (external clock) in crystal mode.
+    /// Uses external oscillator instead of HSI (internal RC oscillator) as the clock source.
     /// Will result in a hang if an external oscillator is not connected or it fails to start.
     pub fn use_hse<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
     {
         self.hse = Some(freq.into().0);
+        self.hse_bypass = false;
+        self
+    }
+
+    /// Enable HSE (external clock) in bypass mode.
+    /// Uses user provided clock instead of HSI (internal RC oscillator) as the clock source.
+    /// Will result in a hang if an external clock source is not connected.
+    pub fn use_hse_bypass<F>(mut self, freq: F) -> Self
+    where
+        F: Into<Hertz>,
+    {
+        self.hse = Some(freq.into().0);
+        self.hse_bypass = true;
+        self
+    }
+
+    /// Enable CSS (Clock Security System).
+    /// No effect if HSE is not enabled.
+    pub fn enable_css(mut self) -> Self {
+        self.css = true;
         self
     }
 
@@ -584,9 +602,17 @@ impl CFGR {
 
         let rcc = unsafe { &*RCC::ptr() };
 
+        // enable HSE and wait for it to be ready
         if self.hse.is_some() {
-            // enable HSE and wait for it to be ready
-            rcc.cr.modify(|_, w| w.hseon().on());
+            rcc.cr.modify(|_, w| {
+                if self.css {
+                    w.csson().on();
+                }
+                if self.hse_bypass {
+                    w.hsebyp().bypassed();
+                }
+                w.hseon().on()
+            });
 
             while rcc.cr.read().hserdy().is_not_ready() {}
         }
