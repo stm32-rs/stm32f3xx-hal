@@ -82,28 +82,35 @@ impl Trigger {
     }
 }
 
-pub struct Dac {
+pub struct Dac<P> {
     regs: pac::DAC,
-    channel: Channel,
+    pin: P,
     bits: DacBits,
     vref: f32,
 }
 
-impl Dac {
+impl<P: Pin> Dac<P> {
+    const CHANNEL: Channel = P::CHANNEL;
+
     /// Create a new DAC instance
-    pub fn new<P: Pin>(regs: pac::DAC, _pin: P, bits: DacBits, vref: f32) -> Self {
+    pub fn new(regs: pac::DAC, pin: P, bits: DacBits, vref: f32) -> Self {
         Self {
             regs,
-            channel: P::CHANNEL,
+            pin,
             bits,
             vref,
         }
     }
 
+    /// Destruct the DAC abstraction and give back all owned peripherals.
+    pub fn free(self) -> (pac::DAC, P) {
+        (self.regs, self.pin)
+    }
+
     /// Enable the DAC.
     pub fn enable(&mut self, apb1: &mut APB1) {
         apb1.enr().modify(|_, w| w.dac1en().enabled());
-        self.regs.cr.modify(|_, w| match self.channel {
+        self.regs.cr.modify(|_, w| match Self::CHANNEL {
             Channel::One => w.en1().enabled(),
             Channel::Two => w.en2().enabled(),
         });
@@ -111,7 +118,7 @@ impl Dac {
 
     /// Disable the DAC
     pub fn disable(&mut self, apb1: &mut APB1) {
-        self.regs.cr.modify(|_, w| match self.channel {
+        self.regs.cr.modify(|_, w| match Self::CHANNEL {
             Channel::One => w.en1().disabled(),
             Channel::Two => w.en2().disabled(),
         });
@@ -120,7 +127,7 @@ impl Dac {
 
     /// Set the DAC value as an integer.
     pub fn set_value(&mut self, val: u32) {
-        match self.channel {
+        match Self::CHANNEL {
             Channel::One => match self.bits {
                 DacBits::EightR => self.regs.dhr8r1.modify(|_, w| unsafe { w.bits(val) }),
                 DacBits::TwelveL => self.regs.dhr12l1.modify(|_, w| unsafe { w.bits(val) }),
@@ -147,7 +154,7 @@ impl Dac {
 
     // Select and activate a trigger. See f303 Reference manual, section 16.5.4.
     pub fn set_trigger(&mut self, trigger: Trigger) {
-        self.regs.cr.modify(|_, w| match self.channel {
+        self.regs.cr.modify(|_, w| match Self::CHANNEL {
             Channel::One => {
                 w.ten1().enabled();
                 unsafe { w.tsel1().bits(trigger.bits()) }
@@ -165,14 +172,14 @@ impl Dac {
     /// For this to have an effect, you need to first enable the software
     /// trigger with `set_trigger`.
     pub fn trigger_software_trigger(&mut self) {
-        self.regs.swtrigr.write(|w| match self.channel {
+        self.regs.swtrigr.write(|w| match Self::CHANNEL {
             Channel::One => w.swtrig1().enabled(),
             Channel::Two => w.swtrig2().enabled(),
         });
     }
 }
 
-impl SingleChannelDac<u32> for Dac {
+impl<P: Pin> SingleChannelDac<u32> for Dac<P> {
     type Error = Infallible;
 
     /// Set the DAC value as an integer.
