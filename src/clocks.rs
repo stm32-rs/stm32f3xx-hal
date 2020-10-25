@@ -8,7 +8,11 @@
 //!
 //! See Figure 15 of theF303 reference manual for a non-interactive visualization.
 
-use crate::pac::{FLASH, RCC};
+use crate::{
+    pac::{FLASH, RCC},
+    rcc,
+    time::U32Ext,
+};
 
 /// Speed out of limits.
 pub struct SpeedError {}
@@ -182,12 +186,13 @@ impl HclkPrescaler {
 
 #[derive(Clone, Copy)]
 #[repr(u8)]
+/// For use with `RCC_APBPPRE1`, and `RCC_APBPPRE2`.
 pub enum ApbPrescaler {
-    Div1,
-    Div2,
-    Div4,
-    Div8,
-    Div16,
+    Div1 = 0b000,
+    Div2 = 0b100,
+    Div4 = 0b101,
+    Div8 = 0b110,
+    Div16 = 0b111,
 }
 
 impl ApbPrescaler {
@@ -352,7 +357,7 @@ impl Clocks {
         let fclk = hclk;
         let pclk1 = hclk / self.apb1_prescaler.value() as f32;
         let timer1 = pclk1;
-        let pclk2 = hclk / self.apb1_prescaler.value() as f32;
+        let pclk2 = hclk / self.apb2_prescaler.value() as f32;
         let timer2 = pclk2;
 
         Speeds {
@@ -375,6 +380,22 @@ impl Clocks {
 
     pub fn validate_usb(&self) -> Validation {
         validate(self.calc_speeds()).1
+    }
+
+    /// Make a clocks struct from the `rcc` module, that we can pass into existing modules
+    /// that use its speeds, like `i2c`, `serial`, `timer` etc.
+    pub fn make_rcc_clocks(&self) -> rcc::Clocks {
+        let speeds = self.calc_speeds();
+
+        rcc::Clocks {
+            hclk: (speeds.hclk as u32).mhz().into(),
+            pclk1: (speeds.pclk1 as u32).mhz().into(),
+            pclk2: (speeds.pclk2 as u32).mhz().into(),
+            ppre1: self.apb1_prescaler.value(),
+            ppre2: self.apb2_prescaler.value(),
+            sysclk: (speeds.sysclk as u32).mhz().into(),
+            usbclk_valid: true,
+        }
     }
 }
 
