@@ -1,23 +1,30 @@
-//! Alternative clocks imlpementation that aims to be more opaque, and simpler
-//! than the existing one. Configures settings, not speeds.
+//! This file provides an alternative way to set clocks than in the `rcc` modules`,
+//! which may be less error prone, and is more opaque. It works by setting
+//! scalers etc, then calculating frequencies, instead of solving for a set of scalers
+//! that meet specified frequeincies.
+//!
+//! See STM32CubeIDE for an interactive editor that's very useful for seeing what
+//! settings are available, and validating them.
+//!
+//! See Figure 15 of theF303 reference manual for a non-interactive visualization.
 
-use stm32f3xx_hal::{self, pac::RCC};
+use crate::pac::{FLASH, RCC};
 
-pub struct ConfigError {}
+/// Speed out of limits.
+pub struct SpeedError {}
 
 /// Calculated clock speeds. All in Mhz
-/// todo: Support fractional mhz.
 #[derive(Clone, Debug)]
 pub struct Speeds {
-    sysclk: u8,
-    hclk: u8,  // AHB bus, core, memory and DMA
-    systick: u8,  // Cortex System Timer
-    fclk: u8,  // FCLK Cortex clock
-    pclk1: u8,  // APB1 peripheral clocks
-    timer1: u8, // APB1 timer clocks
-    pclk2: u8,  // APB2 peripheral clocks
-    timer2: u8, // APB2 timer clocks
-    usb: u8,
+    sysclk: f32,
+    hclk: f32,    // AHB bus, core, memory and DMA
+    systick: f32, // Cortex System Timer
+    fclk: f32,    // FCLK Cortex clock
+    pclk1: f32,   // APB1 peripheral clocks
+    timer1: f32,  // APB1 timer clocks
+    pclk2: f32,   // APB2 peripheral clocks
+    timer2: f32,  // APB2 timer clocks
+    usb: f32,
 }
 
 /// Is a set of speeds valid?
@@ -35,10 +42,10 @@ pub enum PllSrc {
 }
 
 #[derive(Clone, Copy)]
-pub enum ClockSrc {
+pub enum InputSrc {
     Hsi,
     Hse,
-    Pll(PllSrc)
+    Pll(PllSrc),
 }
 
 #[derive(Clone, Copy)]
@@ -169,7 +176,6 @@ pub enum ApbPrescaler {
     Div16,
 }
 
-
 impl ApbPrescaler {
     pub fn value(&self) -> u8 {
         match self {
@@ -208,14 +214,15 @@ impl UsbPrescaler {
 
 /// Settings used to configure clocks
 pub struct Clocks {
-    input_freq: u8, // Mhz, eg HSE speed
+    pub input_freq: u8, // Mhz, eg HSE speed
     pub prediv: Prediv,
-    pub clock_src: ClockSrc,
+    pub input_src: InputSrc,
     pub pll_mul: PllMul,
     pub usb_pre: UsbPrescaler,
     pub hclk_prescaler: HclkPrescaler,
     pub apb1_prescaler: ApbPrescaler,
     pub apb2_prescaler: ApbPrescaler,
+    pub hse_bypass: bool,
 }
 
 impl Clocks {
@@ -223,9 +230,9 @@ impl Clocks {
     /// `Invalid`, and don't setup if not.
     /// https://docs.rs/stm32f3xx-hal/0.5.0/stm32f3xx_hal/rcc/struct.CFGR.html
     /// Use the STM32CubeIDE Clock Configuration tab to help.
-    pub fn setup(&self, rcc: &mut RCC) -> Result<(), ConfigError> {
+    pub fn setup(&self, rcc: &mut RCC, flash: &mut FLASH) -> Result<(), SpeedError> {
         if let Validation::NotValid = self.validate() {
-            return Err(ConfigError{})
+            return Err(SpeedError {});
         }
 
         // 303 FM, 9.2.3:
@@ -242,14 +249,14 @@ impl Clocks {
         // register (RCC_CIR).
         // The PLL output frequency must be set in the range 16-72 MHz.
         // Set up the HSE if required.
-        match self.clock_src {
-            ClockSrc::Hse => {
+        match self.input_src {
+            InputSrc::Hse => {
                 rcc.cr.modify(|_, w| w.hseon().bit(true));
                 // Wait for the HSE to be ready.
                 while rcc.cr.read().hserdy() == false {}
-            },
-            ClockSrc::Hsi => (),
-            ClockSrc::Pll(pll_src) => {
+            }
+            InputSrc::Hsi => (),
+            InputSrc::Pll(pll_src) => {
                 if let PllSrc::Hse = pll_src {
                     // todo: DRY
                     rcc.cr.modify(|_, w| w.hseon().bit(true));
@@ -260,7 +267,7 @@ impl Clocks {
 
         rcc.cr.modify(|_, w| {
             // Enable bypass mode on HSE, since we're using a ceramic oscillator.
-            w.hsebyp().bit(true);
+            w.hsebyp().bit(self.hse_bypass);
             w.pllon().bit(false)
         });
 
@@ -269,12 +276,12 @@ impl Clocks {
         rcc.cfgr.modify(|_, w| {
             w.usbpre().bit(self.usb_pre.bit()); // Divide by 1.5: 72/1.5 = 48Mhz, required by USB clock.
 
-            if let ClockSrc::Pll(pll_src) = self.clock_src {
-                unsafe { w.pllmul().bits(self.pll_mul as u8) }; // 8Mhz HSE x 9 = 72Mhz
-                unsafe {  w.pllsrc().bits(pll_src as u8) }; // Set HSE as PREDIV1 entry.
+            if let InputSrc::Pll(pll_src) = self.input_src {
+                w.pllmul().bits(self.pll_mul as u8); // 8Mhz HSE x 9 = 72Mhz
+                unsafe { w.pllsrc().bits(pll_src as u8) }; // Set HSE as PREDIV1 entry.
             };
 
-            unsafe { w.ppre2().bits(self.apb2_prescaler as u8) };  // HCLK not divided for APB2.
+            unsafe { w.ppre2().bits(self.apb2_prescaler as u8) }; // HCLK not divided for APB2.
             unsafe { w.ppre1().bits(self.apb1_prescaler as u8) }; // HCLK not divided for APB1
             unsafe { w.hpre().bits(self.hclk_prescaler as u8) } // Divide SYSCLK by 2 to get HCLK of 36Mhz.
         });
@@ -284,24 +291,45 @@ impl Clocks {
         // Now turn PLL back on, once we're configured things that can only be set with it off.
         rcc.cr.modify(|_, w| w.pllon().bit(true));
 
+        // Adjust flash wait states according to the HCLK frequency
+        // todo: This hclk calculation is DRY from `calc_speeds`.
+        let sysclk = match self.input_src {
+            InputSrc::Pll(_) => self.input_freq / self.prediv.value() * self.pll_mul.value(),
+            _ => self.input_freq,
+        };
+        let hclk = sysclk as f32 / self.hclk_prescaler.value() as f32;
+
+        // f3 ref man section 4.5.1
+        flash.acr.modify(|_, w| {
+            if hclk <= 24. {
+                w.latency().ws0()
+            } else if hclk <= 48. {
+                w.latency().ws1()
+            } else {
+                w.latency().ws2()
+            }
+        });
+
         Ok(())
     }
 
     /// Calculate clock speeds from a given config. Everything is in Mhz.
     /// todo: Handle fractions of mhz. Do floats.
     pub fn calc_speeds(&self) -> Speeds {
-        let sysclk = match self.clock_src {
-            ClockSrc::Pll(_) => self.input_freq / self.prediv.value() * self.pll_mul.value(),
-            _ => self.input_freq,
+        let sysclk = match self.input_src {
+            InputSrc::Pll(_) => {
+                self.input_freq as f32 / self.prediv.value() as f32 * self.pll_mul.value() as f32
+            }
+            _ => self.input_freq as f32,
         };
 
-        let usb = (sysclk as f32 / self.usb_pre.value()) as u8;
-        let hclk = (sysclk as u16 / self.hclk_prescaler.value()) as u8;
+        let usb = sysclk / self.usb_pre.value() as f32;
+        let hclk = sysclk / self.hclk_prescaler.value() as f32;
         let systick = hclk; // todo the required divider is not yet implemented.
         let fclk = hclk;
-        let pclk1 = hclk / self.apb1_prescaler.value();
+        let pclk1 = hclk / self.apb1_prescaler.value() as f32;
         let timer1 = pclk1;
-        let pclk2 = hclk / self.apb1_prescaler.value();
+        let pclk2 = hclk / self.apb1_prescaler.value() as f32;
         let timer2 = pclk2;
 
         Speeds {
@@ -313,8 +341,7 @@ impl Clocks {
             pclk1,
             timer1,
             pclk2,
-            timer2
-
+            timer2,
         }
     }
 
@@ -333,17 +360,16 @@ impl Default for Clocks {
         Self {
             input_freq: 8,
             prediv: Prediv::Div1,
-            clock_src: ClockSrc::Pll(PllSrc::Hse),
+            input_src: InputSrc::Pll(PllSrc::Hse),
             pll_mul: PllMul::Mul6,
             usb_pre: UsbPrescaler::Div1,
             hclk_prescaler: HclkPrescaler::Div2,
             apb1_prescaler: ApbPrescaler::Div1,
             apb2_prescaler: ApbPrescaler::Div1,
-
+            hse_bypass: false,
         }
     }
 }
-
 
 /// Validate resulting speeds from a given clock config
 /// Main validation, USB validation
@@ -351,24 +377,24 @@ pub fn validate(speeds: Speeds) -> (Validation, Validation) {
     let mut main = Validation::Valid;
     let mut usb = Validation::Valid;
 
-    if speeds.sysclk > 72 || speeds.sysclk < 16 {
+    if speeds.sysclk > 72. || speeds.sysclk < 16. {
         main = Validation::NotValid;
     }
 
-    if speeds.hclk > 72 || speeds.sysclk < 0 {
+    if speeds.hclk > 72. || speeds.sysclk < 0. {
         main = Validation::NotValid;
     }
 
-    if speeds.pclk1 > 36 || speeds.pclk1 < 12 {
+    if speeds.pclk1 > 36. || speeds.pclk1 < 12. {
         main = Validation::NotValid;
     }
 
-    if speeds.pclk2 > 72 || speeds.pclk1 < 0 {
-        main =  Validation::NotValid;
+    if speeds.pclk2 > 72. || speeds.pclk1 < 0. {
+        main = Validation::NotValid;
     }
 
-    if speeds.usb != 48 {
-        usb =  Validation::NotValid;
+    if speeds.usb != 48. {
+        usb = Validation::NotValid;
     }
 
     (main, usb)
