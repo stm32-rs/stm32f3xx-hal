@@ -34,8 +34,8 @@ impl Pin for PA5<Analog> {
     const CHANNEL: Channel = Channel::Two;
 }
 
-#[derive(Clone, Copy)]
 /// Select the channel
+#[derive(Clone, Copy)]
 pub enum Channel {
     /// Channel 1
     One,
@@ -43,8 +43,8 @@ pub enum Channel {
     Two,
 }
 
-#[derive(Clone, Copy)]
 /// Three options are available to set DAC precision.
+#[derive(Clone, Copy)]
 pub enum DacBits {
     /// Eight bit precision, right-aligned.
     EightR,
@@ -54,8 +54,8 @@ pub enum DacBits {
     TwelveR,
 }
 
-#[derive(Clone, Copy)]
 /// Select an external event to trigger the DAC.
+#[derive(Clone, Copy)]
 pub enum Trigger {
     Timer2,
     Timer3Or8,
@@ -159,7 +159,11 @@ impl Dac {
         });
     }
 
-    /// Takes the value stored via set_value or set_voltage and converts it to output on the Pin.
+    /// Takes the value stored via set_value or set_voltage and converts it to
+    /// output on the Pin.
+    ///
+    /// For this to have an effect, you need to first enable the software
+    /// trigger with `set_trigger`.
     pub fn trigger_software_trigger(&mut self) {
         self.regs.swtrigr.write(|w| match self.channel {
             Channel::One => w.swtrig1().enabled(),
