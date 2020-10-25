@@ -26,6 +26,14 @@ paste = "1"
 rtcc = "0.2"
 stm32f3 = "0.12"
 
+[dependencies.embedded-hal-can]
+version = "0.1.0"
+optional = true
+
+[dependencies.heapless]
+version = "0.5.5"
+optional = true
+
 [dependencies.bare-metal]
 version = "0.2"
 features = ["const-fn"]
@@ -54,6 +62,7 @@ unproven = ["embedded-hal/unproven"]
 device-selected = []
 direct-call-deprecated = []
 rt = ["stm32f3/rt"]
+can = ["embedded-hal-can", "heapless"]
 
 gpio-f302 = []
 gpio-f303 = []
@@ -110,6 +119,10 @@ required-features = ["rt", "stm32f303xc", "stm32-usbd"]
 [[example]]
 name = "spi"
 required-features = ["stm32f303xc"]
+
+[[example]]
+name = "can"
+required-features = ["rt", "can", "stm32f303"]
 
 [[example]]
 name = "serial_dma"

@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for `stm32f302x6` and `stm32f302x8` devices ([#132](https://github.com/stm32-rs/stm32f3xx-hal/pull/132))
 - Support for the onboard real-time clock (RTC) ([#136](https://github.com/stm32-rs/stm32f3xx-hal/pull/136))
 - Enable DMA for USART on `stm32f302` devices ([#139](https://github.com/stm32-rs/stm32f3xx-hal/pull/139))
+- Basic CAN bus support ([#100](https://github.com/stm32-rs/stm32f3xx-hal/pull/100))
+- Impls for all SPI pins for all `stm32f302` sub-targets, `stm32f303`
+  subtargets, `stm32f3x8` targets, `stm32f334`, and `stm32f373`
+  ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
+- SPI4 peripheral for supported
+  devices. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
+- Support for I2C transfer of more than 255 bytes, and 0 byte write ([#154](https://github.com/stm32-rs/stm32f3xx-hal/pull/154))
 - DAC support for `stm32f303` devices ([#133](https://github.com/stm32-rs/stm32f3xx-hal/pull/133))
 
 ### Changed
@@ -21,10 +28,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Introduced auto-generated GPIO mappings based on the STM32CubeMX database
   ([#129](https://github.com/stm32-rs/stm32f3xx-hal/pull/129))
 
-- Fixed [#151][] not being 
-  able to generate 72 MHz HCLK for stm32f303xc devices ([#152](https://github.com/stm32-rs/stm32f3xx-hal/pull/152))
+
+### Fixed
+
+- Fixed [#151][] not being able to generate 72 MHz HCLK for stm32f303xc devices 
+  ([#152](https://github.com/stm32-rs/stm32f3xx-hal/pull/152))
 
 [#151]: https://github.com/stm32-rs/stm32f3xx-hal/issues/151
+
+### Breaking Changes
+
+- Removed impl for `SckPin<SPI2>` for `PB13<AF5>` from `stm32f328` and
+  `stm32f378` targets. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
+- Removed SPI1 support for `stm32f302x6` and `stm32f302x8` sub-targets
+  and `stm32f318` target. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
 
 ## [v0.5.0] - 2020-07-21
 
@@ -59,6 +76,7 @@ let clocks = rcc
   This is possible through utilizing the divider, which can divide the
   external oscillator clock on most devices. Some devices have even the
   possibility to divide the internal oscillator clock.
+
 
 ### Breaking changes
 
