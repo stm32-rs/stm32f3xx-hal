@@ -24,21 +24,21 @@ fn main() -> ! {
     clocks.hse_bypass = true;
 
     // We'll set the system clock frequency to 72 Mhz, while keeping a 48Mhz USB
-    // frequency. We do this by increasing the PLL multiplier from it's deafult of
-    // 6×, to 9x, and increasing the amount we divide the USB prescaler by.
+    // frequency. We do this by increasing the PLL multiplier from it's default of
+    // 6×, to 9×, and increasing the amount we divide by for the USB clock.
     clocks.pll_mul = clocks::PllMul::Mul9;
     clocks.usb_pre = clocks::UsbPrescaler::Div1_5;
 
     // Some further functionality examples:
 
     // If you wish to use the internal (HSI) oscillator:
-    // clocks_.input_src = clocks::InputSrc::Hsi;
+    // clocks.input_src = clocks::InputSrc::Hsi;
 
     // Setting the HCLK (AHB) prescaler:
-    // clocks_.hclk_prescaler = clocks::HclkPrescaler::Div2;
+    // clocks.hclk_prescaler = clocks::HclkPrescaler::Div2;
 
     // Setting the APB1 peripheral clock prescaler:
-    // clocks_.apb1_prescaler = clocks::ApbPrescaler::Div1;
+    // clocks.apb1_prescaler = clocks::ApbPrescaler::Div1;
 
     // The `setup` method validates our clock speeds, and if validated, writes
     // to the clock registers.
@@ -47,15 +47,15 @@ fn main() -> ! {
     };
 
     // Display the calculated speeds.
-    hprintln!("Speeds: {:#?}", clocks_.calc_speeds()).ok();
+    hprintln!("Speeds: {:#?}", clocks.calc_speeds()).ok();
 
     // Existing modules expect an `rcc::Clocks` struct to be passed, to use
     // speeds during configuration. We can make one using the `make_rcc_clocks` method.
     // `rcc.rs` clock config we pass to other fns that need the speeds.
-    let clocks = clocks.make_rcc_clocks();
+    let rcc_clocks = clocks.make_rcc_clocks();
 
     // Eg, we could use it in the commented-out line below, in a timer, spi etc.
-    // let i2c = I2c::i2c1(dp.I2C1, (scl, sda), 100.khz(), clocks, &mut rcc.apb1);
+    // let i2c = I2c::i2c1(dp.I2C1, (scl, sda), 100.khz(), rcc_clocks, &mut rcc.apb1);
 
     loop {}
 }
