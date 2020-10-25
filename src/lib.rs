@@ -155,3 +155,6 @@ pub mod usb;
 
 #[cfg(feature = "device-selected")]
 pub mod watchdog;
+
+#[cfg(all(feature = "device-selected", feature = "can"))]
+pub mod can;
