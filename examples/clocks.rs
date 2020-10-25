@@ -43,7 +43,7 @@ fn main() -> ! {
     // The `setup` method validates our clock speeds, and if validated, writes
     // to the clock registers.
     if clocks.setup(&mut dp.RCC, &mut dp.FLASH).is_err() {
-        rprintln!("Unable to configure clocks due to a speed error.")
+        hprintln!("Unable to configure clocks due to a speed error.").ok()
     };
 
     // Display the calculated speeds.
