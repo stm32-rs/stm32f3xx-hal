@@ -14,7 +14,7 @@ use cortex_m_semihosting::hprintln;
 #[entry]
 fn main() -> ! {
     // Get our peripherals
-    let dp = pac::Peripherals::take().unwrap();
+    let mut dp = pac::Peripherals::take().unwrap();
 
     // Configure our clocks
 
