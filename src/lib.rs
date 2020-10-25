@@ -115,6 +115,8 @@ pub use crate::pac::interrupt;
 #[cfg(feature = "stm32f303")]
 pub mod adc;
 #[cfg(feature = "device-selected")]
+pub mod clocks;
+#[cfg(feature = "device-selected")]
 pub mod delay;
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 pub mod dma;
