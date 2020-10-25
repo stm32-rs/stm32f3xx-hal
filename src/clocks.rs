@@ -284,7 +284,7 @@ impl Clocks {
             // Enable bypass mode on HSE, since we're using a ceramic oscillator.
             w.hsebyp().bit(self.hse_bypass);
             // Turn off the PLL: Required for modifying some of the settings below.
-            w.pllon().off();
+            w.pllon().off()
         });
 
         if let InputSrc::Pll(pll_src) = self.input_src {
@@ -295,7 +295,7 @@ impl Clocks {
 
             rcc.cfgr.modify(|_, w| {
                 w.pllmul().bits(self.pll_mul as u8); // eg: 8Mhz HSE x 9 = 72Mhz
-                unsafe { w.pllsrc().bits(pll_src as u8) }; // eg: Set HSE as PREDIV1 entry.
+                unsafe { w.pllsrc().bits(pll_src as u8) } // eg: Set HSE as PREDIV1 entry.
             });
 
             rcc.cfgr2.modify(|_, w| w.prediv().bits(self.prediv as u8));
@@ -310,7 +310,7 @@ impl Clocks {
 
             unsafe { w.ppre2().bits(self.apb2_prescaler as u8) }; // HCLK not divided for APB2.
             unsafe { w.ppre1().bits(self.apb1_prescaler as u8) }; // HCLK not divided for APB1
-            unsafe { w.hpre().bits(self.hclk_prescaler as u8) } // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
+            unsafe { w.hpre().bits(self.hclk_prescaler as u8) }; // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
             unsafe { w.sw().bits(self.input_src.bits()) } // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
         });
 
