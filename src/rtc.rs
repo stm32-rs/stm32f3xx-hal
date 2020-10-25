@@ -33,8 +33,9 @@ macro_rules! make_rtc_interrupt_handler {
                 unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xFF)) };
 
                 // Reset pending bit for interrupt line
-                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr1().set_bit()) };
+                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr20().set_bit()) };
             });
+            rprintln!("RTC int");
         }
     };
 }

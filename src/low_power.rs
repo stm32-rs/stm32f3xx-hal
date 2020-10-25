@@ -56,6 +56,7 @@ pub fn stop(scb: &mut SCB, pwr: &mut PWR) {
     // This bit is set and cleared by software. It works together with the PDDS bit.
     // 0: Voltage regulator on during Stop mode
     // 1: Voltage regulator in low-power mode during Stop mode
+    // pwr.cr.modify(|_, w| w.pdds().clear_bit());
     pwr.cr.modify(|_, w| w.lpds().set_bit());
 
     wfi();

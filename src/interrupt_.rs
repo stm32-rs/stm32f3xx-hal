@@ -13,6 +13,8 @@
 use crate::pac::{interrupt, EXTI, SYSCFG};
 use cortex_m::peripheral::NVIC;
 
+// use paste::paste;
+
 #[derive(Copy, Clone, Debug)]
 pub enum GpioReg {
     A,
@@ -65,7 +67,8 @@ macro_rules! make_interrupt_handler {
         fn $line() {
             free(|cs| {
                 // Reset pending bit for interrupt line
-                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr1().set_bit()) };
+                // todo: You need to set the `1` in `pr1` to the correct line!
+                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr1().bit(true)) };
             });
         }
     };
@@ -324,7 +327,7 @@ pub fn setup_line(exti: &mut EXTI, line: u8, edge: Edge) {
 /// Configure a GPIO to work with an interrupt line.
 /// The `line` parameter corresponds to both the interrupt line, and the
 /// GPIO number. Eg, `3` means `line3`, and `px3`.
-/// Reference section 12.1.3 of the datasheet for a breakdown by CR
+/// Reference man section 12.1.3 of the datasheet for a breakdown by CR
 /// and line.
 pub fn setup_gpio(syscfg: &mut SYSCFG, gpio_reg: GpioReg, line: u8) {
     // Select this GPIO pin as source input for EXTI line external interrupt
