@@ -393,7 +393,7 @@ pub fn validate(speeds: Speeds) -> (Validation, Validation) {
         main = Validation::NotValid;
     }
 
-    if speeds.usb != 48. {
+    if speeds.usb as u8 != 48 {
         usb = Validation::NotValid;
     }
 

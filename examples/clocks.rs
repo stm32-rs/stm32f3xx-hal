@@ -27,16 +27,16 @@ fn main() -> ! {
     clocks_.hse_bypass = true;
 
     // Set a PLL multiplier of 6, resulting in a system clock speed of 48 Mhz.
-    clocks_.pll_mull = clocks::PllMul::Mul6;
+    clocks_.pll_mul = clocks::PllMul::Mul6;
 
     // If you wish to use the internal (HSI) oscillator:
     clocks_.input_src = clocks::InputSrc::Hsi;
 
     // Setting the HCLK (AHB) prescaler:
-    clocks_.pclk1 = clocks::HclkPrescaler::Div4;
+    clocks_.hclk_prescaler = clocks::HclkPrescaler::Div2;
 
     // Setting the APB1 peripheral clock prescaler:
-    clocks_.pclk1 = clocks::ApbPrescaler::Div2;
+    clocks_.apb1_prescaler = clocks::ApbPrescaler::Div1;
 
     // The `setup` method validates our clock speeds, and if validated, writes
     // to the clock registesr.
@@ -45,7 +45,7 @@ fn main() -> ! {
     }
 
     // Display the calculated speeds.
-    rprintln!("Speeds: {:#?}", clocks_.calc_speeds());
+    hprintln!("Speeds: {:#?}", clocks_.calc_speeds()).ok();
 
     loop {}
 }
