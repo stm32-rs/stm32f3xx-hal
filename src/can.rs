@@ -1,4 +1,4 @@
-pub use canbus::{self, Filter, Frame, Id, Receiver, Transmitter};
+pub use embedded_hal_can::{self, Filter, Frame, Id, Receiver, Transmitter};
 
 use crate::gpio::gpioa;
 use crate::gpio::AF9;
@@ -73,7 +73,7 @@ pub enum Event {
     Txe,
 }
 
-impl canbus::Id for CanId {
+impl embedded_hal_can::Id for CanId {
     type BaseId = u16;
     type ExtendedId = u32;
 
@@ -92,7 +92,7 @@ impl canbus::Id for CanId {
     }
 }
 
-impl canbus::Frame for CanFrame {
+impl embedded_hal_can::Frame for CanFrame {
     type Id = CanId;
 
     #[inline(always)]
@@ -119,7 +119,7 @@ impl canbus::Frame for CanFrame {
     }
 }
 
-impl canbus::Filter for CanFilter {
+impl embedded_hal_can::Filter for CanFilter {
     type Id = CanId;
 
     fn from_id(id: Self::Id) -> Self {
@@ -164,7 +164,12 @@ impl CanFilterData {
         match self {
             CanFilterData::AcceptAll => 0,
             CanFilterData::ExtendedMaskFilter(filter, _) => filter << 3,
-            CanFilterData::MaskFilter(_filter, _) => todo!("Shift filter and mask correctly"),
+            CanFilterData::MaskFilter(filter, mask) => {
+                let shifted_filter = ((*filter as u32) << 5) & (u16::max_value() as u32); // Only use lower 16 bits
+                let shifted_mask = ((*mask as u32) << 5) << 16;
+
+                shifted_filter | shifted_mask
+            }
             CanFilterData::IdFilter(id) => match id {
                 CanId::BaseId(_base_id) => todo!("Shift base ID correctly!"),
                 CanId::ExtendedId(ext_id) => ext_id << 3,
@@ -176,7 +181,7 @@ impl CanFilterData {
         match self {
             CanFilterData::AcceptAll => Some(0),
             CanFilterData::ExtendedMaskFilter(_, mask) => Some(mask << 3),
-            CanFilterData::MaskFilter(_, _mask) => todo!("Shift filter and mask correctly"),
+            CanFilterData::MaskFilter(_, _mask) => None, // TODO: We should be able to fill this register with a second filter/mask pair
             CanFilterData::IdFilter(_id) => None, // TODO: This sucks, we need more info here to figure out the correct value of fr2
         }
     }
@@ -271,21 +276,21 @@ impl Can {
     }
 }
 
-impl canbus::Interface for CanTransmitter {
+impl embedded_hal_can::Interface for CanTransmitter {
     type Id = CanId;
     type Frame = CanFrame;
     type Error = ();
     type Filter = CanFilter;
 }
 
-impl canbus::Interface for CanFifo {
+impl embedded_hal_can::Interface for CanFifo {
     type Id = CanId;
     type Frame = CanFrame;
     type Error = ();
     type Filter = CanFilter;
 }
 
-impl canbus::Transmitter for CanTransmitter {
+impl embedded_hal_can::Transmitter for CanTransmitter {
     fn transmit(
         &mut self,
         frame: &Self::Frame,
@@ -477,8 +482,10 @@ impl Receiver for CanFifo {
 
 impl CanFrame {
     pub fn data_frame(id: CanId, data: &[u8]) -> CanFrame {
+        assert!(data.len() <= 8, "CAN Frames can have at most 8 data bytes");
+
         let mut frame_data = [0u8; 8];
-        frame_data.clone_from_slice(data);
+        frame_data[0..data.len()].clone_from_slice(data);
 
         CanFrame {
             id,
