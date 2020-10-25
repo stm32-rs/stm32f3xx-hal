@@ -9,6 +9,7 @@
 //! See Figure 15 of theF303 reference manual for a non-interactive visualization.
 
 use crate::pac::{FLASH, RCC};
+use rtt_target::{rprintln, rtt_init_print}; // todo temp
 
 /// Speed out of limits.
 pub struct SpeedError {}
@@ -214,14 +215,14 @@ impl UsbPrescaler {
 
 /// Settings used to configure clocks
 pub struct Clocks {
-    pub input_freq: u8, // Mhz, eg HSE speed
-    pub input_src: InputSrc,  //
-    pub prediv: Prediv, // Input source predivision, for PLL.
-    pub pll_mul: PllMul, // PLL multiplier: SYSCLK speed is input source × this value.
-    pub usb_pre: UsbPrescaler, // USB prescaler, for target of 48Mhz.
+    pub input_freq: u8,                // Mhz, eg HSE speed
+    pub input_src: InputSrc,           //
+    pub prediv: Prediv,                // Input source predivision, for PLL.
+    pub pll_mul: PllMul,               // PLL multiplier: SYSCLK speed is input source × this value.
+    pub usb_pre: UsbPrescaler,         // USB prescaler, for target of 48Mhz.
     pub hclk_prescaler: HclkPrescaler, // The AHB clock divider.
     pub apb1_prescaler: ApbPrescaler,  // APB1 divider, for the low speed peripheral bus.
-    pub apb2_prescaler: ApbPrescaler, // APB2 divider, for the high speed peripheral bus.
+    pub apb2_prescaler: ApbPrescaler,  // APB2 divider, for the high speed peripheral bus.
     // Bypass the HSE output, for use with oscillators that don't need it. Saves power, and
     // frees up the pin for use as GPIO.
     pub hse_bypass: bool,
@@ -233,9 +234,12 @@ impl Clocks {
     /// https://docs.rs/stm32f3xx-hal/0.5.0/stm32f3xx_hal/rcc/struct.CFGR.html
     /// Use the STM32CubeIDE Clock Configuration tab to help.
     pub fn setup(&self, rcc: &mut RCC, flash: &mut FLASH) -> Result<(), SpeedError> {
+        rprintln!("a");
         if let Validation::NotValid = self.validate() {
             return Err(SpeedError {});
         }
+
+        rprintln!("b");
 
         // 303 FM, 9.2.3:
         // The internal PLL can be used to multiply the HSI or HSE output clock frequency. Refer to
@@ -266,6 +270,7 @@ impl Clocks {
                 }
             }
         }
+        rprintln!("c");
 
         rcc.cr.modify(|_, w| {
             // Enable bypass mode on HSE, since we're using a ceramic oscillator.
@@ -274,8 +279,10 @@ impl Clocks {
             w.pllon().bit(false)
         });
 
+        rprintln!("d");
         while rcc.cr.read().pllrdy() == false {}
 
+        rprintln!("e");
         rcc.cfgr.modify(|_, w| {
             w.usbpre().bit(self.usb_pre.bit()); // eg: Divide by 1.5: 72/1.5 = 48Mhz, required by USB clock.
 
@@ -289,11 +296,13 @@ impl Clocks {
             unsafe { w.hpre().bits(self.hclk_prescaler as u8) } // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
         });
 
+        rprintln!("f");
         rcc.cfgr2.modify(|_, w| w.prediv().bits(self.prediv as u8));
 
         // Now turn PLL back on, once we're configured things that can only be set with it off.
         rcc.cr.modify(|_, w| w.pllon().bit(true));
 
+        rprintln!("g");
         // Adjust flash wait states according to the HCLK frequency
         // todo: This hclk calculation is DRY from `calc_speeds`.
         let sysclk = match self.input_src {
@@ -302,6 +311,7 @@ impl Clocks {
         };
         let hclk = sysclk as f32 / self.hclk_prescaler.value() as f32;
 
+        rprintln!("h");
         // f3 ref man section 4.5.1
         flash.acr.modify(|_, w| {
             if hclk <= 24. {
