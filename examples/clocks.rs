@@ -16,33 +16,35 @@ fn main() -> ! {
     // Get our peripherals
     let mut dp = pac::Peripherals::take().unwrap();
 
-    // Configure our clocks
-
-    // Start using a default
-    let mut clocks_ = clocks::Clocks::default();
-
-    // The lines below show examples of setting different configs.
+    // Initialize to 48Mhz sys clock, and 24Mhz peripheral clocks. Settings don't take
+    // effect until we run the `setup` method below.
+    let mut clocks = clocks::Clocks::default();
 
     // Setting HSE bypass, to save power and free up a pin, if using a compatible oscillator.
-    clocks_.hse_bypass = true;
+    clocks.hse_bypass = true;
 
-    // Set a PLL multiplier of 6, resulting in a system clock speed of 48 Mhz.
-    clocks_.pll_mul = clocks::PllMul::Mul6;
+    // We'll set the system clock frequency to 72 Mhz, while keeping a 48Mhz USB
+    // frequency. We do this by increasing the PLL multiplier from it's deafult of
+    // 6×, to 9x, and increasing the amount we divide the USB prescaler by.
+    clocks.pll_mul = clocks::PllMul::Mul9;
+    clocks.usb_pre = clocks::UsbPrescaler::Div1_5;
+
+    // Some further functionality examples:
 
     // If you wish to use the internal (HSI) oscillator:
-    clocks_.input_src = clocks::InputSrc::Hsi;
+    // clocks_.input_src = clocks::InputSrc::Hsi;
 
     // Setting the HCLK (AHB) prescaler:
-    clocks_.hclk_prescaler = clocks::HclkPrescaler::Div2;
+    // clocks_.hclk_prescaler = clocks::HclkPrescaler::Div2;
 
     // Setting the APB1 peripheral clock prescaler:
-    clocks_.apb1_prescaler = clocks::ApbPrescaler::Div1;
+    // clocks_.apb1_prescaler = clocks::ApbPrescaler::Div1;
 
     // The `setup` method validates our clock speeds, and if validated, writes
-    // to the clock registesr.
-    if clocks_.setup(&mut dp.RCC, &mut dp.FLASH).is_err() {
-        hprintln!("Clock speeds out of range").ok();
-    }
+    // to the clock registers.
+    if clocks.setup(&mut dp.RCC, &mut dp.FLASH).is_err() {
+        rprintln!("Unable to configure clocks due to a speed error.")
+    };
 
     // Display the calculated speeds.
     hprintln!("Speeds: {:#?}", clocks_.calc_speeds()).ok();
@@ -51,6 +53,7 @@ fn main() -> ! {
     // speeds during configuration. We can make one using the `make_rcc_clocks` method.
     // `rcc.rs` clock config we pass to other fns that need the speeds.
     let clocks = clocks.make_rcc_clocks();
+
     // Eg, we could use it in the commented-out line below, in a timer, spi etc.
     // let i2c = I2c::i2c1(dp.I2C1, (scl, sda), 100.khz(), clocks, &mut rcc.apb1);
 
