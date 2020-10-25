@@ -215,13 +215,15 @@ impl UsbPrescaler {
 /// Settings used to configure clocks
 pub struct Clocks {
     pub input_freq: u8, // Mhz, eg HSE speed
-    pub prediv: Prediv,
-    pub input_src: InputSrc,
-    pub pll_mul: PllMul,
-    pub usb_pre: UsbPrescaler,
-    pub hclk_prescaler: HclkPrescaler,
-    pub apb1_prescaler: ApbPrescaler,
-    pub apb2_prescaler: ApbPrescaler,
+    pub input_src: InputSrc,  //
+    pub prediv: Prediv, // Input source predivision, for PLL.
+    pub pll_mul: PllMul, // PLL multiplier: SYSCLK speed is input source × this value.
+    pub usb_pre: UsbPrescaler, // USB prescaler, for target of 48Mhz.
+    pub hclk_prescaler: HclkPrescaler, // The AHB clock divider.
+    pub apb1_prescaler: ApbPrescaler,  // APB1 divider, for the low speed peripheral bus.
+    pub apb2_prescaler: ApbPrescaler, // APB2 divider, for the high speed peripheral bus.
+    // Bypass the HSE output, for use with oscillators that don't need it. Saves power, and
+    // frees up the pin for use as GPIO.
     pub hse_bypass: bool,
 }
 
@@ -268,22 +270,23 @@ impl Clocks {
         rcc.cr.modify(|_, w| {
             // Enable bypass mode on HSE, since we're using a ceramic oscillator.
             w.hsebyp().bit(self.hse_bypass);
+            // Turn off the PLL: Required for modifying some of the settings below.
             w.pllon().bit(false)
         });
 
         while rcc.cr.read().pllrdy() == false {}
 
         rcc.cfgr.modify(|_, w| {
-            w.usbpre().bit(self.usb_pre.bit()); // Divide by 1.5: 72/1.5 = 48Mhz, required by USB clock.
+            w.usbpre().bit(self.usb_pre.bit()); // eg: Divide by 1.5: 72/1.5 = 48Mhz, required by USB clock.
 
             if let InputSrc::Pll(pll_src) = self.input_src {
-                w.pllmul().bits(self.pll_mul as u8); // 8Mhz HSE x 9 = 72Mhz
-                unsafe { w.pllsrc().bits(pll_src as u8) }; // Set HSE as PREDIV1 entry.
+                w.pllmul().bits(self.pll_mul as u8); // eg: 8Mhz HSE x 9 = 72Mhz
+                unsafe { w.pllsrc().bits(pll_src as u8) }; // eg: Set HSE as PREDIV1 entry.
             };
 
             unsafe { w.ppre2().bits(self.apb2_prescaler as u8) }; // HCLK not divided for APB2.
             unsafe { w.ppre1().bits(self.apb1_prescaler as u8) }; // HCLK not divided for APB1
-            unsafe { w.hpre().bits(self.hclk_prescaler as u8) } // Divide SYSCLK by 2 to get HCLK of 36Mhz.
+            unsafe { w.hpre().bits(self.hclk_prescaler as u8) } // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
         });
 
         rcc.cfgr2.modify(|_, w| w.prediv().bits(self.prediv as u8));
@@ -356,11 +359,13 @@ impl Clocks {
 }
 
 impl Default for Clocks {
+    /// This default configures clocks with a HSE, a 48Mhz sysclck, and 24Mhz AHB and
+    /// peripheral clocks. USB is set up at 48Mhz. HSE output is not bypassed.
     fn default() -> Self {
         Self {
             input_freq: 8,
-            prediv: Prediv::Div1,
             input_src: InputSrc::Pll(PllSrc::Hse),
+            prediv: Prediv::Div1,
             pll_mul: PllMul::Mul6,
             usb_pre: UsbPrescaler::Div1,
             hclk_prescaler: HclkPrescaler::Div2,

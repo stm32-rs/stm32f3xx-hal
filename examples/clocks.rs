@@ -40,7 +40,7 @@ fn main() -> ! {
 
     // The `setup` method validates our clock speeds, and if validated, writes
     // to the clock registesr.
-    if let Err(_) = clocks_.setup(&mut dp.RCC, &mut dp.FLASH) {
+    if clocks_.setup(&mut dp.RCC, &mut dp.FLASH).is_err() {
         hprintln!("Clock speeds out of range").ok();
     }
 
