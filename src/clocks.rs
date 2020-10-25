@@ -29,23 +29,37 @@ pub struct Speeds {
 
 /// Is a set of speeds valid?
 #[derive(Clone, Copy)]
+#[repr(u8)]
 pub enum Validation {
     Valid,
     NotValid,
 }
 
 #[derive(Clone, Copy)]
+#[repr(u8)]
 pub enum PllSrc {
     HsiDiv2 = 0b00,
     Hsi = 0b01,
     Hse = 0b10,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum InputSrc {
     Hsi,
     Hse,
     Pll(PllSrc),
+}
+
+impl InputSrc {
+    /// Required due to numerical value on non-uniform discrim being experimental.
+    /// (ie, can't set on `Pll(Pllsrc)`.
+    pub fn bits(&self) -> u8 {
+        match self {
+            Self::Hsi => 0b00,
+            Self::Hse => 0b01,
+            Self::Pll(_) => 0b10,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -255,14 +269,14 @@ impl Clocks {
             InputSrc::Hse => {
                 rcc.cr.modify(|_, w| w.hseon().bit(true));
                 // Wait for the HSE to be ready.
-                while rcc.cr.read().hserdy() == false {}
+                while rcc.cr.read().hserdy().is_not_ready() {}
             }
             InputSrc::Hsi => (),
             InputSrc::Pll(pll_src) => {
                 if let PllSrc::Hse = pll_src {
                     // todo: DRY
                     rcc.cr.modify(|_, w| w.hseon().bit(true));
-                    while rcc.cr.read().hserdy() == false {}
+                    while rcc.cr.read().hserdy().is_not_ready() {}
                 }
             }
         }
@@ -270,29 +284,35 @@ impl Clocks {
             // Enable bypass mode on HSE, since we're using a ceramic oscillator.
             w.hsebyp().bit(self.hse_bypass);
             // Turn off the PLL: Required for modifying some of the settings below.
-            w.pllon().bit(false)
+            w.pllon().off();
         });
 
-        // Wait for the PLL to no longer be ready before executing certain writes.
-        while rcc.cr.read().pllrdy() == true {}
+        if let InputSrc::Pll(pll_src) = self.input_src {
+            // Turn off the PLL: Required for modifying some of the settings below.
+            rcc.cr.modify(|_, w| w.pllon().off());
+            // Wait for the PLL to no longer be ready before executing certain writes.
+            while rcc.cr.read().pllrdy().is_ready() {}
+
+            rcc.cfgr.modify(|_, w| {
+                w.pllmul().bits(self.pll_mul as u8); // eg: 8Mhz HSE x 9 = 72Mhz
+                unsafe { w.pllsrc().bits(pll_src as u8) }; // eg: Set HSE as PREDIV1 entry.
+            });
+
+            rcc.cfgr2.modify(|_, w| w.prediv().bits(self.prediv as u8));
+
+            // Now turn PLL back on, once we're configured things that can only be set with it off.
+            rcc.cr.modify(|_, w| w.pllon().on());
+            while rcc.cr.read().pllrdy().is_not_ready() {}
+        }
 
         rcc.cfgr.modify(|_, w| {
             w.usbpre().bit(self.usb_pre.bit()); // eg: Divide by 1.5: 72/1.5 = 48Mhz, required by USB clock.
 
-            if let InputSrc::Pll(pll_src) = self.input_src {
-                w.pllmul().bits(self.pll_mul as u8); // eg: 8Mhz HSE x 9 = 72Mhz
-                unsafe { w.pllsrc().bits(pll_src as u8) }; // eg: Set HSE as PREDIV1 entry.
-            };
-
             unsafe { w.ppre2().bits(self.apb2_prescaler as u8) }; // HCLK not divided for APB2.
             unsafe { w.ppre1().bits(self.apb1_prescaler as u8) }; // HCLK not divided for APB1
             unsafe { w.hpre().bits(self.hclk_prescaler as u8) } // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
+            unsafe { w.sw().bits(self.input_src.bits()) } // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
         });
-
-        rcc.cfgr2.modify(|_, w| w.prediv().bits(self.prediv as u8));
-
-        // Now turn PLL back on, once we're configured things that can only be set with it off.
-        rcc.cr.modify(|_, w| w.pllon().bit(true));
 
         // Adjust flash wait states according to the HCLK frequency
         // todo: This hclk calculation is DRY from `calc_speeds`.
@@ -390,11 +410,11 @@ pub fn validate(speeds: Speeds) -> (Validation, Validation) {
         main = Validation::NotValid;
     }
 
-    if speeds.pclk1 > 36. || speeds.pclk1 < 12. {
+    if speeds.pclk1 > 36. || speeds.pclk1 < 10. {
         main = Validation::NotValid;
     }
 
-    if speeds.pclk2 > 72. || speeds.pclk1 < 0. {
+    if speeds.pclk2 > 72. || speeds.pclk2 < 0. {
         main = Validation::NotValid;
     }
 
