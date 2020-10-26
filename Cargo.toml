@@ -131,4 +131,3 @@ required-features = ["stm32f303"]
 [[example]]
 name = "adc"
 required-features = ["stm32f303"]
-
