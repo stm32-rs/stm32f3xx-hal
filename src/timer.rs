@@ -724,10 +724,10 @@ macro_rules! gp_timer {
                 /// Set the duty cycle, as a portion of `get_max_duty()`.
                 pub fn set_duty(&mut self, channel: Channel, duty: $res) {
                     match channel {
-                        Channel::One => self.tim.ccr1.write(|w| w.ccr().bits(duty.into())),
-                        Channel::Two => self.tim.ccr2.write(|w| w.ccr().bits(duty.into())),
-                        Channel::Three => self.tim.ccr3.write(|w| w.ccr().bits(duty.into())),
-                        Channel::Four => self.tim.ccr4.write(|w| w.ccr().bits(duty.into())),
+                        Channel::One => self.tim.ccr1.write(|w| w.ccr().bits(duty as u32)),
+                        Channel::Two => self.tim.ccr2.write(|w| w.ccr().bits(duty as u32)),
+                        Channel::Three => self.tim.ccr3.write(|w| w.ccr().bits(duty as u32)),
+                        Channel::Four => self.tim.ccr4.write(|w| w.ccr().bits(duty as u32)),
                     }
                 }
             }

@@ -26,7 +26,7 @@ fn main() -> ! {
     let mut rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.freeze(&mut flash.acr);
 
-    let mut timer = Timer::tim2(dp.TIM2, 94.hz(), &clocks);
+    let mut timer = Timer::tim2(dp.TIM2, 94.hz(), &clocks, &mut dp.APB1);
 
     timer.set_resolution(1_000);
 
