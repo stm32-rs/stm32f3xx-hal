@@ -1160,10 +1160,19 @@ gp_timer! {
 
 #[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
 gp_timer2! {
+    // {
+    //     TIM15: (tim15, tim15en, tim15rst),
+    //     APB2: (apb2, pclk2),
+    // },
     {
-        TIM2: (tim2, tim2en, tim2rst),
-        APB1: (apb1, pclk1),
-        u32,
+        TIM16: (tim16, tim16en, tim16rst),
+        APB2: (apb2, pclk2),
+        u16,
+    },
+    {
+        TIM17: (tim17, tim17en, tim17rst),
+        APB2: (apb2, pclk2),
+        u16,
     },
 }
 
