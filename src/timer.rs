@@ -291,7 +291,7 @@ macro_rules! basic_timer {
                 /// precision. If you wish for a precise tick speed, multiply the system clock
                 /// speed by the desired frequency, then round to the nearest integer.
                 pub fn set_resolution(&mut self, word: $res) {
-                    self.tim.arr.write(|w| unsafe { w.arr().bits(word) } );
+                    self.tim.arr.write(|w| w.arr().bits(word) );
                 }
 
                 /// Return the integer associated with the maximum duty period.
