@@ -52,7 +52,7 @@ fn main() -> ! {
     // Existing modules expect an `rcc::Clocks` struct to be passed, to use
     // speeds during configuration. We can make one using the `make_rcc_clocks` method.
     // `rcc.rs` clock config we pass to other fns that need the speeds.
-    let rcc_clocks = clocks.make_rcc_clocks();
+    let _rcc_clocks = clocks.make_rcc_clocks();
 
     // Eg, we could use it in the commented-out line below, in a timer, spi etc.
     // let i2c = I2c::i2c1(dp.I2C1, (scl, sda), 100.khz(), rcc_clocks, &mut rcc.apb1);
