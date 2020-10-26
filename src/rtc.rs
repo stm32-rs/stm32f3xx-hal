@@ -161,7 +161,7 @@ impl Rtc {
         let sleep_for_cycles = lfe_freq * sleep_time / 1_000;
         self.regs
             .wutr
-            .modify(|_, w| unsafe { w.wut().bits(sleep_for_cycles as u16) });
+            .modify(|_, w| w.wut().bits(sleep_for_cycles as u16));
 
         // Select the desired clock source. Program WUCKSEL[2:0] bits in RTC_CR register.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
@@ -186,7 +186,9 @@ impl Rtc {
         // 011: RTC/2 clock is selected
         // 10x: ck_spre (usually 1 Hz) clock is selected
         // 11x: ck_spre (usually 1 Hz) clock is selected and 216 is added to the WUT counter value
-        self.regs.cr.modify(|_, w| unsafe { w.wcksel().bits(word) });
+        self.regs
+            .cr
+            .modify(|_, w| unsafe { w.wucksel().bits(word) });
 
         // Re-enable the wakeup timer. Set WUTE bit in RTC_CR register.
         // The wakeup timer restarts counting down.
@@ -249,7 +251,7 @@ impl Rtcc for Rtc {
         let (st, su) = bcd2_encode(time.second())?;
 
         self.modify(|regs| {
-            regs.tr.write(|w| unsafe {
+            regs.tr.write(|w| {
                 w.ht().bits(ht);
                 w.hu().bits(hu);
                 w.mnt().bits(mnt);
@@ -363,7 +365,7 @@ impl Rtcc for Rtc {
         let (dt, du) = bcd2_encode(date.day())?;
 
         self.modify(|regs| {
-            regs.dr.write(|w| unsafe {
+            regs.dr.write(|w| {
                 w.dt().bits(dt);
                 w.du().bits(du);
                 w.mt().bit(mt > 0);
@@ -391,7 +393,7 @@ impl Rtcc for Rtc {
         let (st, su) = bcd2_encode(date.second())?;
 
         self.modify(|regs| {
-            regs.dr.write(|w| unsafe {
+            regs.dr.write(|w| {
                 w.dt().bits(dt);
                 w.du().bits(du);
                 w.mt().bit(mt > 0);
@@ -402,7 +404,7 @@ impl Rtcc for Rtc {
         });
 
         self.modify(|regs| {
-            regs.tr.write(|w| unsafe {
+            regs.tr.write(|w| {
                 w.ht().bits(ht);
                 w.hu().bits(hu);
                 w.mnt().bits(mnt);
