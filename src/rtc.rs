@@ -2,10 +2,10 @@
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
 #[cfg(any(feature = "rt"))]
-#[cfg(not(any(feature = "stm32f301", feature = "stm32f373", feature = "stm32f398")))]
+#[cfg(any(feature = "stm32f303", feature = "stm32f303"))]
 use crate::pac::{interrupt::RTC_WKUP, EXTI};
 #[cfg(any(feature = "rt"))]
-#[cfg(not(any(feature = "stm32f301", feature = "stm32f373", feature = "stm32f398")))]
+#[cfg(any(feature = "stm32f303", feature = "stm32f303"))]
 use cortex_m::peripheral::NVIC;
 
 use crate::pac::{PWR, RTC};
@@ -126,7 +126,7 @@ impl Rtc {
     }
 
     #[cfg(any(feature = "rt"))]
-    #[cfg(not(any(feature = "stm32f301", feature = "stm32f373", feature = "stm32f398")))]
+    #[cfg(any(feature = "stm32f303", feature = "stm32f303"))]
     /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11, and more broadly,
     /// section 2.4.1. See also reference manual, section 27.5.
     /// In addition to running this function, set up the interrupt handling function by
