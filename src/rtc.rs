@@ -2,8 +2,7 @@
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
 
-use crate::interrupt::RTC_WKUP;
-use crate::pac::{EXTI, PWR, RTC};
+use crate::pac::{interrupt::RTC_WKUP, EXTI, PWR, RTC};
 use crate::rcc::{APB1, BDCR};
 use core::convert::TryInto;
 use cortex_m::peripheral::NVIC;
@@ -34,8 +33,9 @@ macro_rules! make_rtc_interrupt_handler {
                 unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xFF)) };
 
                 // Reset pending bit for interrupt line
-                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr1().set_bit()) };
+                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr20().set_bit()) };
             });
+            rprintln!("RTC int");
         }
     };
 }
@@ -571,9 +571,14 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
 }
 
 /// Enables the RTC, and sets LSE as the timing source.
-fn enable(bdcr: &mut BDCR) {
+pub fn enable(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
     bdcr.bdcr().modify(|_, w| w.rtcen().enabled());
+}
+
+/// Disables the RTC.
+pub fn disable(bdcr: &mut BDCR) {
+    bdcr.bdcr().modify(|_, w| w.rtcen().disabled());
 }
 
 /// Resets the entire RTC domain
