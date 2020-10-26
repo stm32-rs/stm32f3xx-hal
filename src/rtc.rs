@@ -101,7 +101,7 @@ impl Rtc {
 
         result.set_24h_fmt();
 
-        result.regs.prer.modify(|_, w| unsafe {
+        result.regs.prer.modify(|_, w| {
             w.prediv_s().bits(prediv_s);
             w.prediv_a().bits(prediv_a)
         });
@@ -268,10 +268,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (st, su) = bcd2_encode(seconds as u32)?;
-        self.modify(|regs| {
-            regs.tr
-                .modify(|_, w| unsafe { w.st().bits(st).su().bits(su) })
-        });
+        self.modify(|regs| regs.tr.modify(|_, w| w.st().bits(st).su().bits(su)));
 
         Ok(())
     }
@@ -281,10 +278,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (mnt, mnu) = bcd2_encode(minutes as u32)?;
-        self.modify(|regs| {
-            regs.tr
-                .modify(|_, w| unsafe { w.mnt().bits(mnt).mnu().bits(mnu) })
-        });
+        self.modify(|regs| regs.tr.modify(|_, w| w.mnt().bits(mnt).mnu().bits(mnu)));
 
         Ok(())
     }
@@ -296,9 +290,7 @@ impl Rtcc for Rtc {
             Hours::AM(_h) | Hours::PM(_h) => self.set_12h_fmt(),
         }
 
-        self.regs
-            .tr
-            .modify(|_, w| unsafe { w.ht().bits(ht).hu().bits(hu) });
+        self.regs.tr.modify(|_, w| w.ht().bits(ht).hu().bits(hu));
 
         Ok(())
     }
@@ -317,10 +309,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (dt, du) = bcd2_encode(day as u32)?;
-        self.modify(|regs| {
-            regs.dr
-                .modify(|_, w| unsafe { w.dt().bits(dt).du().bits(du) })
-        });
+        self.modify(|regs| regs.dr.modify(|_, w| w.dt().bits(dt).du().bits(du)));
 
         Ok(())
     }
@@ -330,10 +319,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (mt, mu) = bcd2_encode(month as u32)?;
-        self.modify(|regs| {
-            regs.dr
-                .modify(|_, w| unsafe { w.mt().bit(mt > 0).mu().bits(mu) })
-        });
+        self.modify(|regs| regs.dr.modify(|_, w| w.mt().bit(mt > 0).mu().bits(mu)));
 
         Ok(())
     }
@@ -343,10 +329,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (yt, yu) = bcd2_encode(year as u32)?;
-        self.modify(|regs| {
-            regs.dr
-                .modify(|_, w| unsafe { w.yt().bits(yt).yu().bits(yu) })
-        });
+        self.modify(|regs| regs.dr.modify(|_, w| w.yt().bits(yt).yu().bits(yu)));
 
         Ok(())
     }
