@@ -2,10 +2,10 @@
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
 #[cfg(any(feature = "rt"))]
-#[cfg(any(feature = "stm32f303", feature = "stm32f303"))]
+#[cfg(not(feature = "stm32f301"))]
 use crate::pac::{interrupt::RTC_WKUP, EXTI};
 #[cfg(any(feature = "rt"))]
-#[cfg(any(feature = "stm32f303", feature = "stm32f303"))]
+#[cfg(not(feature = "stm32f301"))]
 use cortex_m::peripheral::NVIC;
 
 use crate::pac::{PWR, RTC};
@@ -22,9 +22,13 @@ macro_rules! make_rtc_interrupt_handler {
         #[interrupt]
         fn $line() {
             free(|cs| {
+                // Reset pending bit for interrupt line
+                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr20().bit(true)) };
+
                 // Clear the wake up timer flag, after disabling write protections.
                 unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xCA)) };
                 unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0x53)) };
+
                 unsafe { (*pac::RTC::ptr()).cr.modify(|_, w| w.wute().clear_bit()) };
 
                 unsafe { (*pac::RTC::ptr()).isr.modify(|_, w| w.init().set_bit()) };
@@ -37,11 +41,7 @@ macro_rules! make_rtc_interrupt_handler {
 
                 unsafe { (*pac::RTC::ptr()).cr.modify(|_, w| w.wute().set_bit()) };
                 unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xFF)) };
-
-                // Reset pending bit for interrupt line
-                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr20().set_bit()) };
             });
-            rprintln!("RTC int");
         }
     };
 }
@@ -126,7 +126,7 @@ impl Rtc {
     }
 
     #[cfg(any(feature = "rt"))]
-    #[cfg(any(feature = "stm32f303", feature = "stm32f303"))]
+    #[cfg(not(feature = "stm32f301"))]
     /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11, and more broadly,
     /// section 2.4.1. See also reference manual, section 27.5.
     /// In addition to running this function, set up the interrupt handling function by
@@ -199,6 +199,9 @@ impl Rtc {
 
         // Enable the wakeup timer interrupt.
         self.regs.cr.modify(|_, w| w.wutie().set_bit());
+
+        // Clear the  wakeup flag.
+        self.regs.isr.modify(|_, w| w.wutf().clear_bit());
 
         // Enable the RTC registers Write protection. Write 0xFF into the
         // RTC_WPR register. RTC registers can no more be modified.
