@@ -1,13 +1,17 @@
 //! Interface to the real time clock. See STM32F303 reference manual, section 27.
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
+#[cfg(any(feature = "rt"))]
+use crate::pac::{interrupt::RTC_WKUP, EXTI};
+#[cfg(any(feature = "rt"))]
+use cortex_m::peripheral::NVIC;
 
-use crate::pac::{interrupt::RTC_WKUP, EXTI, PWR, RTC};
+use crate::pac::{PWR, RTC};
 use crate::rcc::{APB1, BDCR};
 use core::convert::TryInto;
-use cortex_m::peripheral::NVIC;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
+#[cfg(any(feature = "rt"))]
 /// To enable RTC wakeup interrupts, run this in the main body of your program, eg:
 /// `make_rtc_interrupt_handler!(RTC_WKUP);`
 #[macro_export]
@@ -119,6 +123,7 @@ impl Rtc {
         self.regs.cr.read().fmt().bit()
     }
 
+    #[cfg(any(feature = "rt"))]
     /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11, and more broadly,
     /// section 2.4.1. See also reference manual, section 27.5.
     /// In addition to running this function, set up the interrupt handling function by
@@ -195,6 +200,7 @@ impl Rtc {
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
     }
 
+    #[cfg(any(feature = "rt"))]
     /// Clears the wakeup flag. Must be cleared manually after every RTC wakeup.
     /// Alternatively, you could handle this in the EXTI handler function.
     pub fn clear_wakeup_flag(&mut self) {
