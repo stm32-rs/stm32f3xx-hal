@@ -127,7 +127,7 @@ impl Rtc {
 
     #[cfg(any(feature = "rt"))]
     #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-    /// Setup periodic auto-akeup interrupts. See ST AN4759, Table 11, and more broadly,
+    /// Setup periodic auto-wakeup interrupts. See ST AN4759, Table 11, and more broadly,
     /// section 2.4.1. See also reference manual, section 27.5.
     /// In addition to running this function, set up the interrupt handling function by
     /// adding the line `make_rtc_interrupt_handler!(RTC_WKUP);` somewhere in the body
@@ -205,6 +205,27 @@ impl Rtc {
 
         // Enable the RTC registers Write protection. Write 0xFF into the
         // RTC_WPR register. RTC registers can no more be modified.
+        self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
+    }
+
+    #[cfg(any(feature = "rt"))]
+    #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+    /// Change the sleep time for the auto wakeup, after it's been set up.
+    pub fn set_wakeup_interval(&mut self, sleep_time: u32) {
+        // See comments in `set_auto_wakeup` for what these writes do.
+        self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
+        self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
+
+        self.regs.cr.modify(|_, w| w.wute().clear_bit());
+        while !self.regs.isr.read().wutwf().bit_is_set() {}
+
+        let lfe_freq = 32_768;
+        let sleep_for_cycles = lfe_freq * sleep_time / 1_000;
+        self.regs
+            .wutr
+            .modify(|_, w| w.wut().bits(sleep_for_cycles as u16));
+
+        self.regs.cr.modify(|_, w| w.wute().set_bit());
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
     }
 
