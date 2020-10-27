@@ -244,6 +244,7 @@ pub struct Clocks {
     // Bypass the HSE output, for use with oscillators that don't need it. Saves power, and
     // frees up the pin for use as GPIO.
     pub hse_bypass: bool,
+    pub security_system: bool,
 }
 
 impl Clocks {
@@ -318,6 +319,8 @@ impl Clocks {
             unsafe { w.hpre().bits(self.hclk_prescaler as u8) }; // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
             unsafe { w.sw().bits(self.input_src.bits()) } // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
         });
+
+        rcc.cr.modify(|_, w| w.csson().bit(self.security_system));
 
         // Adjust flash wait states according to the HCLK frequency
         // todo: This hclk calculation is DRY from `calc_speeds`.
@@ -397,11 +400,30 @@ impl Clocks {
             usbclk_valid: true,
         }
     }
+
+    /// This preset configures clocks with a HSE, a 72Mhz sysclck. All peripheral clocks are at
+    /// 72Mhz, except for APB1, which is at and 36Mhz. USB is set to 48Mhz.
+    /// HSE output is not bypassed.
+    pub fn full_speed() -> Self {
+        Self {
+            input_freq: 8,
+            input_src: InputSrc::Pll(PllSrc::Hse),
+            prediv: Prediv::Div1,
+            pll_mul: PllMul::Mul9,
+            usb_pre: UsbPrescaler::Div1_5,
+            hclk_prescaler: HclkPrescaler::Div1,
+            apb1_prescaler: ApbPrescaler::Div2,
+            apb2_prescaler: ApbPrescaler::Div1,
+            hse_bypass: false,
+            security_system: false,
+        }
+    }
 }
 
 impl Default for Clocks {
-    /// This default configures clocks with a HSE, a 48Mhz sysclck, and 24Mhz AHB and
-    /// peripheral clocks. USB is set up at 48Mhz. HSE output is not bypassed.
+    /// This default configures clocks with a HSE, a 48Mhz sysclck. All peripheral clocks are at
+    /// 48 Mhz, except for APB1, which is at and 24Mhz. USB is set to 48Mhz.
+    /// HSE output is not bypassed.
     fn default() -> Self {
         Self {
             input_freq: 8,
@@ -409,10 +431,11 @@ impl Default for Clocks {
             prediv: Prediv::Div1,
             pll_mul: PllMul::Mul6,
             usb_pre: UsbPrescaler::Div1,
-            hclk_prescaler: HclkPrescaler::Div2,
-            apb1_prescaler: ApbPrescaler::Div1,
+            hclk_prescaler: HclkPrescaler::Div1,
+            apb1_prescaler: ApbPrescaler::Div2,
             apb2_prescaler: ApbPrescaler::Div1,
             hse_bypass: false,
+            security_system: false,
         }
     }
 }
