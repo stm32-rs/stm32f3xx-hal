@@ -283,31 +283,28 @@ fn into_pre_div(div: u8) -> cfgr2::PREDIV_A {
 }
 
 impl CFGR {
-    /// Enable HSE (external clock) in crystal mode.
-    /// Uses external oscillator instead of HSI (internal RC oscillator) as the clock source.
+    /// Uses HSE (external oscillator) instead of HSI (internal RC oscillator) as the clock source.
     /// Will result in a hang if an external oscillator is not connected or it fails to start.
     pub fn use_hse<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
     {
         self.hse = Some(freq.into().0);
-        self.hse_bypass = false;
         self
     }
 
-    /// Enable HSE (external clock) in bypass mode.
-    /// Uses user provided clock instead of HSI (internal RC oscillator) as the clock source.
-    /// Will result in a hang if an external clock source is not connected.
-    pub fn use_hse_bypass<F>(mut self, freq: F) -> Self
-    where
-        F: Into<Hertz>,
-    {
-        self.hse = Some(freq.into().0);
+    /// Enable HSE bypass.
+    /// Uses user provided clock signal instead of an external oscillator.
+    /// OSC_OUT pin is free and can be used as GPIO.
+    /// No effect if HSE is not enabled.
+    pub fn bypass_hse(mut self) -> Self {
         self.hse_bypass = true;
         self
     }
 
     /// Enable CSS (Clock Security System).
+    /// System clock is automatically switched to HSI and an interrupt (CSSI) is generated
+    /// when HSE clock failure is detected.
     /// No effect if HSE is not enabled.
     pub fn enable_css(mut self) -> Self {
         self.css = true;
@@ -605,12 +602,8 @@ impl CFGR {
         // enable HSE and wait for it to be ready
         if self.hse.is_some() {
             rcc.cr.modify(|_, w| {
-                if self.css {
-                    w.csson().on();
-                }
-                if self.hse_bypass {
-                    w.hsebyp().bypassed();
-                }
+                w.hsebyp().bit(self.hse_bypass);
+                w.csson().bit(self.css);
                 w.hseon().on()
             });
 
