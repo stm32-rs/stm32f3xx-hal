@@ -21,13 +21,7 @@ impl RccExt for RCC {
             apb1: APB1 { _0: () },
             apb2: APB2 { _0: () },
             bdcr: BDCR { _0: () },
-            cfgr: CFGR {
-                hse: None,
-                hclk: None,
-                pclk1: None,
-                pclk2: None,
-                sysclk: None,
-            },
+            cfgr: CFGR::default(),
         }
     }
 }
@@ -87,7 +81,7 @@ impl AHB {
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
 /// let rcc = dp.RCC.constrain();
-/// use_ahb(&mut rcc.apb1)
+/// use_apb1(&mut rcc.apb1)
 /// ```
 pub struct APB1 {
     _0: (),
@@ -112,7 +106,7 @@ impl APB1 {
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
 /// let rcc = dp.RCC.constrain();
-/// use_ahb(&mut rcc.apb2)
+/// use_apb2(&mut rcc.apb2)
 /// ```
 pub struct APB2 {
     _0: (),
@@ -212,10 +206,13 @@ impl BDCR {
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
 /// let rcc = dp.RCC.constrain();
-/// use_ahb(&mut rcc.cfgr)
+/// use_cfgr(&mut rcc.cfgr)
 /// ```
+#[derive(Default)]
 pub struct CFGR {
     hse: Option<u32>,
+    hse_bypass: bool,
+    css: bool,
     hclk: Option<u32>,
     pclk1: Option<u32>,
     pclk2: Option<u32>,
@@ -293,6 +290,24 @@ impl CFGR {
         F: Into<Hertz>,
     {
         self.hse = Some(freq.into().0);
+        self
+    }
+
+    /// Enable HSE bypass.
+    /// Uses user provided clock signal instead of an external oscillator.
+    /// OSC_OUT pin is free and can be used as GPIO.
+    /// No effect if HSE is not enabled.
+    pub fn bypass_hse(mut self) -> Self {
+        self.hse_bypass = true;
+        self
+    }
+
+    /// Enable CSS (Clock Security System).
+    /// System clock is automatically switched to HSI and an interrupt (CSSI) is generated
+    /// when HSE clock failure is detected.
+    /// No effect if HSE is not enabled.
+    pub fn enable_css(mut self) -> Self {
+        self.css = true;
         self
     }
 
@@ -376,9 +391,10 @@ impl CFGR {
             }
 
             // PLL_MUL maximal value is 16
-            assert!(divisor <= 16);
-            // PRE_DIV maximal value is 16
             assert!(multiplier <= 16);
+
+            // PRE_DIV maximal value is 16
+            assert!(divisor <= 16);
 
             (multiplier, Some(divisor))
         }
@@ -583,9 +599,13 @@ impl CFGR {
 
         let rcc = unsafe { &*RCC::ptr() };
 
+        // enable HSE and wait for it to be ready
         if self.hse.is_some() {
-            // enable HSE and wait for it to be ready
-            rcc.cr.modify(|_, w| w.hseon().on());
+            rcc.cr.modify(|_, w| {
+                w.hsebyp().bit(self.hse_bypass);
+                w.csson().bit(self.css);
+                w.hseon().on()
+            });
 
             while rcc.cr.read().hserdy().is_not_ready() {}
         }
