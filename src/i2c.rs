@@ -5,7 +5,7 @@ use core::convert::TryFrom;
 use crate::{
     gpio::{gpioa, gpiob, gpiof, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
-    pac::{I2C1, I2C2},
+    pac::{I2C1, I2C2, RCC, rcc::cfgr3::I2C1SW_A},
     rcc::{Clocks, APB1},
     time::Hertz,
 };
@@ -83,7 +83,7 @@ macro_rules! busy_wait {
 }
 
 macro_rules! hal {
-    ($($I2CX:ident: ($i2cX:ident, $i2cXen:ident, $i2cXrst:ident),)+) => {
+    ($($I2CX:ident: ($i2cX:ident, $i2cXen:ident, $i2cXrst:ident, $i2cXsw:ident),)+) => {
         $(
             impl<SCL, SDA> I2c<$I2CX, (SCL, SDA)> {
                 /// Configures the I2C peripheral to work in master mode
@@ -106,6 +106,12 @@ macro_rules! hal {
 
                     assert!(freq <= 1_000_000);
 
+                    // NOTE(unsafe) atomic read with no side effects
+                    let i2cclk = match unsafe { (*RCC::ptr()).cfgr3.read().$i2cXsw().variant() } {
+                        I2C1SW_A::HSI => 8_000_000,
+                        I2C1SW_A::SYSCLK => clocks.sysclk().0,
+                    };
+
                     // TODO review compliance with the timing requirements of I2C
                     // t_I2CCLK = 1 / PCLK1
                     // t_PRESC  = (PRESC + 1) * t_I2CCLK
@@ -114,7 +120,6 @@ macro_rules! hal {
                     //
                     // t_SYNC1 + t_SYNC2 > 4 * t_I2CCLK
                     // t_SCL ~= t_SYNC1 + t_SYNC2 + t_SCLL + t_SCLH
-                    let i2cclk = clocks.pclk1().0;
                     let ratio = i2cclk / freq - 4;
                     let (presc, scll, sclh, sdadel, scldel) = if freq >= 100_000 {
                         // fast-mode or fast-mode plus
@@ -427,11 +432,11 @@ macro_rules! hal {
     feature = "stm32f398",
 ))]
 hal! {
-    I2C1: (i2c1, i2c1en, i2c1rst),
-    I2C2: (i2c2, i2c2en, i2c2rst),
+    I2C1: (i2c1, i2c1en, i2c1rst, i2c1sw),
+    I2C2: (i2c2, i2c2en, i2c2rst, i2c2sw),
 }
 
 #[cfg(feature = "stm32f334")]
 hal! {
-    I2C1: (i2c1, i2c1en, i2c1rst),
+    I2C1: (i2c1, i2c1en, i2c1rst, i2c1sw),
 }
