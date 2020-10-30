@@ -82,7 +82,7 @@ macro_rules! busy_wait {
     };
 }
 
-macro_rules! hal {
+macro_rules! i2c {
     ($($I2CX:ident: ($i2cX:ident, $i2cXen:ident, $i2cXrst:ident, $i2cXsw:ident),)+) => {
         $(
             impl<SCL, SDA> I2c<$I2CX, (SCL, SDA)> {
@@ -417,7 +417,15 @@ macro_rules! hal {
                 }
             }
         )+
-    }
+    };
+
+    ([ $($X:literal),+ ]) => {
+        paste::paste! {
+            i2c!(
+                $([<I2C $X>]: ([<i2c $X>], [<i2c $X en>], [<i2c $X rst>], [<i2c $X sw>]),)+
+            );
+        }
+    };
 }
 
 #[cfg(any(
@@ -431,12 +439,7 @@ macro_rules! hal {
     feature = "stm32f378",
     feature = "stm32f398",
 ))]
-hal! {
-    I2C1: (i2c1, i2c1en, i2c1rst, i2c1sw),
-    I2C2: (i2c2, i2c2en, i2c2rst, i2c2sw),
-}
+i2c!([1, 2]);
 
 #[cfg(feature = "stm32f334")]
-hal! {
-    I2C1: (i2c1, i2c1en, i2c1rst, i2c1sw),
-}
+i2c!([1]);
