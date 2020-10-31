@@ -59,7 +59,9 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         let (ptr, len) = unsafe { buffer.write_buffer() };
         let len = u16(len).expect("buffer is too large");
 
-        channel.set_memory_address(ptr as u32, Increment::Enable);
+        // NOTE(unsafe) We are using the address of a 'static WriteBuffer here,
+        // which is guaranteed to be safe for DMA.
+        unsafe { channel.set_memory_address(ptr as u32, Increment::Enable) };
         channel.set_transfer_length(len);
         channel.set_word_size::<B::Word>();
         channel.set_direction(Direction::FromPeripheral);
@@ -84,7 +86,9 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         let (ptr, len) = unsafe { buffer.read_buffer() };
         let len = u16(len).expect("buffer is too large");
 
-        channel.set_memory_address(ptr as u32, Increment::Enable);
+        // NOTE(unsafe) We are using the address of a 'static ReadBuffer here,
+        // which is guaranteed to be safe for DMA.
+        unsafe { channel.set_memory_address(ptr as u32, Increment::Enable) };
         channel.set_transfer_length(len);
         channel.set_word_size::<B::Word>();
         channel.set_direction(Direction::FromMemory);
@@ -266,7 +270,12 @@ pub trait Channel: private::Channel {
     /// # Panics
     ///
     /// Panics if this channel is enabled.
-    fn set_peripheral_address(&mut self, address: u32, inc: Increment) {
+    ///
+    /// # Safety
+    ///
+    /// Callers must ensure the given address is the address of a peripheral
+    /// register that supports DMA.
+    unsafe fn set_peripheral_address(&mut self, address: u32, inc: Increment) {
         assert!(!self.is_enabled());
 
         self.ch().par.write(|w| w.pa().bits(address));
@@ -281,7 +290,12 @@ pub trait Channel: private::Channel {
     /// # Panics
     ///
     /// Panics if this channel is enabled.
-    fn set_memory_address(&mut self, address: u32, inc: Increment) {
+    ///
+    /// # Safety
+    ///
+    /// Callers must ensure the given address is a valid memory address
+    /// that will remain valid as long as at is used by DMA.
+    unsafe fn set_memory_address(&mut self, address: u32, inc: Increment) {
         assert!(!self.is_enabled());
 
         self.ch().mar.write(|w| w.ma().bits(address));
