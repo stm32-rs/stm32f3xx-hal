@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - SPI4 peripheral for supported
   devices. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
 - Support for I2C transfer of more than 255 bytes, and 0 byte write ([#154](https://github.com/stm32-rs/stm32f3xx-hal/pull/154))
+- Support for HSE bypass and CSS ([#156](https://github.com/stm32-rs/stm32f3xx-hal/pull/156))
 
 ### Changed
 
