@@ -10,24 +10,10 @@ use crate::{
     time::Hertz,
 };
 
-#[cfg(not(any(
-    feature = "stm32f303x6",
-    feature = "stm32f303x8",
-    feature = "stm32f334",
-    feature = "stm32f328",
-)))]
+#[cfg(not(feature = "gpio-f333"))]
 use crate::{gpio::gpiof, pac::I2C2};
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f302x6",
-    feature = "stm32f302x8",
-    feature = "stm32f302xd",
-    feature = "stm32f302xe",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f318",
-    feature = "stm32f398",
-))]
+
+#[cfg(any(feature = "gpio-f302", feature = "gpio-f303e"))]
 use crate::{
     gpio::{gpioc, AF3, AF8},
     pac::I2C3,
@@ -68,12 +54,7 @@ unsafe impl SdaPin<I2C1> for gpiob::PB7<AF4> {}
 unsafe impl SdaPin<I2C1> for gpiob::PB9<AF4> {}
 
 cfg_if! {
-    if #[cfg(not(any(
-        feature = "stm32f303x6",
-        feature = "stm32f303x8",
-        feature = "stm32f334",
-        feature = "stm32f328",
-    )))] {
+    if #[cfg(not(feature = "gpio-f333"))] {
         unsafe impl SclPin<I2C2> for gpioa::PA9<AF4> {}
         unsafe impl SclPin<I2C2> for gpiof::PF1<AF4> {}
         #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))]
@@ -86,17 +67,7 @@ cfg_if! {
 }
 
 cfg_if! {
-    if #[cfg(any(
-        feature = "stm32f301",
-        feature = "stm32f302x6",
-        feature = "stm32f302x8",
-        feature = "stm32f302xd",
-        feature = "stm32f302xe",
-        feature = "stm32f303xd",
-        feature = "stm32f303xe",
-        feature = "stm32f318",
-        feature = "stm32f398",
-    ))] {
+    if #[cfg(any(feature = "gpio-f302", feature = "gpio-f303e"))] {
         unsafe impl SclPin<I2C3> for gpioa::PA8<AF3> {}
         unsafe impl SdaPin<I2C3> for gpiob::PB5<AF8> {}
         unsafe impl SdaPin<I2C3> for gpioc::PC9<AF3> {}
@@ -479,34 +450,11 @@ macro_rules! i2c {
     };
 }
 
-#[cfg(any(
-    feature = "stm32f303x6",
-    feature = "stm32f303x8",
-    feature = "stm32f334",
-    feature = "stm32f328",
-))]
+#[cfg(feature = "gpio-f333")]
 i2c!([1]);
 
-#[cfg(any(
-    feature = "stm32f302xb",
-    feature = "stm32f302xc",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f358",
-    feature = "stm32f373",
-    feature = "stm32f378",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f373"))]
 i2c!([1, 2]);
 
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f302x6",
-    feature = "stm32f302x8",
-    feature = "stm32f302xd",
-    feature = "stm32f302xe",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f318",
-    feature = "stm32f398",
-))]
+#[cfg(any(feature = "gpio-f302", feature = "gpio-f303e"))]
 i2c!([1, 2, 3]);
