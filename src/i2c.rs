@@ -3,12 +3,37 @@
 use core::convert::TryFrom;
 
 use crate::{
-    gpio::{gpioa, gpiob, gpiof, AF4},
+    gpio::{gpioa, gpiob, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
-    pac::{I2C1, I2C2, RCC, rcc::cfgr3::I2C1SW_A},
+    pac::{rcc::cfgr3::I2C1SW_A, I2C1, RCC},
     rcc::{Clocks, APB1},
     time::Hertz,
 };
+
+#[cfg(not(any(
+    feature = "stm32f303x6",
+    feature = "stm32f303x8",
+    feature = "stm32f334",
+    feature = "stm32f328",
+)))]
+use crate::{gpio::gpiof, pac::I2C2};
+#[cfg(any(
+    feature = "stm32f301",
+    feature = "stm32f302x6",
+    feature = "stm32f302x8",
+    feature = "stm32f302xd",
+    feature = "stm32f302xe",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+    feature = "stm32f318",
+    feature = "stm32f398",
+))]
+use crate::{
+    gpio::{gpioc, AF3, AF8},
+    pac::I2C3,
+};
+
+use cfg_if::cfg_if;
 
 /// I2C error
 #[derive(Debug)]
@@ -35,22 +60,48 @@ pub unsafe trait SclPin<I2C> {}
 /// SDA pin -- DO NOT IMPLEMENT THIS TRAIT
 pub unsafe trait SdaPin<I2C> {}
 
-// unsafe impl SclPin<I2C1> for PA15<AF4> {}
+unsafe impl SclPin<I2C1> for gpioa::PA15<AF4> {}
 unsafe impl SclPin<I2C1> for gpiob::PB6<AF4> {}
 unsafe impl SclPin<I2C1> for gpiob::PB8<AF4> {}
-
-unsafe impl SclPin<I2C2> for gpioa::PA9<AF4> {}
-unsafe impl SclPin<I2C2> for gpiof::PF1<AF4> {}
-
-#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))]
-unsafe impl SclPin<I2C2> for gpiof::PF6<AF4> {}
-
-// unsafe impl SdaPin<I2C1> for PA14<AF4> {}
+unsafe impl SdaPin<I2C1> for gpioa::PA14<AF4> {}
 unsafe impl SdaPin<I2C1> for gpiob::PB7<AF4> {}
 unsafe impl SdaPin<I2C1> for gpiob::PB9<AF4> {}
 
-unsafe impl SdaPin<I2C2> for gpioa::PA10<AF4> {}
-unsafe impl SdaPin<I2C2> for gpiof::PF0<AF4> {}
+cfg_if! {
+    if #[cfg(not(any(
+        feature = "stm32f303x6",
+        feature = "stm32f303x8",
+        feature = "stm32f334",
+        feature = "stm32f328",
+    )))] {
+        unsafe impl SclPin<I2C2> for gpioa::PA9<AF4> {}
+        unsafe impl SclPin<I2C2> for gpiof::PF1<AF4> {}
+        #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))]
+        unsafe impl SclPin<I2C2> for gpiof::PF6<AF4> {}
+        unsafe impl SdaPin<I2C2> for gpioa::PA10<AF4> {}
+        unsafe impl SdaPin<I2C2> for gpiof::PF0<AF4> {}
+        #[cfg(feature = "gpio-f373")]
+        unsafe impl SdaPin<I2C2> for gpiof::PF7<AF4> {}
+    }
+}
+
+cfg_if! {
+    if #[cfg(any(
+        feature = "stm32f301",
+        feature = "stm32f302x6",
+        feature = "stm32f302x8",
+        feature = "stm32f302xd",
+        feature = "stm32f302xe",
+        feature = "stm32f303xd",
+        feature = "stm32f303xe",
+        feature = "stm32f318",
+        feature = "stm32f398",
+    ))] {
+        unsafe impl SclPin<I2C3> for gpioa::PA8<AF3> {}
+        unsafe impl SdaPin<I2C3> for gpiob::PB5<AF8> {}
+        unsafe impl SdaPin<I2C3> for gpioc::PC9<AF3> {}
+    }
+}
 
 /// I2C peripheral operating in master mode
 pub struct I2c<I2C, PINS> {
@@ -429,17 +480,33 @@ macro_rules! i2c {
 }
 
 #[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f318",
+    feature = "stm32f303x6",
+    feature = "stm32f303x8",
+    feature = "stm32f334",
     feature = "stm32f328",
+))]
+i2c!([1]);
+
+#[cfg(any(
+    feature = "stm32f302xb",
+    feature = "stm32f302xc",
+    feature = "stm32f303xb",
+    feature = "stm32f303xc",
     feature = "stm32f358",
     feature = "stm32f373",
     feature = "stm32f378",
-    feature = "stm32f398",
 ))]
 i2c!([1, 2]);
 
-#[cfg(feature = "stm32f334")]
-i2c!([1]);
+#[cfg(any(
+    feature = "stm32f301",
+    feature = "stm32f302x6",
+    feature = "stm32f302x8",
+    feature = "stm32f302xd",
+    feature = "stm32f302xe",
+    feature = "stm32f303xd",
+    feature = "stm32f303xe",
+    feature = "stm32f318",
+    feature = "stm32f398",
+))]
+i2c!([1, 2, 3]);
