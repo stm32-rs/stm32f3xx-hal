@@ -37,7 +37,7 @@ use crate::pac::TIM4;
 use crate::pac::TIM8;
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 use crate::pac::{TIM12, TIM13, TIM14, TIM18, TIM19, TIM5};
-use crate::pac::{TIM15, TIM16, TIM17, TIM2, TIM6};
+use crate::pac::{TIM16, TIM17, TIM2, TIM6};
 #[cfg(any(
     feature = "stm32f303",
     feature = "stm32f328",
@@ -433,71 +433,17 @@ macro_rules! advanced_timer {
                     self.tim
                 }
 
-                /// Set timer alignment to Edge, or one of 3 center modes.
-                /// STM32F303 ref man, section 21.4.1:
-                /// Bits 6:5 CMS: Center-aligned mode selection
-                /// 00: Edge-aligned mode. The counter counts up or down depending on the direction bit
-                /// (DIR).
-                /// 01: Center-aligned mode 1. The counter counts up and down alternatively. Output compare
-                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
-                /// only when the counter is counting down.
-                /// 10: Center-aligned mode 2. The counter counts up and down alternatively. Output compare
-                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
-                /// only when the counter is counting up.
-                /// 11: Center-aligned mode 3. The counter counts up and down alternatively. Output compare
-                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
-                /// both when the counter is counting up or down.
-                pub fn set_alignment(&mut self, alignment: Alignment) {
-                    let word = match alignment {
-                        Alignment::Edge => 0b00,
-                        Alignment::Center1 => 0b01,
-                        Alignment::Center2 => 0b10,
-                        Alignment::Center3 => 0b11,
-                    };
-                    self.tim.cr1.modify(|_, w| w.cms().bits(word));
-                }
-
                 /// Set the value of the auto-reload resolution. Use a lower value to increase
                 /// precision. If you wish for a precise tick speed, multiply the system clock
                 /// speed by the desired frequency, then round to the nearest integer.
                 pub fn set_resolution(&mut self, word: $res) {
-                    self.tim.arr.write(|w| w.arr().bits(word));
+                    self.tim.arr.write(|w| unsafe { w.arr().bits(word) } );
                 }
 
                 /// Return the integer associated with the maximum duty period.
                 /// todo: Duty could be u16 for low-precision timers.
                 pub fn get_max_duty(&self) -> $res {
                     self.tim.arr.read().arr().bits()
-                }
-
-                /// Set output polarity. See docs on the `Polarity` enum.
-                pub fn set_polarity(&mut self, channel: Channel, polarity: Polarity) {
-                    match channel {
-                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1p().bit(polarity.bit())),
-                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2p().bit(polarity.bit())),
-                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3p().bit(polarity.bit())),
-                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4p().bit(polarity.bit())),
-                    }
-                }
-
-                /// Disables the timer.
-                pub fn disable(&mut self, channel: Channel) {
-                    match channel {
-                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1e().clear_bit()),
-                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2e().clear_bit()),
-                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3e().clear_bit()),
-                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4e().clear_bit()),
-                    }
-                }
-
-                /// Enables the timer.
-                pub fn enable(&mut self, channel: Channel) {
-                    match channel {
-                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1e().set_bit()),
-                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2e().set_bit()),
-                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3e().set_bit()),
-                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4e().set_bit()),
-                    }
                 }
             }
         )+
@@ -645,13 +591,13 @@ macro_rules! gp_timer {
                 /// precision. If you wish for a precise tick speed, multiply the system clock
                 /// speed by the desired frequency, then round to the nearest integer.
                 pub fn set_resolution(&mut self, word: $res) {
-                    self.tim.arr.write(|w| w.arr().bits(word));
+                    self.tim.arr.write(|w| w.arr().bits(word.into()));
                 }
 
                 /// Return the integer associated with the maximum duty period.
                 /// todo: Duty could be u16 for low-precision timers.
                 pub fn get_max_duty(&self) -> $res {
-                    self.tim.arr.read().arr().bits()
+                    self.tim.arr.read().arr().bits() as $res
                 }
 
                 /// Set output polarity. See docs on the `Polarity` enum.
@@ -705,27 +651,7 @@ macro_rules! gp_timer {
                     }
                 }
 
-                /// Set Output Compare Mode. See docs on the `OutputCompare` enum.
-                pub fn set_output_compare(&mut self, channel: Channel, mode: OutputCompare) {
-                    match channel {
-                        Channel::One => {
-                            self.tim.ccmr1_output().modify(|_, w| w.oc1m().bits(mode as u8));
-                            self.tim.ccmr1_output().modify(|_, w| w.oc1m_3().bit(mode.left_bit()));
-                        }
-                        Channel::Two => {
-                            self.tim.ccmr1_output().modify(|_, w| w.oc2m().bits(mode as u8));
-                            self.tim.ccmr1_output().modify(|_, w| w.oc2m_3().bit(mode.left_bit()));
-                        }
-                        Channel::Three => {
-                            self.tim.ccmr2_output().modify(|_, w| w.oc3m().bits(mode as u8));
-                            self.tim.ccmr2_output().modify(|_, w| w.oc3m_3().bit(mode.left_bit()));
-                        }
-                        Channel::Four => {
-                            self.tim.ccmr2_output().modify(|_, w| w.oc4m().bits(mode as u8));
-                            self.tim.ccmr2_output().modify(|_, w| w.oc4m_3().bit(mode.left_bit()));
-                        }
-                    }
-                }
+
 
                 /// Set preload mode.
                 /// OC1PE: Output Compare 1 preload enable
@@ -746,33 +672,11 @@ macro_rules! gp_timer {
                         Channel::Four => self.tim.ccmr2_output().modify(|_, w| w.oc4pe().bit(value)),
                     }
                 }
-
-                /// Return the set duty period for a given channel. Divide by `get_max_duty()`
-                /// to find the portion of the duty cycle used.
-                pub fn get_duty(&self, channel: Channel) -> $res {
-                    match channel {
-                        Channel::One => self.tim.ccr1.read().ccr().bits(),
-                        Channel::Two => self.tim.ccr2.read().ccr().bits(),
-                        Channel::Three => self.tim.ccr3.read().ccr().bits(),
-                        Channel::Four => self.tim.ccr4.read().ccr().bits(),
-                    }
-                }
-
-                /// Set the duty cycle, as a portion of `get_max_duty()`.
-                pub fn set_duty(&mut self, channel: Channel, duty: $res) {
-                    match channel {
-                        Channel::One => self.tim.ccr1.write(|w| w.ccr().bits(duty)),
-                        Channel::Two => self.tim.ccr2.write(|w| w.ccr().bits(duty)),
-                        Channel::Three => self.tim.ccr3.write(|w| w.ccr().bits(duty)),
-                        Channel::Four => self.tim.ccr4.write(|w| w.ccr().bits(duty)),
-                    }
-                }
             }
         )+
     }
+}
 
-
-    }
 macro_rules! gp_timer2 {
         ($({
             $TIMX:ident: ($tim:ident, $timXen:ident, $timXrst:ident),
@@ -918,6 +822,65 @@ macro_rules! gp_timer2 {
         }
 }
 
+// These features are separate from the rest, since many of the variants
+// don't support them.
+
+macro_rules! pwm_features {
+    ($({
+        $TIMX:ident: ($tim:ident, $timXen:ident, $timXrst:ident),
+        $APB:ident: ($apb:ident, $pclkX:ident),
+        $res:ident,
+    },)+) => {
+        $(
+            impl Timer<$TIMX> {
+
+                /// Set Output Compare Mode. See docs on the `OutputCompare` enum.
+                pub fn set_output_compare(&mut self, channel: Channel, mode: OutputCompare) {
+                    match channel {
+                        Channel::One => {
+                            self.tim.ccmr1_output().modify(|_, w| w.oc1m().bits(mode as u8));
+                            self.tim.ccmr1_output().modify(|_, w| w.oc1m_3().bit(mode.left_bit()));
+                        }
+                        Channel::Two => {
+                            self.tim.ccmr1_output().modify(|_, w| w.oc2m().bits(mode as u8));
+                            self.tim.ccmr1_output().modify(|_, w| w.oc2m_3().bit(mode.left_bit()));
+                        }
+                        Channel::Three => {
+                            self.tim.ccmr2_output().modify(|_, w| w.oc3m().bits(mode as u8));
+                            self.tim.ccmr2_output().modify(|_, w| w.oc3m_3().bit(mode.left_bit()));
+                        }
+                        Channel::Four => {
+                            self.tim.ccmr2_output().modify(|_, w| w.oc4m().bits(mode as u8));
+                            self.tim.ccmr2_output().modify(|_, w| w.oc4m_3().bit(mode.left_bit()));
+                        }
+                    }
+                }
+
+                /// Return the set duty period for a given channel. Divide by `get_max_duty()`
+                /// to find the portion of the duty cycle used.
+                pub fn get_duty(&self, channel: Channel) -> $res {
+                    match channel {
+                        Channel::One => self.tim.ccr1.read().ccr().bits(),
+                        Channel::Two => self.tim.ccr2.read().ccr().bits(),
+                        Channel::Three => self.tim.ccr3.read().ccr().bits(),
+                        Channel::Four => self.tim.ccr4.read().ccr().bits(),
+                    }
+                }
+
+                /// Set the duty cycle, as a portion of `get_max_duty()`.
+                pub fn set_duty(&mut self, channel: Channel, duty: $res) {
+                    match channel {
+                        Channel::One => self.tim.ccr1.write(|w| w.ccr().bits(duty)),
+                        Channel::Two => self.tim.ccr2.write(|w| w.ccr().bits(duty)),
+                        Channel::Three => self.tim.ccr3.write(|w| w.ccr().bits(duty)),
+                        Channel::Four => self.tim.ccr4.write(|w| w.ccr().bits(duty)),
+                    }
+                }
+            }
+        )+
+    }
+}
+
 // Basic timers: Tim6, 7. Count up only, no CC channels.
 // General purpose timers: Tim2, 3, 4. Count up and down, and have 4 CC channels
 // General purpose timers: Tim15, 16, 17. Count up only, and have 2, 1, 1 CC channels
@@ -1061,30 +1024,30 @@ advanced_timer! {
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 advanced_timer! {
-    // { todo
-    //     TIM5: (tim5, tim5en, tim5rst),
-    //     APB1: (apb1, pclk1),
-    // },
-    // {
-    //     TIM12: (tim12, tim12en, tim12rst),
-    //     APB1: (apb1, pclk1),
-    // },
-    // {
-    //     TIM13: (tim13, tim13en, tim13rst),
-    //     APB1: (apb1, pclk1),
-    // },
-    // {
-    //     TIM14: (tim14, tim14en, tim14rst),
-    //     APB1: (apb1, pclk1),
-    // },
-    // {
-    //     TIM18: (tim18, tim18en, tim18rst),
-    //     APB1: (apb1, pclk1),
-    // },
-    // {
-    //     TIM19: (tim19, tim19en, tim19rst),
-    //     APB2: (apb2, pclk2),
-    // },
+    {
+        TIM5: (tim5, tim5en, tim5rst),
+        APB1: (apb1, pclk1),
+    },
+    {
+        TIM12: (tim12, tim12en, tim12rst),
+        APB1: (apb1, pclk1),
+    },
+    {
+        TIM13: (tim13, tim13en, tim13rst),
+        APB1: (apb1, pclk1),
+    },
+    {
+        TIM14: (tim14, tim14en, tim14rst),
+        APB1: (apb1, pclk1),
+    },
+    {
+        TIM18: (tim18, tim18en, tim18rst),
+        APB1: (apb1, pclk1),
+    },
+    {
+        TIM19: (tim19, tim19en, tim19rst),
+        APB2: (apb2, pclk2),
+    },
 }
 
 #[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
@@ -1113,21 +1076,6 @@ gp_timer! {
         APB1: (apb1, pclk1),
         u16,
     },
-    {
-        TIM15: (tim15, tim15en, tim15rst),
-        APB2: (apb2, pclk2),
-        u16,
-    },
-    {
-        TIM16: (tim16, tim16en, tim16rst),
-        APB2: (apb2, pclk2),
-        u16,
-    },
-    {
-        TIM17: (tim17, tim17en, tim17rst),
-        APB2: (apb2, pclk2),
-        u16,
-    },
 }
 
 #[cfg(feature = "stm32f302")]
@@ -1135,21 +1083,6 @@ gp_timer! {
     {
         TIM2: (tim2, tim2en, tim2rst),
         APB1: (apb1, pclk1),
-        u16,
-    },
-    {
-        TIM15: (tim15, tim15en, tim15rst),
-        APB2: (apb2, pclk2),
-        u16,
-    },
-    {
-        TIM16: (tim16, tim16en, tim16rst),
-        APB2: (apb2, pclk2),
-        u16,
-    },
-    {
-        TIM17: (tim17, tim17en, tim17rst),
-        APB2: (apb2, pclk2),
         u16,
     },
 }
@@ -1296,7 +1229,7 @@ gp_timer2! {
         TIM17: (tim17, tim17en, tim17rst),
         APB2: (apb2, pclk2),
         u16,
-    }
+    },
 }
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
@@ -1315,7 +1248,7 @@ gp_timer2! {
         TIM17: (tim17, tim17en, tim17rst),
         APB2: (apb2, pclk2),
         u16,
-    }
+    },
 }
 
 #[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
@@ -1333,5 +1266,26 @@ gp_timer2! {
         TIM17: (tim17, tim17en, tim17rst),
         APB2: (apb2, pclk2),
         u16,
-    }
+    },
+}
+
+// todo: Run `pwm_features` for more timer types. Currently only set up for first
+// set of gp timers.
+#[cfg(feature = "stm32f303")]
+pwm_features! {
+    {
+        TIM2: (tim2, tim2en, tim2rst),
+        APB1: (apb1, pclk1),
+        u32,
+    },
+    {
+        TIM3: (tim3, tim3en, tim3rst),
+        APB1: (apb1, pclk1),
+        u16,
+    },
+    {
+        TIM4: (tim4, tim4en, tim4rst),
+        APB1: (apb1, pclk1),
+        u16,
+    },
 }
