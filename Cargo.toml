@@ -105,6 +105,10 @@ lto = true
 opt-level = "s"
 
 [[example]]
+name = "clocks"
+required-features = ["stm32f303xc"]
+
+[[example]]
 name = "pwm"
 required-features = ["stm32f303xc"]
 
@@ -123,6 +127,10 @@ required-features = ["stm32f303"]
 [[example]]
 name = "can"
 required-features = ["rt", "can", "stm32f303"]
+
+[[example]]
+name = "serial"
+required-features = ["stm32f303"]
 
 [[example]]
 name = "serial_dma"
