@@ -26,10 +26,6 @@ paste = "1"
 rtcc = "0.2"
 stm32f3 = "0.12"
 
-<<<<<<< HEAD
-[dependencies.canbus]
-path = "/Users/zklapow/dev/personal/robot/canbus"
-=======
 [dependencies.embedded-hal-can]
 version = "0.1.0"
 optional = true
@@ -37,7 +33,6 @@ optional = true
 [dependencies.heapless]
 version = "0.5.5"
 optional = true
->>>>>>> 74dc692b7c3a820da84d6d29c841e71d7b34ee19
 
 [dependencies.bare-metal]
 version = "0.2"
@@ -68,12 +63,6 @@ device-selected = []
 direct-call-deprecated = []
 rt = ["stm32f3/rt"]
 can = ["embedded-hal-can", "heapless"]
-
-gpio-f302 = []
-gpio-f303 = []
-gpio-f303e = []
-gpio-f333 = []
-gpio-f373 = []
 
 gpio-f302 = []
 gpio-f303 = []
