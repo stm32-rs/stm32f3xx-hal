@@ -107,6 +107,7 @@ pub enum Polarity {
     ActiveLow,
 }
 
+#[cfg(feature = "stm32f303")]
 impl Polarity {
     /// For use with `set_bit()`.
     fn bit(&self) -> bool {
@@ -307,19 +308,6 @@ macro_rules! basic_timer {
                     self.stop();
                     self.tim
                 }
-
-                /// Set the value of the auto-reload resolution. Use a lower value to increase
-                /// precision. If you wish for a precise tick speed, multiply the system clock
-                /// speed by the desired frequency, then round to the nearest integer.
-                pub fn set_resolution(&mut self, word: $res) {
-                    self.tim.arr.write(|w|  w.arr().bits(word) );
-                }
-
-                /// Return the integer associated with the maximum duty period.
-                /// todo: Duty could be u16 for low-precision timers.
-                pub fn get_max_duty(&self) -> $res {
-                    self.tim.arr.read().arr().bits()
-                }
             }
         )+
     }
@@ -431,19 +419,6 @@ macro_rules! advanced_timer {
                 pub fn release(mut self) -> $TIMX {
                     self.stop();
                     self.tim
-                }
-
-                /// Set the value of the auto-reload resolution. Use a lower value to increase
-                /// precision. If you wish for a precise tick speed, multiply the system clock
-                /// speed by the desired frequency, then round to the nearest integer.
-                pub fn set_resolution(&mut self, word: $res) {
-                    self.tim.arr.write(|w| unsafe { w.arr().bits(word) } );
-                }
-
-                /// Return the integer associated with the maximum duty period.
-                /// todo: Duty could be u16 for low-precision timers.
-                pub fn get_max_duty(&self) -> $res {
-                    self.tim.arr.read().arr().bits()
                 }
             }
         )+
@@ -562,116 +537,6 @@ macro_rules! gp_timer {
                     self.stop();
                     self.tim
                 }
-
-                /// Set timer alignment to Edge, or one of 3 center modes.
-                /// STM32F303 ref man, section 21.4.1:
-                /// Bits 6:5 CMS: Center-aligned mode selection
-                /// 00: Edge-aligned mode. The counter counts up or down depending on the direction bit
-                /// (DIR).
-                /// 01: Center-aligned mode 1. The counter counts up and down alternatively. Output compare
-                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
-                /// only when the counter is counting down.
-                /// 10: Center-aligned mode 2. The counter counts up and down alternatively. Output compare
-                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
-                /// only when the counter is counting up.
-                /// 11: Center-aligned mode 3. The counter counts up and down alternatively. Output compare
-                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
-                /// both when the counter is counting up or down.
-                pub fn set_alignment(&mut self, alignment: Alignment) {
-                    let word = match alignment {
-                        Alignment::Edge => 0b00,
-                        Alignment::Center1 => 0b01,
-                        Alignment::Center2 => 0b10,
-                        Alignment::Center3 => 0b11,
-                    };
-                    self.tim.cr1.modify(|_, w| w.cms().bits(word));
-                }
-
-                /// Set the value of the auto-reload resolution. Use a lower value to increase
-                /// precision. If you wish for a precise tick speed, multiply the system clock
-                /// speed by the desired frequency, then round to the nearest integer.
-                pub fn set_resolution(&mut self, word: $res) {
-                    self.tim.arr.write(|w| w.arr().bits(word.into()));
-                }
-
-                /// Return the integer associated with the maximum duty period.
-                /// todo: Duty could be u16 for low-precision timers.
-                pub fn get_max_duty(&self) -> $res {
-                    self.tim.arr.read().arr().bits() as $res
-                }
-
-                /// Set output polarity. See docs on the `Polarity` enum.
-                pub fn set_polarity(&mut self, channel: Channel, polarity: Polarity) {
-                    match channel {
-                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1p().bit(polarity.bit())),
-                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2p().bit(polarity.bit())),
-                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3p().bit(polarity.bit())),
-                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4p().bit(polarity.bit())),
-                    }
-                }
-
-                /// Set complementary output polarity. See docs on the `Polarity` enum.
-                pub fn set_complementary_polarity(&mut self, channel: Channel, polarity: Polarity) {
-                    match channel {
-                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1np().bit(polarity.bit())),
-                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2np().bit(polarity.bit())),
-                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3np().bit(polarity.bit())),
-                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4np().bit(polarity.bit())),
-                    }
-                }
-
-                /// Disables the timer.
-                pub fn disable(&mut self, channel: Channel) {
-                    match channel {
-                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1e().clear_bit()),
-                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2e().clear_bit()),
-                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3e().clear_bit()),
-                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4e().clear_bit()),
-                    }
-                }
-
-                /// Enables the timer.
-                pub fn enable(&mut self, channel: Channel) {
-                    match channel {
-                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1e().set_bit()),
-                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2e().set_bit()),
-                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3e().set_bit()),
-                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4e().set_bit()),
-                    }
-                }
-
-                /// Set Capture Compare Mode. See docs on the `CaptureCompare` enum.
-                pub fn set_capture_compare(&mut self, channel: Channel, mode: CaptureCompare) {
-                    match channel {
-                        // Note: CC1S bits are writable only when the channel is OFF (CC1E = 0 in TIMx_CCER)
-                        Channel::One => self.tim.ccmr1_output().modify( unsafe { |_, w| w.cc1s().bits(mode as u8)} ),
-                        Channel::Two => self.tim.ccmr1_output().modify(unsafe {|_, w| w.cc2s().bits(mode as u8)}),
-                        Channel::Three => self.tim.ccmr2_output().modify(unsafe {|_, w| w.cc3s().bits(mode as u8)}),
-                        Channel::Four => self.tim.ccmr2_output().modify(unsafe {|_, w| w.cc4s().bits(mode as u8)}),
-                    }
-                }
-
-
-
-                /// Set preload mode.
-                /// OC1PE: Output Compare 1 preload enable
-                /// 0: Preload register on TIMx_CCR1 disabled. TIMx_CCR1 can be written at anytime, the
-                /// new value is taken in account immediately.
-                /// 1: Preload register on TIMx_CCR1 enabled. Read/Write operations access the preload
-                /// register. TIMx_CCR1 preload value is loaded in the active register at each update event.
-                /// Note: 1: These bits can not be modified as long as LOCK level 3 has been programmed
-                /// (LOCK bits in TIMx_BDTR register) and CC1S=’00’ (the channel is configured in
-                /// output).
-                /// 2: The PWM mode can be used without validating the preload register only in one
-                /// pulse mode (OPM bit set in TIMx_CR1 register). Else the behavior is not guaranteed.
-                pub fn set_preload(&mut self, channel: Channel, value: bool) {
-                    match channel {
-                        Channel::One => self.tim.ccmr1_output().modify(|_, w| w.oc1pe().bit(value)),
-                        Channel::Two => self.tim.ccmr1_output().modify(|_, w| w.oc2pe().bit(value)),
-                        Channel::Three => self.tim.ccmr2_output().modify(|_, w| w.oc3pe().bit(value)),
-                        Channel::Four => self.tim.ccmr2_output().modify(|_, w| w.oc4pe().bit(value)),
-                    }
-                }
             }
         )+
     }
@@ -784,47 +649,14 @@ macro_rules! gp_timer2 {
                         self.stop();
                         self.tim
                     }
-
-                /// Set the value of the auto-reload resolution. Use a lower value to increase
-                /// precision. If you wish for a precise tick speed, multiply the system clock
-                /// speed by the desired frequency, then round to the nearest integer.
-                pub fn set_resolution(&mut self, word: $res) {
-                    self.tim.arr.write(|w| unsafe { w.arr().bits(word) } );
                 }
-
-                /// Return the integer associated with the maximum duty period.
-                /// todo: Duty could be u16 for low-precision timers.
-                pub fn get_max_duty(&self) -> $res {
-                    self.tim.arr.read().arr().bits()
-                }
-
-                /// Set output polarity. See docs on the `Polarity` enum.
-                pub fn set_polarity(&mut self, polarity: Polarity) {
-                    self.tim.ccer.modify(|_, w| w.cc1p().bit(polarity.bit()))
-                }
-
-                /// Set complementary output polarity. See docs on the `Polarity` enum.
-                pub fn set_complementary_polarity(&mut self, polarity: Polarity) {
-                    self.tim.ccer.modify(|_, w| w.cc1np().bit(polarity.bit()))
-                }
-
-                /// Disables the timer.
-                pub fn disable(&mut self) {
-                    self.tim.ccer.modify(|_, w| w.cc1e().clear_bit())
-                }
-
-                /// Enables the timer.
-                pub fn enable(&mut self) {
-                    self.tim.ccer.modify(|_, w| w.cc1e().set_bit())
-                }
-            }
             )+
         }
 }
 
 // These features are separate from the rest, since many of the variants
 // don't support them.
-
+#[cfg(feature = "stm32f303")]
 macro_rules! pwm_features {
     ($({
         $TIMX:ident: ($tim:ident, $timXen:ident, $timXrst:ident),
@@ -833,6 +665,13 @@ macro_rules! pwm_features {
     },)+) => {
         $(
             impl Timer<$TIMX> {
+
+                /// Set the value of the auto-reload resolution. Use a lower value to increase
+                /// precision. If you wish for a precise tick speed, multiply the system clock
+                /// speed by the desired frequency, then round to the nearest integer.
+                pub fn set_resolution(&mut self, word: $res) {
+                    self.tim.arr.write(|w| w.arr().bits(word) );
+                }
 
                 /// Set Output Compare Mode. See docs on the `OutputCompare` enum.
                 pub fn set_output_compare(&mut self, channel: Channel, mode: OutputCompare) {
@@ -874,6 +713,107 @@ macro_rules! pwm_features {
                         Channel::Two => self.tim.ccr2.write(|w| w.ccr().bits(duty)),
                         Channel::Three => self.tim.ccr3.write(|w| w.ccr().bits(duty)),
                         Channel::Four => self.tim.ccr4.write(|w| w.ccr().bits(duty)),
+                    }
+                }
+
+                /// Return the integer associated with the maximum duty period.
+                /// todo: Duty could be u16 for low-precision timers.
+                pub fn get_max_duty(&self) -> $res {
+                    self.tim.arr.read().arr().bits()
+                }
+
+                /// Set timer alignment to Edge, or one of 3 center modes.
+                /// STM32F303 ref man, section 21.4.1:
+                /// Bits 6:5 CMS: Center-aligned mode selection
+                /// 00: Edge-aligned mode. The counter counts up or down depending on the direction bit
+                /// (DIR).
+                /// 01: Center-aligned mode 1. The counter counts up and down alternatively. Output compare
+                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
+                /// only when the counter is counting down.
+                /// 10: Center-aligned mode 2. The counter counts up and down alternatively. Output compare
+                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
+                /// only when the counter is counting up.
+                /// 11: Center-aligned mode 3. The counter counts up and down alternatively. Output compare
+                /// interrupt flags of channels configured in output (CCxS=00 in TIMx_CCMRx register) are set
+                /// both when the counter is counting up or down.
+                pub fn set_alignment(&mut self, alignment: Alignment) {
+                    let word = match alignment {
+                        Alignment::Edge => 0b00,
+                        Alignment::Center1 => 0b01,
+                        Alignment::Center2 => 0b10,
+                        Alignment::Center3 => 0b11,
+                    };
+                    self.tim.cr1.modify(|_, w| w.cms().bits(word));
+                }
+
+                /// Set output polarity. See docs on the `Polarity` enum.
+                pub fn set_polarity(&mut self, channel: Channel, polarity: Polarity) {
+                    match channel {
+                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1p().bit(polarity.bit())),
+                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2p().bit(polarity.bit())),
+                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3p().bit(polarity.bit())),
+                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4p().bit(polarity.bit())),
+                    }
+                }
+
+                /// Set complementary output polarity. See docs on the `Polarity` enum.
+                pub fn set_complementary_polarity(&mut self, channel: Channel, polarity: Polarity) {
+                    match channel {
+                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1np().bit(polarity.bit())),
+                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2np().bit(polarity.bit())),
+                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3np().bit(polarity.bit())),
+                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4np().bit(polarity.bit())),
+                    }
+                }
+
+                /// Disables the timer.
+                pub fn disable(&mut self, channel: Channel) {
+                    match channel {
+                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1e().clear_bit()),
+                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2e().clear_bit()),
+                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3e().clear_bit()),
+                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4e().clear_bit()),
+                    }
+                }
+
+                /// Enables the timer.
+                pub fn enable(&mut self, channel: Channel) {
+                    match channel {
+                        Channel::One => self.tim.ccer.modify(|_, w| w.cc1e().set_bit()),
+                        Channel::Two => self.tim.ccer.modify(|_, w| w.cc2e().set_bit()),
+                        Channel::Three => self.tim.ccer.modify(|_, w| w.cc3e().set_bit()),
+                        Channel::Four => self.tim.ccer.modify(|_, w| w.cc4e().set_bit()),
+                    }
+                }
+
+                /// Set Capture Compare Mode. See docs on the `CaptureCompare` enum.
+                pub fn set_capture_compare(&mut self, channel: Channel, mode: CaptureCompare) {
+                    match channel {
+                        // Note: CC1S bits are writable only when the channel is OFF (CC1E = 0 in TIMx_CCER)
+                        Channel::One => self.tim.ccmr1_output().modify( unsafe { |_, w| w.cc1s().bits(mode as u8)} ),
+                        Channel::Two => self.tim.ccmr1_output().modify(unsafe {|_, w| w.cc2s().bits(mode as u8)}),
+                        Channel::Three => self.tim.ccmr2_output().modify(unsafe {|_, w| w.cc3s().bits(mode as u8)}),
+                        Channel::Four => self.tim.ccmr2_output().modify(unsafe {|_, w| w.cc4s().bits(mode as u8)}),
+                    }
+                }
+
+                /// Set preload mode.
+                /// OC1PE: Output Compare 1 preload enable
+                /// 0: Preload register on TIMx_CCR1 disabled. TIMx_CCR1 can be written at anytime, the
+                /// new value is taken in account immediately.
+                /// 1: Preload register on TIMx_CCR1 enabled. Read/Write operations access the preload
+                /// register. TIMx_CCR1 preload value is loaded in the active register at each update event.
+                /// Note: 1: These bits can not be modified as long as LOCK level 3 has been programmed
+                /// (LOCK bits in TIMx_BDTR register) and CC1S=’00’ (the channel is configured in
+                /// output).
+                /// 2: The PWM mode can be used without validating the preload register only in one
+                /// pulse mode (OPM bit set in TIMx_CR1 register). Else the behavior is not guaranteed.
+                pub fn set_preload(&mut self, channel: Channel, value: bool) {
+                    match channel {
+                        Channel::One => self.tim.ccmr1_output().modify(|_, w| w.oc1pe().bit(value)),
+                        Channel::Two => self.tim.ccmr1_output().modify(|_, w| w.oc2pe().bit(value)),
+                        Channel::Three => self.tim.ccmr2_output().modify(|_, w| w.oc3pe().bit(value)),
+                        Channel::Four => self.tim.ccmr2_output().modify(|_, w| w.oc4pe().bit(value)),
                     }
                 }
             }
@@ -1027,26 +967,32 @@ advanced_timer! {
     {
         TIM5: (tim5, tim5en, tim5rst),
         APB1: (apb1, pclk1),
+        u16,
     },
     {
         TIM12: (tim12, tim12en, tim12rst),
         APB1: (apb1, pclk1),
+        u16,
     },
     {
         TIM13: (tim13, tim13en, tim13rst),
         APB1: (apb1, pclk1),
+        u16,
     },
     {
         TIM14: (tim14, tim14en, tim14rst),
         APB1: (apb1, pclk1),
+        u16,
     },
     {
         TIM18: (tim18, tim18en, tim18rst),
         APB1: (apb1, pclk1),
+        u16,
     },
     {
         TIM19: (tim19, tim19en, tim19rst),
         APB2: (apb2, pclk2),
+        u16,
     },
 }
 
