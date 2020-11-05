@@ -189,15 +189,15 @@ impl OutputCompare {
     /// parse the variant as a u8, and the left bit is ignored when setting
     /// in the 3-bit field.
     pub fn left_bit(&self) -> bool {
-        match self {
-            Self::RetriggerableOpmMode1 => true,
-            Self::RetriggerableOpmMode2 => true,
-            Self::CombinedPwm1 => true,
-            Self::CombinedPwm2 => true,
-            Self::AsymmetricPwm1 => true,
-            Self::AsymmetricPwm2 => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Self::RetriggerableOpmMode1
+                | Self::RetriggerableOpmMode2
+                | Self::CombinedPwm1
+                | Self::CombinedPwm2
+                | Self::AsymmetricPwm1
+                | Self::AsymmetricPwm2
+        )
     }
 }
 
