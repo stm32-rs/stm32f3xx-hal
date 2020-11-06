@@ -124,14 +124,14 @@ pub mod dac;
 pub mod delay;
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 pub mod dma;
+#[cfg(all(feature = "stm32f303", feature = "rt"))]
+pub mod exti;
 #[cfg(feature = "device-selected")]
 pub mod flash;
 #[cfg(feature = "device-selected")]
 pub mod gpio;
 #[cfg(feature = "device-selected")]
 pub mod i2c;
-#[cfg(all(feature = "stm32f303", feature = "rt"))]
-pub mod interrupt_;
 #[cfg(feature = "device-selected")]
 pub mod low_power;
 #[cfg(feature = "device-selected")]
