@@ -328,7 +328,7 @@ macro_rules! hal {
                         return Err(Error::Busy);
                     }
 
-                    let end = buffer.len() / 0xFF;
+                    let end = bytes.len() / 0xFF;
 
                     // Process 255 bytes at a time
                     for (i, bytes) in bytes.chunks(0xFF).enumerate() {
