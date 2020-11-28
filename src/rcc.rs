@@ -595,53 +595,50 @@ impl CFGR {
     pub fn freeze(self, acr: &mut ACR) -> Clocks {
         let (sysclk, sysclk_source, pll_config) = self.get_sysclk();
 
-        let (hpre_bits, hpre) = self
-            .hclk
-            .map(|hclk| match sysclk / hclk {
-                0 => unreachable!(),
-                1 => (cfgr::HPRE_A::DIV1, 1),
-                2 => (cfgr::HPRE_A::DIV2, 2),
-                3..=5 => (cfgr::HPRE_A::DIV4, 4),
-                6..=11 => (cfgr::HPRE_A::DIV8, 8),
-                12..=39 => (cfgr::HPRE_A::DIV16, 16),
-                40..=95 => (cfgr::HPRE_A::DIV64, 64),
-                96..=191 => (cfgr::HPRE_A::DIV128, 128),
-                192..=383 => (cfgr::HPRE_A::DIV256, 256),
-                _ => (cfgr::HPRE_A::DIV512, 512),
-            })
-            .unwrap_or((cfgr::HPRE_A::DIV1, 1));
+        let (hpre_bits, hpre) =
+            self.hclk
+                .map_or((cfgr::HPRE_A::DIV1, 1), |hclk| match sysclk / hclk {
+                    0 => unreachable!(),
+                    1 => (cfgr::HPRE_A::DIV1, 1),
+                    2 => (cfgr::HPRE_A::DIV2, 2),
+                    3..=5 => (cfgr::HPRE_A::DIV4, 4),
+                    6..=11 => (cfgr::HPRE_A::DIV8, 8),
+                    12..=39 => (cfgr::HPRE_A::DIV16, 16),
+                    40..=95 => (cfgr::HPRE_A::DIV64, 64),
+                    96..=191 => (cfgr::HPRE_A::DIV128, 128),
+                    192..=383 => (cfgr::HPRE_A::DIV256, 256),
+                    _ => (cfgr::HPRE_A::DIV512, 512),
+                });
 
         let hclk: u32 = sysclk / hpre;
 
         assert!(hclk <= 72_000_000);
 
-        let (ppre1_bits, ppre1) = self
-            .pclk1
-            .map(|pclk1| match hclk / pclk1 {
-                0 => unreachable!(),
-                1 => (cfgr::PPRE1_A::DIV1, 1),
-                2 => (cfgr::PPRE1_A::DIV2, 2),
-                3..=5 => (cfgr::PPRE1_A::DIV4, 4),
-                6..=11 => (cfgr::PPRE1_A::DIV8, 8),
-                _ => (cfgr::PPRE1_A::DIV16, 16),
-            })
-            .unwrap_or((cfgr::PPRE1_A::DIV1, 1));
+        let (ppre1_bits, ppre1) =
+            self.pclk1
+                .map_or((cfgr::PPRE1_A::DIV1, 1), |pclk1| match hclk / pclk1 {
+                    0 => unreachable!(),
+                    1 => (cfgr::PPRE1_A::DIV1, 1),
+                    2 => (cfgr::PPRE1_A::DIV2, 2),
+                    3..=5 => (cfgr::PPRE1_A::DIV4, 4),
+                    6..=11 => (cfgr::PPRE1_A::DIV8, 8),
+                    _ => (cfgr::PPRE1_A::DIV16, 16),
+                });
 
         let pclk1 = hclk / u32::from(ppre1);
 
         assert!(pclk1 <= 36_000_000);
 
-        let (ppre2_bits, ppre2) = self
-            .pclk2
-            .map(|pclk2| match hclk / pclk2 {
-                0 => unreachable!(),
-                1 => (cfgr::PPRE2_A::DIV1, 1),
-                2 => (cfgr::PPRE2_A::DIV2, 2),
-                3..=5 => (cfgr::PPRE2_A::DIV4, 4),
-                6..=11 => (cfgr::PPRE2_A::DIV8, 8),
-                _ => (cfgr::PPRE2_A::DIV16, 16),
-            })
-            .unwrap_or((cfgr::PPRE2_A::DIV1, 1));
+        let (ppre2_bits, ppre2) =
+            self.pclk2
+                .map_or((cfgr::PPRE2_A::DIV1, 1), |pclk2| match hclk / pclk2 {
+                    0 => unreachable!(),
+                    1 => (cfgr::PPRE2_A::DIV1, 1),
+                    2 => (cfgr::PPRE2_A::DIV2, 2),
+                    3..=5 => (cfgr::PPRE2_A::DIV4, 4),
+                    6..=11 => (cfgr::PPRE2_A::DIV8, 8),
+                    _ => (cfgr::PPRE2_A::DIV16, 16),
+                });
 
         let pclk2 = hclk / u32::from(ppre2);
 
