@@ -112,34 +112,26 @@ pub use crate::pac as stm32;
 #[cfg(feature = "rt")]
 pub use crate::pac::interrupt;
 
+cfg_if::cfg_if! {
+    if #[cfg(feature = "device-selected")] {
+        pub mod delay;
+        pub mod flash;
+        pub mod gpio;
+        pub mod i2c;
+        pub mod prelude;
+        pub mod pwm;
+        pub mod rcc;
+        pub mod rtc;
+        pub mod serial;
+        pub mod spi;
+        pub mod time;
+        pub mod timer;
+    }
+}
 #[cfg(feature = "stm32f303")]
 pub mod adc;
-#[cfg(feature = "device-selected")]
-pub mod delay;
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 pub mod dma;
-#[cfg(feature = "device-selected")]
-pub mod flash;
-#[cfg(feature = "device-selected")]
-pub mod gpio;
-#[cfg(feature = "device-selected")]
-pub mod i2c;
-#[cfg(feature = "device-selected")]
-pub mod prelude;
-#[cfg(feature = "device-selected")]
-pub mod pwm;
-#[cfg(feature = "device-selected")]
-pub mod rcc;
-#[cfg(feature = "device-selected")]
-pub mod rtc;
-#[cfg(feature = "device-selected")]
-pub mod serial;
-#[cfg(feature = "device-selected")]
-pub mod spi;
-#[cfg(feature = "device-selected")]
-pub mod time;
-#[cfg(feature = "device-selected")]
-pub mod timer;
 #[cfg(all(
     feature = "stm32-usbd",
     any(
