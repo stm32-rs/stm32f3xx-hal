@@ -271,8 +271,8 @@ impl Rtcc for Rtc {
 
     fn get_time(&mut self) -> Result<NaiveTime, Self::Error> {
         self.set_24h_fmt();
-        let seconds = self.get_seconds().unwrap();
-        let minutes = self.get_minutes().unwrap();
+        let seconds = self.get_seconds()?;
+        let minutes = self.get_minutes()?;
         let hours = hours_to_u8(self.get_hours()?)?;
 
         Ok(NaiveTime::from_hms(
@@ -308,9 +308,9 @@ impl Rtcc for Rtc {
     }
 
     fn get_date(&mut self) -> Result<NaiveDate, Self::Error> {
-        let day = self.get_day().unwrap();
-        let month = self.get_month().unwrap();
-        let year = self.get_year().unwrap();
+        let day = self.get_day()?;
+        let month = self.get_month()?;
+        let year = self.get_year()?;
 
         Ok(NaiveDate::from_ymd(year.into(), month.into(), day.into()))
     }
@@ -318,12 +318,12 @@ impl Rtcc for Rtc {
     fn get_datetime(&mut self) -> Result<NaiveDateTime, Self::Error> {
         self.set_24h_fmt();
 
-        let day = self.get_day().unwrap();
-        let month = self.get_month().unwrap();
-        let year = self.get_year().unwrap();
+        let day = self.get_day()?;
+        let month = self.get_month()?;
+        let year = self.get_year()?;
 
-        let seconds = self.get_seconds().unwrap();
-        let minutes = self.get_minutes().unwrap();
+        let seconds = self.get_seconds()?;
+        let minutes = self.get_minutes()?;
         let hours = hours_to_u8(self.get_hours()?)?;
 
         Ok(
