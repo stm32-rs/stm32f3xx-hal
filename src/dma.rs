@@ -61,7 +61,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         // method we can call is `write_buffer`, which is allowed by
         // `WriteBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.write_buffer() };
-        let len = u16::try_from(len).expect("buffer is too large");
+        let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
 
         // NOTE(unsafe) We are using the address of a 'static WriteBuffer here,
         // which is guaranteed to be safe for DMA.
@@ -88,7 +88,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         // `&mut self` methods we can call, so we are safe according to
         // `ReadBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.read_buffer() };
-        let len = u16::try_from(len).expect("buffer is too large");
+        let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
 
         // NOTE(unsafe) We are using the address of a 'static ReadBuffer here,
         // which is guaranteed to be safe for DMA.
@@ -110,7 +110,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     where
         T: OnChannel<C>,
     {
-        assert!(!channel.is_enabled());
+        crate::assert!(!channel.is_enabled());
 
         atomic::compiler_fence(Ordering::Release);
 
@@ -128,13 +128,13 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
 
     /// Is this transfer complete?
     pub fn is_complete(&self) -> bool {
-        let inner = self.inner.as_ref().unwrap();
+        let inner = crate::unwrap!(self.inner.as_ref());
         inner.channel.event_occurred(Event::TransferComplete)
     }
 
     /// Stop this transfer and return ownership over its parts
     pub fn stop(mut self) -> (B, C, T) {
-        let mut inner = self.inner.take().unwrap();
+        let mut inner = crate::unwrap!(self.inner.take());
         inner.stop();
 
         (inner.buffer, inner.channel, inner.target)
@@ -280,7 +280,7 @@ pub trait Channel: private::Channel {
     /// Callers must ensure the given address is the address of a peripheral
     /// register that supports DMA.
     unsafe fn set_peripheral_address(&mut self, address: u32, inc: Increment) {
-        assert!(!self.is_enabled());
+        crate::assert!(!self.is_enabled());
 
         self.ch().par.write(|w| w.pa().bits(address));
         self.ch().cr.modify(|_, w| w.pinc().variant(inc.into()));
@@ -300,7 +300,7 @@ pub trait Channel: private::Channel {
     /// Callers must ensure the given address is a valid memory address
     /// that will remain valid as long as at is used by DMA.
     unsafe fn set_memory_address(&mut self, address: u32, inc: Increment) {
-        assert!(!self.is_enabled());
+        crate::assert!(!self.is_enabled());
 
         self.ch().mar.write(|w| w.ma().bits(address));
         self.ch().cr.modify(|_, w| w.minc().variant(inc.into()));
@@ -314,7 +314,7 @@ pub trait Channel: private::Channel {
     ///
     /// Panics if this channel is enabled.
     fn set_transfer_length(&mut self, len: u16) {
-        assert!(!self.is_enabled());
+        crate::assert!(!self.is_enabled());
 
         self.ch().ndtr.write(|w| w.ndt().bits(len));
     }
@@ -331,7 +331,7 @@ pub trait Channel: private::Channel {
             1 => BITS8,
             2 => BITS16,
             4 => BITS32,
-            s => panic!("unsupported word size: {}", s),
+            s => crate::panic!("unsupported word size: {:?}", s),
         };
 
         self.ch().cr.modify(|_, w| {

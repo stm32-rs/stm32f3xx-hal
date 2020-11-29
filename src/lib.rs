@@ -97,6 +97,47 @@ pub use embedded_hal as hal;
 pub use nb;
 pub use nb::block;
 
+#[cfg(feature = "defmt")]
+pub(crate) use defmt::{assert, panic, unreachable, unwrap};
+#[cfg(feature = "defmt")]
+mod macros {
+    /// Wrapper function for `.exepct()`
+    ///
+    /// Uses [`defmt::unwrap!`] instead, because
+    /// it has the same functionality as `expect()`
+    #[macro_export]
+    macro_rules! expect {
+        ($l:expr, $s:tt) => {
+            defmt::unwrap!($l, $s)
+        };
+    }
+}
+
+#[cfg(not(feature = "defmt"))]
+pub(crate) use core::{assert, panic, unreachable};
+#[cfg(not(feature = "defmt"))]
+mod macros {
+    /// Wrapper macro for `.unwrap()`
+    ///
+    /// Uses core function, when defmt is not active
+    #[macro_export]
+    macro_rules! unwrap {
+        ($l:expr) => {
+            $l.unwrap()
+        };
+    }
+
+    /// Wrapper macro for `.expect()`
+    ///
+    /// Uses core function, when defmt is not active
+    #[macro_export]
+    macro_rules! expect {
+        ($l:expr, $s:tt) => {
+            $l.expect($s)
+        };
+    }
+}
+
 #[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
 /// Peripheral access
 pub use stm32f3::stm32f301 as pac;

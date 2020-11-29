@@ -76,7 +76,7 @@ impl IndependentWatchDog {
             0b101 => 128,
             0b110 => 256,
             0b111 => 256,
-            _ => panic!("Invalid IWDG prescaler divider"),
+            _ => crate::panic!("Invalid IWDG prescaler divider"),
         };
         (u32::from(rl) + 1) * divider / LSI_KHZ
     }

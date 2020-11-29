@@ -306,7 +306,7 @@ fn into_pll_mul(mul: u8) -> cfgr::PLLMUL_A {
         14 => cfgr::PLLMUL_A::MUL14,
         15 => cfgr::PLLMUL_A::MUL15,
         16 => cfgr::PLLMUL_A::MUL16,
-        _ => unreachable!(),
+        _ => crate::unreachable!(),
     }
 }
 
@@ -329,7 +329,7 @@ fn into_pre_div(div: u8) -> cfgr2::PREDIV_A {
         14 => cfgr2::PREDIV_A::DIV14,
         15 => cfgr2::PREDIV_A::DIV15,
         16 => cfgr2::PREDIV_A::DIV16,
-        _ => unreachable!(),
+        _ => crate::unreachable!(),
     }
 }
 
@@ -443,22 +443,22 @@ impl CFGR {
             }
 
             // PLL_MUL maximal value is 16
-            assert!(multiplier <= 16);
+            crate::assert!(multiplier <= 16);
 
             // PRE_DIV maximal value is 16
-            assert!(divisor <= 16);
+            crate::assert!(divisor <= 16);
 
             (multiplier, Some(divisor))
         }
         // HSI division is always divided by 2 and has no adjustable division
         else {
             let pll_mul = sysclk / pllsrcclk;
-            assert!(pll_mul <= 16);
+            crate::assert!(pll_mul <= 16);
             (pll_mul, None)
         };
 
         let sysclk = (pllsrcclk / pll_div.unwrap_or(1)) * pll_mul;
-        assert!(sysclk <= 72_000_000);
+        crate::assert!(sysclk <= 72_000_000);
 
         let pll_src = if self.hse.is_some() {
             cfgr::PLLSRC_A::HSE_DIV_PREDIV
@@ -518,16 +518,16 @@ impl CFGR {
             }
 
             // PLL_MUL maximal value is 16
-            assert!(multiplier <= 16);
+            crate::assert!(multiplier <= 16);
 
             // PRE_DIV maximal value is 16
-            assert!(divisor <= 16);
+            crate::assert!(divisor <= 16);
 
             (multiplier, divisor)
         };
 
         let sysclk = (pllsrcclk / pll_div) * pll_mul;
-        assert!(sysclk <= 72_000_000);
+        crate::assert!(sysclk <= 72_000_000);
 
         // Select hardware clock source of the PLL
         // TODO Check whether HSI_DIV2 could be useful
@@ -598,7 +598,7 @@ impl CFGR {
         let (hpre_bits, hpre) =
             self.hclk
                 .map_or((cfgr::HPRE_A::DIV1, 1), |hclk| match sysclk / hclk {
-                    0 => unreachable!(),
+                    0 => crate::unreachable!(),
                     1 => (cfgr::HPRE_A::DIV1, 1),
                     2 => (cfgr::HPRE_A::DIV2, 2),
                     3..=5 => (cfgr::HPRE_A::DIV4, 4),
@@ -612,12 +612,12 @@ impl CFGR {
 
         let hclk: u32 = sysclk / hpre;
 
-        assert!(hclk <= 72_000_000);
+        crate::assert!(hclk <= 72_000_000);
 
         let (ppre1_bits, ppre1) =
             self.pclk1
                 .map_or((cfgr::PPRE1_A::DIV1, 1), |pclk1| match hclk / pclk1 {
-                    0 => unreachable!(),
+                    0 => crate::unreachable!(),
                     1 => (cfgr::PPRE1_A::DIV1, 1),
                     2 => (cfgr::PPRE1_A::DIV2, 2),
                     3..=5 => (cfgr::PPRE1_A::DIV4, 4),
@@ -627,12 +627,12 @@ impl CFGR {
 
         let pclk1 = hclk / u32::from(ppre1);
 
-        assert!(pclk1 <= 36_000_000);
+        crate::assert!(pclk1 <= 36_000_000);
 
         let (ppre2_bits, ppre2) =
             self.pclk2
                 .map_or((cfgr::PPRE2_A::DIV1, 1), |pclk2| match hclk / pclk2 {
-                    0 => unreachable!(),
+                    0 => crate::unreachable!(),
                     1 => (cfgr::PPRE2_A::DIV1, 1),
                     2 => (cfgr::PPRE2_A::DIV2, 2),
                     3..=5 => (cfgr::PPRE2_A::DIV4, 4),
@@ -642,7 +642,7 @@ impl CFGR {
 
         let pclk2 = hclk / u32::from(ppre2);
 
-        assert!(pclk2 <= 72_000_000);
+        crate::assert!(pclk2 <= 72_000_000);
 
         // Adjust flash wait states according to the
         // HCLK frequency (cpu core clock)
