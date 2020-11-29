@@ -41,10 +41,6 @@ optional = true
 version = "0.2"
 features = ["const-fn"]
 
-[dependencies.cast]
-version = "0.2"
-default-features = false
-
 [dependencies.stm32-usbd]
 version = "0.5"
 optional = true

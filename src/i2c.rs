@@ -1,5 +1,7 @@
 //! Inter-Integrated Circuit (I2C) bus
 
+use core::convert::TryFrom;
+
 use crate::{
     gpio::{gpioa, gpiob, gpiof, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
@@ -7,7 +9,6 @@ use crate::{
     rcc::{Clocks, APB1},
     time::Hertz,
 };
-use cast::u8;
 
 /// I2C error
 #[derive(Debug)]
@@ -152,28 +153,25 @@ macro_rules! hal {
                         (presc, scll, sclh, sdadel, scldel)
                     };
 
-                    let presc = u8(presc).unwrap();
                     assert!(presc < 16);
-                    let scldel = u8(scldel).unwrap();
                     assert!(scldel < 16);
-                    let sdadel = u8(sdadel).unwrap();
                     assert!(sdadel < 16);
-                    let sclh = u8(sclh).unwrap();
-                    let scll = u8(scll).unwrap();
+                    let sclh = u8::try_from(sclh).unwrap();
+                    let scll = u8::try_from(scll).unwrap();
 
                     // Configure for "fast mode" (400 KHz)
                     // NOTE(write): writes all non-reserved bits.
                     i2c.timingr.write(|w| {
                         w.presc()
-                            .bits(presc)
+                            .bits(presc as u8)
+                            .sdadel()
+                            .bits(sdadel as u8)
+                            .scldel()
+                            .bits(scldel as u8)
                             .scll()
                             .bits(scll)
                             .sclh()
                             .bits(sclh)
-                            .sdadel()
-                            .bits(sdadel)
-                            .scldel()
-                            .bits(scldel)
                     });
 
                     // Enable the peripheral
