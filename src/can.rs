@@ -1,4 +1,11 @@
 //! Controller Area Network
+//!
+//! CAN is currently not enabled by default, and
+//! can be enabled by the `can` feature.
+//!
+//! It is a implementation of the [`embedded_hal_can`][can] traits.
+//!
+//! [can]: embedded_hal_can
 pub use embedded_hal_can::{self, Filter, Frame, Id, Receiver, Transmitter};
 
 use crate::gpio::gpioa;
@@ -13,7 +20,8 @@ use core::sync::atomic::{AtomicU8, Ordering};
 const EXID_MASK: u32 = 0b11111_11111100_00000000_00000000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
-/// A CAN identifier, which can be either 11 or 27 (extended) bits. u16 and u32 respectively are used here despite the fact that the upper bits are unused.
+/// A CAN identifier, which can be either 11 or 27 (extended) bits.
+/// u16 and u32 respectively are used here despite the fact that the upper bits are unused.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CanId {
     BaseId(u16),
@@ -22,14 +30,16 @@ pub enum CanId {
 
 /// A CAN frame consisting of a destination ID and up to 8 bytes of data.
 ///
-/// Currently, we always allocate a fixed size array for each frame regardless of actual size, but this could be improved in the future using const-generics.
+/// Currently, we always allocate a fixed size array for each frame regardless
+/// of actual size, but this could be improved in the future using const-generics.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanFrame {
     pub id: CanId,
     pub data: Vec<u8, U8>,
 }
 
-/// Represents the operating mode of a CAN filter, which can either contain a list of identifiers, or a mask to match on.
+/// Represents the operating mode of a CAN filter, which can either contain a
+/// list of identifiers, or a mask to match on.
 pub enum FilterMode {
     Mask,
     List,
@@ -58,7 +68,8 @@ pub struct Can {
     _tx: gpioa::PA12<AF9>,
 }
 
-/// A CAN FIFO which is used to receive and buffer messages from the CAN network that match on of the assigned filters.
+/// A CAN FIFO which is used to receive and buffer messages from the CAN
+/// network that match on of the assigned filters.
 pub struct CanFifo {
     idx: usize,
 }
@@ -140,9 +151,12 @@ impl embedded_hal_can::Filter for CanFilter {
         CanFilter::new(CanFilterData::AcceptAll)
     }
 
-    // TODO: Constructing filters like this is fairly limiting because ideally we would have the full "filter state" available, so for non-extended filters this could be 2 masks and filters or 4 ids for id lists
+    // TODO: Constructing filters like this is fairly limiting because ideally
+    // we would have the full "filter state" available, so for non-extended
+    // filters this could be 2 masks and filters or 4 ids for id lists
 
-    /// Constuct a mask filter. This method accepts two parameters, the mask which designates which bits are actually matched againts and the filter, with the actual bits to match.
+    /// Constuct a mask filter. This method accepts two parameters, the mask which designates which
+    /// bits are actually matched againts and the filter, with the actual bits to match.
     fn from_mask(mask: u32, filter: u32) -> Self {
         assert!(
             mask < MAX_EXTENDED_ID,
@@ -159,7 +173,8 @@ impl embedded_hal_can::Filter for CanFilter {
 }
 
 impl CanFilter {
-    /// Create a new filter with no assigned index. To actually active the filter call `Receiver::set_filter`, which will assign an index.
+    /// Create a new filter with no assigned index. To actually active the filter call
+    /// [`Receiver::set_filter`], which will assign an index.
     pub fn new(data: CanFilterData) -> CanFilter {
         CanFilter { data, index: None }
     }
@@ -179,7 +194,8 @@ impl CanFilterData {
             CanFilterData::AcceptAll => 0,
             CanFilterData::ExtendedMaskFilter(filter, _) => filter << 3,
             CanFilterData::MaskFilter(filter, mask) => {
-                let shifted_filter = ((*filter as u32) << 5) & (u16::max_value() as u32); // Only use lower 16 bits
+                // Only use lower 16 bits
+                let shifted_filter = ((*filter as u32) << 5) & (u16::max_value() as u32);
                 let shifted_mask = ((*mask as u32) << 5) << 16;
 
                 shifted_filter | shifted_mask
@@ -195,8 +211,10 @@ impl CanFilterData {
         match self {
             CanFilterData::AcceptAll => Some(0),
             CanFilterData::ExtendedMaskFilter(_, mask) => Some(mask << 3),
-            CanFilterData::MaskFilter(_, _mask) => None, // TODO: We should be able to fill this register with a second filter/mask pair
-            CanFilterData::IdFilter(_id) => None, // TODO: This sucks, we need more info here to figure out the correct value of fr2
+            // TODO: We should be able to fill this register with a second filter/mask pair
+            CanFilterData::MaskFilter(_, _mask) => None,
+            // TODO: This sucks, we need more info here to figure out the correct value of fr2
+            CanFilterData::IdFilter(_id) => None,
         }
     }
 }

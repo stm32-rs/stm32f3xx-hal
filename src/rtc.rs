@@ -1,6 +1,9 @@
+//! Real Time Clock
+//!
 //! Interface to the real time clock. See STM32F303 reference manual, section 27.
-//! For more details, see
-//! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
+//! For more details, see [ST AN4759][].
+//!
+//! [ST AN4759]: https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h
 
 use crate::pac::{PWR, RTC};
 use crate::rcc::{APB1, BDCR};

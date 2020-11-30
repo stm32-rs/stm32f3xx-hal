@@ -19,7 +19,7 @@ exclude = [
 ]
 
 [package.metadata.docs.rs]
-features = ["stm32f303xc", "rt", "stm32-usbd"]
+features = ["stm32f303xc", "rt", "stm32-usbd", "can"]
 targets = ["thumbv7em-none-eabihf"]
 
 [dependencies]
