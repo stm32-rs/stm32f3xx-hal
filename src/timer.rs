@@ -808,6 +808,8 @@ macro_rules! pwm_features {
                 /// output).
                 /// 2: The PWM mode can be used without validating the preload register only in one
                 /// pulse mode (OPM bit set in TIMx_CR1 register). Else the behavior is not guaranteed.
+                /// 
+                /// Setting preload is required to enable PWM.
                 pub fn set_preload(&mut self, channel: Channel, value: bool) {
                     match channel {
                         Channel::One => self.tim.ccmr1_output().modify(|_, w| w.oc1pe().bit(value)),
@@ -815,6 +817,11 @@ macro_rules! pwm_features {
                         Channel::Three => self.tim.ccmr2_output().modify(|_, w| w.oc3pe().bit(value)),
                         Channel::Four => self.tim.ccmr2_output().modify(|_, w| w.oc4pe().bit(value)),
                     }
+
+                    // "As the preload registers are transferred to the shadow registers only when an update event
+                    // occurs, before starting the counter, you have to initialize all the registers by setting the UG
+                    // bit in the TIMx_EGR register."
+                    self.tim.egr.write(|w| w.ug().update());
                 }
             }
         )+
