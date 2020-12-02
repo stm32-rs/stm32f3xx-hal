@@ -7,6 +7,7 @@ use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
+use cortex_m::asm;
 use cortex_m_rt::entry;
 
 //use cortex_m_semihosting::hprintln;
@@ -148,5 +149,7 @@ fn main() -> ! {
     // DOES NOT COMPILE
     // tim8_ch1.output_to_pc6(gpioc.pc6.into_af4(&mut gpioc.moder, &mut gpioc.afrl));
 
-    loop {}
+    loop {
+        asm::wfi();
+    }
 }

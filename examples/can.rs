@@ -6,9 +6,9 @@ use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
+use cortex_m::asm;
 use cortex_m_rt::entry;
 
-use cortex_m::asm;
 use hal::prelude::*;
 use hal::stm32;
 use hal::watchdog::IndependentWatchDog;
