@@ -12,8 +12,8 @@ use crate::{
     rcc::AHB,
     serial,
 };
-use cast::u16;
 use core::{
+    convert::TryFrom,
     mem,
     sync::atomic::{self, Ordering},
 };
@@ -57,7 +57,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         // method we can call is `write_buffer`, which is allowed by
         // `WriteBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.write_buffer() };
-        let len = u16(len).expect("buffer is too large");
+        let len = u16::try_from(len).expect("buffer is too large");
 
         // NOTE(unsafe) We are using the address of a 'static WriteBuffer here,
         // which is guaranteed to be safe for DMA.
@@ -84,7 +84,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         // `&mut self` methods we can call, so we are safe according to
         // `ReadBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.read_buffer() };
-        let len = u16(len).expect("buffer is too large");
+        let len = u16::try_from(len).expect("buffer is too large");
 
         // NOTE(unsafe) We are using the address of a 'static ReadBuffer here,
         // which is guaranteed to be safe for DMA.

@@ -1,6 +1,10 @@
 [package]
 edition = "2018"
-authors = ["Jorge Aparicio <jorge@japaric.io>", "Dylan Frankland <dylan@frankland.io>"]
+authors = [
+    "Dylan Frankland <dylan@frankland.io>",
+    "Sh3Rm4n <f.vioel@gmail.com>",
+    "Jan Teske <jteske@posteo.net>"
+]
 categories = ["embedded", "hardware-support", "no-std"]
 description = "Peripheral access API for STM32F3 series microcontrollers"
 keywords = ["arm", "cortex-m", "stm32f3xx", "hal"]
@@ -10,13 +14,16 @@ readme = "README.md"
 repository = "https://github.com/stm32-rs/stm32f3xx-hal"
 documentation = "https://docs.rs/stm32f3xx-hal"
 version = "0.5.0"
+exclude = [
+    "codegen",
+]
 
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "stm32-usbd"]
 targets = ["thumbv7em-none-eabihf"]
 
 [dependencies]
-cfg-if = "0.1"
+cfg-if = "1.0"
 cortex-m = "0.6"
 cortex-m-rt = "0.6"
 embedded-dma = "0.1"
@@ -37,10 +44,6 @@ optional = true
 [dependencies.bare-metal]
 version = "0.2"
 features = ["const-fn"]
-
-[dependencies.cast]
-version = "0.2"
-default-features = false
 
 [dependencies.stm32-usbd]
 version = "0.5"
