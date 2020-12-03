@@ -35,7 +35,7 @@ jobs:
         features: ["rt"]
         include:
           - mcu: stm32f303xc
-            features: rt,stm32-usbd
+            features: rt,stm32-usbd,can
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -65,7 +65,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: >
-            --features=stm32f303xc,rt,stm32-usbd --lib --examples
+            --features=stm32f303xc,rt,stm32-usbd,can --lib --examples
             -- -D warnings
 
   rustfmt:

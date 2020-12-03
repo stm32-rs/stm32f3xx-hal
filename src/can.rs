@@ -17,7 +17,7 @@ use nb::{self, Error};
 
 use core::sync::atomic::{AtomicU8, Ordering};
 
-const EXID_MASK: u32 = 0b11111_11111100_00000000_00000000;
+const EXID_MASK: u32 = 0b1_1111_1111_1100_0000_0000_0000_0000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
 /// A CAN identifier, which can be either 11 or 27 (extended) bits.
@@ -302,7 +302,7 @@ impl Can {
             _tx: self._tx,
         };
 
-        return (transmitter, fifo0, fifo1);
+        (transmitter, fifo0, fifo1)
     }
 
     pub fn free(self) -> (stm32::CAN, gpioa::PA11<AF9>, gpioa::PA12<AF9>) {
@@ -353,7 +353,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                 }),
             }
 
-            if let Some(_) = frame.data() {
+            if frame.data().is_some() {
                 for j in 0..frame.data.len() {
                     let val = &frame.data[j];
 
