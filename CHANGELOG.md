@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Fixed
 
-- Fixed [#151][] not being able to generate 72 MHz HCLK for stm32f303xc devices 
+- Fixed [#151][] not being able to generate 72 MHz HCLK for stm32f303xc devices
   ([#152](https://github.com/stm32-rs/stm32f3xx-hal/pull/152))
 
 [#151]: https://github.com/stm32-rs/stm32f3xx-hal/issues/151
@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   `stm32f378` targets. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
 - Removed SPI1 support for `stm32f302x6` and `stm32f302x8` sub-targets
   and `stm32f318` target. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
+- This release requires 1.48, as intra-doc-links are now used internally.
+  Until now, no MSRV was tracked. This has changed now. This however does
+  not mean, that we guarantee any MSRV policy. It is rather for documentation
+  purposes and if a new useful feature arises, we will increase the MSRV.
+  ([#170](https://github.com/stm32-rs/stm32f3xx-hal/pull/170))
 
 ## [v0.5.0] - 2020-07-21
 

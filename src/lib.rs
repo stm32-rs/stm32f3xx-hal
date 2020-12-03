@@ -1,4 +1,13 @@
 /*!
+ # stm32f3xx-hal
+
+ `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
+ peripheral access API for the STMicro [STM32F3][stm] series microcontrollers. The
+ selection of the MCU is done by [feature][f] gates
+
+ [f]: #selecting-the-right-chip
+ [stm]: https://www.st.com/en/microcontrollers-microprocessors/stm32f3-series.html
+
  # Selecting the right chip
 
    This crate requires you to specify your target chip as a feature.
@@ -87,25 +96,32 @@ pub use nb;
 pub use nb::block;
 
 #[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+/// Peripheral access
 pub use stm32f3::stm32f301 as pac;
 
 #[cfg(feature = "stm32f302")]
+/// Peripheral access
 pub use stm32f3::stm32f302 as pac;
 
 #[cfg(feature = "stm32f303")]
+/// Peripheral access
 pub use stm32f3::stm32f303 as pac;
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+/// Peripheral access
 pub use stm32f3::stm32f373 as pac;
 
 #[cfg(feature = "stm32f334")]
+/// Peripheral access
 pub use stm32f3::stm32f3x4 as pac;
 
 #[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+/// Peripheral access
 pub use stm32f3::stm32f3x8 as pac;
 
 #[cfg(feature = "device-selected")]
 #[deprecated(since = "0.5.0", note = "please use `pac` instead")]
+/// Peripheral access
 pub use crate::pac as stm32;
 
 // Enable use of interrupt macro

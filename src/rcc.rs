@@ -1,4 +1,55 @@
 //! Reset and Clock Control
+//!
+//! The most important function this module
+//! delivers is the clock configuration.
+//!
+//! To configure the clock, we first have to obtain the
+//! device peripherals.
+//!
+//! ```
+//! # use cortex_m_rt::entry;
+//! # use stm32f3xx_hal::prelude::*;
+//! # #[entry]
+//! # fn main() -> ! {
+//! // Get our peripherals
+//! let dp = pac::Peripherals::take().unwrap();
+//!
+//! let mut flash = dp.FLASH.constrain();
+//! let mut rcc = dp.RCC.constrain();
+//! # }
+//! ```
+//!
+//! After that we can configure the clock
+//!
+//! ```
+//! # use cortex_m_rt::entry;
+//! # use stm32f3xx_hal::prelude::*;
+//! # #[entry]
+//! # fn main() -> ! {
+//! # let dp = pac::Peripherals::take().unwrap();
+//!
+//! # let mut flash = dp.FLASH.constrain();
+//! # let mut rcc = dp.RCC.constrain();
+//! let clocks = rcc.cfgr
+//!     // Using the external oscillator
+//!     // Set the frequency to that of the external oscillator
+//!     .use_hse(8.mhz())
+//!     // Set the frequency for the AHB bus,
+//!     // which the root of every following clock peripheral
+//!     .hclk(48.mhz())
+//!     // The sysclk is equivalent to the core clock
+//!     .sysclk(48.mhz())
+//!     // The following are peripheral clocks, which are both
+//!     // needed to configure specific peripherals.
+//!     // Looking at the peripheral function parameters
+//!     // should give more insight, which peripheral clock is needed.
+//!     .pclk1(16.mhz())
+//!     .pclk2(16.mhz())
+//!     // Freeze / apply the configuration and setup all clocks
+//!     .freeze(&mut flash.acr)
+//! # }
+//!
+//! ```
 
 use crate::pac::{
     rcc::{self, cfgr, cfgr2},
@@ -28,9 +79,9 @@ impl RccExt for RCC {
 
 /// Constrained RCC peripheral
 ///
-/// An instance of this struct is aquired by calling the
-/// [constrain](trait.RccExt.html#tymethod.constrain) function on the
-/// [pac::RCC](../pac/struct.RCC.html) struct.
+/// An instance of this struct is acquired by calling the
+/// [`constrain`](RccExt::constrain) function on the
+/// [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -51,7 +102,7 @@ pub struct Rcc {
 
 /// AMBA High-performance Bus (AHB) registers
 ///
-/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+/// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -76,7 +127,7 @@ impl AHB {
 
 /// Advanced Peripheral Bus 1 (APB1) registers
 ///
-/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+/// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -101,7 +152,7 @@ impl APB1 {
 
 /// Advanced Peripheral Bus 2 (APB2) registers
 ///
-/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+/// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -201,7 +252,7 @@ impl BDCR {
 
 /// Clock configuration
 ///
-/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+/// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -283,7 +334,7 @@ fn into_pre_div(div: u8) -> cfgr2::PREDIV_A {
 }
 
 impl CFGR {
-    /// Uses HSE (external oscillator) instead of HSI (internal RC oscillator) as the clock source.
+    /// Uses `HSE` (external oscillator) instead of `HSI` (internal RC oscillator) as the clock source.
     /// Will result in a hang if an external oscillator is not connected or it fails to start.
     pub fn use_hse<F>(mut self, freq: F) -> Self
     where
@@ -293,19 +344,20 @@ impl CFGR {
         self
     }
 
-    /// Enable HSE bypass.
+    /// Enable `HSE` bypass.
+    ///
     /// Uses user provided clock signal instead of an external oscillator.
-    /// OSC_OUT pin is free and can be used as GPIO.
-    /// No effect if HSE is not enabled.
+    /// `OSC_OUT` pin is free and can be used as GPIO.
+    /// No effect if `HSE` is not enabled.
     pub fn bypass_hse(mut self) -> Self {
         self.hse_bypass = true;
         self
     }
 
-    /// Enable CSS (Clock Security System).
-    /// System clock is automatically switched to HSI and an interrupt (CSSI) is generated
-    /// when HSE clock failure is detected.
-    /// No effect if HSE is not enabled.
+    /// Enable `CSS` (Clock Security System).
+    /// System clock is automatically switched to `HSI` and an interrupt (`CSSI`) is generated
+    /// when `HSE` clock failure is detected.
+    /// No effect if `HSE` is not enabled.
     pub fn enable_css(mut self) -> Self {
         self.css = true;
         self
@@ -320,7 +372,7 @@ impl CFGR {
         self
     }
 
-    /// Sets a frequency for the APB1 bus
+    /// Sets a frequency for the `APB1` bus
     pub fn pclk1<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -329,7 +381,7 @@ impl CFGR {
         self
     }
 
-    /// Sets a frequency for the APB2 bus
+    /// Sets a frequency for the `APB2` bus
     pub fn pclk2<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -347,23 +399,23 @@ impl CFGR {
         self
     }
 
-    /// Calculate the values for the pll multiplier (PLLMUL) and the pll divisior (PLLDIV).
+    /// Calculate the values for the pll multiplier (`PLLMUL`) and the pll divisior (`PLLDIV`).
     ///
     /// These values are chosen depending on the chosen system clock (SYSCLK) and the frequency of the
-    /// oscillator clock (HSE / HSI).
+    /// oscillator clock (`HSE` / `HSI`).
     ///
-    /// For these devices, PLL_SRC can selected between the internal oscillator (HSI) and
-    /// the external oscillator (HSE).
+    /// For these devices, `PLL_SRC` can selected between the internal oscillator (`HSI`) and
+    /// the external oscillator (`HSE`).
     ///
-    /// HSI is divided by 2 before its transferred to PLL_SRC.
-    /// HSE can be divided between 2..16, before it is transferred to PLL_SRC.
-    /// After this system clock frequency (SYSCLK) can be changed via multiplier.
-    /// The value can be multiplied with 2..16.
+    /// HSI is divided by 2 before its transferred to `PLL_SRC`.
+    /// HSE can be divided between `1..16`, before it is transferred to `PLL_SRC`.
+    /// After this system clock frequency (`SYSCLK`) can be changed via multiplier.
+    /// The value can be multiplied with `2..16`.
     ///
-    /// To determine the optimal values, if HSE is chosen as PLL_SRC, the greatest common divisor
+    /// To determine the optimal values, if `HSE` is chosen as `PLL_SRC`, the greatest common divisor
     /// is calculated and the limitations of the possible values are taken into consideration.
     ///
-    /// HSI is simpler to calculate, but the possible system clocks are less than HSE, because the
+    /// `HSI` is simpler to calculate, but the possible system clocks are less than `HSE`, because the
     /// division is not configurable.
     #[cfg(not(any(
         feature = "stm32f302xd",
@@ -428,16 +480,16 @@ impl CFGR {
         )
     }
 
-    /// Calculate the values for the pll multiplier (PLLMUL) and the pll divisor (PLLDIV).
+    /// Calculate the values for the pll multiplier (`PLLMUL`) and the pll divisor (`PLLDIV`).
     ///
-    /// These values are chosen depending on the chosen system clock (SYSCLK) and the frequency of the oscillator
-    /// clk (HSI / HSE).
+    /// These values are chosen depending on the chosen system clock (`SYSCLK`) and the frequency of the oscillator
+    /// clk (`HSI` / `HSE`).
     ///
-    /// For these devices, PLL_SRC can be set to choose between the internal oscillator (HSI) and
-    /// the external oscillator (HSE).
-    /// After this the system clock frequency (SYSCLK) can be changed via a division and a
+    /// For these devices, `PLL_SRC` can be set to choose between the internal oscillator (HSI) and
+    /// the external oscillator (`HSE`).
+    /// After this the system clock frequency (`SYSCLK`) can be changed via a division and a
     /// multiplication block.
-    /// It can be divided from with values 1..16  and multiplied from 2..16.
+    /// It can be divided from with values `1..16`  and multiplied from `2..16`.
     ///
     /// To determine the optimal values, the greatest common divisor is calculated and the
     /// limitations of the possible values are taken into considiration.
@@ -504,6 +556,8 @@ impl CFGR {
     /// The system clock source is determined by the chosen system clock and the provided hardware
     /// clock.
     /// This function does only chose the PLL if needed, otherwise it will use the oscillator clock as system clock.
+    ///
+    /// Calls [`CFGR::calc_pll`] internally.
     fn get_sysclk(&self) -> (u32, cfgr::SW_A, Option<PllConfig>) {
         // If a sysclk is given, check if the PLL has to be used,
         // else select the system clock source, which is either HSI or HSE.
@@ -528,6 +582,16 @@ impl CFGR {
     }
 
     /// Freezes the clock configuration, making it effective
+    ///
+    /// This function internally calculates the specific.
+    /// divisors for the different clock peripheries.
+    ///
+    /// # Panics
+    ///
+    /// If any of the set frequencies via [`sysclk`](CFGR::sysclk), [`hclk`](CFGR::hclk), [`pclk1`](CFGR::pclk1) or [`pclk2`](CFGR::pclk2)
+    /// are invalid or can not be reached because of e.g. to low frequencies
+    /// of the former, as [`sysclk`](CFGR::sysclk) depends on the configuration of [`hclk`](CFGR::hclk)
+    /// this function will panic.
     pub fn freeze(self, acr: &mut ACR) -> Clocks {
         let (sysclk, sysclk_source, pll_config) = self.get_sysclk();
 
@@ -656,7 +720,8 @@ impl CFGR {
 
 /// Frozen clock frequencies
 ///
-/// The existence of this value indicates that the clock configuration can no longer be changed
+/// The existence of this value indicates that the clock configuration can no longer be changed.
+/// This struct can be obtained via the [freeze](CFGR::freeze) method of the [CFGR](CFGR) struct.
 #[derive(Clone, Copy)]
 pub struct Clocks {
     hclk: Hertz,

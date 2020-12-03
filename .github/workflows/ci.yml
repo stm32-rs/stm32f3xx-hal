@@ -49,6 +49,25 @@ jobs:
           command: check
           args: --features=${{ matrix.mcu }},${{ matrix.features }} --lib --examples
 
+  # This is our MSRV. However this is only for documentation
+  # purposes and should be increased if newer features are used.
+  # This should not stop anyone from bumping the MSRV.
+  check-msrv:
+    name: Check MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.48.0
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --features=stm32f303xc,stm32-usbd,rt,can --lib --examples
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
@@ -65,7 +84,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: >
-            --features=stm32f303xc,rt,stm32-usbd --lib --examples
+            --features=stm32f303xc,rt,stm32-usbd,can --lib --examples
             -- -D warnings
 
   rustfmt:

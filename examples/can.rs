@@ -81,7 +81,7 @@ fn main() -> ! {
             }
 
             let data: [u8; 1] = [counter];
-            let frame = CanFrame::data_frame(CanId::BaseId(ID.into()), &data);
+            let frame = CanFrame::data_frame(CanId::BaseId(ID), &data);
 
             block!(can_tx.transmit(&frame)).expect("Cannot send CAN frame");
         }

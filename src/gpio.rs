@@ -1,7 +1,7 @@
 //! General Purpose Input / Output
 //!
 //! To use the GPIO pins, you first need to configure the GPIO bank (GPIOA, GPIOB, ...) that you
-//! are interested in. This is done using the [GpioExt::split](trait.GpioExt.html#tymethod.split) function.
+//! are interested in. This is done using the [`GpioExt::split`] function.
 //!
 //! ```
 //! let dp = pac::Peripherals::take().unwrap();
@@ -10,10 +10,10 @@
 //! let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
 //! ```
 //!
-//! The resulting [Parts](gpioa/struct.Parts.html) struct contains one field for each
+//! The resulting [Parts](gpioa::Parts) struct contains one field for each
 //! pin, as well as some shared registers.
 //!
-//! To use a pin, first use the relevant `into_...` method of the [pin](gpioa/struct.PA0.html).
+//! To use a pin, first use the relevant `into_...` method of the [pin](gpioa::PA0).
 //!
 //! ```rust
 //! let pa0 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
@@ -24,8 +24,8 @@
 //!
 //! For a complete example, see [examples/toggle.rs]
 //!
-//! [InputPin]: ../prelude/trait._embedded_hal_digital_InputPin.html
-//! [OutputPin]: ../prelude/trait._embedded_hal_digital_OutputPin.html
+//! [InputPin]: embedded_hal::digital::v2::InputPin
+//! [OutputPin]: embedded_hal::digital::v2::OutputPin
 //! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.4.3/examples/toggle.rs
 
 use core::convert::Infallible;
@@ -43,7 +43,7 @@ use crate::rcc::AHB;
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers
 pub trait GpioExt {
-    /// The to split the GPIO into
+    /// The Parts to split the GPIO peripheral into
     type Parts;
 
     /// Splits the GPIO block into independent pins and registers
