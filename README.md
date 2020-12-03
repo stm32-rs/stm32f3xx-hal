@@ -1,4 +1,4 @@
-# stm32f3xx-hal
+# `stm32f3xx-hal`
 
 [![Build Status](https://github.com/stm32-rs/stm32f3xx-hal/workflows/CI/badge.svg)](https://github.com/stm32-rs/stm32f3xx-hal/actions)
 [![Crate](https://img.shields.io/crates/v/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
@@ -37,6 +37,8 @@ Almost all of the implementation was shamelessly adapted from the
 [`stm32f3`]: https://crates.io/crates/stm32f3
 [`stm32f30x-hal`]: https://github.com/japaric/stm32f30x-hal
 [`embedded-hal`]: https://github.com/japaric/embedded-hal
+
+## [Changelog](CHANGELOG.md)
 
 ## Selecting the right chip
 
