@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   devices. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
 - Support for I2C transfer of more than 255 bytes, and 0 byte write ([#154](https://github.com/stm32-rs/stm32f3xx-hal/pull/154))
 - Support for HSE bypass and CSS ([#156](https://github.com/stm32-rs/stm32f3xx-hal/pull/156))
+- Impls for missing I2C pin definitions ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
+- Support I2C3 ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
 
 ### Changed
 
@@ -33,6 +35,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Fixed [#151][] not being able to generate 72 MHz HCLK for stm32f303xc devices
   ([#152](https://github.com/stm32-rs/stm32f3xx-hal/pull/152))
+- Wrong I2C clock source ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
 
 [#151]: https://github.com/stm32-rs/stm32f3xx-hal/issues/151
 
@@ -47,6 +50,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   not mean, that we guarantee any MSRV policy. It is rather for documentation
   purposes and if a new useful feature arises, we will increase the MSRV.
   ([#170](https://github.com/stm32-rs/stm32f3xx-hal/pull/170))
+- Removed I2C2 support for `stm32f303x6`, `stm32f303x8` and `stm32f328` targets. ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
+- `I2c::i2c1` and `I2c::i2c2` functions are renamed to `I2c::new`. ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
 
 ## [v0.5.0] - 2020-07-21
 
