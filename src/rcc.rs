@@ -43,13 +43,16 @@
 //!     // needed to configure specific peripherals.
 //!     // Looking at the peripheral function parameters
 //!     // should give more insight, which peripheral clock is needed.
-//!     .pclk1(16.mhz())
-//!     .pclk2(16.mhz())
+//!     .pclk1(12.mhz())
+//!     .pclk2(12.mhz())
 //!     // Freeze / apply the configuration and setup all clocks
-//!     .freeze(&mut flash.acr)
+//!     .freeze(&mut flash.acr);
 //! # }
-//!
 //! ```
+//!
+//! All fields can be omitted and will internally be set to a calculated default.
+//! For more details read the documentation of the [`CFGR`] methods to
+//! find out how to setup the clock.
 
 use crate::pac::{
     rcc::{self, cfgr, cfgr2},
