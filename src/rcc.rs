@@ -199,15 +199,7 @@ mod usb_clocking {
     }
 }
 
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398",
-))]
+#[cfg(not(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f334",)))]
 mod usb_clocking {
     use crate::pac::rcc::cfgr;
     use crate::rcc::PllConfig;
