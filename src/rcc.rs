@@ -373,6 +373,11 @@ impl CFGR {
     }
 
     /// Sets a frequency for the `APB1` bus
+    ///
+    /// - Maximal supported frequency: 36 Mhz
+    ///
+    /// If not manually set, it will be set to [`CFGR::sysclk`] frequency
+    /// or [`CFGR::sysclk`] frequency / 2, if [`CFGR::sysclk`] > 36 Mhz
     pub fn pclk1<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -382,6 +387,16 @@ impl CFGR {
     }
 
     /// Sets a frequency for the `APB2` bus
+    ///
+    /// # Resolution and Limits
+    ///
+    /// Following is true for devices **except**, as these allow finer resolutions
+    /// even when using the internal oscillator:
+    ///
+    ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
+    ///
+    /// - Maximal supported frequency with HSE: 72 Mhz
+    /// - Maximal supported frequency without HSE: 64 Mhz
     pub fn pclk2<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -391,6 +406,19 @@ impl CFGR {
     }
 
     /// Sets the system (core) frequency
+    ///
+    /// # Resolution and Limits
+    ///
+    /// Following is true for devices **except**, as these allow finer resolutions
+    /// even when using the internal oscillator:
+    ///
+    ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
+    ///
+    /// - Maximal supported frequency with `HSE`: 72 Mhz
+    /// - Maximal supported frequency without `HSE`: 64 Mhz
+    ///
+    /// If [`CFGR::hse`] is not used, therefor `HSI / 2` is used.
+    /// Only multiples of (HSI / 2) (4 Mhz) are allowed.
     pub fn sysclk<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -772,6 +800,14 @@ impl Clocks {
     }
 
     /// Returns whether the USBCLK clock frequency is valid for the USB peripheral
+    ///
+    /// If the micrcontroller does support USB, 48 Mhz or 72 Mhz have to be used
+    /// and the [`CFGR::hse`] must be used.
+    ///
+    ///  The APB1 / [`CFGR::pclk1`] clock must have a minimum frequency of 10 MHz to avoid data
+    ///  overrun/underrun problems. [RM0316 32.5.2][RM0316]
+    ///
+    /// [RM0316]: https://www.st.com/resource/en/reference_manual/dm00043574.pdf
     pub fn usbclk_valid(&self) -> bool {
         self.usbclk_valid
     }
