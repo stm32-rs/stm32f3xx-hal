@@ -46,7 +46,22 @@
 #![warn(missing_docs)]
 #![deny(macro_use_extern_crate)]
 
-#[cfg(all(not(feature = "device-selected"), not(feature = "needs-subvariant")))]
+#[cfg(all(feature = "direct-call-deprecated", not(feature = "device-selected")))]
+compile_error!(
+    "The feature you selected is deprecated, because it was split up into sub-devices.
+
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+    You probably used to use `--features stm32f303` but now functionalities for the sub-device were added.
+    In this case replace it with `--features stm32f303xc` to make your code build again.
+
+    Please select one of the chip features stated above."
+);
+
+// TODO Remove because, as of stm32f3 v0.12, this will be caught by it's build.rs?
+#[cfg(all(
+    not(feature = "direct-call-deprecated"),
+    not(feature = "device-selected")
+))]
 compile_error!(
     "This crate requires you to specify your target chip as a feature.
 
@@ -79,17 +94,6 @@ compile_error!(
 
     For more information, see README -> Selecting the right chip.
     "
-);
-
-#[cfg(all(not(feature = "device-selected"), feature = "direct-call-deprecated",))]
-compile_error!(
-    "The feature you selected is deprecated, because it was split up into sub-devices.
-
-    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-    You probably used to use `--features stm32f303` but now functionalities for the sub-device were added.
-    In this case replace it with `--features stm32f303xc` to make your code build again.
-
-    Please select one of the chip features stated above."
 );
 
 pub use embedded_hal as hal;
