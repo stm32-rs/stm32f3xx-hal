@@ -614,7 +614,7 @@ impl CFGR {
 
         crate::assert!(hclk <= 72_000_000);
 
-        let (ppre1_bits, ppre1) =
+        let (mut ppre1_bits, mut ppre1) =
             self.pclk1
                 .map_or((cfgr::PPRE1_A::DIV1, 1), |pclk1| match hclk / pclk1 {
                     0 => crate::unreachable!(),
@@ -625,7 +625,17 @@ impl CFGR {
                     _ => (cfgr::PPRE1_A::DIV16, 16),
                 });
 
-        let pclk1 = hclk / u32::from(ppre1);
+        let mut pclk1 = hclk / u32::from(ppre1);
+
+        // This ensures, that no panic happens, when
+        // pclk1 is not manually set.
+        // As hclk highest value is 72.mhz()
+        // dividing by 2 should always be sufficient
+        if self.pclk1.is_none() && pclk1 > 36_000_000 {
+            ppre1_bits = cfgr::PPRE1_A::DIV2;
+            ppre1 = 2;
+            pclk1 = hclk / u32::from(ppre1);
+        }
 
         crate::assert!(pclk1 <= 36_000_000);
 
