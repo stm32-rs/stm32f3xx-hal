@@ -43,6 +43,8 @@
 */
 #![no_std]
 #![allow(non_camel_case_types)]
+#![warn(missing_docs)]
+#![deny(macro_use_extern_crate)]
 
 #[cfg(all(not(feature = "device-selected"), not(feature = "needs-subvariant")))]
 compile_error!(
