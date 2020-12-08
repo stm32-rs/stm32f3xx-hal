@@ -4,6 +4,9 @@
 //! Check `adc.rs` in the examples folder.
 //! It can be built for the STM32F3Discovery running
 //! `cargo build --example adc --features=stm32f303xc`
+
+// TODO: Should look at stm32f4xx-hal implementation
+
 use crate::{
     gpio::Analog,
     rcc::{Clocks, AHB},
@@ -13,8 +16,12 @@ use embedded_hal::adc::{Channel, OneShot};
 
 use crate::{
     gpio::{gpioa, gpiob, gpioc},
-    pac::{ADC1, ADC1_2, ADC2},
+    pac::{
+        adc1::{smpr1::SMP9_A, smpr2::SMP18_A},
+        ADC1, ADC1_2, ADC2,
+    },
 };
+
 use stm32f3::stm32f303::{adc1::cfgr::ALIGN_A, adc1_2::ccr::CKMODE_A};
 const MAX_ADVREGEN_STARTUP_US: u32 = 10;
 
@@ -33,7 +40,8 @@ use crate::{
 // TODO: Remove `pub` from the register block once all functionalities are implemented.
 // Leave it here until then as it allows easy access to the registers.
 pub struct Adc<ADC> {
-    pub rb: ADC,
+    /// ADC Register
+    pub adc: ADC,
     clocks: Clocks,
     ckmode: CkMode,
     operation_mode: Option<OperationMode>,
@@ -45,36 +53,38 @@ pub struct Adc<ADC> {
 /// There is always an overhead of 13 ADC clock cycles.
 /// E.g. For Sampletime T_19 the total conversion time (in ADC clock cycles) is
 /// 13 + 19 = 32 ADC Clock Cycles
-pub enum SampleTime {
-    T_1,
-    T_2,
-    T_4,
-    T_7,
-    T_19,
-    T_61,
-    T_181,
-    T_601,
+///
+/// Wrapper type around [`SMP9_A`].
+struct SampleTime {
+    smp: SMP9_A,
 }
 
 impl Default for SampleTime {
     /// T_1 is also the reset value.
     fn default() -> Self {
-        SampleTime::T_1
+        SampleTime {
+            smp: SMP9_A::CYCLES1_5,
+        }
     }
 }
 
-impl SampleTime {
-    /// Conversion to bits for SMP
-    fn bitcode(&self) -> u8 {
-        match self {
-            SampleTime::T_1 => 0b000,
-            SampleTime::T_2 => 0b001,
-            SampleTime::T_4 => 0b010,
-            SampleTime::T_7 => 0b011,
-            SampleTime::T_19 => 0b100,
-            SampleTime::T_61 => 0b101,
-            SampleTime::T_181 => 0b110,
-            SampleTime::T_601 => 0b111,
+impl From<SampleTime> for SMP9_A {
+    fn from(t: SampleTime) -> Self {
+        t.smp
+    }
+}
+
+impl From<SampleTime> for SMP18_A {
+    fn from(t: SampleTime) -> Self {
+        match t.smp {
+            SMP9_A::CYCLES1_5 => Self::CYCLES1_5,
+            SMP9_A::CYCLES2_5 => Self::CYCLES2_5,
+            SMP9_A::CYCLES4_5 => Self::CYCLES4_5,
+            SMP9_A::CYCLES7_5 => Self::CYCLES7_5,
+            SMP9_A::CYCLES19_5 => Self::CYCLES19_5,
+            SMP9_A::CYCLES61_5 => Self::CYCLES61_5,
+            SMP9_A::CYCLES181_5 => Self::CYCLES181_5,
+            SMP9_A::CYCLES601_5 => Self::CYCLES601_5,
         }
     }
 }
@@ -82,6 +92,7 @@ impl SampleTime {
 #[derive(Clone, Copy, PartialEq)]
 /// ADC operation mode
 // TODO: Implement other modes (DMA, Differential,…)
+// FIXME: Why not the embedded hal Oneshot?
 pub enum OperationMode {
     OneShot,
 }
@@ -90,15 +101,26 @@ pub enum OperationMode {
 /// ADC CkMode
 // TODO: Add ASYNCHRONOUS mode
 pub enum CkMode {
-    // ASYNCHRONOUS = 0,
-    SYNCDIV1 = 1,
-    SYNCDIV2 = 2,
-    SYNCDIV4 = 4,
+    // Asynchronous,
+    SyncDiv1,
+    SyncDiv2,
+    SyncDiv4,
+}
+
+impl From<CkMode> for u8 {
+    fn from(c: CkMode) -> Self {
+        match c {
+            // ASYNCHRONOUS => 0,
+            CkMode::SyncDiv1 => 1,
+            CkMode::SyncDiv2 => 2,
+            CkMode::SyncDiv4 => 4,
+        }
+    }
 }
 
 impl Default for CkMode {
     fn default() -> Self {
-        CkMode::SYNCDIV2
+        CkMode::SyncDiv2
     }
 }
 
@@ -107,9 +129,9 @@ impl From<CkMode> for CKMODE_A {
     fn from(ckmode: CkMode) -> Self {
         match ckmode {
             //CkMode::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
-            CkMode::SYNCDIV1 => CKMODE_A::SYNCDIV1,
-            CkMode::SYNCDIV2 => CKMODE_A::SYNCDIV2,
-            CkMode::SYNCDIV4 => CKMODE_A::SYNCDIV4,
+            CkMode::SyncDiv1 => CKMODE_A::SYNCDIV1,
+            CkMode::SyncDiv2 => CKMODE_A::SYNCDIV2,
+            CkMode::SyncDiv4 => CKMODE_A::SYNCDIV4,
         }
     }
 }
@@ -291,14 +313,14 @@ macro_rules! adc_hal {
                 /// * the clock was already enabled with a different setting
                 ///
                 pub fn $adcx(
-                    rb: $ADC,
+                    adc: $ADC,
                     adc_common : &mut $ADC_COMMON,
                     ahb: &mut AHB,
                     ckmode: CkMode,
                     clocks: Clocks,
                 ) -> Self {
                     let mut this_adc = Self {
-                        rb,
+                        adc,
                         clocks,
                         ckmode,
                         operation_mode: None,
@@ -320,10 +342,10 @@ macro_rules! adc_hal {
                     this_adc
                 }
 
-                /// Software can use CkMode::SYNCDIV1 only if
+                /// Software can use CkMode::SyncDiv1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    if (self.ckmode == CkMode::SYNCDIV1) {
+                    if (self.ckmode == CkMode::SyncDiv1) {
                         clocks.hclk().0 == clocks.sysclk().0
                     } else {
                         true
@@ -332,10 +354,10 @@ macro_rules! adc_hal {
 
                 /// sets up adc in one shot mode for a single channel
                 pub fn setup_oneshot(&mut self) {
-                    self.rb.cr.modify(|_, w| w.adstp().stop());
-                    self.rb.isr.modify(|_, w| w.ovr().clear());
+                    self.adc.cr.modify(|_, w| w.adstp().stop());
+                    self.adc.isr.modify(|_, w| w.ovr().clear());
 
-                    self.rb.cfgr.modify(|_, w| w
+                    self.adc.cfgr.modify(|_, w| w
                         .cont().single()
                         .ovrmod().preserve()
                     );
@@ -347,36 +369,36 @@ macro_rules! adc_hal {
 
                 fn set_sequence_len(&mut self, len: u8) {
                     assert!(len - 1 < 16, "ADC sequence length must be in 1..=16");
-                    self.rb.sqr1.modify(|_, w| w.l().bits(len - 1));
+                    self.adc.sqr1.modify(|_, w| w.l().bits(len - 1));
                 }
 
                 fn set_align(&self, align: Align) {
-                    self.rb.cfgr.modify(|_, w| w.align().variant(align.into()));
+                    self.adc.cfgr.modify(|_, w| w.align().variant(align.into()));
                 }
 
                 fn enable(&mut self) {
-                    self.rb.cr.modify(|_, w| w.aden().enable());
-                    while self.rb.isr.read().adrdy().is_not_ready() {}
+                    self.adc.cr.modify(|_, w| w.aden().enable());
+                    while self.adc.isr.read().adrdy().is_not_ready() {}
                 }
 
                 fn disable(&mut self) {
-                    self.rb.cr.modify(|_, w| w.addis().disable());
+                    self.adc.cr.modify(|_, w| w.addis().disable());
                 }
 
                 /// Calibrate according to 15.3.8 in the Reference Manual
                 fn calibrate(&mut self) {
-                    if !self.rb.cr.read().advregen().is_enabled() {
+                    if !self.adc.cr.read().advregen().is_enabled() {
                         self.advregen_enable();
                         self.wait_advregen_startup();
                     }
 
                     self.disable();
 
-                    self.rb.cr.modify(|_, w| w
+                    self.adc.cr.modify(|_, w| w
                         .adcaldif().single_ended()
                         .adcal()   .calibration());
 
-                    while self.rb.cr.read().adcal().is_calibration() {}
+                    while self.adc.cr.read().adcal().is_calibration() {}
                 }
 
                 fn wait_adc_clk_cycles(&self, cycles: u32) {
@@ -386,8 +408,8 @@ macro_rules! adc_hal {
 
                 fn advregen_enable(&mut self){
                     // need to go through intermediate first
-                    self.rb.cr.modify(|_, w| w.advregen().intermediate());
-                    self.rb.cr.modify(|_, w| w.advregen().enabled());
+                    self.adc.cr.modify(|_, w| w.advregen().intermediate());
+                    self.adc.cr.modify(|_, w| w.advregen().enabled());
                 }
 
                 /// wait for the advregen to startup.
@@ -403,10 +425,10 @@ macro_rules! adc_hal {
                     self.set_chan_smps(chan, SampleTime::default());
                     self.select_single_chan(chan);
 
-                    self.rb.cr.modify(|_, w| w.adstart().start());
-                    while self.rb.isr.read().eos().is_not_complete() {}
-                    self.rb.isr.modify(|_, w| w.eos().clear());
-                    return self.rb.dr.read().rdata().bits();
+                    self.adc.cr.modify(|_, w| w.adstart().start());
+                    while self.adc.isr.read().eos().is_not_complete() {}
+                    self.adc.isr.modify(|_, w| w.eos().clear());
+                    return self.adc.dr.read().rdata().bits();
                 }
 
                 fn ensure_oneshot(&mut self) {
@@ -418,7 +440,7 @@ macro_rules! adc_hal {
                 /// This should only be invoked with the defined channels for the particular
                 /// device. (See Pin/Channel mapping above)
                 fn select_single_chan(&self, chan: u8) {
-                    self.rb.sqr1.modify(|_, w|
+                    self.adc.sqr1.modify(|_, w|
                         // NOTE(unsafe): chan is the x in ADCn_INx
                         unsafe { w.sq1().bits(chan) }
                     );
@@ -428,23 +450,23 @@ macro_rules! adc_hal {
                 // TODO: there are boundaries on how this can be set depending on the hardware.
                 fn set_chan_smps(&self, chan: u8, smp: SampleTime) {
                     match chan {
-                        1 => self.rb.smpr1.modify(|_, w| w.smp1().bits(smp.bitcode())),
-                        2 => self.rb.smpr1.modify(|_, w| w.smp2().bits(smp.bitcode())),
-                        3 => self.rb.smpr1.modify(|_, w| w.smp3().bits(smp.bitcode())),
-                        4 => self.rb.smpr1.modify(|_, w| w.smp4().bits(smp.bitcode())),
-                        5 => self.rb.smpr1.modify(|_, w| w.smp5().bits(smp.bitcode())),
-                        6 => self.rb.smpr1.modify(|_, w| w.smp6().bits(smp.bitcode())),
-                        7 => self.rb.smpr1.modify(|_, w| w.smp7().bits(smp.bitcode())),
-                        8 => self.rb.smpr1.modify(|_, w| w.smp8().bits(smp.bitcode())),
-                        9 => self.rb.smpr1.modify(|_, w| w.smp9().bits(smp.bitcode())),
-                        11 => self.rb.smpr2.modify(|_, w| w.smp10().bits(smp.bitcode())),
-                        12 => self.rb.smpr2.modify(|_, w| w.smp12().bits(smp.bitcode())),
-                        13 => self.rb.smpr2.modify(|_, w| w.smp13().bits(smp.bitcode())),
-                        14 => self.rb.smpr2.modify(|_, w| w.smp14().bits(smp.bitcode())),
-                        15 => self.rb.smpr2.modify(|_, w| w.smp15().bits(smp.bitcode())),
-                        16 => self.rb.smpr2.modify(|_, w| w.smp16().bits(smp.bitcode())),
-                        17 => self.rb.smpr2.modify(|_, w| w.smp17().bits(smp.bitcode())),
-                        18 => self.rb.smpr2.modify(|_, w| w.smp18().bits(smp.bitcode())),
+                        1 => self.adc.smpr1.modify(|_, w| w.smp1().variant(smp.into())),
+                        2 => self.adc.smpr1.modify(|_, w| w.smp2().variant(smp.into())),
+                        3 => self.adc.smpr1.modify(|_, w| w.smp3().variant(smp.into())),
+                        4 => self.adc.smpr1.modify(|_, w| w.smp4().variant(smp.into())),
+                        5 => self.adc.smpr1.modify(|_, w| w.smp5().variant(smp.into())),
+                        6 => self.adc.smpr1.modify(|_, w| w.smp6().variant(smp.into())),
+                        7 => self.adc.smpr1.modify(|_, w| w.smp7().variant(smp.into())),
+                        8 => self.adc.smpr1.modify(|_, w| w.smp8().variant(smp.into())),
+                        9 => self.adc.smpr1.modify(|_, w| w.smp9().variant(smp.into())),
+                        11 => self.adc.smpr2.modify(|_, w| w.smp10().variant(smp.into())),
+                        12 => self.adc.smpr2.modify(|_, w| w.smp12().variant(smp.into())),
+                        13 => self.adc.smpr2.modify(|_, w| w.smp13().variant(smp.into())),
+                        14 => self.adc.smpr2.modify(|_, w| w.smp14().variant(smp.into())),
+                        15 => self.adc.smpr2.modify(|_, w| w.smp15().variant(smp.into())),
+                        16 => self.adc.smpr2.modify(|_, w| w.smp16().variant(smp.into())),
+                        17 => self.adc.smpr2.modify(|_, w| w.smp17().variant(smp.into())),
+                        18 => self.adc.smpr2.modify(|_, w| w.smp18().variant(smp.into())),
                         _ => unreachable!(),
                     };
                 }
