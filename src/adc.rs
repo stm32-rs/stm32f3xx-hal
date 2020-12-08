@@ -97,15 +97,26 @@ pub enum OperationMode {
 /// ADC CkMode
 // TODO: Add ASYNCHRONOUS mode
 pub enum CkMode {
-    // ASYNCHRONOUS = 0,
-    SYNCDIV1 = 1,
-    SYNCDIV2 = 2,
-    SYNCDIV4 = 4,
+    // Asynchronous,
+    SyncDiv1,
+    SyncDiv2,
+    SyncDiv4,
+}
+
+impl From<CkMode> for u8 {
+    fn from(c: CkMode) -> Self {
+        match c {
+            // ASYNCHRONOUS => 0,
+            CkMode::SyncDiv1 => 1,
+            CkMode::SyncDiv2 => 2,
+            CkMode::SyncDiv4 => 4,
+        }
+    }
 }
 
 impl Default for CkMode {
     fn default() -> Self {
-        CkMode::SYNCDIV2
+        CkMode::SyncDiv2
     }
 }
 
@@ -114,9 +125,9 @@ impl From<CkMode> for CKMODE_A {
     fn from(ckmode: CkMode) -> Self {
         match ckmode {
             //CkMode::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
-            CkMode::SYNCDIV1 => CKMODE_A::SYNCDIV1,
-            CkMode::SYNCDIV2 => CKMODE_A::SYNCDIV2,
-            CkMode::SYNCDIV4 => CKMODE_A::SYNCDIV4,
+            CkMode::SyncDiv1 => CKMODE_A::SYNCDIV1,
+            CkMode::SyncDiv2 => CKMODE_A::SYNCDIV2,
+            CkMode::SyncDiv4 => CKMODE_A::SYNCDIV4,
         }
     }
 }
@@ -327,10 +338,10 @@ macro_rules! adc_hal {
                     this_adc
                 }
 
-                /// Software can use CkMode::SYNCDIV1 only if
+                /// Software can use CkMode::SyncDiv1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    if (self.ckmode == CkMode::SYNCDIV1) {
+                    if (self.ckmode == CkMode::SyncDiv1) {
                         clocks.hclk().0 == clocks.sysclk().0
                     } else {
                         true
