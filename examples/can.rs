@@ -42,7 +42,7 @@ fn main() -> ! {
     let can_tx = gpioa.pa12.into_af9(&mut gpioa.moder, &mut gpioa.afrh);
 
     // Initialize the CAN peripheral
-    let can = Can::can(dp.CAN, can_rx, can_tx, &mut rcc.apb1);
+    let can = Can::new(dp.CAN, can_rx, can_tx, &mut rcc.apb1);
 
     // Uncomment the following line to enable CAN interrupts
     // can.listen(Event::Fifo0Fmp);
@@ -66,7 +66,7 @@ fn main() -> ! {
     asm::delay(100_000);
     let data: [u8; 1] = [0];
 
-    let frame = CanFrame::data_frame(CanId::BaseId(ID), &data);
+    let frame = CanFrame::new_data(CanId::BaseId(ID), &data);
 
     block!(can_tx.transmit(&frame)).expect("Cannot send first CAN frame");
 
@@ -81,7 +81,7 @@ fn main() -> ! {
             }
 
             let data: [u8; 1] = [counter];
-            let frame = CanFrame::data_frame(CanId::BaseId(ID), &data);
+            let frame = CanFrame::new_data(CanId::BaseId(ID), &data);
 
             block!(can_tx.transmit(&frame)).expect("Cannot send CAN frame");
         }
