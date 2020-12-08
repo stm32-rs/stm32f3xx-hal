@@ -14,7 +14,11 @@ use embedded_hal::adc::{Channel, OneShot};
 
 use crate::{
     gpio::{self, Analog},
-    pac::{adc1::cfgr::ALIGN_A, adc1_2::ccr::CKMODE_A, ADC1, ADC1_2, ADC2},
+    pac::{
+        adc1::{cfgr::ALIGN_A, smpr1::SMP9_A, smpr2::SMP18_A},
+        adc1_2::ccr::CKMODE_A,
+        ADC1, ADC1_2, ADC2,
+    },
     rcc::{Clocks, AHB},
 };
 
@@ -73,18 +77,32 @@ impl Default for SampleTime {
     }
 }
 
-impl SampleTime {
-    /// Conversion to bits for SMP
-    fn bitcode(&self) -> u8 {
-        match self {
-            SampleTime::T_1 => 0b000,
-            SampleTime::T_2 => 0b001,
-            SampleTime::T_4 => 0b010,
-            SampleTime::T_7 => 0b011,
-            SampleTime::T_19 => 0b100,
-            SampleTime::T_61 => 0b101,
-            SampleTime::T_181 => 0b110,
-            SampleTime::T_601 => 0b111,
+impl From<SampleTime> for SMP9_A {
+    fn from(t: SampleTime) -> Self {
+        match t {
+            SampleTime::T_1 => Self::CYCLES1_5,
+            SampleTime::T_2 => Self::CYCLES2_5,
+            SampleTime::T_4 => Self::CYCLES4_5,
+            SampleTime::T_7 => Self::CYCLES7_5,
+            SampleTime::T_19 => Self::CYCLES19_5,
+            SampleTime::T_61 => Self::CYCLES61_5,
+            SampleTime::T_181 => Self::CYCLES181_5,
+            SampleTime::T_601 => Self::CYCLES601_5,
+        }
+    }
+}
+
+impl From<SampleTime> for SMP18_A {
+    fn from(t: SampleTime) -> Self {
+        match t {
+            SampleTime::T_1 => Self::CYCLES1_5,
+            SampleTime::T_2 => Self::CYCLES2_5,
+            SampleTime::T_4 => Self::CYCLES4_5,
+            SampleTime::T_7 => Self::CYCLES7_5,
+            SampleTime::T_19 => Self::CYCLES19_5,
+            SampleTime::T_61 => Self::CYCLES61_5,
+            SampleTime::T_181 => Self::CYCLES181_5,
+            SampleTime::T_601 => Self::CYCLES601_5,
         }
     }
 }
@@ -488,23 +506,23 @@ macro_rules! adc_hal {
                 // TODO: there are boundaries on how this can be set depending on the hardware.
                 fn set_chan_smps(&self, chan: u8, smp: SampleTime) {
                     match chan {
-                        1 => self.rb.smpr1.modify(|_, w| w.smp1().bits(smp.bitcode())),
-                        2 => self.rb.smpr1.modify(|_, w| w.smp2().bits(smp.bitcode())),
-                        3 => self.rb.smpr1.modify(|_, w| w.smp3().bits(smp.bitcode())),
-                        4 => self.rb.smpr1.modify(|_, w| w.smp4().bits(smp.bitcode())),
-                        5 => self.rb.smpr1.modify(|_, w| w.smp5().bits(smp.bitcode())),
-                        6 => self.rb.smpr1.modify(|_, w| w.smp6().bits(smp.bitcode())),
-                        7 => self.rb.smpr1.modify(|_, w| w.smp7().bits(smp.bitcode())),
-                        8 => self.rb.smpr1.modify(|_, w| w.smp8().bits(smp.bitcode())),
-                        9 => self.rb.smpr1.modify(|_, w| w.smp9().bits(smp.bitcode())),
-                        11 => self.rb.smpr2.modify(|_, w| w.smp10().bits(smp.bitcode())),
-                        12 => self.rb.smpr2.modify(|_, w| w.smp12().bits(smp.bitcode())),
-                        13 => self.rb.smpr2.modify(|_, w| w.smp13().bits(smp.bitcode())),
-                        14 => self.rb.smpr2.modify(|_, w| w.smp14().bits(smp.bitcode())),
-                        15 => self.rb.smpr2.modify(|_, w| w.smp15().bits(smp.bitcode())),
-                        16 => self.rb.smpr2.modify(|_, w| w.smp16().bits(smp.bitcode())),
-                        17 => self.rb.smpr2.modify(|_, w| w.smp17().bits(smp.bitcode())),
-                        18 => self.rb.smpr2.modify(|_, w| w.smp18().bits(smp.bitcode())),
+                        1 => self.rb.smpr1.modify(|_, w| w.smp1().variant(smp.into())),
+                        2 => self.rb.smpr1.modify(|_, w| w.smp2().variant(smp.into())),
+                        3 => self.rb.smpr1.modify(|_, w| w.smp3().variant(smp.into())),
+                        4 => self.rb.smpr1.modify(|_, w| w.smp4().variant(smp.into())),
+                        5 => self.rb.smpr1.modify(|_, w| w.smp5().variant(smp.into())),
+                        6 => self.rb.smpr1.modify(|_, w| w.smp6().variant(smp.into())),
+                        7 => self.rb.smpr1.modify(|_, w| w.smp7().variant(smp.into())),
+                        8 => self.rb.smpr1.modify(|_, w| w.smp8().variant(smp.into())),
+                        9 => self.rb.smpr1.modify(|_, w| w.smp9().variant(smp.into())),
+                        11 => self.rb.smpr2.modify(|_, w| w.smp10().variant(smp.into())),
+                        12 => self.rb.smpr2.modify(|_, w| w.smp12().variant(smp.into())),
+                        13 => self.rb.smpr2.modify(|_, w| w.smp13().variant(smp.into())),
+                        14 => self.rb.smpr2.modify(|_, w| w.smp14().variant(smp.into())),
+                        15 => self.rb.smpr2.modify(|_, w| w.smp15().variant(smp.into())),
+                        16 => self.rb.smpr2.modify(|_, w| w.smp16().variant(smp.into())),
+                        17 => self.rb.smpr2.modify(|_, w| w.smp17().variant(smp.into())),
+                        18 => self.rb.smpr2.modify(|_, w| w.smp18().variant(smp.into())),
                         _ => crate::unreachable!(),
                     };
                 }
