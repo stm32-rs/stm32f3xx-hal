@@ -50,50 +50,36 @@ pub struct Adc<ADC> {
 /// There is always an overhead of 13 ADC clock cycles.
 /// E.g. For Sampletime T_19 the total conversion time (in ADC clock cycles) is
 /// 13 + 19 = 32 ADC Clock Cycles
-pub enum SampleTime {
-    T_1,
-    T_2,
-    T_4,
-    T_7,
-    T_19,
-    T_61,
-    T_181,
-    T_601,
+struct SampleTime {
+    smp: SMP9_A,
 }
 
 impl Default for SampleTime {
     /// T_1 is also the reset value.
     fn default() -> Self {
-        SampleTime::T_1
+        SampleTime {
+            smp: SMP9_A::CYCLES1_5,
+        }
     }
 }
 
 impl From<SampleTime> for SMP9_A {
     fn from(t: SampleTime) -> Self {
-        match t {
-            SampleTime::T_1 => Self::CYCLES1_5,
-            SampleTime::T_2 => Self::CYCLES2_5,
-            SampleTime::T_4 => Self::CYCLES4_5,
-            SampleTime::T_7 => Self::CYCLES7_5,
-            SampleTime::T_19 => Self::CYCLES19_5,
-            SampleTime::T_61 => Self::CYCLES61_5,
-            SampleTime::T_181 => Self::CYCLES181_5,
-            SampleTime::T_601 => Self::CYCLES601_5,
-        }
+        t.smp
     }
 }
 
 impl From<SampleTime> for SMP18_A {
     fn from(t: SampleTime) -> Self {
-        match t {
-            SampleTime::T_1 => Self::CYCLES1_5,
-            SampleTime::T_2 => Self::CYCLES2_5,
-            SampleTime::T_4 => Self::CYCLES4_5,
-            SampleTime::T_7 => Self::CYCLES7_5,
-            SampleTime::T_19 => Self::CYCLES19_5,
-            SampleTime::T_61 => Self::CYCLES61_5,
-            SampleTime::T_181 => Self::CYCLES181_5,
-            SampleTime::T_601 => Self::CYCLES601_5,
+        match t.smp {
+            SMP9_A::CYCLES1_5 => Self::CYCLES1_5,
+            SMP9_A::CYCLES2_5 => Self::CYCLES2_5,
+            SMP9_A::CYCLES4_5 => Self::CYCLES4_5,
+            SMP9_A::CYCLES7_5 => Self::CYCLES7_5,
+            SMP9_A::CYCLES19_5 => Self::CYCLES19_5,
+            SMP9_A::CYCLES61_5 => Self::CYCLES61_5,
+            SMP9_A::CYCLES181_5 => Self::CYCLES181_5,
+            SMP9_A::CYCLES601_5 => Self::CYCLES601_5,
         }
     }
 }
