@@ -13,6 +13,12 @@
 
 pub use embedded_hal_can::{self, Filter, Frame, Id, Receiver, Transmitter};
 
+// TODO Switch to embedded-can
+// https://github.com/timokroeger/embedded-can/blob/master/src/lib.rs
+// https://github.com/rust-embedded/embedded-hal/pull/212
+// TODO Use bxcan
+// https://github.com/stm32-rs/bxcan
+
 use crate::gpio::gpioa;
 use crate::gpio::AF9;
 use crate::rcc::APB1;
@@ -33,13 +39,14 @@ pub enum CanId {
     /// Extended 29bit Identifier (0..=0x1FFF_FFFF)
     ExtendedId(u32),
 }
-
 /// A CAN frame consisting of a destination ID and up to 8 bytes of data.
 ///
 /// Currently, we always allocate a fixed size array for each frame regardless
 /// of actual size, but this could be improved in the future using const-generics.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanFrame {
+    // TODO must they be pub?
+    // How are they set and get interally?
     /// CAN Frame ID
     id: CanId,
     /// Data Length Code (range 0..=8)
@@ -187,6 +194,7 @@ impl embedded_hal_can::Filter for CanFilter {
 
     /// Constuct a mask filter. This method accepts two parameters, the mask which designates which
     /// bits are actually matched againts and the filter, with the actual bits to match.
+    // TODO Result?
     fn from_mask(mask: u32, filter: u32) -> Self {
         assert!(
             mask < MAX_EXTENDED_ID,
