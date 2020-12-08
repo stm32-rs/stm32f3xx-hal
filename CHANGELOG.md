@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   This should make it easier to generically use the `Serial` peripheral. ([#253])
 - Greatly increase coverage of `Debug` and `defmt::Format` implementations.
   Almost all important types should now be supported. ([#265])
+- Add a `free()` function to the RTC implementation to retrieve the passed-in
+  peripheral. ([#266])
 
 [`enumset`]: https://crates.io/crates/enumset
 

@@ -84,6 +84,11 @@ impl Rtc {
         self.regs.cr.read().fmt().bit()
     }
 
+    /// Release the RTC peripheral
+    pub fn free(self) -> RTC {
+        self.regs
+    }
+
     /// As described in Section 27.3.7 in RM0316,
     /// this function is used to disable write protection
     /// when modifying an RTC register
