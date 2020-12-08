@@ -16,6 +16,10 @@ pub enum Error {
     InvalidInputData,
 }
 
+/// RTC Clock input source ???
+/// https://github.com/stm32-rs/stm32f3xx-hal/pull/93/files#diff-27f77b66fb3d3624adbb9ac9e90b661819630850787da3b9f47a48a663a5634cR16
+/// And what about RTCSEL_A?
+/// https://docs.rs/stm32f3/0.12.1/stm32f3/stm32f303/rcc/bdcr/enum.RTCSEL_A.html
 pub const LSE_BITS: u8 = 0b01;
 
 pub struct Rtc {
@@ -24,11 +28,17 @@ pub struct Rtc {
 
 impl Rtc {
     /// Create and enable a new RTC, and configure its clock source and prescalers.
+    // TODO Even though LSE is the only supported type for now,
+    // the API should be flexible enough tot allow further imporvements
+    // wither (at least a major) breaking API change.
     /// From AN4759, Table 7, when using the LSE (The only clock source this module
     /// supports currently), set `prediv_s` to 255, and `prediv_a` to 127 to get a
     /// calendar clock of 1Hz.
+    // TODO could'nt that be determined via clocks?
     /// The `bypass` argument is `true` if you're using an external oscillator that
     /// doesn't connect to `OSC32_IN`, such as a MEMS resonator.
+    // TODO what to pass to prediv_s and prediv_a
+    // TODO bypass to enum?
     pub fn new(
         regs: RTC,
         prediv_s: u16,
@@ -40,8 +50,13 @@ impl Rtc {
     ) -> Self {
         let mut result = Self { regs };
 
+        // TODO
+        // These are one time used functions and not very
+        // long ones either,
+        // expand them up to here
         enable_lse(bdcr, bypass);
         unlock(apb1, pwr);
+        // Support
         enable(bdcr);
         result.set_24h_fmt();
 
@@ -381,6 +396,9 @@ fn hours_to_u8(hours: Hours) -> Result<u8, Error> {
 
 /// Enable the low frequency external oscillator. This is the only mode currently
 /// supported, to avoid exposing the `CR` and `CRS` registers.
+// TODO If these limitations are the problem,
+// why not use something like a builder pattern
+// to bee able to avoid these dependencies on CR and CRS?
 fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
     bdcr.bdcr()
         .modify(|_, w| w.lseon().set_bit().lsebyp().bit(bypass));
@@ -407,6 +425,10 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
 fn enable(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.bdrst().enabled());
     bdcr.bdcr().modify(|_, w| {
+        // FIXME LSE BITS is a pub const
+        // but here we just set it?
+        // What about lsi and hsi
+        // and does bypass play a role here?
         w.rtcsel().lse();
         w.rtcen().enabled();
         w.bdrst().disabled()
