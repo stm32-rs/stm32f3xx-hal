@@ -102,20 +102,21 @@ pub enum OperationMode {
 #[derive(Clone, Copy, PartialEq)]
 /// ADC CkMode
 // TODO: Add ASYNCHRONOUS mode
+#[non_exhaustive]
 pub enum CkMode {
     // /// Use Kernel Clock adc_ker_ck_input divided by PRESC. Asynchronous to AHB clock
-    // ASYNCHRONOUS = 0,
+    // Asynchronous,
     /// Use AHB clock rcc_hclk3. In this case rcc_hclk must equal sys_d1cpre_ck
-    SYNCDIV1 = 1,
+    SyncDiv1,
     /// Use AHB clock rcc_hclk3 divided by 2
-    SYNCDIV2 = 2,
+    SyncDiv2,
     /// Use AHB clock rcc_hclk3 divided by 4
-    SYNCDIV4 = 4,
+    SyncDiv4,
 }
 
 impl Default for CkMode {
     fn default() -> Self {
-        CkMode::SYNCDIV2
+        CkMode::SyncDiv2
     }
 }
 
@@ -123,10 +124,10 @@ impl Default for CkMode {
 impl From<CkMode> for CKMODE_A {
     fn from(ckmode: CkMode) -> Self {
         match ckmode {
-            //CkMode::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
-            CkMode::SYNCDIV1 => CKMODE_A::SYNCDIV1,
-            CkMode::SYNCDIV2 => CKMODE_A::SYNCDIV2,
-            CkMode::SYNCDIV4 => CKMODE_A::SYNCDIV4,
+            //CkMode::Asynchronous => CKMODE_A::ASYNCHRONOUS,
+            CkMode::SyncDiv1 => CKMODE_A::SYNCDIV1,
+            CkMode::SyncDiv2 => CKMODE_A::SYNCDIV2,
+            CkMode::SyncDiv4 => CKMODE_A::SYNCDIV4,
         }
     }
 }
@@ -345,10 +346,10 @@ macro_rules! adc_hal {
                     self.rb
                 }
 
-                /// Software can use CkMode::SYNCDIV1 only if
+                /// Software can use CkMode::SyncDiv1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    if (self.ckmode == CkMode::SYNCDIV1) {
+                    if (self.ckmode == CkMode::SyncDiv1) {
                         clocks.hclk().0 == clocks.sysclk().0
                     } else {
                         true
@@ -440,9 +441,9 @@ macro_rules! adc_hal {
                     // mode is implemented (CKMODE[1:0] = 00b).  This will force whoever is working
                     // on it to rethink what needs to be done here :)
                     let adc_per_cpu_cycles = match self.ckmode {
-                        CkMode::SYNCDIV1 => 1,
-                        CkMode::SYNCDIV2 => 2,
-                        CkMode::SYNCDIV4 => 4,
+                        CkMode::SyncDiv1 => 1,
+                        CkMode::SyncDiv2 => 2,
+                        CkMode::SyncDiv4 => 4,
                     };
                     asm::delay(adc_per_cpu_cycles * cycles);
                 }
