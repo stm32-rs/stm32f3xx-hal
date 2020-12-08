@@ -1,9 +1,14 @@
 //! API for the ADC (Analog to Digital Converter)
 //!
 //! # Examples
-//! Check `adc.rs` in the examples folder.
+//!
+//! Check out [examles/adc.rs].
+//!
 //! It can be built for the STM32F3Discovery running
 //! `cargo build --example adc --features=stm32f303xc`
+//!
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.5.0/examples/adc.rs
+
 use crate::{
     gpio::Analog,
     rcc::{Clocks, AHB},

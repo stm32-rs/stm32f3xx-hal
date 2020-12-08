@@ -1,6 +1,10 @@
 //! Direct memory access (DMA) controller
 //!
 //! Currently DMA is only supported for STM32F303 MCUs.
+//!
+//! An example how to use DMA for serial, can be found at [examples/serial_dma.rs]
+//!
+//! [examples/serial_dma.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.5.0/examples/serial_dma.rs
 
 // To learn about most of the ideas implemented here, check out the DMA section
 // of the Embedonomicon: https://docs.rust-embedded.org/embedonomicon/dma.html

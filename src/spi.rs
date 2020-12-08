@@ -1,4 +1,8 @@
 //! Serial Peripheral Interface (SPI) bus
+//!
+//! A usage example of the can peripheral can be found at [examples/spi.rs]
+//!
+//! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.5.0/examples/spi.rs
 
 use core::ptr;
 

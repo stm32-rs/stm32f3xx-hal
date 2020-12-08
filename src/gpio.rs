@@ -26,7 +26,7 @@
 //!
 //! [InputPin]: embedded_hal::digital::v2::InputPin
 //! [OutputPin]: embedded_hal::digital::v2::OutputPin
-//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.4.3/examples/toggle.rs
+//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.5.0/examples/toggle.rs
 
 use core::convert::Infallible;
 use core::marker::PhantomData;
