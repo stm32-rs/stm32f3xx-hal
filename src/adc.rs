@@ -4,6 +4,9 @@
 //! Check `adc.rs` in the examples folder.
 //! It can be built for the STM32F3Discovery running
 //! `cargo build --example adc --features=stm32f303xc`
+
+// TODO: Should look at stm32f4xx-hal implementation
+
 use crate::{
     gpio::Analog,
     rcc::{Clocks, AHB},
@@ -89,6 +92,7 @@ impl From<SampleTime> for SMP18_A {
 #[derive(Clone, Copy, PartialEq)]
 /// ADC operation mode
 // TODO: Implement other modes (DMA, Differential,…)
+// FIXME: Why not the embedded hal Oneshot?
 pub enum OperationMode {
     OneShot,
 }
