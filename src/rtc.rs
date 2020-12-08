@@ -81,6 +81,10 @@ impl Rtc {
     pub fn is_24h_fmt(&self) -> bool {
         self.rtc.cr.read().fmt().bit()
     }
+
+    /// Release the RTC peripheral
+    pub fn free(self) -> RTC {
+         self.rtc
     }
 
     /// As described in Section 27.3.7 in RM0316,
