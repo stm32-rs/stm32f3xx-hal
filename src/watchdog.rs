@@ -13,12 +13,17 @@ const LSI_KHZ: u32 = 40;
 const MAX_PR: u8 = 8;
 const MAX_RL: u16 = 0x1000;
 
+/// Independent Watchdog Peripheral
 pub struct IndependentWatchDog {
     iwdg: IWDG,
 }
 
 impl IndependentWatchDog {
-    /// Creates a new `IndependentWatchDog` without starting it. Call `start` to start the watchdog. See `WatchdogEnable` and `Watchdog` for more info.
+    /// Creates a new [`IndependentWatchDog`] without starting it.
+    ///
+    /// Call [`start`](WatchdogEnable::start) to start the watchdog.
+    ///
+    /// See [`WatchdogEnable`] and [`Watchdog`] for more info.
     pub fn new(iwdg: IWDG) -> Self {
         IndependentWatchDog { iwdg }
     }

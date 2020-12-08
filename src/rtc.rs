@@ -10,15 +10,16 @@ use crate::rcc::{APB1, BDCR};
 use core::convert::TryInto;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
-/// Invalid input error
+/// RTC error type
 #[derive(Debug)]
 pub enum Error {
+    /// Invalid input error
     InvalidInputData,
 }
 
-pub const LSE_BITS: u8 = 0b01;
-
+/// Real Time Clock peripheral
 pub struct Rtc {
+    /// RTC Peripheral register definition
     pub regs: RTC,
 }
 

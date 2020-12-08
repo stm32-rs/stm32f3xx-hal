@@ -43,22 +43,33 @@ pub struct CanFrame {
     pub data: Vec<u8, U8>,
 }
 
+/// Can Frame Filter Mode
+///
 /// Represents the operating mode of a CAN filter, which can either contain a
 /// list of identifiers, or a mask to match on.
 pub enum FilterMode {
+    /// Filter on a given Mask
     Mask,
+    /// Filter on a list of identifiers
     List,
 }
 
 /// A fully specified CAN filter with its associated list of of IDs or mask.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum CanFilterData {
+    /// Can Frame Identifier Filter
     IdFilter(CanId),
+    /// Filter for an identifier with a applied mask
     MaskFilter(u16, u16),
+    /// Filter for an extended identifier with a applied mask
     ExtendedMaskFilter(u32, u32),
+    /// Do not filter
     AcceptAll,
 }
 
+/// CAN Filter type
+///
+/// Used to specify the filter behavior
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct CanFilter {
     data: CanFilterData,
@@ -178,7 +189,9 @@ impl embedded_hal_can::Filter for CanFilter {
 }
 
 impl CanFilter {
-    /// Create a new filter with no assigned index. To actually active the filter call
+    /// Create a new filter with no assigned index.
+    ///
+    /// To actually active the filter call
     /// [`Receiver::set_filter`], which will assign an index.
     pub fn new(data: CanFilterData) -> CanFilter {
         CanFilter { data, index: None }
@@ -310,6 +323,7 @@ impl Can {
         (transmitter, fifo0, fifo1)
     }
 
+    /// Release owned peripherals
     pub fn free(self) -> (stm32::CAN, gpioa::PA11<AF9>, gpioa::PA12<AF9>) {
         (self.can, self._rx, self._tx)
     }

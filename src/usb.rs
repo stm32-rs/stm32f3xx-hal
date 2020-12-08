@@ -13,9 +13,16 @@ use crate::gpio::gpioa::{PA11, PA12};
 use crate::gpio::AF14;
 pub use stm32_usbd::UsbBus;
 
+/// USB Peripheral
+///
+/// Constructs the peripheral, which
+/// than gets passed to the [`UsbBus`].
 pub struct Peripheral {
+    /// USB Register Block
     pub usb: USB,
+    /// Data Negativ Pin
     pub pin_dm: PA11<AF14>,
+    /// Data Positiv Pin
     pub pin_dp: PA12<AF14>,
 }
 
@@ -46,8 +53,13 @@ unsafe impl UsbPeripheral for Peripheral {
     fn startup_delay() {
         // There is a chip specific startup delay. For STM32F103xx it's 1µs and this should wait for
         // at least that long.
+        // 72 Mhz is the highest frequency, so this ensures a minimum of 1µs wait time.
         cortex_m::asm::delay(72);
     }
 }
 
+/// Type of the UsbBus
+///
+/// As this MCU family has only USB peripheral,
+/// this is the only possible concrete type construction.
 pub type UsbBusType = UsbBus<Peripheral>;

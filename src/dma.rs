@@ -420,80 +420,86 @@ macro_rules! dma {
             ), )+
         },
     ) => {
-        pub mod $dmax {
-            use super::*;
-            use crate::pac::$DMAx;
+        doc_comment::doc_comment! {
+            concat!("All associated types, traits and methods of the ", stringify!($DMAx), " peripheral."),
+            pub mod $dmax {
+                use super::*;
+                use crate::pac::$DMAx;
 
-            impl DmaExt for $DMAx {
-                type Channels = Channels;
+                impl DmaExt for $DMAx {
+                    type Channels = Channels;
 
-                fn split(self, ahb: &mut AHB) -> Channels {
-                    ahb.enr().modify(|_, w| w.$dmaxen().set_bit());
+                    fn split(self, ahb: &mut AHB) -> Channels {
+                        ahb.enr().modify(|_, w| w.$dmaxen().set_bit());
 
-                    let mut channels = Channels {
-                        $( $chi: $Ci { _0: () }, )+
-                    };
+                        let mut channels = Channels {
+                            $( $chi: $Ci { _0: () }, )+
+                        };
 
-                    channels.reset();
-                    channels
-                }
-            }
-
-            /// DMA channels
-            pub struct Channels {
-                $( pub $chi: $Ci, )+
-            }
-
-            impl Channels {
-                /// Reset the control registers of all channels.
-                /// This stops any ongoing transfers.
-                fn reset(&mut self) {
-                    $( self.$chi.reset(); )+
-                }
-            }
-
-            $(
-                /// Singleton that represents a DMA channel
-                pub struct $Ci {
-                    _0: (),
-                }
-
-                impl private::Channel for $Ci {
-                    fn ch(&self) -> &pac::dma1::CH {
-                        // NOTE(unsafe) $Ci grants exclusive access to this register
-                        unsafe { &(*$DMAx::ptr()).$chi }
+                        channels.reset();
+                        channels
                     }
                 }
 
-                impl Channel for $Ci {
-                    fn event_occurred(&self, event: Event) -> bool {
-                        use Event::*;
+                /// DMA channels
+                pub struct Channels {
+                    $(
+                        /// Channel
+                        pub $chi: $Ci,
+                    )+
+                }
 
-                        // NOTE(unsafe) atomic read
-                        let flags = unsafe { (*$DMAx::ptr()).isr.read() };
-                        match event {
-                            HalfTransfer => flags.$htifi().bit_is_set(),
-                            TransferComplete => flags.$tcifi().bit_is_set(),
-                            TransferError => flags.$teifi().bit_is_set(),
-                            Any => flags.$gifi().bit_is_set(),
+                impl Channels {
+                    /// Reset the control registers of all channels.
+                    /// This stops any ongoing transfers.
+                    fn reset(&mut self) {
+                        $( self.$chi.reset(); )+
+                    }
+                }
+
+                $(
+                    /// Singleton that represents a DMA channel
+                    pub struct $Ci {
+                        _0: (),
+                    }
+
+                    impl private::Channel for $Ci {
+                        fn ch(&self) -> &pac::dma1::CH {
+                            // NOTE(unsafe) $Ci grants exclusive access to this register
+                            unsafe { &(*$DMAx::ptr()).$chi }
                         }
                     }
 
-                    fn clear_event(&mut self, event: Event) {
-                        use Event::*;
+                    impl Channel for $Ci {
+                        fn event_occurred(&self, event: Event) -> bool {
+                            use Event::*;
 
-                        // NOTE(unsafe) atomic write to a stateless register
-                        unsafe {
-                            &(*$DMAx::ptr()).ifcr.write(|w| match event {
-                                HalfTransfer => w.$chtifi().set_bit(),
-                                TransferComplete => w.$ctcifi().set_bit(),
-                                TransferError => w.$cteifi().set_bit(),
-                                Any => w.$cgifi().set_bit(),
-                            });
+                            // NOTE(unsafe) atomic read
+                            let flags = unsafe { (*$DMAx::ptr()).isr.read() };
+                            match event {
+                                HalfTransfer => flags.$htifi().bit_is_set(),
+                                TransferComplete => flags.$tcifi().bit_is_set(),
+                                TransferError => flags.$teifi().bit_is_set(),
+                                Any => flags.$gifi().bit_is_set(),
+                            }
+                        }
+
+                        fn clear_event(&mut self, event: Event) {
+                            use Event::*;
+
+                            // NOTE(unsafe) atomic write to a stateless register
+                            unsafe {
+                                &(*$DMAx::ptr()).ifcr.write(|w| match event {
+                                    HalfTransfer => w.$chtifi().set_bit(),
+                                    TransferComplete => w.$ctcifi().set_bit(),
+                                    TransferError => w.$cteifi().set_bit(),
+                                    Any => w.$cgifi().set_bit(),
+                                });
+                            }
                         }
                     }
-                }
-            )+
+                )+
+            }
         }
     };
 
