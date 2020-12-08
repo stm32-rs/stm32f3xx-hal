@@ -50,6 +50,8 @@ pub struct Adc<ADC> {
 /// There is always an overhead of 13 ADC clock cycles.
 /// E.g. For Sampletime T_19 the total conversion time (in ADC clock cycles) is
 /// 13 + 19 = 32 ADC Clock Cycles
+///
+/// Wrapper type around [`SMP9_A`].
 struct SampleTime {
     smp: SMP9_A,
 }
