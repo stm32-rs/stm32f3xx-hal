@@ -139,3 +139,7 @@ required-features = ["stm32f303"]
 [[example]]
 name = "i2c_scanner"
 required-features = ["stm32f303xc"]
+
+[[example]]
+name = "gpio_erased"
+required-features = ["rt", "stm32f303xc"]

@@ -156,6 +156,14 @@ macro_rules! gpio {
         }
 
         /// Fully erased pin
+        ///
+        /// This moves the pin type information to be known
+        /// at runtime, and erases the specific compile time type of the GPIO.
+        /// It does only matter, that it is a GPIO pin with a specific MODE.
+        ///
+        /// See [examples/gpio_erased.rs] as an example.
+        ///
+        /// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.5.0/examples/gpio_erased.rs
         pub struct PXx<MODE> {
             i: u8,
             gpio: Gpio,
