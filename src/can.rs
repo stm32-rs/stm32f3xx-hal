@@ -9,7 +9,7 @@
 //!
 //! A usage example of the can peripheral can be found at [examples/can.rs]
 //!
-//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.5.0/examples/can.rs
+//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/can.rs
 
 pub use embedded_hal_can::{self, Filter, Frame, Id, Receiver, Transmitter};
 
