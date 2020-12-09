@@ -1,9 +1,14 @@
 //! API for the ADC (Analog to Digital Converter)
 //!
 //! # Examples
-//! Check `adc.rs` in the examples folder.
+//!
+//! Check out [examles/adc.rs].
+//!
 //! It can be built for the STM32F3Discovery running
 //! `cargo build --example adc --features=stm32f303xc`
+//!
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.5.0/examples/adc.rs
+
 use crate::{
     gpio::Analog,
     rcc::{Clocks, AHB},
@@ -29,10 +34,11 @@ use crate::{
     pac::{ADC3, ADC3_4, ADC4},
 };
 
-/// ADC configuration
+/// Analog Digital Converter Peripheral
 // TODO: Remove `pub` from the register block once all functionalities are implemented.
 // Leave it here until then as it allows easy access to the registers.
 pub struct Adc<ADC> {
+    /// ADC Register
     pub rb: ADC,
     clocks: Clocks,
     ckmode: CkMode,
@@ -46,13 +52,21 @@ pub struct Adc<ADC> {
 /// E.g. For Sampletime T_19 the total conversion time (in ADC clock cycles) is
 /// 13 + 19 = 32 ADC Clock Cycles
 pub enum SampleTime {
+    /// 1.5 ADC clock cycles
     T_1,
+    /// 2.5 ADC clock cycles
     T_2,
+    /// 4.5 ADC clock cycles
     T_4,
+    /// 7.5 ADC clock cycles
     T_7,
+    /// 19.5 ADC clock cycles
     T_19,
+    /// 61.5 ADC clock cycles
     T_61,
+    /// 181.5 ADC clock cycles
     T_181,
+    /// 601.5 ADC clock cycles
     T_601,
 }
 
@@ -83,6 +97,7 @@ impl SampleTime {
 /// ADC operation mode
 // TODO: Implement other modes (DMA, Differential,…)
 pub enum OperationMode {
+    /// OneShot Mode
     OneShot,
 }
 
@@ -90,9 +105,13 @@ pub enum OperationMode {
 /// ADC CkMode
 // TODO: Add ASYNCHRONOUS mode
 pub enum CkMode {
+    // /// Use Kernel Clock adc_ker_ck_input divided by PRESC. Asynchronous to AHB clock
     // ASYNCHRONOUS = 0,
+    /// Use AHB clock rcc_hclk3. In this case rcc_hclk must equal sys_d1cpre_ck
     SYNCDIV1 = 1,
+    /// Use AHB clock rcc_hclk3 divided by 2
     SYNCDIV2 = 2,
+    /// Use AHB clock rcc_hclk3 divided by 4
     SYNCDIV4 = 4,
 }
 

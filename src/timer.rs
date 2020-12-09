@@ -58,6 +58,7 @@ use crate::time::Hertz;
 
 /// Associated clocks with timers
 pub trait PclkSrc {
+    /// Get the current frequency of the associated clock
     fn get_clk(clocks: &Clocks) -> Hertz;
 }
 
