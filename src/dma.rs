@@ -492,20 +492,33 @@ macro_rules! dma {
             )+
         }
     };
+
+    ( $X:literal: {$($C:literal),+} ) => {
+        paste::paste! {
+            dma!(
+                [<DMA $X>], [<dma $X>], [<dma $X en>],
+                channels: {
+                    $(
+                        [<C $C>]:
+			(
+                            [<ch $C>],
+                            [<htif $C>],
+                            [<tcif $C>],
+                            [<teif $C>],
+                            [<gif $C>],
+                            [<chtif $C>],
+                            [<ctcif $C>],
+                            [<cteif $C>],
+                            [<cgif $C>]
+                        ),
+                    )+
+                },
+            );
+        }
+    };
 }
 
-dma!(
-    DMA1, dma1, dma1en,
-    channels: {
-        C1: (ch1, htif1, tcif1, teif1, gif1, chtif1, ctcif1, cteif1, cgif1),
-        C2: (ch2, htif2, tcif2, teif2, gif2, chtif2, ctcif2, cteif2, cgif2),
-        C3: (ch3, htif3, tcif3, teif3, gif3, chtif3, ctcif3, cteif3, cgif3),
-        C4: (ch4, htif4, tcif4, teif4, gif4, chtif4, ctcif4, cteif4, cgif4),
-        C5: (ch5, htif5, tcif5, teif5, gif5, chtif5, ctcif5, cteif5, cgif5),
-        C6: (ch6, htif6, tcif6, teif6, gif6, chtif6, ctcif6, cteif6, cgif6),
-        C7: (ch7, htif7, tcif7, teif7, gif7, chtif7, ctcif7, cteif7, cgif7),
-    },
-);
+dma!( 1: { 1,2,3,4,5,6,7 } );
 
 #[cfg(any(
     feature = "stm32f302xb",
@@ -517,16 +530,7 @@ dma!(
     feature = "stm32f303xd",
     feature = "stm32f303xe",
 ))]
-dma!(
-    DMA2, dma2, dma2en,
-    channels: {
-        C1: (ch1, htif1, tcif1, teif1, gif1, chtif1, ctcif1, cteif1, cgif1),
-        C2: (ch2, htif2, tcif2, teif2, gif2, chtif2, ctcif2, cteif2, cgif2),
-        C3: (ch3, htif3, tcif3, teif3, gif3, chtif3, ctcif3, cteif3, cgif3),
-        C4: (ch4, htif4, tcif4, teif4, gif4, chtif4, ctcif4, cteif4, cgif4),
-        C5: (ch5, htif5, tcif5, teif5, gif5, chtif5, ctcif5, cteif5, cgif5),
-    },
-);
+dma!( 2: { 1,2,3,4,5 } );
 
 /// Marker trait mapping DMA targets to their channels
 ///
