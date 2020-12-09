@@ -188,7 +188,7 @@ impl embedded_hal_can::Filter for CanFilter {
     /// Constuct a mask filter. This method accepts two parameters, the mask which designates which
     /// bits are actually matched againts and the filter, with the actual bits to match.
     fn from_mask(mask: u32, filter: u32) -> Self {
-        assert!(
+        crate::assert!(
             mask < MAX_EXTENDED_ID,
             "Mask cannot have bits higher than 29"
         );
@@ -370,7 +370,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                 0 => can.tsr.read().tme0().bit_is_set(),
                 1 => can.tsr.read().tme1().bit_is_set(),
                 2 => can.tsr.read().tme2().bit_is_set(),
-                _ => unreachable!(),
+                _ => crate::unreachable!(),
             };
 
             if !free {
@@ -400,7 +400,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                             5 => tx.tdhr.modify(|_, w| w.data5().bits(*d)),
                             6 => tx.tdhr.modify(|_, w| w.data6().bits(*d)),
                             7 => tx.tdhr.modify(|_, w| w.data7().bits(*d)),
-                            _ => unreachable!(),
+                            _ => crate::unreachable!(),
                         }
                     }
                 }
@@ -447,7 +447,7 @@ impl Receiver for CanFifo {
                     5 => data[5] = data_high.data5().bits(),
                     6 => data[6] = data_high.data6().bits(),
                     7 => data[7] = data_high.data7().bits(),
-                    _ => unreachable!(),
+                    _ => crate::unreachable!(),
                 }
             }
 
@@ -504,7 +504,7 @@ impl Receiver for CanFifo {
             can.ffa1r.modify(|_, w| match self.idx {
                 0 => w.ffa0().clear_bit(),
                 1 => w.ffa0().set_bit(),
-                _ => unreachable!(),
+                _ => crate::unreachable!(),
             });
 
             let index = filter
@@ -512,7 +512,7 @@ impl Receiver for CanFifo {
                 .unwrap_or_else(|| FILTER_INDEX.fetch_add(1, Ordering::Acquire))
                 as usize;
 
-            assert!(index < 28, "Filter index out of range");
+            crate::assert!(index < 28, "Filter index out of range");
 
             can.fb[index]
                 .fr1
@@ -554,7 +554,7 @@ impl CanFrame {
     ///
     /// This function will panic if length of `data` is greater than `8`
     pub fn new_data(id: CanId, data: &[u8]) -> CanFrame {
-        assert!((0..8).contains(&data.len()));
+        crate::assert!((0..8).contains(&data.len()));
 
         let mut frame = Self {
             id,

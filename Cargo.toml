@@ -50,11 +50,18 @@ optional = true
 version = "1"
 default-features = false
 
+[dependencies.defmt]
+version = "0.1.2"
+optional = true
+
 [dev-dependencies]
 panic-semihosting = "0.5"
 usb-device = "0.2"
 usbd-serial = "0.1"
 cortex-m-semihosting = "0.3"
+panic-probe = "0.1.0"
+defmt-rtt = "0.1.0"
+defmt-test = "0.1.0"
 
 [features]
 default = ["unproven"]
@@ -94,6 +101,13 @@ stm32f334 = ["gpio-f333", "stm32f3/stm32f3x4", "device-selected"]
 stm32f328 = ["gpio-f333", "stm32f3/stm32f3x8", "device-selected"]
 stm32f358 = ["gpio-f303", "stm32f3/stm32f3x8", "device-selected"]
 stm32f398 = ["gpio-f303e", "stm32f3/stm32f3x8", "device-selected"]
+
+defmt-default = ["defmt"]
+defmt-trace = ["defmt"]
+defmt-debug = ["defmt"]
+defmt-info = ["defmt"]
+defmt-warn = ["defmt"]
+defmt-error = ["defmt"]
 
 [profile.dev]
 debug = true
@@ -139,3 +153,8 @@ required-features = ["stm32f303xc"]
 [[example]]
 name = "gpio_erased"
 required-features = ["rt", "stm32f303xc"]
+
+[[test]]
+name = "rcc"
+required-features = ["rt", "defmt"]
+harness = false

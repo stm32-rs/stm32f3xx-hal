@@ -24,6 +24,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for HSE bypass and CSS ([#156](https://github.com/stm32-rs/stm32f3xx-hal/pull/156))
 - Impls for missing I2C pin definitions ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
 - Support I2C3 ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
+- Support for [`defmt`][defmt] ([#172](https://github.com/stm32-rs/stm32f3xx-hal/pull/172))
+  - Now [defmt][] features are available.
+  - Currently these are only used for panicking calls, like
+    `assert!` `panic!` or `unwrap()`. These are enabled using the [defmt][]
+    [filter][].
+  - For now [defmt][] is mostly intended for internal development and testing
+    to further reduce panicking calls in this crate.
+    The support of this feature is subject to change as the development
+    of [defmt][] is advancing.
+
+[defmt]: https://github.com/knurling-rs/defmt
+[filter]: https://defmt.ferrous-systems.com/filtering.html
 
 ### Changed
 

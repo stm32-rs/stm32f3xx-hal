@@ -323,10 +323,10 @@ macro_rules! adc_hal {
                         operation_mode: None,
                     };
                     if !(this_adc.clocks_welldefined(clocks)) {
-                        panic!("Clock settings not well defined");
+                        crate::panic!("Clock settings not well defined");
                     }
                     if !(this_adc.enable_clock(ahb, adc_common)){
-                        panic!("Clock already enabled with a different setting");
+                        crate::panic!("Clock already enabled with a different setting");
                     }
                     this_adc.set_align(Align::default());
                     this_adc.calibrate();
@@ -365,7 +365,7 @@ macro_rules! adc_hal {
                 }
 
                 fn set_sequence_len(&mut self, len: u8) {
-                    assert!(len - 1 < 16, "ADC sequence length must be in 1..=16");
+                    crate::assert!(len - 1 < 16, "ADC sequence length must be in 1..=16");
                     self.rb.sqr1.modify(|_, w| w.l().bits(len - 1));
                 }
 
@@ -464,7 +464,7 @@ macro_rules! adc_hal {
                         16 => self.rb.smpr2.modify(|_, w| w.smp16().bits(smp.bitcode())),
                         17 => self.rb.smpr2.modify(|_, w| w.smp17().bits(smp.bitcode())),
                         18 => self.rb.smpr2.modify(|_, w| w.smp18().bits(smp.bitcode())),
-                        _ => unreachable!(),
+                        _ => crate::unreachable!(),
                     };
                 }
 

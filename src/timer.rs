@@ -101,12 +101,12 @@ macro_rules! hal {
                     let timer_clock = $TIMX::get_clk(&self.clocks);
                     let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
                         / frequency;
-                    let psc = u16::try_from((ticks - 1) / (1 << 16)).unwrap();
+                    let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
 
                     // NOTE(write): uses all bits in this register.
                     self.tim.psc.write(|w| w.psc().bits(psc));
 
-                    let arr = u16::try_from(ticks / u32::from(psc + 1)).unwrap();
+                    let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
 
                     // TODO (sh3rm4n)
                     // self.tim.arr.write(|w| { w.arr().bits(arr) });

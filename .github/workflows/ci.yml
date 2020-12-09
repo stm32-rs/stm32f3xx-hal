@@ -68,6 +68,29 @@ jobs:
           command: check
           args: --features=stm32f303xc,stm32-usbd,rt,can --lib --examples
 
+  check-tests:
+    name: Check Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test:
+          - rcc
+        mcu:
+          - stm32f303xc
+          - stm32f303xd
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --features=rt,defmt,${{ matrix.mcu }} --test ${{ matrix.test }}
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest

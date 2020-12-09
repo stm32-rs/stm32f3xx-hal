@@ -46,7 +46,22 @@
 #![warn(missing_docs)]
 #![deny(macro_use_extern_crate)]
 
-#[cfg(all(not(feature = "device-selected"), not(feature = "needs-subvariant")))]
+#[cfg(all(feature = "direct-call-deprecated", not(feature = "device-selected")))]
+compile_error!(
+    "The feature you selected is deprecated, because it was split up into sub-devices.
+
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+    You probably used to use `--features stm32f303` but now functionalities for the sub-device were added.
+    In this case replace it with `--features stm32f303xc` to make your code build again.
+
+    Please select one of the chip features stated above."
+);
+
+// TODO Remove because, as of stm32f3 v0.12, this will be caught by it's build.rs?
+#[cfg(all(
+    not(feature = "direct-call-deprecated"),
+    not(feature = "device-selected")
+))]
 compile_error!(
     "This crate requires you to specify your target chip as a feature.
 
@@ -81,21 +96,51 @@ compile_error!(
     "
 );
 
-#[cfg(all(not(feature = "device-selected"), feature = "direct-call-deprecated",))]
-compile_error!(
-    "The feature you selected is deprecated, because it was split up into sub-devices.
-
-    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-    You probably used to use `--features stm32f303` but now functionalities for the sub-device were added.
-    In this case replace it with `--features stm32f303xc` to make your code build again.
-
-    Please select one of the chip features stated above."
-);
-
 pub use embedded_hal as hal;
 
 pub use nb;
 pub use nb::block;
+
+#[cfg(feature = "defmt")]
+pub(crate) use defmt::{assert, panic, unreachable, unwrap};
+#[cfg(feature = "defmt")]
+mod macros {
+    /// Wrapper function for `.exepct()`
+    ///
+    /// Uses [`defmt::unwrap!`] instead, because
+    /// it has the same functionality as `expect()`
+    #[macro_export]
+    macro_rules! expect {
+        ($l:expr, $s:tt) => {
+            defmt::unwrap!($l, $s)
+        };
+    }
+}
+
+#[cfg(not(feature = "defmt"))]
+pub(crate) use core::{assert, panic, unreachable};
+#[cfg(not(feature = "defmt"))]
+mod macros {
+    /// Wrapper macro for `.unwrap()`
+    ///
+    /// Uses core function, when defmt is not active
+    #[macro_export]
+    macro_rules! unwrap {
+        ($l:expr) => {
+            $l.unwrap()
+        };
+    }
+
+    /// Wrapper macro for `.expect()`
+    ///
+    /// Uses core function, when defmt is not active
+    #[macro_export]
+    macro_rules! expect {
+        ($l:expr, $s:tt) => {
+            $l.expect($s)
+        };
+    }
+}
 
 #[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
 /// Peripheral access
