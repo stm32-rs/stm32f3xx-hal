@@ -84,7 +84,7 @@ impl Rtc {
 
     /// Release the RTC peripheral
     pub fn free(self) -> RTC {
-         self.rtc
+        self.rtc
     }
 
     /// As described in Section 27.3.7 in RM0316,
