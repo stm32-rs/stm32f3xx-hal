@@ -12,7 +12,7 @@ Because by default cargo tries to use the `x86_64-unknown-linux-gnu` target,
 when building `codegen`, due to what's specified in the `.cargo/config`, you
 need to manually specify your host's target if it differs from that, e.g.:
 
-```
+```bash
 $ cargo run --target x86_64-apple-darwin -- help
 ```
 
@@ -26,7 +26,7 @@ Running `codegen`'s `gpio` subcommand generates the `gpio!` macro
 invocations at the end of `src/gpio.rs`. Re-generating those macro-invocations
 is simply a matter of deleting the old ones and then executing:
 
-```
+```bash
 $ cargo run -- gpio $cubemx_db_path >> ../src/gpio.rs
 ```
 
