@@ -330,7 +330,9 @@ fn into_pre_div(div: u8) -> cfgr2::PREDIV_A {
 
 impl CFGR {
     /// Uses `HSE` (external oscillator) instead of `HSI` (internal RC oscillator) as the clock source.
-    /// Will result in a hang if an external oscillator is not connected or it fails to start.
+    ///
+    /// Will result in a hang if an external oscillator is not connected or it fails to start,
+    /// unless [css](CFGR::enable_css) is enabled.
     pub fn use_hse<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -343,6 +345,7 @@ impl CFGR {
     ///
     /// Uses user provided clock signal instead of an external oscillator.
     /// `OSC_OUT` pin is free and can be used as GPIO.
+    ///
     /// No effect if `HSE` is not enabled.
     pub fn bypass_hse(mut self) -> Self {
         self.hse_bypass = true;
@@ -350,8 +353,10 @@ impl CFGR {
     }
 
     /// Enable `CSS` (Clock Security System).
+    ///
     /// System clock is automatically switched to `HSI` and an interrupt (`CSSI`) is generated
     /// when `HSE` clock failure is detected.
+    ///
     /// No effect if `HSE` is not enabled.
     pub fn enable_css(mut self) -> Self {
         self.css = true;
@@ -385,13 +390,15 @@ impl CFGR {
     ///
     /// # Resolution and Limits
     ///
-    /// Following is true for devices **except**, as these allow finer resolutions
+    /// - Maximal supported frequency with HSE: 72 Mhz
+    /// - Maximal supported frequency without HSE: 64 Mhz
+    ///
+    /// This is true for devices **except** the following devices,
+    /// as these allow finer resolutions
     /// even when using the internal oscillator:
     ///
     ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
     ///
-    /// - Maximal supported frequency with HSE: 72 Mhz
-    /// - Maximal supported frequency without HSE: 64 Mhz
     pub fn pclk2<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -404,16 +411,17 @@ impl CFGR {
     ///
     /// # Resolution and Limits
     ///
-    /// Following is true for devices **except**, as these allow finer resolutions
-    /// even when using the internal oscillator:
-    ///
-    ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
-    ///
     /// - Maximal supported frequency with `HSE`: 72 Mhz
     /// - Maximal supported frequency without `HSE`: 64 Mhz
     ///
     /// If [`CFGR::hse`] is not used, therefor `HSI / 2` is used.
     /// Only multiples of (HSI / 2) (4 Mhz) are allowed.
+    ///
+    /// This is true for devices **except** the following devices,
+    /// as these allow finer resolutions
+    /// even when using the internal oscillator:
+    ///
+    ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
     pub fn sysclk<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -796,11 +804,11 @@ impl Clocks {
 
     /// Returns whether the USBCLK clock frequency is valid for the USB peripheral
     ///
-    /// If the micrcontroller does support USB, 48 Mhz or 72 Mhz have to be used
+    /// If the microcontroller does support USB, 48 Mhz or 72 Mhz have to be used
     /// and the [`CFGR::hse`] must be used.
     ///
-    ///  The APB1 / [`CFGR::pclk1`] clock must have a minimum frequency of 10 MHz to avoid data
-    ///  overrun/underrun problems. [RM0316 32.5.2][RM0316]
+    /// The APB1 / [`CFGR::pclk1`] clock must have a minimum frequency of 10 MHz to avoid data
+    /// overrun/underrun problems. [RM0316 32.5.2][RM0316]
     ///
     /// [RM0316]: https://www.st.com/resource/en/reference_manual/dm00043574.pdf
     pub fn usbclk_valid(&self) -> bool {
