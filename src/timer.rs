@@ -450,15 +450,11 @@ macro_rules! gp_timer {
                 {
                     self.stop();
 
-                    // todo: We've made custom modifications here regarding frequency and resolution,
-                    // for use in the Water Monitor,
-                    // that need to be generalized in terms of API (etc).
                     let frequency = timeout.into().0;
                     let timer_clock = $TIMX::get_clk(&self.clocks);
                     let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
                         / frequency;
                     let psc = u16((ticks - 1) / (1 << 16)).unwrap();
-
 
                     // NOTE(write): uses all bits in this register.
                     self.tim.psc.write(|w| w.psc().bits(psc));
