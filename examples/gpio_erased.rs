@@ -50,7 +50,7 @@ fn main() -> ! {
     loop {
         for pin in pin_array.iter_mut() {
             hprintln!("Value is {}", pin.is_high().unwrap()).unwrap();
-            asm::delay(1_000);
+            asm::delay(1_000_000);
         }
     }
 }

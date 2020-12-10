@@ -4,7 +4,7 @@
 //!
 //! See [examples/usb_serial.rs] for a usage example.
 //!
-//! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.5.0/examples/usb_serial.rs
+//! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/usb_serial.rs
 
 use crate::pac::{RCC, USB};
 use stm32_usbd::UsbPeripheral;
