@@ -1,4 +1,13 @@
 /*!
+ # stm32f3xx-hal
+
+ `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
+ peripheral access API for the STMicro [STM32F3][stm] series microcontrollers. The
+ selection of the MCU is done by [feature][f] gates
+
+ [f]: #selecting-the-right-chip
+ [stm]: https://www.st.com/en/microcontrollers-microprocessors/stm32f3-series.html
+
  # Selecting the right chip
 
    This crate requires you to specify your target chip as a feature.
@@ -34,8 +43,25 @@
 */
 #![no_std]
 #![allow(non_camel_case_types)]
+#![warn(missing_docs)]
+#![deny(macro_use_extern_crate)]
 
-#[cfg(all(not(feature = "device-selected"), not(feature = "needs-subvariant")))]
+#[cfg(all(feature = "direct-call-deprecated", not(feature = "device-selected")))]
+compile_error!(
+    "The feature you selected is deprecated, because it was split up into sub-devices.
+
+    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+    You probably used to use `--features stm32f303` but now functionalities for the sub-device were added.
+    In this case replace it with `--features stm32f303xc` to make your code build again.
+
+    Please select one of the chip features stated above."
+);
+
+// TODO Remove because, as of stm32f3 v0.12, this will be caught by it's build.rs?
+#[cfg(all(
+    not(feature = "direct-call-deprecated"),
+    not(feature = "device-selected")
+))]
 compile_error!(
     "This crate requires you to specify your target chip as a feature.
 
@@ -70,86 +96,116 @@ compile_error!(
     "
 );
 
-#[cfg(all(not(feature = "device-selected"), feature = "direct-call-deprecated",))]
-compile_error!(
-    "The feature you selected is deprecated, because it was split up into sub-devices.
-
-    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-    You probably used to use `--features stm32f303` but now functionalities for the sub-device were added.
-    In this case replace it with `--features stm32f303xc` to make your code build again.
-
-    Please select one of the chip features stated above."
-);
-
 pub use embedded_hal as hal;
 
 pub use nb;
 pub use nb::block;
 
+#[cfg(feature = "defmt")]
+pub(crate) use defmt::{assert, panic, unreachable, unwrap};
+#[cfg(feature = "defmt")]
+mod macros {
+    /// Wrapper function for `.exepct()`
+    ///
+    /// Uses [`defmt::unwrap!`] instead, because
+    /// it has the same functionality as `expect()`
+    #[macro_export]
+    macro_rules! expect {
+        ($l:expr, $s:tt) => {
+            defmt::unwrap!($l, $s)
+        };
+    }
+}
+
+#[cfg(not(feature = "defmt"))]
+pub(crate) use core::{assert, panic, unreachable};
+#[cfg(not(feature = "defmt"))]
+mod macros {
+    /// Wrapper macro for `.unwrap()`
+    ///
+    /// Uses core function, when defmt is not active
+    #[macro_export]
+    macro_rules! unwrap {
+        ($l:expr) => {
+            $l.unwrap()
+        };
+    }
+
+    /// Wrapper macro for `.expect()`
+    ///
+    /// Uses core function, when defmt is not active
+    #[macro_export]
+    macro_rules! expect {
+        ($l:expr, $s:tt) => {
+            $l.expect($s)
+        };
+    }
+}
+
 #[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
+/// Peripheral access
 pub use stm32f3::stm32f301 as pac;
 
 #[cfg(feature = "stm32f302")]
+/// Peripheral access
 pub use stm32f3::stm32f302 as pac;
 
 #[cfg(feature = "stm32f303")]
+/// Peripheral access
 pub use stm32f3::stm32f303 as pac;
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+/// Peripheral access
 pub use stm32f3::stm32f373 as pac;
 
 #[cfg(feature = "stm32f334")]
+/// Peripheral access
 pub use stm32f3::stm32f3x4 as pac;
 
 #[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
+/// Peripheral access
 pub use stm32f3::stm32f3x8 as pac;
 
 #[cfg(feature = "device-selected")]
 #[deprecated(since = "0.5.0", note = "please use `pac` instead")]
+/// Peripheral access
 pub use crate::pac as stm32;
 
 // Enable use of interrupt macro
 #[cfg(feature = "rt")]
 pub use crate::pac::interrupt;
 
-#[cfg(feature = "stm32f303")]
-pub mod adc;
-#[cfg(all(feature = "device-selected", feature = "can"))]
-pub mod can;
-#[cfg(feature = "stm32f303")]
-pub mod clocks;
-#[cfg(feature = "stm32f303")]
-pub mod dac;
-#[cfg(feature = "device-selected")]
-pub mod delay;
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-pub mod dma;
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "device-selected")] {
+        pub mod delay;
+        pub mod flash;
+        pub mod gpio;
+        pub mod i2c;
+        pub mod prelude;
+        pub mod pwm;
+        pub mod rcc;
+        pub mod rtc;
+        pub mod serial;
+        pub mod spi;
+        pub mod time;
+        pub mod timer;
+    }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "stm32f303")] {
+        pub mod adc;
+        pub mod clocks;
+        pub mod low_power;
+    }
+}
+
 #[cfg(all(feature = "stm32f303", feature = "rt"))]
 pub mod exti;
-#[cfg(feature = "device-selected")]
-pub mod flash;
-#[cfg(feature = "device-selected")]
-pub mod gpio;
-#[cfg(feature = "device-selected")]
-pub mod i2c;
-#[cfg(feature = "device-selected")]
-pub mod low_power;
-#[cfg(feature = "device-selected")]
-pub mod prelude;
-#[cfg(feature = "device-selected")]
-pub mod pwm;
-#[cfg(feature = "device-selected")]
-pub mod rcc;
-#[cfg(feature = "device-selected")]
-pub mod rtc;
-#[cfg(feature = "device-selected")]
-pub mod serial;
-#[cfg(feature = "device-selected")]
-pub mod spi;
-#[cfg(feature = "device-selected")]
-pub mod time;
-#[cfg(feature = "device-selected")]
-pub mod timer;
+
+#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+pub mod dma;
 #[cfg(all(
     feature = "stm32-usbd",
     any(
@@ -163,3 +219,6 @@ pub mod usb;
 
 #[cfg(feature = "device-selected")]
 pub mod watchdog;
+
+#[cfg(all(feature = "device-selected", feature = "can"))]
+pub mod can;

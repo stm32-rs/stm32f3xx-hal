@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.6.0] - 2020-12-10
+
 ### Added
 
 - Support for 16-bit words with SPI ([#107](https://github.com/stm32-rs/stm32f3xx-hal/pull/107))
@@ -22,17 +24,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   devices. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
 - Support for I2C transfer of more than 255 bytes, and 0 byte write ([#154](https://github.com/stm32-rs/stm32f3xx-hal/pull/154))
 - Support for HSE bypass and CSS ([#156](https://github.com/stm32-rs/stm32f3xx-hal/pull/156))
+- Impls for missing I2C pin definitions ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
+- Support I2C3 ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
+- Support for [`defmt`][defmt] ([#172](https://github.com/stm32-rs/stm32f3xx-hal/pull/172))
+  - Now [defmt][] features are available.
+  - Currently these are only used for panicking calls, like
+    `assert!` `panic!` or `unwrap()`. These are enabled using the [defmt][]
+    [filter][].
+  - For now [defmt][] is mostly intended for internal development and testing
+    to further reduce panicking calls in this crate.
+    The support of this feature is subject to change as the development
+    of [defmt][] is advancing.
+
+[defmt]: https://github.com/knurling-rs/defmt
+[filter]: https://defmt.ferrous-systems.com/filtering.html
 
 ### Changed
 
 - Introduced auto-generated GPIO mappings based on the STM32CubeMX database
   ([#129](https://github.com/stm32-rs/stm32f3xx-hal/pull/129))
 
-
 ### Fixed
 
-- Fixed [#151][] not being able to generate 72 MHz HCLK for stm32f303xc devices 
+- Fixed [#151][] not being able to generate 72 MHz HCLK for stm32f303xc devices
   ([#152](https://github.com/stm32-rs/stm32f3xx-hal/pull/152))
+- Wrong I2C clock source ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
 
 [#151]: https://github.com/stm32-rs/stm32f3xx-hal/issues/151
 
@@ -42,6 +58,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   `stm32f378` targets. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
 - Removed SPI1 support for `stm32f302x6` and `stm32f302x8` sub-targets
   and `stm32f318` target. ([#99](https://github.com/stm32-rs/stm32f3xx-hal/pull/99))
+- This release requires 1.48, as intra-doc-links are now used internally.
+  Until now, no MSRV was tracked. This has changed now. This however does
+  not mean, that we guarantee any MSRV policy. It is rather for documentation
+  purposes and if a new useful feature arises, we will increase the MSRV.
+  ([#170](https://github.com/stm32-rs/stm32f3xx-hal/pull/170))
+- Removed I2C2 support for `stm32f303x6`, `stm32f303x8` and `stm32f328` targets.
+  ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
+- `I2c::i2c1` and `I2c::i2c2` functions are renamed to `I2c::new`.
+  ([#164](https://github.com/stm32-rs/stm32f3xx-hal/pull/164))
 
 ## [v0.5.0] - 2020-07-21
 
@@ -61,6 +86,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The system clock calculation is more fine grained now. ([#67](https://github.com/stm32-rs/stm32f3xx-hal/pull/67))
   Now the system clock can be some value, like 14 MHz, which can not a
   be represented as a multiple of the oscillator clock:
+
 ```rust
 let clocks = rcc
     .cfgr
@@ -73,10 +99,10 @@ let clocks = rcc
     .use_hse(32.mhz())
     .sysclk(72.mhz())
 ```
+
   This is possible through utilizing the divider, which can divide the
   external oscillator clock on most devices. Some devices have even the
   possibility to divide the internal oscillator clock.
-
 
 ### Breaking changes
 
@@ -135,15 +161,17 @@ let clocks = rcc
   - This allows using 72 MHz `sysclk` on the `stm32f303`
 - Analog gpio trait ([#33](https://github.com/stm32-rs/stm32f3xx-hal/pull/33))
 - Add PWM Channels ([#34](https://github.com/stm32-rs/stm32f3xx-hal/pull/34))
-- SPI embedded hal modes are now public ([#35](https://github.com/stm32-rs/stm32f3xx-hal/pull/18))
+- SPI embedded hal modes are now public
+  ([#35](https://github.com/stm32-rs/stm32f3xx-hal/pull/18))
 
 ### Breaking changes
 
-- Alternate gpio functions are now **only** made available for devices, which have them.
-  ([#21](https://github.com/stm32-rs/stm32f3xx-hal/pull/21))
+- Alternate gpio functions are now **only** made available for devices, which
+  have them. ([#21](https://github.com/stm32-rs/stm32f3xx-hal/pull/21))
 - `stm32f303` is now split into `stm32f303xd` and `stm32f303xe` as they provide
   different alternate gpio functions. `stm32f303` is still available.
-- Bump `stm32f3` dependency to `0.9.0` ([#39](https://github.com/stm32-rs/stm32f3xx-hal/pull/39))
+- Bump `stm32f3` dependency to `0.9.0`
+  ([#39](https://github.com/stm32-rs/stm32f3xx-hal/pull/39))
 
 ### Fixed
 
@@ -228,7 +256,8 @@ let clocks = rcc
 
 - Support `stm32f303` device
 
-[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.0...HEAD
+[v0.6.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.3...v0.5.0
 [v0.4.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.2...v0.4.3
 [v0.4.2]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.1...v0.4.2

@@ -1,17 +1,21 @@
+//! Real Time Clock
+//!
 //! Interface to the real time clock. See STM32F303 reference manual, section 27.
+
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
+
+use crate::pac::{PWR, RTC};
+use crate::rcc::{APB1, BDCR};
+use core::convert::TryInto;
+use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
+
 #[cfg(any(feature = "rt"))]
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 use crate::pac::{interrupt::RTC_WKUP, EXTI};
 #[cfg(any(feature = "rt"))]
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 use cortex_m::peripheral::NVIC;
-
-use crate::pac::{PWR, RTC};
-use crate::rcc::{APB1, BDCR};
-use core::convert::TryInto;
-use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
 #[cfg(any(feature = "rt"))]
 /// To enable RTC wakeup interrupts, run this in the main body of your program, eg:
@@ -46,13 +50,12 @@ macro_rules! make_rtc_interrupt_handler {
     };
 }
 
-/// Invalid input error
+/// RTC error type
 #[derive(Debug)]
 pub enum Error {
+    /// Invalid input error
     InvalidInputData,
 }
-
-pub const LSE_BITS: u8 = 0b01;
 
 /// See ref man, section 27.6.3, or AN4769, section 2.4.2.
 /// To be used with WakeupPrescaler
@@ -72,7 +75,9 @@ pub enum ClockConfig {
     Three,
 }
 
+/// Real Time Clock peripheral
 pub struct Rtc {
+    /// RTC Peripheral register definition
     pub regs: RTC,
 }
 
@@ -454,8 +459,8 @@ impl Rtcc for Rtc {
 
     fn get_time(&mut self) -> Result<NaiveTime, Self::Error> {
         self.set_24h_fmt();
-        let seconds = self.get_seconds().unwrap();
-        let minutes = self.get_minutes().unwrap();
+        let seconds = self.get_seconds()?;
+        let minutes = self.get_minutes()?;
         let hours = hours_to_u8(self.get_hours()?)?;
 
         Ok(NaiveTime::from_hms(
@@ -491,9 +496,9 @@ impl Rtcc for Rtc {
     }
 
     fn get_date(&mut self) -> Result<NaiveDate, Self::Error> {
-        let day = self.get_day().unwrap();
-        let month = self.get_month().unwrap();
-        let year = self.get_year().unwrap();
+        let day = self.get_day()?;
+        let month = self.get_month()?;
+        let year = self.get_year()?;
 
         Ok(NaiveDate::from_ymd(year.into(), month.into(), day.into()))
     }
@@ -501,12 +506,12 @@ impl Rtcc for Rtc {
     fn get_datetime(&mut self) -> Result<NaiveDateTime, Self::Error> {
         self.set_24h_fmt();
 
-        let day = self.get_day().unwrap();
-        let month = self.get_month().unwrap();
-        let year = self.get_year().unwrap();
+        let day = self.get_day()?;
+        let month = self.get_month()?;
+        let year = self.get_year()?;
 
-        let seconds = self.get_seconds().unwrap();
-        let minutes = self.get_minutes().unwrap();
+        let seconds = self.get_seconds()?;
+        let minutes = self.get_minutes()?;
         let hours = hours_to_u8(self.get_hours()?)?;
 
         Ok(

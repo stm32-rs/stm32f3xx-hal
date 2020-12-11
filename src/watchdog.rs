@@ -1,4 +1,8 @@
 //! Watchdog
+//!
+//! A usage example of the watchdog can be found at [examples/can.rs]
+//!
+//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/can.rs
 
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 
@@ -9,12 +13,17 @@ const LSI_KHZ: u32 = 40;
 const MAX_PR: u8 = 8;
 const MAX_RL: u16 = 0x1000;
 
+/// Independent Watchdog Peripheral
 pub struct IndependentWatchDog {
     iwdg: IWDG,
 }
 
 impl IndependentWatchDog {
-    /// Creates a new `IndependentWatchDog` without starting it. Call `start` to start the watchdog. See `WatchdogEnable` and `Watchdog` for more info.
+    /// Creates a new [`IndependentWatchDog`] without starting it.
+    ///
+    /// Call [`start`](WatchdogEnable::start) to start the watchdog.
+    ///
+    /// See [`WatchdogEnable`] and [`Watchdog`] for more info.
     pub fn new(iwdg: IWDG) -> Self {
         IndependentWatchDog { iwdg }
     }
@@ -67,7 +76,7 @@ impl IndependentWatchDog {
             0b101 => 128,
             0b110 => 256,
             0b111 => 256,
-            _ => panic!("Invalid IWDG prescaler divider"),
+            _ => crate::panic!("Invalid IWDG prescaler divider"),
         };
         (u32::from(rl) + 1) * divider / LSI_KHZ
     }

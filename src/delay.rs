@@ -1,6 +1,7 @@
 //! Delays
 
-use cast::u32;
+use core::convert::From;
+
 use cortex_m::peripheral::syst::SystClkSource;
 use cortex_m::peripheral::SYST;
 
@@ -35,13 +36,13 @@ impl DelayMs<u32> for Delay {
 
 impl DelayMs<u16> for Delay {
     fn delay_ms(&mut self, ms: u16) {
-        self.delay_ms(u32(ms));
+        self.delay_ms(u32::from(ms));
     }
 }
 
 impl DelayMs<u8> for Delay {
     fn delay_ms(&mut self, ms: u8) {
-        self.delay_ms(u32(ms));
+        self.delay_ms(u32::from(ms));
     }
 }
 
@@ -75,12 +76,12 @@ impl DelayUs<u32> for Delay {
 
 impl DelayUs<u16> for Delay {
     fn delay_us(&mut self, us: u16) {
-        self.delay_us(u32(us))
+        self.delay_us(u32::from(us))
     }
 }
 
 impl DelayUs<u8> for Delay {
     fn delay_us(&mut self, us: u8) {
-        self.delay_us(u32(us))
+        self.delay_us(u32::from(us))
     }
 }

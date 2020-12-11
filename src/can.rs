@@ -1,49 +1,80 @@
 //! Controller Area Network
+//!
+//! CAN is currently not enabled by default, and
+//! can be enabled by the `can` feature.
+//!
+//! It is a implementation of the [`embedded_hal_can`][can] traits.
+//!
+//! [can]: embedded_hal_can
+//!
+//! A usage example of the can peripheral can be found at [examples/can.rs]
+//!
+//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/can.rs
+
 pub use embedded_hal_can::{self, Filter, Frame, Id, Receiver, Transmitter};
 
 use crate::gpio::gpioa;
 use crate::gpio::AF9;
 use crate::rcc::APB1;
 use crate::stm32;
-use heapless::{consts::U8, Vec};
 use nb::{self, Error};
 
 use core::sync::atomic::{AtomicU8, Ordering};
 
-const EXID_MASK: u32 = 0b11111_11111100_00000000_00000000;
+const EXID_MASK: u32 = 0b1_1111_1111_1100_0000_0000_0000_0000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
-/// A CAN identifier, which can be either 11 or 27 (extended) bits. u16 and u32 respectively are used here despite the fact that the upper bits are unused.
+/// A CAN identifier, which can be either 11 or 27 (extended) bits.
+/// u16 and u32 respectively are used here despite the fact that the upper bits are unused.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum CanId {
+    /// Standard 11bit Identifier (0..=0x7FF)
     BaseId(u16),
+    /// Extended 29bit Identifier (0..=0x1FFF_FFFF)
     ExtendedId(u32),
 }
 
 /// A CAN frame consisting of a destination ID and up to 8 bytes of data.
 ///
-/// Currently, we always allocate a fixed size array for each frame regardless of actual size, but this could be improved in the future using const-generics.
+/// Currently, we always allocate a fixed size array for each frame regardless
+/// of actual size, but this could be improved in the future using const-generics.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct CanFrame {
-    pub id: CanId,
-    pub data: Vec<u8, U8>,
+    /// CAN Frame ID
+    id: CanId,
+    /// Data Length Code (range 0..=8)
+    dlc: usize,
+    /// Data Frame
+    data: [u8; 8],
 }
 
-/// Represents the operating mode of a CAN filter, which can either contain a list of identifiers, or a mask to match on.
+/// Can Frame Filter Mode
+///
+/// Represents the operating mode of a CAN filter, which can either contain a
+/// list of identifiers, or a mask to match on.
 pub enum FilterMode {
+    /// Filter on a given Mask
     Mask,
+    /// Filter on a list of identifiers
     List,
 }
 
 /// A fully specified CAN filter with its associated list of of IDs or mask.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum CanFilterData {
+    /// Can Frame Identifier Filter
     IdFilter(CanId),
+    /// Filter for an identifier with a applied mask
     MaskFilter(u16, u16),
+    /// Filter for an extended identifier with a applied mask
     ExtendedMaskFilter(u32, u32),
+    /// Do not filter
     AcceptAll,
 }
 
+/// CAN Filter type
+///
+/// Used to specify the filter behavior
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct CanFilter {
     data: CanFilterData,
@@ -52,13 +83,15 @@ pub struct CanFilter {
 
 static FILTER_INDEX: AtomicU8 = AtomicU8::new(0);
 
+/// Controll Area Network (CAN) Peripheral
 pub struct Can {
     can: stm32::CAN,
     _rx: gpioa::PA11<AF9>,
     _tx: gpioa::PA12<AF9>,
 }
 
-/// A CAN FIFO which is used to receive and buffer messages from the CAN network that match on of the assigned filters.
+/// A CAN FIFO which is used to receive and buffer messages from the CAN
+/// network that match on of the assigned filters.
 pub struct CanFifo {
     idx: usize,
 }
@@ -70,14 +103,22 @@ pub struct CanTransmitter {
     _tx: gpioa::PA12<AF9>,
 }
 
+// TODO Use wrapper type around interal pac definition
 /// CAN Interrupt events
 pub enum Event {
+    /// FIFO 0 message pending interrupt
     Fifo0Fmp,
+    /// FIFO 1 message pending interrupt
     Fifo1Fmp,
+    /// FIFO 0 full interupt enable
     Fifo0Full,
+    /// FIFO 1 full interupt enable
     Fifo1Full,
+    /// FIFO 0 overrun interrupt enable
     Fifo0Ovr,
+    /// FIFO 1 overrun interrupt enable
     Fifo1Ovr,
+    /// Transmit mailbox empty interrupt
     Txe,
 }
 
@@ -119,7 +160,7 @@ impl embedded_hal_can::Frame for CanFrame {
 
     #[inline(always)]
     fn data(&self) -> Option<&[u8]> {
-        if self.data.len() > 0 {
+        if self.dlc > 0 {
             Some(&self.data)
         } else {
             None
@@ -140,11 +181,14 @@ impl embedded_hal_can::Filter for CanFilter {
         CanFilter::new(CanFilterData::AcceptAll)
     }
 
-    // TODO: Constructing filters like this is fairly limiting because ideally we would have the full "filter state" available, so for non-extended filters this could be 2 masks and filters or 4 ids for id lists
+    // TODO: Constructing filters like this is fairly limiting because ideally
+    // we would have the full "filter state" available, so for non-extended
+    // filters this could be 2 masks and filters or 4 ids for id lists
 
-    /// Constuct a mask filter. This method accepts two parameters, the mask which designates which bits are actually matched againts and the filter, with the actual bits to match.
+    /// Constuct a mask filter. This method accepts two parameters, the mask which designates which
+    /// bits are actually matched againts and the filter, with the actual bits to match.
     fn from_mask(mask: u32, filter: u32) -> Self {
-        assert!(
+        crate::assert!(
             mask < MAX_EXTENDED_ID,
             "Mask cannot have bits higher than 29"
         );
@@ -159,7 +203,10 @@ impl embedded_hal_can::Filter for CanFilter {
 }
 
 impl CanFilter {
-    /// Create a new filter with no assigned index. To actually active the filter call `Receiver::set_filter`, which will assign an index.
+    /// Create a new filter with no assigned index.
+    ///
+    /// To actually active the filter call
+    /// [`Receiver::set_filter`], which will assign an index.
     pub fn new(data: CanFilterData) -> CanFilter {
         CanFilter { data, index: None }
     }
@@ -179,7 +226,8 @@ impl CanFilterData {
             CanFilterData::AcceptAll => 0,
             CanFilterData::ExtendedMaskFilter(filter, _) => filter << 3,
             CanFilterData::MaskFilter(filter, mask) => {
-                let shifted_filter = ((*filter as u32) << 5) & (u16::max_value() as u32); // Only use lower 16 bits
+                // Only use lower 16 bits
+                let shifted_filter = ((*filter as u32) << 5) & (u16::max_value() as u32);
                 let shifted_mask = ((*mask as u32) << 5) << 16;
 
                 shifted_filter | shifted_mask
@@ -195,19 +243,22 @@ impl CanFilterData {
         match self {
             CanFilterData::AcceptAll => Some(0),
             CanFilterData::ExtendedMaskFilter(_, mask) => Some(mask << 3),
-            CanFilterData::MaskFilter(_, _mask) => None, // TODO: We should be able to fill this register with a second filter/mask pair
-            CanFilterData::IdFilter(_id) => None, // TODO: This sucks, we need more info here to figure out the correct value of fr2
+            // TODO: We should be able to fill this register with a second filter/mask pair
+            CanFilterData::MaskFilter(_, _mask) => None,
+            // TODO: This sucks, we need more info here to figure out the correct value of fr2
+            CanFilterData::IdFilter(_id) => None,
         }
     }
 }
 
 impl Can {
-    pub fn can(
+    /// Initialize the CAN Peripheral
+    pub fn new(
         can: stm32::CAN,
         rx: gpioa::PA11<AF9>,
         tx: gpioa::PA12<AF9>,
         apb1: &mut APB1,
-    ) -> Can {
+    ) -> Self {
         apb1.enr().modify(|_, w| w.canen().enabled());
         can.mcr.modify(|_, w| w.sleep().clear_bit());
         can.mcr.modify(|_, w| w.inrq().set_bit());
@@ -284,9 +335,10 @@ impl Can {
             _tx: self._tx,
         };
 
-        return (transmitter, fifo0, fifo1);
+        (transmitter, fifo0, fifo1)
     }
 
+    /// Release owned peripherals
     pub fn free(self) -> (stm32::CAN, gpioa::PA11<AF9>, gpioa::PA12<AF9>) {
         (self.can, self._rx, self._tx)
     }
@@ -318,7 +370,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                 0 => can.tsr.read().tme0().bit_is_set(),
                 1 => can.tsr.read().tme1().bit_is_set(),
                 2 => can.tsr.read().tme2().bit_is_set(),
-                _ => unreachable!(),
+                _ => crate::unreachable!(),
             };
 
             if !free {
@@ -335,29 +387,27 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
                 }),
             }
 
-            if let Some(_) = frame.data() {
-                for j in 0..frame.data.len() {
-                    let val = &frame.data[j];
-
+            if let Some(data) = frame.data() {
+                for (i, d) in data.iter().enumerate() {
                     // NOTE(unsafe): full 8bit write is unsafe via the svd2rust api
                     unsafe {
-                        match j {
-                            0 => tx.tdlr.modify(|_, w| w.data0().bits(*val)),
-                            1 => tx.tdlr.modify(|_, w| w.data1().bits(*val)),
-                            2 => tx.tdlr.modify(|_, w| w.data2().bits(*val)),
-                            3 => tx.tdlr.modify(|_, w| w.data3().bits(*val)),
-                            4 => tx.tdhr.modify(|_, w| w.data4().bits(*val)),
-                            5 => tx.tdhr.modify(|_, w| w.data5().bits(*val)),
-                            6 => tx.tdhr.modify(|_, w| w.data6().bits(*val)),
-                            7 => tx.tdhr.modify(|_, w| w.data7().bits(*val)),
-                            _ => unreachable!(),
+                        match i {
+                            0 => tx.tdlr.modify(|_, w| w.data0().bits(*d)),
+                            1 => tx.tdlr.modify(|_, w| w.data1().bits(*d)),
+                            2 => tx.tdlr.modify(|_, w| w.data2().bits(*d)),
+                            3 => tx.tdlr.modify(|_, w| w.data3().bits(*d)),
+                            4 => tx.tdhr.modify(|_, w| w.data4().bits(*d)),
+                            5 => tx.tdhr.modify(|_, w| w.data5().bits(*d)),
+                            6 => tx.tdhr.modify(|_, w| w.data6().bits(*d)),
+                            7 => tx.tdhr.modify(|_, w| w.data7().bits(*d)),
+                            _ => crate::unreachable!(),
                         }
                     }
                 }
 
                 // NOTE(unsafe): full 8bit write is unsafe via the svd2rust api
                 tx.tdtr
-                    .modify(|_, w| unsafe { w.dlc().bits(frame.data.len() as u8) });
+                    .modify(|_, w| unsafe { w.dlc().bits(data.len() as u8) });
 
                 tx.tir.modify(|_, w| w.rtr().clear_bit());
             } else {
@@ -380,24 +430,24 @@ impl Receiver for CanFifo {
 
         let rx = &can.rx[self.idx];
         if can.rfr[self.idx].read().fmp().bits() > 0 {
-            let mut data = Vec::<_, U8>::new();
+            let mut data: [u8; 8] = [0; 8];
 
-            let len = rx.rdtr.read().dlc().bits() as usize;
+            let len: usize = rx.rdtr.read().dlc().bits().into();
 
             let data_low = rx.rdlr.read();
             let data_high = rx.rdhr.read();
 
             for i in 0..len {
                 match i {
-                    0 => data.push(data_low.data0().bits()).unwrap(),
-                    1 => data.push(data_low.data1().bits()).unwrap(),
-                    2 => data.push(data_low.data2().bits()).unwrap(),
-                    3 => data.push(data_low.data3().bits()).unwrap(),
-                    4 => data.push(data_high.data4().bits()).unwrap(),
-                    5 => data.push(data_high.data5().bits()).unwrap(),
-                    6 => data.push(data_high.data6().bits()).unwrap(),
-                    7 => data.push(data_high.data7().bits()).unwrap(),
-                    _ => unreachable!(),
+                    0 => data[0] = data_low.data0().bits(),
+                    1 => data[1] = data_low.data1().bits(),
+                    2 => data[2] = data_low.data2().bits(),
+                    3 => data[3] = data_low.data3().bits(),
+                    4 => data[4] = data_high.data4().bits(),
+                    5 => data[5] = data_high.data5().bits(),
+                    6 => data[6] = data_high.data6().bits(),
+                    7 => data[7] = data_high.data7().bits(),
+                    _ => crate::unreachable!(),
                 }
             }
 
@@ -413,7 +463,11 @@ impl Receiver for CanFifo {
             // Release the mailbox
             can.rfr[self.idx].modify(|_, w| w.rfom().set_bit());
 
-            let frame = CanFrame { id: rcv_id, data };
+            let frame = CanFrame {
+                id: rcv_id,
+                dlc: len,
+                data,
+            };
 
             return Ok(frame);
         }
@@ -450,7 +504,7 @@ impl Receiver for CanFifo {
             can.ffa1r.modify(|_, w| match self.idx {
                 0 => w.ffa0().clear_bit(),
                 1 => w.ffa0().set_bit(),
-                _ => unreachable!(),
+                _ => crate::unreachable!(),
             });
 
             let index = filter
@@ -458,7 +512,7 @@ impl Receiver for CanFifo {
                 .unwrap_or_else(|| FILTER_INDEX.fetch_add(1, Ordering::Acquire))
                 as usize;
 
-            assert!(index < 28, "Filter index out of range");
+            crate::assert!(index < 28, "Filter index out of range");
 
             can.fb[index]
                 .fr1
@@ -491,25 +545,38 @@ impl Receiver for CanFifo {
 }
 
 impl CanFrame {
-    pub fn new_with_len(id: CanId, src: &[u8], length: usize) -> CanFrame {
-        assert!(length <= 8, "CAN Frames can have at most 8 data bytes");
+    /// Create a new Can Frame
+    ///
+    /// `src` content is copied into internal buffer
+    /// and handled internally.
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if length of `data` is greater than `8`
+    pub fn new_data(id: CanId, data: &[u8]) -> CanFrame {
+        crate::assert!((0..8).contains(&data.len()));
 
-        let mut data = Vec::<u8, U8>::new();
-
-        // The vector is always empty and the data size has alreay been checked, this will always succeed
-        data.extend_from_slice(src).unwrap();
-
-        CanFrame { id, data }
+        let mut frame = Self {
+            id,
+            dlc: data.len(),
+            data: [0; 8],
+        };
+        frame.data[0..data.len()].copy_from_slice(data);
+        frame
     }
 
-    pub fn data_frame(id: CanId, data: &[u8]) -> CanFrame {
-        CanFrame::new_with_len(id, data, data.len())
-    }
+    /// Crate a new remote Can Frame
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if `dlc` is not inside the vliad range `0..=8`.
+    pub fn new_remote(id: CanId, dlc: usize) -> CanFrame {
+        assert!((0..=8).contains(&dlc));
 
-    pub fn remote_frame(id: CanId) -> CanFrame {
         CanFrame {
             id,
-            data: Vec::<_, _>::new(),
+            dlc,
+            data: [0; 8],
         }
     }
 }

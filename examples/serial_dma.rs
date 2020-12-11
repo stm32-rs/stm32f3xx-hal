@@ -7,7 +7,7 @@
 
 use panic_semihosting as _;
 
-use cortex_m::singleton;
+use cortex_m::{asm, singleton};
 use cortex_m_rt::entry;
 use stm32f3xx_hal::{pac, prelude::*, serial::Serial};
 
@@ -63,6 +63,6 @@ fn main() -> ! {
     assert_eq!(tx_buf, rx_buf);
 
     loop {
-        continue;
+        asm::wfi();
     }
 }

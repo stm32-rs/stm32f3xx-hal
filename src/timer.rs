@@ -1,5 +1,7 @@
 //! Timers
 
+use core::convert::{From, TryFrom};
+
 use crate::hal::timer::{CountDown, Periodic};
 #[cfg(any(
     feature = "stm32f301",
@@ -49,7 +51,6 @@ use crate::pac::{TIM16, TIM17, TIM2, TIM6};
 ))]
 use crate::pac::{TIM3, TIM7};
 
-use cast::{u16, u32};
 use void::Void;
 
 use crate::rcc::{Clocks, APB1, APB2};
@@ -57,6 +58,7 @@ use crate::time::Hertz;
 
 /// Associated clocks with timers
 pub trait PclkSrc {
+    /// Get the current frequency of the associated clock
     fn get_clk(clocks: &Clocks) -> Hertz;
 }
 
@@ -229,16 +231,16 @@ macro_rules! basic_timer {
                     let timer_clock = $TIMX::get_clk(&self.clocks);
                     let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
                         / frequency;
-                    let psc = u16((ticks - 1) / (1 << 16)).unwrap();
+                    let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
 
                     // NOTE(write): uses all bits in this register.
                     self.tim.psc.write(|w| w.psc().bits(psc));
 
-                    let arr = u16(ticks / u32(psc + 1)).unwrap();
+                    let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
 
                     // TODO (sh3rm4n)
                     // self.tim.arr.write(|w| { w.arr().bits(arr) });
-                    self.tim.arr.write(|w| unsafe { w.bits(u32(arr)) });
+                    self.tim.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
 
                     // Trigger an update event to load the prescaler value to the clock
                     // NOTE(write): uses all bits in this register.
@@ -341,16 +343,16 @@ macro_rules! advanced_timer {
                     let timer_clock = $TIMX::get_clk(&self.clocks);
                     let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
                         / frequency;
-                    let psc = u16((ticks - 1) / (1 << 16)).unwrap();
+                    let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
 
                     // NOTE(write): uses all bits in this register.
                     self.tim.psc.write(|w| w.psc().bits(psc));
 
-                    let arr = u16(ticks / u32(psc + 1)).unwrap();
+                    let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
 
                     // TODO (sh3rm4n)
                     // self.tim.arr.write(|w| { w.arr().bits(arr) });
-                    self.tim.arr.write(|w| unsafe { w.bits(u32(arr)) });
+                    self.tim.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
 
                     // Trigger an update event to load the prescaler value to the clock
                     // NOTE(write): uses all bits in this register.
@@ -454,16 +456,16 @@ macro_rules! gp_timer {
                     let timer_clock = $TIMX::get_clk(&self.clocks);
                     let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
                         / frequency;
-                    let psc = u16((ticks - 1) / (1 << 16)).unwrap();
+                    let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
 
                     // NOTE(write): uses all bits in this register.
                     self.tim.psc.write(|w| w.psc().bits(psc));
 
-                    let arr = u16(ticks / u32(psc + 1)).unwrap();
+                    let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
 
                     // TODO (sh3rm4n)
                     // self.tim.arr.write(|w| { w.arr().bits(arr) });
-                    self.tim.arr.write(|w| unsafe { w.bits(u32(arr)) });
+                    self.tim.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
 
                     // Trigger an update event to load the prescaler value to the clock
                     // NOTE(write): uses all bits in this register.
@@ -566,16 +568,16 @@ macro_rules! gp_timer2 {
                         let timer_clock = $TIMX::get_clk(&self.clocks);
                         let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
                             / frequency;
-                        let psc = u16((ticks - 1) / (1 << 16)).unwrap();
+                        let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
 
                         // NOTE(write): uses all bits in this register.
                         self.tim.psc.write(|w| w.psc().bits(psc));
 
-                        let arr = u16(ticks / u32(psc + 1)).unwrap();
+                        let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
 
                         // TODO (sh3rm4n)
                         // self.tim.arr.write(|w| { w.arr().bits(arr) });
-                        self.tim.arr.write(|w| unsafe { w.bits(u32(arr)) });
+                        self.tim.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
 
                         // Trigger an update event to load the prescaler value to the clock
                         // NOTE(write): uses all bits in this register.

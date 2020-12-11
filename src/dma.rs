@@ -1,6 +1,10 @@
 //! Direct memory access (DMA) controller
 //!
 //! Currently DMA is only supported for STM32F303 MCUs.
+//!
+//! An example how to use DMA for serial, can be found at [examples/serial_dma.rs]
+//!
+//! [examples/serial_dma.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/serial_dma.rs
 
 // To learn about most of the ideas implemented here, check out the DMA section
 // of the Embedonomicon: https://docs.rust-embedded.org/embedonomicon/dma.html
@@ -12,8 +16,8 @@ use crate::{
     rcc::AHB,
     serial,
 };
-use cast::u16;
 use core::{
+    convert::TryFrom,
     mem,
     sync::atomic::{self, Ordering},
 };
@@ -57,7 +61,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         // method we can call is `write_buffer`, which is allowed by
         // `WriteBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.write_buffer() };
-        let len = u16(len).expect("buffer is too large");
+        let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
 
         // NOTE(unsafe) We are using the address of a 'static WriteBuffer here,
         // which is guaranteed to be safe for DMA.
@@ -84,7 +88,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         // `&mut self` methods we can call, so we are safe according to
         // `ReadBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.read_buffer() };
-        let len = u16(len).expect("buffer is too large");
+        let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
 
         // NOTE(unsafe) We are using the address of a 'static ReadBuffer here,
         // which is guaranteed to be safe for DMA.
@@ -106,7 +110,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     where
         T: OnChannel<C>,
     {
-        assert!(!channel.is_enabled());
+        crate::assert!(!channel.is_enabled());
 
         atomic::compiler_fence(Ordering::Release);
 
@@ -124,13 +128,13 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
 
     /// Is this transfer complete?
     pub fn is_complete(&self) -> bool {
-        let inner = self.inner.as_ref().unwrap();
+        let inner = crate::unwrap!(self.inner.as_ref());
         inner.channel.event_occurred(Event::TransferComplete)
     }
 
     /// Stop this transfer and return ownership over its parts
     pub fn stop(mut self) -> (B, C, T) {
-        let mut inner = self.inner.take().unwrap();
+        let mut inner = crate::unwrap!(self.inner.take());
         inner.stop();
 
         (inner.buffer, inner.channel, inner.target)
@@ -276,7 +280,7 @@ pub trait Channel: private::Channel {
     /// Callers must ensure the given address is the address of a peripheral
     /// register that supports DMA.
     unsafe fn set_peripheral_address(&mut self, address: u32, inc: Increment) {
-        assert!(!self.is_enabled());
+        crate::assert!(!self.is_enabled());
 
         self.ch().par.write(|w| w.pa().bits(address));
         self.ch().cr.modify(|_, w| w.pinc().variant(inc.into()));
@@ -296,7 +300,7 @@ pub trait Channel: private::Channel {
     /// Callers must ensure the given address is a valid memory address
     /// that will remain valid as long as at is used by DMA.
     unsafe fn set_memory_address(&mut self, address: u32, inc: Increment) {
-        assert!(!self.is_enabled());
+        crate::assert!(!self.is_enabled());
 
         self.ch().mar.write(|w| w.ma().bits(address));
         self.ch().cr.modify(|_, w| w.minc().variant(inc.into()));
@@ -310,7 +314,7 @@ pub trait Channel: private::Channel {
     ///
     /// Panics if this channel is enabled.
     fn set_transfer_length(&mut self, len: u16) {
-        assert!(!self.is_enabled());
+        crate::assert!(!self.is_enabled());
 
         self.ch().ndtr.write(|w| w.ndt().bits(len));
     }
@@ -327,7 +331,7 @@ pub trait Channel: private::Channel {
             1 => BITS8,
             2 => BITS16,
             4 => BITS32,
-            s => panic!("unsupported word size: {}", s),
+            s => crate::panic!("unsupported word size: {:?}", s),
         };
 
         self.ch().cr.modify(|_, w| {
@@ -416,96 +420,115 @@ macro_rules! dma {
             ), )+
         },
     ) => {
-        pub mod $dmax {
-            use super::*;
-            use crate::pac::$DMAx;
+        doc_comment::doc_comment! {
+            concat!("All associated types, traits and methods of the ", stringify!($DMAx), " peripheral."),
+            pub mod $dmax {
+                use super::*;
+                use crate::pac::$DMAx;
 
-            impl DmaExt for $DMAx {
-                type Channels = Channels;
+                impl DmaExt for $DMAx {
+                    type Channels = Channels;
 
-                fn split(self, ahb: &mut AHB) -> Channels {
-                    ahb.enr().modify(|_, w| w.$dmaxen().set_bit());
+                    fn split(self, ahb: &mut AHB) -> Channels {
+                        ahb.enr().modify(|_, w| w.$dmaxen().set_bit());
 
-                    let mut channels = Channels {
-                        $( $chi: $Ci { _0: () }, )+
-                    };
+                        let mut channels = Channels {
+                            $( $chi: $Ci { _0: () }, )+
+                        };
 
-                    channels.reset();
-                    channels
-                }
-            }
-
-            /// DMA channels
-            pub struct Channels {
-                $( pub $chi: $Ci, )+
-            }
-
-            impl Channels {
-                /// Reset the control registers of all channels.
-                /// This stops any ongoing transfers.
-                fn reset(&mut self) {
-                    $( self.$chi.reset(); )+
-                }
-            }
-
-            $(
-                /// Singleton that represents a DMA channel
-                pub struct $Ci {
-                    _0: (),
-                }
-
-                impl private::Channel for $Ci {
-                    fn ch(&self) -> &pac::dma1::CH {
-                        // NOTE(unsafe) $Ci grants exclusive access to this register
-                        unsafe { &(*$DMAx::ptr()).$chi }
+                        channels.reset();
+                        channels
                     }
                 }
 
-                impl Channel for $Ci {
-                    fn event_occurred(&self, event: Event) -> bool {
-                        use Event::*;
+                /// DMA channels
+                pub struct Channels {
+                    $(
+                        /// Channel
+                        pub $chi: $Ci,
+                    )+
+                }
 
-                        // NOTE(unsafe) atomic read
-                        let flags = unsafe { (*$DMAx::ptr()).isr.read() };
-                        match event {
-                            HalfTransfer => flags.$htifi().bit_is_set(),
-                            TransferComplete => flags.$tcifi().bit_is_set(),
-                            TransferError => flags.$teifi().bit_is_set(),
-                            Any => flags.$gifi().bit_is_set(),
+                impl Channels {
+                    /// Reset the control registers of all channels.
+                    /// This stops any ongoing transfers.
+                    fn reset(&mut self) {
+                        $( self.$chi.reset(); )+
+                    }
+                }
+
+                $(
+                    /// Singleton that represents a DMA channel
+                    pub struct $Ci {
+                        _0: (),
+                    }
+
+                    impl private::Channel for $Ci {
+                        fn ch(&self) -> &pac::dma1::CH {
+                            // NOTE(unsafe) $Ci grants exclusive access to this register
+                            unsafe { &(*$DMAx::ptr()).$chi }
                         }
                     }
 
-                    fn clear_event(&mut self, event: Event) {
-                        use Event::*;
+                    impl Channel for $Ci {
+                        fn event_occurred(&self, event: Event) -> bool {
+                            use Event::*;
 
-                        // NOTE(unsafe) atomic write to a stateless register
-                        unsafe {
-                            &(*$DMAx::ptr()).ifcr.write(|w| match event {
-                                HalfTransfer => w.$chtifi().set_bit(),
-                                TransferComplete => w.$ctcifi().set_bit(),
-                                TransferError => w.$cteifi().set_bit(),
-                                Any => w.$cgifi().set_bit(),
-                            });
+                            // NOTE(unsafe) atomic read
+                            let flags = unsafe { (*$DMAx::ptr()).isr.read() };
+                            match event {
+                                HalfTransfer => flags.$htifi().bit_is_set(),
+                                TransferComplete => flags.$tcifi().bit_is_set(),
+                                TransferError => flags.$teifi().bit_is_set(),
+                                Any => flags.$gifi().bit_is_set(),
+                            }
+                        }
+
+                        fn clear_event(&mut self, event: Event) {
+                            use Event::*;
+
+                            // NOTE(unsafe) atomic write to a stateless register
+                            unsafe {
+                                &(*$DMAx::ptr()).ifcr.write(|w| match event {
+                                    HalfTransfer => w.$chtifi().set_bit(),
+                                    TransferComplete => w.$ctcifi().set_bit(),
+                                    TransferError => w.$cteifi().set_bit(),
+                                    Any => w.$cgifi().set_bit(),
+                                });
+                            }
                         }
                     }
-                }
-            )+
+                )+
+            }
+        }
+    };
+
+    ( $X:literal: {$($C:literal),+} ) => {
+        paste::paste! {
+            dma!(
+                [<DMA $X>], [<dma $X>], [<dma $X en>],
+                channels: {
+                    $(
+                        [<C $C>]:
+			(
+                            [<ch $C>],
+                            [<htif $C>],
+                            [<tcif $C>],
+                            [<teif $C>],
+                            [<gif $C>],
+                            [<chtif $C>],
+                            [<ctcif $C>],
+                            [<cteif $C>],
+                            [<cgif $C>]
+                        ),
+                    )+
+                },
+            );
         }
     };
 }
 
-dma!(
-    DMA1, dma1, dma1en,
-    channels: {
-        C1: (ch1, htif1, tcif1, teif1, gif1, chtif1, ctcif1, cteif1, cgif1),
-        C2: (ch2, htif2, tcif2, teif2, gif2, chtif2, ctcif2, cteif2, cgif2),
-        C3: (ch3, htif3, tcif3, teif3, gif3, chtif3, ctcif3, cteif3, cgif3),
-        C4: (ch4, htif4, tcif4, teif4, gif4, chtif4, ctcif4, cteif4, cgif4),
-        C5: (ch5, htif5, tcif5, teif5, gif5, chtif5, ctcif5, cteif5, cgif5),
-        C6: (ch6, htif6, tcif6, teif6, gif6, chtif6, ctcif6, cteif6, cgif6),
-        C7: (ch7, htif7, tcif7, teif7, gif7, chtif7, ctcif7, cteif7, cgif7),
-    },
-);
+dma!( 1: { 1,2,3,4,5,6,7 } );
 
 #[cfg(any(
     feature = "stm32f302xb",
@@ -517,16 +540,7 @@ dma!(
     feature = "stm32f303xd",
     feature = "stm32f303xe",
 ))]
-dma!(
-    DMA2, dma2, dma2en,
-    channels: {
-        C1: (ch1, htif1, tcif1, teif1, gif1, chtif1, ctcif1, cteif1, cgif1),
-        C2: (ch2, htif2, tcif2, teif2, gif2, chtif2, ctcif2, cteif2, cgif2),
-        C3: (ch3, htif3, tcif3, teif3, gif3, chtif3, ctcif3, cteif3, cgif3),
-        C4: (ch4, htif4, tcif4, teif4, gif4, chtif4, ctcif4, cteif4, cgif4),
-        C5: (ch5, htif5, tcif5, teif5, gif5, chtif5, ctcif5, cteif5, cgif5),
-    },
-);
+dma!( 2: { 1,2,3,4,5 } );
 
 /// Marker trait mapping DMA targets to their channels
 ///

@@ -149,6 +149,10 @@
   Once we've connected a complementary pin (PA7) we are now _only_
   allowed to use other complementary pins.  PA8 is a valid choice if
   we have no pins in use, but it cannot be used once we've used PA7.
+
+  A usage example can be found at [examples/pwm.rs]
+
+  [examples/pwm.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/pwm.rs
 */
 
 use crate::{

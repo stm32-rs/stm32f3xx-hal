@@ -7,6 +7,7 @@ use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
+use cortex_m::asm;
 use cortex_m_rt::entry;
 
 use hal::pac;
@@ -61,5 +62,7 @@ fn main() -> ! {
     // This succeeds, when master and slave of the SPI are connected.
     assert_eq!(msg_send, msg_received);
 
-    loop {}
+    loop {
+        asm::wfi();
+    }
 }

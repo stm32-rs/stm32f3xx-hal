@@ -1,4 +1,58 @@
 //! Reset and Clock Control
+//!
+//! The most important function this module
+//! delivers is the clock configuration.
+//!
+//! To configure the clock, we first have to obtain the
+//! device peripherals.
+//!
+//! ```
+//! # use cortex_m_rt::entry;
+//! # use stm32f3xx_hal::prelude::*;
+//! # #[entry]
+//! # fn main() -> ! {
+//! // Get our peripherals
+//! let dp = pac::Peripherals::take().unwrap();
+//!
+//! let mut flash = dp.FLASH.constrain();
+//! let mut rcc = dp.RCC.constrain();
+//! # }
+//! ```
+//!
+//! After that we can configure the clock
+//!
+//! ```
+//! # use cortex_m_rt::entry;
+//! # use stm32f3xx_hal::prelude::*;
+//! # #[entry]
+//! # fn main() -> ! {
+//! # let dp = pac::Peripherals::take().unwrap();
+//!
+//! # let mut flash = dp.FLASH.constrain();
+//! # let mut rcc = dp.RCC.constrain();
+//! let clocks = rcc.cfgr
+//!     // Using the external oscillator
+//!     // Set the frequency to that of the external oscillator
+//!     .use_hse(8.mhz())
+//!     // Set the frequency for the AHB bus,
+//!     // which the root of every following clock peripheral
+//!     .hclk(48.mhz())
+//!     // The sysclk is equivalent to the core clock
+//!     .sysclk(48.mhz())
+//!     // The following are peripheral clocks, which are both
+//!     // needed to configure specific peripherals.
+//!     // Looking at the peripheral function parameters
+//!     // should give more insight, which peripheral clock is needed.
+//!     .pclk1(12.mhz())
+//!     .pclk2(12.mhz())
+//!     // Freeze / apply the configuration and setup all clocks
+//!     .freeze(&mut flash.acr);
+//! # }
+//! ```
+//!
+//! All fields can be omitted and will internally be set to a calculated default.
+//! For more details read the documentation of the [`CFGR`] methods to
+//! find out how to setup the clock.
 
 use crate::pac::{
     rcc::{self, cfgr, cfgr2},
@@ -28,9 +82,9 @@ impl RccExt for RCC {
 
 /// Constrained RCC peripheral
 ///
-/// An instance of this struct is aquired by calling the
-/// [constrain](trait.RccExt.html#tymethod.constrain) function on the
-/// [pac::RCC](../pac/struct.RCC.html) struct.
+/// An instance of this struct is acquired by calling the
+/// [`constrain`](RccExt::constrain) function on the
+/// [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -51,7 +105,7 @@ pub struct Rcc {
 
 /// AMBA High-performance Bus (AHB) registers
 ///
-/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+/// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -76,7 +130,7 @@ impl AHB {
 
 /// Advanced Peripheral Bus 1 (APB1) registers
 ///
-/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+/// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -101,7 +155,7 @@ impl APB1 {
 
 /// Advanced Peripheral Bus 2 (APB2) registers
 ///
-/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+/// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -145,15 +199,7 @@ mod usb_clocking {
     }
 }
 
-#[cfg(any(
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398",
-))]
+#[cfg(not(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f334",)))]
 mod usb_clocking {
     use crate::pac::rcc::cfgr;
     use crate::rcc::PllConfig;
@@ -201,7 +247,7 @@ impl BDCR {
 
 /// Clock configuration
 ///
-/// An instance of this struct is aquired from the [Rcc](../struct.Rcc.html) struct.
+/// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -255,7 +301,7 @@ fn into_pll_mul(mul: u8) -> cfgr::PLLMUL_A {
         14 => cfgr::PLLMUL_A::MUL14,
         15 => cfgr::PLLMUL_A::MUL15,
         16 => cfgr::PLLMUL_A::MUL16,
-        _ => unreachable!(),
+        _ => crate::unreachable!(),
     }
 }
 
@@ -278,13 +324,15 @@ fn into_pre_div(div: u8) -> cfgr2::PREDIV_A {
         14 => cfgr2::PREDIV_A::DIV14,
         15 => cfgr2::PREDIV_A::DIV15,
         16 => cfgr2::PREDIV_A::DIV16,
-        _ => unreachable!(),
+        _ => crate::unreachable!(),
     }
 }
 
 impl CFGR {
-    /// Uses HSE (external oscillator) instead of HSI (internal RC oscillator) as the clock source.
-    /// Will result in a hang if an external oscillator is not connected or it fails to start.
+    /// Uses `HSE` (external oscillator) instead of `HSI` (internal RC oscillator) as the clock source.
+    ///
+    /// Will result in a hang if an external oscillator is not connected or it fails to start,
+    /// unless [css](CFGR::enable_css) is enabled.
     pub fn use_hse<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -293,19 +341,23 @@ impl CFGR {
         self
     }
 
-    /// Enable HSE bypass.
+    /// Enable `HSE` bypass.
+    ///
     /// Uses user provided clock signal instead of an external oscillator.
-    /// OSC_OUT pin is free and can be used as GPIO.
-    /// No effect if HSE is not enabled.
+    /// `OSC_OUT` pin is free and can be used as GPIO.
+    ///
+    /// No effect if `HSE` is not enabled.
     pub fn bypass_hse(mut self) -> Self {
         self.hse_bypass = true;
         self
     }
 
-    /// Enable CSS (Clock Security System).
-    /// System clock is automatically switched to HSI and an interrupt (CSSI) is generated
-    /// when HSE clock failure is detected.
-    /// No effect if HSE is not enabled.
+    /// Enable `CSS` (Clock Security System).
+    ///
+    /// System clock is automatically switched to `HSI` and an interrupt (`CSSI`) is generated
+    /// when `HSE` clock failure is detected.
+    ///
+    /// No effect if `HSE` is not enabled.
     pub fn enable_css(mut self) -> Self {
         self.css = true;
         self
@@ -320,7 +372,12 @@ impl CFGR {
         self
     }
 
-    /// Sets a frequency for the APB1 bus
+    /// Sets a frequency for the `APB1` bus
+    ///
+    /// - Maximal supported frequency: 36 Mhz
+    ///
+    /// If not manually set, it will be set to [`CFGR::sysclk`] frequency
+    /// or [`CFGR::sysclk`] frequency / 2, if [`CFGR::sysclk`] > 36 Mhz
     pub fn pclk1<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -329,7 +386,19 @@ impl CFGR {
         self
     }
 
-    /// Sets a frequency for the APB2 bus
+    /// Sets a frequency for the `APB2` bus
+    ///
+    /// # Resolution and Limits
+    ///
+    /// - Maximal supported frequency with HSE: 72 Mhz
+    /// - Maximal supported frequency without HSE: 64 Mhz
+    ///
+    /// This is true for devices **except** the following devices,
+    /// as these allow finer resolutions
+    /// even when using the internal oscillator:
+    ///
+    ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
+    ///
     pub fn pclk2<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -339,6 +408,20 @@ impl CFGR {
     }
 
     /// Sets the system (core) frequency
+    ///
+    /// # Resolution and Limits
+    ///
+    /// - Maximal supported frequency with `HSE`: 72 Mhz
+    /// - Maximal supported frequency without `HSE`: 64 Mhz
+    ///
+    /// If [`CFGR::hse`] is not used, therefor `HSI / 2` is used.
+    /// Only multiples of (HSI / 2) (4 Mhz) are allowed.
+    ///
+    /// This is true for devices **except** the following devices,
+    /// as these allow finer resolutions
+    /// even when using the internal oscillator:
+    ///
+    ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
     pub fn sysclk<F>(mut self, freq: F) -> Self
     where
         F: Into<Hertz>,
@@ -347,23 +430,23 @@ impl CFGR {
         self
     }
 
-    /// Calculate the values for the pll multiplier (PLLMUL) and the pll divisior (PLLDIV).
+    /// Calculate the values for the pll multiplier (`PLLMUL`) and the pll divisior (`PLLDIV`).
     ///
     /// These values are chosen depending on the chosen system clock (SYSCLK) and the frequency of the
-    /// oscillator clock (HSE / HSI).
+    /// oscillator clock (`HSE` / `HSI`).
     ///
-    /// For these devices, PLL_SRC can selected between the internal oscillator (HSI) and
-    /// the external oscillator (HSE).
+    /// For these devices, `PLL_SRC` can selected between the internal oscillator (`HSI`) and
+    /// the external oscillator (`HSE`).
     ///
-    /// HSI is divided by 2 before its transferred to PLL_SRC.
-    /// HSE can be divided between 2..16, before it is transferred to PLL_SRC.
-    /// After this system clock frequency (SYSCLK) can be changed via multiplier.
-    /// The value can be multiplied with 2..16.
+    /// HSI is divided by 2 before its transferred to `PLL_SRC`.
+    /// HSE can be divided between `1..16`, before it is transferred to `PLL_SRC`.
+    /// After this system clock frequency (`SYSCLK`) can be changed via multiplier.
+    /// The value can be multiplied with `2..16`.
     ///
-    /// To determine the optimal values, if HSE is chosen as PLL_SRC, the greatest common divisor
+    /// To determine the optimal values, if `HSE` is chosen as `PLL_SRC`, the greatest common divisor
     /// is calculated and the limitations of the possible values are taken into consideration.
     ///
-    /// HSI is simpler to calculate, but the possible system clocks are less than HSE, because the
+    /// `HSI` is simpler to calculate, but the possible system clocks are less than `HSE`, because the
     /// division is not configurable.
     #[cfg(not(any(
         feature = "stm32f302xd",
@@ -391,22 +474,22 @@ impl CFGR {
             }
 
             // PLL_MUL maximal value is 16
-            assert!(multiplier <= 16);
+            crate::assert!(multiplier <= 16);
 
             // PRE_DIV maximal value is 16
-            assert!(divisor <= 16);
+            crate::assert!(divisor <= 16);
 
             (multiplier, Some(divisor))
         }
         // HSI division is always divided by 2 and has no adjustable division
         else {
             let pll_mul = sysclk / pllsrcclk;
-            assert!(pll_mul <= 16);
+            crate::assert!(pll_mul <= 16);
             (pll_mul, None)
         };
 
         let sysclk = (pllsrcclk / pll_div.unwrap_or(1)) * pll_mul;
-        assert!(sysclk <= 72_000_000);
+        crate::assert!(sysclk <= 72_000_000);
 
         let pll_src = if self.hse.is_some() {
             cfgr::PLLSRC_A::HSE_DIV_PREDIV
@@ -428,16 +511,16 @@ impl CFGR {
         )
     }
 
-    /// Calculate the values for the pll multiplier (PLLMUL) and the pll divisor (PLLDIV).
+    /// Calculate the values for the pll multiplier (`PLLMUL`) and the pll divisor (`PLLDIV`).
     ///
-    /// These values are chosen depending on the chosen system clock (SYSCLK) and the frequency of the oscillator
-    /// clk (HSI / HSE).
+    /// These values are chosen depending on the chosen system clock (`SYSCLK`) and the frequency of the oscillator
+    /// clk (`HSI` / `HSE`).
     ///
-    /// For these devices, PLL_SRC can be set to choose between the internal oscillator (HSI) and
-    /// the external oscillator (HSE).
-    /// After this the system clock frequency (SYSCLK) can be changed via a division and a
+    /// For these devices, `PLL_SRC` can be set to choose between the internal oscillator (HSI) and
+    /// the external oscillator (`HSE`).
+    /// After this the system clock frequency (`SYSCLK`) can be changed via a division and a
     /// multiplication block.
-    /// It can be divided from with values 1..16  and multiplied from 2..16.
+    /// It can be divided from with values `1..16`  and multiplied from `2..16`.
     ///
     /// To determine the optimal values, the greatest common divisor is calculated and the
     /// limitations of the possible values are taken into considiration.
@@ -466,16 +549,16 @@ impl CFGR {
             }
 
             // PLL_MUL maximal value is 16
-            assert!(multiplier <= 16);
+            crate::assert!(multiplier <= 16);
 
             // PRE_DIV maximal value is 16
-            assert!(divisor <= 16);
+            crate::assert!(divisor <= 16);
 
             (multiplier, divisor)
         };
 
         let sysclk = (pllsrcclk / pll_div) * pll_mul;
-        assert!(sysclk <= 72_000_000);
+        crate::assert!(sysclk <= 72_000_000);
 
         // Select hardware clock source of the PLL
         // TODO Check whether HSI_DIV2 could be useful
@@ -504,6 +587,8 @@ impl CFGR {
     /// The system clock source is determined by the chosen system clock and the provided hardware
     /// clock.
     /// This function does only chose the PLL if needed, otherwise it will use the oscillator clock as system clock.
+    ///
+    /// Calls [`CFGR::calc_pll`] internally.
     fn get_sysclk(&self) -> (u32, cfgr::SW_A, Option<PllConfig>) {
         // If a sysclk is given, check if the PLL has to be used,
         // else select the system clock source, which is either HSI or HSE.
@@ -528,60 +613,77 @@ impl CFGR {
     }
 
     /// Freezes the clock configuration, making it effective
+    ///
+    /// This function internally calculates the specific.
+    /// divisors for the different clock peripheries.
+    ///
+    /// # Panics
+    ///
+    /// If any of the set frequencies via [`sysclk`](CFGR::sysclk), [`hclk`](CFGR::hclk), [`pclk1`](CFGR::pclk1) or [`pclk2`](CFGR::pclk2)
+    /// are invalid or can not be reached because of e.g. to low frequencies
+    /// of the former, as [`sysclk`](CFGR::sysclk) depends on the configuration of [`hclk`](CFGR::hclk)
+    /// this function will panic.
     pub fn freeze(self, acr: &mut ACR) -> Clocks {
         let (sysclk, sysclk_source, pll_config) = self.get_sysclk();
 
-        let (hpre_bits, hpre) = self
-            .hclk
-            .map(|hclk| match sysclk / hclk {
-                0 => unreachable!(),
-                1 => (cfgr::HPRE_A::DIV1, 1),
-                2 => (cfgr::HPRE_A::DIV2, 2),
-                3..=5 => (cfgr::HPRE_A::DIV4, 4),
-                6..=11 => (cfgr::HPRE_A::DIV8, 8),
-                12..=39 => (cfgr::HPRE_A::DIV16, 16),
-                40..=95 => (cfgr::HPRE_A::DIV64, 64),
-                96..=191 => (cfgr::HPRE_A::DIV128, 128),
-                192..=383 => (cfgr::HPRE_A::DIV256, 256),
-                _ => (cfgr::HPRE_A::DIV512, 512),
-            })
-            .unwrap_or((cfgr::HPRE_A::DIV1, 1));
+        let (hpre_bits, hpre) =
+            self.hclk
+                .map_or((cfgr::HPRE_A::DIV1, 1), |hclk| match sysclk / hclk {
+                    0 => crate::unreachable!(),
+                    1 => (cfgr::HPRE_A::DIV1, 1),
+                    2 => (cfgr::HPRE_A::DIV2, 2),
+                    3..=5 => (cfgr::HPRE_A::DIV4, 4),
+                    6..=11 => (cfgr::HPRE_A::DIV8, 8),
+                    12..=39 => (cfgr::HPRE_A::DIV16, 16),
+                    40..=95 => (cfgr::HPRE_A::DIV64, 64),
+                    96..=191 => (cfgr::HPRE_A::DIV128, 128),
+                    192..=383 => (cfgr::HPRE_A::DIV256, 256),
+                    _ => (cfgr::HPRE_A::DIV512, 512),
+                });
 
         let hclk: u32 = sysclk / hpre;
 
-        assert!(hclk <= 72_000_000);
+        crate::assert!(hclk <= 72_000_000);
 
-        let (ppre1_bits, ppre1) = self
-            .pclk1
-            .map(|pclk1| match hclk / pclk1 {
-                0 => unreachable!(),
-                1 => (cfgr::PPRE1_A::DIV1, 1),
-                2 => (cfgr::PPRE1_A::DIV2, 2),
-                3..=5 => (cfgr::PPRE1_A::DIV4, 4),
-                6..=11 => (cfgr::PPRE1_A::DIV8, 8),
-                _ => (cfgr::PPRE1_A::DIV16, 16),
-            })
-            .unwrap_or((cfgr::PPRE1_A::DIV1, 1));
+        let (mut ppre1_bits, mut ppre1) =
+            self.pclk1
+                .map_or((cfgr::PPRE1_A::DIV1, 1), |pclk1| match hclk / pclk1 {
+                    0 => crate::unreachable!(),
+                    1 => (cfgr::PPRE1_A::DIV1, 1),
+                    2 => (cfgr::PPRE1_A::DIV2, 2),
+                    3..=5 => (cfgr::PPRE1_A::DIV4, 4),
+                    6..=11 => (cfgr::PPRE1_A::DIV8, 8),
+                    _ => (cfgr::PPRE1_A::DIV16, 16),
+                });
 
-        let pclk1 = hclk / u32::from(ppre1);
+        let mut pclk1 = hclk / u32::from(ppre1);
 
-        assert!(pclk1 <= 36_000_000);
+        // This ensures, that no panic happens, when
+        // pclk1 is not manually set.
+        // As hclk highest value is 72.mhz()
+        // dividing by 2 should always be sufficient
+        if self.pclk1.is_none() && pclk1 > 36_000_000 {
+            ppre1_bits = cfgr::PPRE1_A::DIV2;
+            ppre1 = 2;
+            pclk1 = hclk / u32::from(ppre1);
+        }
 
-        let (ppre2_bits, ppre2) = self
-            .pclk2
-            .map(|pclk2| match hclk / pclk2 {
-                0 => unreachable!(),
-                1 => (cfgr::PPRE2_A::DIV1, 1),
-                2 => (cfgr::PPRE2_A::DIV2, 2),
-                3..=5 => (cfgr::PPRE2_A::DIV4, 4),
-                6..=11 => (cfgr::PPRE2_A::DIV8, 8),
-                _ => (cfgr::PPRE2_A::DIV16, 16),
-            })
-            .unwrap_or((cfgr::PPRE2_A::DIV1, 1));
+        crate::assert!(pclk1 <= 36_000_000);
+
+        let (ppre2_bits, ppre2) =
+            self.pclk2
+                .map_or((cfgr::PPRE2_A::DIV1, 1), |pclk2| match hclk / pclk2 {
+                    0 => crate::unreachable!(),
+                    1 => (cfgr::PPRE2_A::DIV1, 1),
+                    2 => (cfgr::PPRE2_A::DIV2, 2),
+                    3..=5 => (cfgr::PPRE2_A::DIV4, 4),
+                    6..=11 => (cfgr::PPRE2_A::DIV8, 8),
+                    _ => (cfgr::PPRE2_A::DIV16, 16),
+                });
 
         let pclk2 = hclk / u32::from(ppre2);
 
-        assert!(pclk2 <= 72_000_000);
+        crate::assert!(pclk2 <= 72_000_000);
 
         // Adjust flash wait states according to the
         // HCLK frequency (cpu core clock)
@@ -656,7 +758,8 @@ impl CFGR {
 
 /// Frozen clock frequencies
 ///
-/// The existence of this value indicates that the clock configuration can no longer be changed
+/// The existence of this value indicates that the clock configuration can no longer be changed.
+/// This struct can be obtained via the [freeze](CFGR::freeze) method of the [CFGR](CFGR) struct.
 #[derive(Clone, Copy)]
 pub struct Clocks {
     pub(crate) hclk: Hertz,
@@ -700,6 +803,14 @@ impl Clocks {
     }
 
     /// Returns whether the USBCLK clock frequency is valid for the USB peripheral
+    ///
+    /// If the microcontroller does support USB, 48 Mhz or 72 Mhz have to be used
+    /// and the [`CFGR::hse`] must be used.
+    ///
+    /// The APB1 / [`CFGR::pclk1`] clock must have a minimum frequency of 10 MHz to avoid data
+    /// overrun/underrun problems. [RM0316 32.5.2][RM0316]
+    ///
+    /// [RM0316]: https://www.st.com/resource/en/reference_manual/dm00043574.pdf
     pub fn usbclk_valid(&self) -> bool {
         self.usbclk_valid
     }

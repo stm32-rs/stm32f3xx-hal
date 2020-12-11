@@ -125,7 +125,7 @@ macro_rules! hal {
                     apb.rstr().modify(|_, w| w.$usartXrst().clear_bit());
 
                     let brr = clocks.$pclkX().0 / baud_rate.0;
-                    assert!(brr >= 16, "impossible baud rate");
+                    crate::assert!(brr >= 16, "impossible baud rate");
                     // NOTE(write): uses all bits of this register.
                     usart.brr.write(|w| unsafe { w.bits(brr) });
 

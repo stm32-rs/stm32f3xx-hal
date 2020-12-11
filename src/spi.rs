@@ -1,4 +1,8 @@
 //! Serial Peripheral Interface (SPI) bus
+//!
+//! A usage example of the can peripheral can be found at [examples/spi.rs]
+//!
+//! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/spi.rs
 
 use core::ptr;
 
@@ -381,7 +385,11 @@ unsafe impl MosiPin<SPI4> for PE6<AF5> {}
 ))]
 unsafe impl MosiPin<SPI4> for PE14<AF5> {}
 
+/// Configuration trait for the Word Size
+/// used by the SPI peripheral
 pub trait Word {
+    /// Returns the register configuration
+    /// to set the word size
     fn register_config() -> (FRXTH_A, DS_A);
 }
 
@@ -498,7 +506,7 @@ macro_rules! hal {
                 fn compute_baud_rate(clocks: Hertz, freq: Hertz) -> spi1::cr1::BR_A {
                     use spi1::cr1::BR_A;
                     match clocks.0 / freq.0 {
-                        0 => unreachable!(),
+                        0 => crate::unreachable!(),
                         1..=2 => BR_A::DIV2,
                         3..=5 => BR_A::DIV4,
                         6..=11 => BR_A::DIV8,
@@ -610,44 +618,3 @@ hal! {
     SPI3: (spi3, APB1, spi3en, spi3rst, pclk1),
     SPI4: (spi4, APB2, spi4en, spi4rst, pclk2),
 }
-
-// FIXME not working
-// TODO measure if this actually faster than the default implementation
-// impl ::hal::blocking::spi::Write<u8> for Spi {
-//     type Error = Error;
-
-//     fn write(&mut self, bytes: &[u8]) -> Result<(), Error> {
-//         for byte in bytes {
-//             'l: loop {
-//                 let sr = self.spi.sr.read();
-
-//                 // ignore overruns because we don't care about the incoming data
-//                 // if sr.ovr().bit_is_set() {
-//                 // Err(nb::Error::Other(Error::Overrun))
-//                 // } else
-//                 if sr.modf().bit_is_set() {
-//                     return Err(Error::ModeFault);
-//                 } else if sr.crcerr().bit_is_set() {
-//                     return Err(Error::Crc);
-//                 } else if sr.txe().bit_is_set() {
-//                     // NOTE(write_volatile) see note above
-//                     unsafe { ptr::write_volatile(&self.spi.dr as *const _ as *mut u8, *byte) }
-//                     break 'l;
-//                 } else {
-//                     // try again
-//                 }
-//             }
-//         }
-
-//         // wait until the transmission of the last byte is done
-//         while self.spi.sr.read().bsy().bit_is_set() {}
-
-//         // clear OVR flag
-//         unsafe {
-//             ptr::read_volatile(&self.spi.dr as *const _ as *const u8);
-//         }
-//         self.spi.sr.read();
-
-//         Ok(())
-//     }
-// }
