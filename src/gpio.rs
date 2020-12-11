@@ -260,8 +260,8 @@ macro_rules! gpio {
         impl <MODE> toggleable::Default for PXx<Output<MODE>> {}
 
         $(
-            doc_comment::doc_comment!{
-                concat!("All Pins and associated functions for GPIO Bank: ", stringify!($GPIOX)),
+            paste::paste!{
+                #[doc = "All Pins and associated functions for GPIO Bank: `" $GPIOX "`"]
                 pub mod $gpiox {
                     use core::marker::PhantomData;
                     use core::convert::Infallible;
@@ -465,8 +465,8 @@ macro_rules! gpio {
                     impl<MODE> toggleable::Default for $PXx<Output<MODE>> {}
 
                     $(
-                        doc_comment::doc_comment! {
-                            concat!("Pin ", stringify!($PXi)),
+                        paste::paste! {
+                            #[doc = "Pin `" $PXi "`"]
                             pub struct $PXi<MODE> {
                                 _mode: PhantomData<MODE>,
                             }
@@ -475,8 +475,8 @@ macro_rules! gpio {
                         impl<MODE> $PXi<MODE> {
                             $(
                                 // /// Configures the pin to serve as a specific alternate function
-                                doc_comment::doc_comment!{
-                                    concat!("Configures ", stringify!($PXi), " to serve as alternate function: ", stringify!($AFi)),
+                                paste::paste!{
+                                    #[doc = "Configures `" $PXi "` to serve as alternate function: `" $AFi "`"]
                                     pub fn $into_afi(
                                         self,
                                         moder: &mut MODER,
