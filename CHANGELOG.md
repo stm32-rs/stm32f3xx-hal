@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.6.1] - 2020-12-10
+
+### Changed
+
+- Removed `doc-comment` dependency ([#184](https://github.com/stm32-rs/stm32f3xx-hal/pull/184))
+
 ## [v0.6.0] - 2020-12-10
 
 ### Added
@@ -256,7 +262,8 @@ let clocks = rcc
 
 - Support `stm32f303` device
 
-[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.1...HEAD
+[v0.6.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.3...v0.5.0
 [v0.4.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.2...v0.4.3
