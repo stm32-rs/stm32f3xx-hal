@@ -24,6 +24,36 @@ use core::sync::atomic::{AtomicU8, Ordering};
 const EXID_MASK: u32 = 0b1_1111_1111_1100_0000_0000_0000_0000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
+/// Options the CAN bus. This is primarily used to set bus timings, but also controls options like enabling loopback or silent mode for debugging.
+/// See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
+///
+/// Use `CanBitRateOpts::default()` to get 250kbps at 32mhz system clock
+pub struct CanOpts {
+    pub brp: u16,
+    pub sjw: u8,
+    pub ts1: u8,
+    pub ts2: u8,
+    pub lbkm: bool,
+}
+
+impl CanOpts {
+    pub fn new(brp: u16, sjw: u8, ts1: u8, ts2: u8, lbkm: bool) -> CanOpts {
+        CanOpts {
+            brp,
+            sjw,
+            ts1,
+            ts2,
+            lbkm,
+        }
+    }
+}
+
+impl Default for CanOpts {
+    fn default() -> Self {
+        CanOpts::new(4, 0, 10, 3, false)
+    }
+}
+
 /// A CAN identifier, which can be either 11 or 27 (extended) bits.
 /// u16 and u32 respectively are used here despite the fact that the upper bits are unused.
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -252,13 +282,13 @@ impl CanFilterData {
 }
 
 impl Can {
-    /// Initialize the CAN Peripheral
-    pub fn new(
+    pub fn new_with_opts(
         can: stm32::CAN,
         rx: gpioa::PA11<AF9>,
         tx: gpioa::PA12<AF9>,
         apb1: &mut APB1,
-    ) -> Self {
+        opts: CanOpts,
+    ) -> Can {
         apb1.enr().modify(|_, w| w.canen().enabled());
         can.mcr.modify(|_, w| w.sleep().clear_bit());
         can.mcr.modify(|_, w| w.inrq().set_bit());
@@ -266,28 +296,13 @@ impl Can {
         // Wait for INAK to confirm we have entered initialization mode
         while !can.msr.read().inak().bit_is_set() {}
 
-        // TODO: actually calculate baud params
-
-        // Our baud rate calc here is aiming for roughly 4000uS total bit time or about 250kbps
-        // Though we actually allow closer to 5500uS total given the sjw setting
-        // Calculations for timing value from http://www.bittiming.can-wiki.info/#bxCAN
-
-        // Baud rate prescaler defines time quanta
-        // tq = (BRP[9:0]+1) x tPCLK
-        let brp: u16 = 4;
-
-        // Resynchronization jump width: number of quanta segments may be expanded to resync
-        // tRJW = tq x (SJW[1:0] + 1)
-        let sjw = 0;
-
-        // Time seg 2
-        // tBS2 = tq x (TS2[2:0] + 1)
-        let ts2 = 3;
-
-        // Time seg 1
-        // tBS1 = tq x (TS1[3:0] + 1)
-        let ts1 = 10;
-
+        let CanOpts {
+            brp,
+            sjw,
+            ts1,
+            ts2,
+            lbkm,
+        } = opts;
         can.btr.modify(|_, w| unsafe {
             w.brp()
                 .bits(brp)
@@ -297,8 +312,8 @@ impl Can {
                 .bits(ts1)
                 .ts2()
                 .bits(ts2)
-            //.lbkm()
-            //.set_bit()
+                .lbkm()
+                .bit(lbkm)
         });
 
         // Leave initialization mode by clearing INRQ and switch to normal mode
@@ -311,6 +326,15 @@ impl Can {
             _rx: rx,
             _tx: tx,
         }
+    }
+    /// Initialize the CAN Peripheral
+    pub fn new(
+        can: stm32::CAN,
+        rx: gpioa::PA11<AF9>,
+        tx: gpioa::PA12<AF9>,
+        apb1: &mut APB1,
+    ) -> Self {
+        Can::new_with_opts(can, rx, tx, apb1, CanOpts::default())
     }
 
     /// Enable CAN event interrupts for `Event`
@@ -407,7 +431,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
 
                 // NOTE(unsafe): full 8bit write is unsafe via the svd2rust api
                 tx.tdtr
-                    .modify(|_, w| unsafe { w.dlc().bits(data.len() as u8) });
+                    .modify(|_, w| unsafe { w.dlc().bits(frame.dlc as u8) });
 
                 tx.tir.modify(|_, w| w.rtr().clear_bit());
             } else {
@@ -578,5 +602,9 @@ impl CanFrame {
             dlc,
             data: [0; 8],
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.dlc
     }
 }
