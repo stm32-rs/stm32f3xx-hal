@@ -578,7 +578,7 @@ impl CanFrame {
     ///
     /// This function will panic if length of `data` is greater than `8`
     pub fn new_data(id: CanId, data: &[u8]) -> CanFrame {
-        crate::assert!((0..8).contains(&data.len()));
+        crate::assert!((0..=8).contains(&data.len()));
 
         let mut frame = Self {
             id,
