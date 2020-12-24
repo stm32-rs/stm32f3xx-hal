@@ -4,11 +4,10 @@
 //!
 //! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/i2c_scanner.rs
 
-use core::convert::TryFrom;
-use core::ops::Deref;
+use core::{convert::TryFrom, ops::Deref};
 
 use crate::{
-    gpio::{gpioa, gpiob, AF4},
+    gpio::{gpioa, gpiob, OpenDrain, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
     pac::{i2c1::RegisterBlock, rcc::cfgr3::I2C1SW_A, I2C1, RCC},
     rcc::{Clocks, APB1},
@@ -51,31 +50,31 @@ pub unsafe trait SclPin<I2C> {}
 /// SDA pin -- DO NOT IMPLEMENT THIS TRAIT
 pub unsafe trait SdaPin<I2C> {}
 
-unsafe impl SclPin<I2C1> for gpioa::PA15<AF4> {}
-unsafe impl SclPin<I2C1> for gpiob::PB6<AF4> {}
-unsafe impl SclPin<I2C1> for gpiob::PB8<AF4> {}
-unsafe impl SdaPin<I2C1> for gpioa::PA14<AF4> {}
-unsafe impl SdaPin<I2C1> for gpiob::PB7<AF4> {}
-unsafe impl SdaPin<I2C1> for gpiob::PB9<AF4> {}
+unsafe impl SclPin<I2C1> for gpioa::PA15<AF4<OpenDrain>> {}
+unsafe impl SclPin<I2C1> for gpiob::PB6<AF4<OpenDrain>> {}
+unsafe impl SclPin<I2C1> for gpiob::PB8<AF4<OpenDrain>> {}
+unsafe impl SdaPin<I2C1> for gpioa::PA14<AF4<OpenDrain>> {}
+unsafe impl SdaPin<I2C1> for gpiob::PB7<AF4<OpenDrain>> {}
+unsafe impl SdaPin<I2C1> for gpiob::PB9<AF4<OpenDrain>> {}
 
 cfg_if! {
     if #[cfg(not(feature = "gpio-f333"))] {
-        unsafe impl SclPin<I2C2> for gpioa::PA9<AF4> {}
-        unsafe impl SclPin<I2C2> for gpiof::PF1<AF4> {}
+        unsafe impl SclPin<I2C2> for gpioa::PA9<AF4<OpenDrain>> {}
+        unsafe impl SclPin<I2C2> for gpiof::PF1<AF4<OpenDrain>> {}
         #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))]
-        unsafe impl SclPin<I2C2> for gpiof::PF6<AF4> {}
-        unsafe impl SdaPin<I2C2> for gpioa::PA10<AF4> {}
-        unsafe impl SdaPin<I2C2> for gpiof::PF0<AF4> {}
+        unsafe impl SclPin<I2C2> for gpiof::PF6<AF4<OpenDrain>> {}
+        unsafe impl SdaPin<I2C2> for gpioa::PA10<AF4<OpenDrain>> {}
+        unsafe impl SdaPin<I2C2> for gpiof::PF0<AF4<OpenDrain>> {}
         #[cfg(feature = "gpio-f373")]
-        unsafe impl SdaPin<I2C2> for gpiof::PF7<AF4> {}
+        unsafe impl SdaPin<I2C2> for gpiof::PF7<AF4<OpenDrain>> {}
     }
 }
 
 cfg_if! {
     if #[cfg(any(feature = "gpio-f302", feature = "gpio-f303e"))] {
-        unsafe impl SclPin<I2C3> for gpioa::PA8<AF3> {}
-        unsafe impl SdaPin<I2C3> for gpiob::PB5<AF8> {}
-        unsafe impl SdaPin<I2C3> for gpioc::PC9<AF3> {}
+        unsafe impl SclPin<I2C3> for gpioa::PA8<AF3<OpenDrain>> {}
+        unsafe impl SdaPin<I2C3> for gpiob::PB5<AF8<OpenDrain>> {}
+        unsafe impl SdaPin<I2C3> for gpioc::PC9<AF3<OpenDrain>> {}
     }
 }
 

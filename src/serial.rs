@@ -1,7 +1,9 @@
 //! Serial
 
+use core::{convert::Infallible, marker::PhantomData, ptr};
+
 use crate::{
-    gpio::{gpioa, gpiob, gpioc, AF7},
+    gpio::{gpioa, gpiob, gpioc, PushPull, AF7},
     hal::{blocking, serial},
     pac::{USART1, USART2, USART3},
     rcc::{Clocks, APB1, APB2},
@@ -9,7 +11,6 @@ use crate::{
 };
 
 use cfg_if::cfg_if;
-use core::{convert::Infallible, marker::PhantomData, ptr};
 
 cfg_if! {
     if #[cfg(any(feature = "stm32f302", feature = "stm32f303"))] {
@@ -47,42 +48,42 @@ pub unsafe trait TxPin<USART> {}
 /// RX pin - DO NOT IMPLEMENT THIS TRAIT
 pub unsafe trait RxPin<USART> {}
 
-unsafe impl TxPin<USART1> for gpioa::PA9<AF7> {}
-unsafe impl TxPin<USART1> for gpiob::PB6<AF7> {}
-unsafe impl TxPin<USART1> for gpioc::PC4<AF7> {}
-unsafe impl RxPin<USART1> for gpioa::PA10<AF7> {}
-unsafe impl RxPin<USART1> for gpiob::PB7<AF7> {}
-unsafe impl RxPin<USART1> for gpioc::PC5<AF7> {}
+unsafe impl TxPin<USART1> for gpioa::PA9<AF7<PushPull>> {}
+unsafe impl TxPin<USART1> for gpiob::PB6<AF7<PushPull>> {}
+unsafe impl TxPin<USART1> for gpioc::PC4<AF7<PushPull>> {}
+unsafe impl RxPin<USART1> for gpioa::PA10<AF7<PushPull>> {}
+unsafe impl RxPin<USART1> for gpiob::PB7<AF7<PushPull>> {}
+unsafe impl RxPin<USART1> for gpioc::PC5<AF7<PushPull>> {}
 
-unsafe impl TxPin<USART2> for gpioa::PA2<AF7> {}
-unsafe impl TxPin<USART2> for gpiob::PB3<AF7> {}
-unsafe impl RxPin<USART2> for gpioa::PA3<AF7> {}
-unsafe impl RxPin<USART2> for gpiob::PB4<AF7> {}
+unsafe impl TxPin<USART2> for gpioa::PA2<AF7<PushPull>> {}
+unsafe impl TxPin<USART2> for gpiob::PB3<AF7<PushPull>> {}
+unsafe impl RxPin<USART2> for gpioa::PA3<AF7<PushPull>> {}
+unsafe impl RxPin<USART2> for gpiob::PB4<AF7<PushPull>> {}
 
-unsafe impl TxPin<USART3> for gpiob::PB10<AF7> {}
-unsafe impl TxPin<USART3> for gpioc::PC10<AF7> {}
-unsafe impl RxPin<USART3> for gpioc::PC11<AF7> {}
+unsafe impl TxPin<USART3> for gpiob::PB10<AF7<PushPull>> {}
+unsafe impl TxPin<USART3> for gpioc::PC10<AF7<PushPull>> {}
+unsafe impl RxPin<USART3> for gpioc::PC11<AF7<PushPull>> {}
 
 cfg_if! {
     if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))] {
         use crate::gpio::{gpiod, gpioe};
 
-        unsafe impl TxPin<USART1> for gpioe::PE0<AF7> {}
-        unsafe impl RxPin<USART1> for gpioe::PE1<AF7> {}
+        unsafe impl TxPin<USART1> for gpioe::PE0<AF7<PushPull>> {}
+        unsafe impl RxPin<USART1> for gpioe::PE1<AF7<PushPull>> {}
 
-        unsafe impl TxPin<USART2> for gpiod::PD5<AF7> {}
-        unsafe impl RxPin<USART2> for gpiod::PD6<AF7> {}
+        unsafe impl TxPin<USART2> for gpiod::PD5<AF7<PushPull>> {}
+        unsafe impl RxPin<USART2> for gpiod::PD6<AF7<PushPull>> {}
 
-        unsafe impl TxPin<USART3> for gpiod::PD8<AF7> {}
-        unsafe impl RxPin<USART3> for gpiod::PD9<AF7> {}
-        unsafe impl RxPin<USART3> for gpioe::PE15<AF7> {}
+        unsafe impl TxPin<USART3> for gpiod::PD8<AF7<PushPull>> {}
+        unsafe impl RxPin<USART3> for gpiod::PD9<AF7<PushPull>> {}
+        unsafe impl RxPin<USART3> for gpioe::PE15<AF7<PushPull>> {}
     }
 }
 cfg_if! {
     if #[cfg(not(feature = "gpio-f373"))] {
-        unsafe impl TxPin<USART2> for gpioa::PA14<AF7> {}
-        unsafe impl RxPin<USART2> for gpioa::PA15<AF7> {}
-        unsafe impl RxPin<USART3> for gpiob::PB11<AF7> {}
+        unsafe impl TxPin<USART2> for gpioa::PA14<AF7<PushPull>> {}
+        unsafe impl RxPin<USART2> for gpioa::PA15<AF7<PushPull>> {}
+        unsafe impl RxPin<USART3> for gpiob::PB11<AF7<PushPull>> {}
     }
 }
 

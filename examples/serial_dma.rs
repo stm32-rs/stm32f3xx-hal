@@ -22,8 +22,12 @@ fn main() -> ! {
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
     let pins = (
-        gpioa.pa9.into_af7(&mut gpioa.moder, &mut gpioa.afrh),
-        gpioa.pa10.into_af7(&mut gpioa.moder, &mut gpioa.afrh),
+        gpioa
+            .pa9
+            .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+        gpioa
+            .pa10
+            .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
     );
     let serial = Serial::usart1(dp.USART1, pins, 9600.Bd(), clocks, &mut rcc.apb2);
     let (tx, rx) = serial.split();
