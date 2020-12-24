@@ -237,7 +237,7 @@ impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE> {
 impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
 where
     GPIO: GpioStatic,
-    INDEX: Unsigned,
+    INDEX: Index,
 {
     /// Configures the pin to operate as a floating input pin
     pub fn into_floating_input(
@@ -309,7 +309,7 @@ where
 impl<GPIO, INDEX> Pin<GPIO, INDEX, Output<OpenDrain>>
 where
     GPIO: GpioStatic,
-    INDEX: Unsigned,
+    INDEX: Index,
 {
     /// Enables / disables the internal pull up
     pub fn internal_pull_up(&mut self, pupdr: &mut GPIO::PUPDR, on: bool) {
@@ -403,7 +403,7 @@ macro_rules! af {
         where
             Self: $IntoAfi,
             GPIO: GpioStatic,
-            INDEX: Unsigned,
+            INDEX: Index,
         {
             /// Configures the pin to operate as an alternate function pin
             pub fn $into_afi(
