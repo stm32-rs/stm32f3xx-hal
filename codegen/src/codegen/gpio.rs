@@ -62,10 +62,7 @@ fn merge_pins_by_port(pins: &[gpio::Pin]) -> Result<Vec<Port>> {
 fn gen_gpio_macro_call(ports: &[Port], feature: &str) -> Result<()> {
     println!("gpio!({{");
 
-    let mut pac_modules: Vec<_> = ports.iter().map(|port| get_port_pac_module(port, feature)).collect();
-    pac_modules.sort();
-    pac_modules.dedup();
-    println!("    pacs: [{}],", pac_modules.join(", "));
+    gen_pac_list(ports, feature);
 
     println!("    ports: [");
     for port in ports {
@@ -75,6 +72,16 @@ fn gen_gpio_macro_call(ports: &[Port], feature: &str) -> Result<()> {
 
     println!("}});");
     Ok(())
+}
+
+fn gen_pac_list(ports: &[Port], feature: &str) {
+    let mut pac_modules: Vec<_> = ports
+        .iter()
+        .map(|port| get_port_pac_module(port, feature))
+        .collect();
+    pac_modules.sort_unstable();
+    pac_modules.dedup();
+    println!("    pacs: [{}],", pac_modules.join(", "));
 }
 
 fn gen_port(port: &Port, feature: &str) -> Result<()> {
@@ -117,10 +124,7 @@ fn gen_pin(pin: &gpio::Pin) -> Result<()> {
 
     println!(
         "                {} => {{ reset: {}, afr: {}, af: {:?} }},",
-        nr,
-        reset_mode,
-        afr,
-        af_numbers,
+        nr, reset_mode, afr, af_numbers,
     );
 
     Ok(())
@@ -142,7 +146,7 @@ fn get_pin_af_numbers(pin: &gpio::Pin) -> Result<Vec<u8>> {
         numbers.push(signal.af()?);
     }
 
-    numbers.sort();
+    numbers.sort_unstable();
     numbers.dedup();
 
     Ok(numbers)
