@@ -24,23 +24,21 @@ features = ["stm32f303xc", "rt", "stm32-usbd", "can"]
 targets = ["thumbv7em-none-eabihf"]
 
 [dependencies]
-cfg-if = "1.0"
+cfg-if = "1"
 cortex-m = "0.7"
 cortex-m-rt = "0.6"
 embedded-dma = "0.1"
 embedded-hal = "0.2"
-nb = "1.0"
+embedded-time = "0.10"
+nb = "1"
 paste = "1"
 rtcc = "0.2"
 stm32f3 = "0.13"
-embedded-time = "0.10"
+typenum = "1"
 
 [dependencies.embedded-hal-can]
 version = "0.1.0"
 optional = true
-
-[dependencies.bare-metal]
-version = "1.0"
 
 [dependencies.stm32-usbd]
 version = "0.6"
@@ -95,12 +93,12 @@ stm32f303xb = ["stm32f303", "gpio-f303", "device-selected"]
 stm32f303xc = ["stm32f303", "gpio-f303", "device-selected"]
 stm32f303xd = ["stm32f303", "gpio-f303e", "device-selected"]
 stm32f303xe = ["stm32f303", "gpio-f303e", "device-selected"]
-stm32f373 = ["gpio-f373", "stm32f3/stm32f373", "device-selected"]
-stm32f378 = ["gpio-f373", "stm32f3/stm32f373", "device-selected"]
-stm32f334 = ["gpio-f333", "stm32f3/stm32f3x4", "device-selected"]
 stm32f328 = ["gpio-f333", "stm32f3/stm32f303", "device-selected"]
 stm32f358 = ["gpio-f303", "stm32f3/stm32f303", "device-selected"]
 stm32f398 = ["gpio-f303e", "stm32f3/stm32f303", "device-selected"]
+stm32f373 = ["gpio-f373", "stm32f3/stm32f373", "device-selected"]
+stm32f378 = ["gpio-f373", "stm32f3/stm32f373", "device-selected"]
+stm32f334 = ["gpio-f333", "stm32f3/stm32f3x4", "device-selected"]
 
 defmt-default = ["defmt"]
 defmt-trace = ["defmt"]
