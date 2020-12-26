@@ -806,7 +806,7 @@ macro_rules! pwm_features {
                 /// output).
                 /// 2: The PWM mode can be used without validating the preload register only in one
                 /// pulse mode (OPM bit set in TIMx_CR1 register). Else the behavior is not guaranteed.
-                /// 
+                ///
                 /// Setting preload is required to enable PWM.
                 pub fn set_preload(&mut self, channel: Channel, value: bool) {
                     match channel {

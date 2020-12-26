@@ -27,24 +27,25 @@ macro_rules! make_rtc_interrupt_handler {
         fn $line() {
             free(|cs| {
                 // Reset pending bit for interrupt line
-                unsafe { (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr20().bit(true)) };
+                unsafe {
+                    (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr20().bit(true));
 
-                // Clear the wake up timer flag, after disabling write protections.
-                unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xCA)) };
-                unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0x53)) };
+                    // Clear the wakeup timer flag, after disabling write protections.
+                    (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xCA));
+                    (*pac::RTC::ptr()).wpr.write(|w| w.bits(0x53));
 
-                unsafe { (*pac::RTC::ptr()).cr.modify(|_, w| w.wute().clear_bit()) };
+                    (*pac::RTC::ptr()).isr.modify(|_, w| w.wutf().clear_bit());
 
-                unsafe { (*pac::RTC::ptr()).isr.modify(|_, w| w.init().set_bit()) };
-                while unsafe { (*pac::RTC::ptr()).isr.read().initf().bit_is_clear() } {}
+                    // This line is from section 27.3.8 of RM:
+                    // After waking up from low-power mode (Stop or Standby), RSF must be cleared by software.
+                    // The software must then wait until it is set again before reading the RTC_SSR, RTC_TR and
+                    // RTC_DR registers.
+                    // The RSF bit must be cleared after wakeup and not before entering low-power mode.
+                    // (*pac::RTC::ptr()).isr.modify(|_, w| w.rsf().clear_bit());
+                    // while (*pac::RTC::ptr()).isr.read().rsf().bit_is_clear() {}
 
-                unsafe { (*pac::RTC::ptr()).isr.modify(|_, w| w.wutf().clear_bit()) };
-
-                unsafe { (*pac::RTC::ptr()).isr.modify(|_, w| w.init().clear_bit()) };
-                while !unsafe { (*pac::RTC::ptr()).isr.read().initf().bit_is_clear() } {}
-
-                unsafe { (*pac::RTC::ptr()).cr.modify(|_, w| w.wute().set_bit()) };
-                unsafe { (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xFF)) };
+                    (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xFF));
+                }
             });
         }
     };
@@ -101,6 +102,7 @@ impl Rtc {
     ) -> Self {
         let mut result = Self { regs };
 
+        // These 4 steps don't modifiy RTC registers, so don't need unlock behavior.
         reset(bdcr);
         unlock(apb1, pwr); // Must unlock before enabling LSE.
         enable_lse(bdcr, bypass);
@@ -108,9 +110,11 @@ impl Rtc {
 
         result.set_24h_fmt();
 
-        result.regs.prer.modify(|_, w| {
-            w.prediv_s().bits(prediv_s);
-            w.prediv_a().bits(prediv_a)
+        result.modify(|regs| {
+            regs.prer.modify(|_, w| {
+                w.prediv_s().bits(prediv_s);
+                w.prediv_a().bits(prediv_a)
+            });
         });
 
         result
@@ -118,11 +122,12 @@ impl Rtc {
 
     /// Sets calendar clock to 24 hr format
     pub fn set_24h_fmt(&mut self) {
-        self.regs.cr.modify(|_, w| w.fmt().set_bit());
+        self.modify(|regs| regs.cr.modify(|_, w| w.fmt().set_bit()));
     }
+
     /// Sets calendar clock to 12 hr format
     pub fn set_12h_fmt(&mut self) {
-        self.regs.cr.modify(|_, w| w.fmt().clear_bit());
+        self.modify(|regs| regs.cr.modify(|_, w| w.fmt().clear_bit()));
     }
 
     /// Reads current hour format selection
@@ -246,8 +251,9 @@ impl Rtc {
     }
 
     /// As described in Section 27.3.7 in RM0316,
-    /// this function is used to disable write protection
-    /// when modifying an RTC register.
+    /// this function is used to disable write protection when modifying an RTC register.
+    /// It also handles the additional step required to set a clock or calendar
+    /// value.
     fn modify<F>(&mut self, mut closure: F)
     where
         F: FnMut(&mut RTC),
@@ -255,6 +261,7 @@ impl Rtc {
         // Disable write protection
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
         self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
+
         // Enter init mode
         let isr = self.regs.isr.read();
         if isr.initf().bit_is_clear() {
@@ -324,7 +331,7 @@ impl Rtcc for Rtc {
             Hours::AM(_h) | Hours::PM(_h) => self.set_12h_fmt(),
         }
 
-        self.regs.tr.modify(|_, w| w.ht().bits(ht).hu().bits(hu));
+        self.modify(|regs| regs.tr.modify(|_, w| w.ht().bits(ht).hu().bits(hu)));
 
         Ok(())
     }
