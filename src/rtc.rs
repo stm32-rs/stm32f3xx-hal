@@ -12,7 +12,10 @@ use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike}
 
 #[cfg(any(feature = "rt"))]
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-use crate::pac::{interrupt::RTC_WKUP, EXTI};
+use crate::pac::{
+    interrupt::{RTCALARM, RTC_WKUP},
+    EXTI,
+};
 #[cfg(any(feature = "rt"))]
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 use cortex_m::peripheral::NVIC;
@@ -21,7 +24,7 @@ use cortex_m::peripheral::NVIC;
 /// To enable RTC wakeup interrupts, run this in the main body of your program, eg:
 /// `make_rtc_interrupt_handler!(RTC_WKUP);`
 #[macro_export]
-macro_rules! make_rtc_interrupt_handler {
+macro_rules! make_wakeup_interrupt_handler {
     ($line:ident) => {
         #[interrupt]
         fn $line() {
@@ -131,13 +134,41 @@ impl Rtc {
 
     #[cfg(any(feature = "rt"))]
     #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+    /// Setup the alarm. See AN4759, section 2.3.1.
+    /// `sleep_time` is in ms. `Table 8` desribes these steps.
+    pub fn set_alarm(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
+        exti.imr1.modify(|_, w| w.mr17().unmasked());
+        exti.rtsr1.modify(|_, w| w.tr17().bit(true));
+        exti.ftsr1.modify(|_, w| w.tr17().bit(false));
+
+        unsafe { NVIC::unmask(RTCALARM) };
+
+        self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
+        self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
+
+        self.regs.cr.modify(|_, w| unsafe { w.alrae.clear_bit() });
+        while self.regs.cr.read().alrae().bit_is_set() {}
+
+        // If using RTC2, we also need to Poll ALRAWF(4) bit until it is set in RTC_ISR.
+        // This may not be a feature F3 has.
+
+        self.regs.alrmar.modify(|_, w| unsafe {});
+
+        self.regs.cr.modify(|_, w| unsafe { w.alrae.set_bit() });
+        while self.regs.cr.read().alrae().bit_is_clear() {}
+
+        self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
+    }
+
+    #[cfg(any(feature = "rt"))]
+    #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
     /// Setup periodic auto-wakeup interrupts. See ST AN4759, Table 11, and more broadly,
     /// section 2.4.1. See also reference manual, section 27.5.
     /// In addition to running this function, set up the interrupt handling function by
     /// adding the line `make_rtc_interrupt_handler!(RTC_WKUP);` somewhere in the body
     /// of your program.
     /// `sleep_time` is in ms.
-    pub fn set_auto_wakeup(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
+    pub fn set_wakeup(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
         // Configure and enable the EXTI line corresponding to the Wakeup timer even in
         // interrupt mode and select the rising edge sensitivity.
         exti.imr1.modify(|_, w| w.mr20().unmasked());
@@ -249,8 +280,8 @@ impl Rtc {
     /// It also handles the additional step required to set a clock or calendar
     /// value.
     fn modify<F>(&mut self, mut closure: F)
-        where
-            F: FnMut(&mut RTC),
+    where
+        F: FnMut(&mut RTC),
     {
         // Disable write protection
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
