@@ -79,6 +79,12 @@ pub struct Rtc {
     pub regs: RTC,
 }
 
+/// Calculate the portion through a range. We use this to calculate `RTC_WUTR` value
+/// when setting the wakeup period
+fn portion_through(v: f32, min: f32, max: f32) -> f32 {
+    (v - min) / (max - min)
+}
+
 impl Rtc {
     /// Create and enable a new RTC, and configure its clock source and prescalers.
     /// From AN4759, Table 7, when using the LSE (The only clock source this module
@@ -90,14 +96,17 @@ impl Rtc {
     /// constraining RCC, eg before running this constructor.
     pub fn new(
         regs: RTC,
-        prediv_s: u16,
-        prediv_a: u8,
+        // prediv_s: u16,
+        // prediv_a: u8,
         bypass: bool,
         apb1: &mut APB1,
         bdcr: &mut BDCR,
         pwr: &mut PWR,
     ) -> Self {
         let mut result = Self { regs };
+
+        let prediv_s = 255; // sync prediv
+        let prediv_a = 127; // async prediv
 
         // These 4 steps don't modifiy RTC registers, so don't need unlock behavior.
         reset(bdcr);
@@ -168,9 +177,11 @@ impl Rtc {
     /// adding the line `make_rtc_interrupt_handler!(RTC_WKUP);` somewhere in the body
     /// of your program.
     /// `sleep_time` is in ms.
-    pub fn set_wakeup(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
+    pub fn set_wakeup(&mut self, exti: &mut EXTI, sleep_time: f32) {
         // Configure and enable the EXTI line corresponding to the Wakeup timer even in
         // interrupt mode and select the rising edge sensitivity.
+        // Sleep time is in ms
+
         exti.imr1.modify(|_, w| w.mr20().unmasked());
         exti.rtsr1.modify(|_, w| w.tr20().bit(true));
         exti.ftsr1.modify(|_, w| w.tr20().bit(false));
@@ -195,17 +206,65 @@ impl Rtc {
         // WUTOCLR bits.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
         // todo check ref man register table
-        let lfe_freq = 32_768;
-        let sleep_for_cycles = lfe_freq * sleep_time / 1_000;
-        self.regs
-            .wutr
-            .modify(|_, w| w.wut().bits(sleep_for_cycles as u16));
+
+        // See notes reffed below about WUCKSEL. We choose one of 3 "modes" described in AN4759 based
+        // on sleep time. If in the overlap area, choose the lower (more precise) mode.
+        // These all assume a 1hz `ck_spre`.
+
+        // let lfe_freq = 32_768;
+
+        let clock_cfg;
+        let wutr;
+
+        // todo: QC this logic. I think the lower bounds on `portion_through` aren't
+        // todo quite right (Maybe they should be 0?) But it doesn't matter.
+        if sleep_time > 0.12207 && sleep_time < 32_000. {
+            let division;
+            if sleep_time < 4_000. {
+                division = WakeupDivision::Two; // Resolution: 61.035µs
+                wutr = portion_through(sleep_time, 0.061035, 4_000.);
+            } else if sleeptime < 8_000. {
+                division = WakeupDivision::Four; // Resolution: 122.08µs
+                wutr = portion_through(sleep_time, 0.12207, 8_000.);
+            } else if sleep_time < 16_000. {
+                division = WakeupDivision::Eight; // Resolution: 244.141
+                wutr = portion_through(sleep_time, 0.244141, 16_000.);
+            } else {
+                division = WakeupDivision::Sixteen; // Resolution: 488.281
+                wutr = portion_through(sleep_time, 0.488281, 32_000.);
+            }
+            clock_cfg = ClockConfig::One(division);
+        } else if sleep_time < (65_536. * 1_000.) {
+            // 32s to 18 hours
+            clock_cfg = ClockConfig::Two;
+            wutr = portion_through(sleep_time, 0., 65_536. * 1_000.);
+        } else if sleep_time < (131_072. * 1_000.) {
+            // 18 to 36 hours
+            clock_cfg = ClockConfig::Three;
+            wutr = portion_through(sleep_time, 65_536. * 1_000., 131_072. * 1_000.);
+        } else {
+            panic!("Wakeup period must be between 0122.07µs and 36 hours.")
+        }
+
+        self.regs.wutr.modify(|_, w| w.wut().bits(wutr as u16));
 
         // Select the desired clock source. Program WUCKSEL[2:0] bits in RTC_CR register.
         // See ref man Section 2.4.2: Maximum and minimum RTC wakeup period.
         // todo: Check register docs and see what to set here.
 
-        // See AN4759, Table 13.
+        // See AN4759, Table 13. RM, 27.3.6
+
+        // When ck_spre frequency is 1Hz, this allows to achieve a wakeup time from 1 s to
+        // around 36 hours with one-second resolution. This large programmable time range is
+        // divided in 2 parts:
+        // – from 1s to 18 hours when WUCKSEL [2:1] = 10
+        // – and from around 18h to 36h when WUCKSEL[2:1] = 11. In this last case 216 is
+        // added to the 16-bit counter current value.When the initialization sequence is
+        // complete (see Programming the wakeup timer on page 781), the timer starts
+        // counting down.When the wakeup function is enabled, the down-counting remains
+        // active in low-power modes. In addition, when it reaches 0, the WUTF flag is set in
+        // the RTC_ISR register, and the wakeup counter is automatically reloaded with its
+        // reload value (RTC_WUTR register value).
         let word = match clock_cfg {
             ClockConfig::One(division) => match division {
                 WakeupDivision::Sixteen => 0b000,
@@ -214,8 +273,8 @@ impl Rtc {
                 WakeupDivision::Two => 0b011,
             },
             // for 2 and 3, what does `x` mean in the docs? Best guess is it doesn't matter.
-            ClockConfig::Two => 0b100,
-            ClockConfig::Three => 0b110,
+            ClockConfig::Two => 0b100,   // eg 1s to 18h.
+            ClockConfig::Three => 0b110, // eg 18h to 36h
         };
 
         // 000: RTC/16 clock is selected
@@ -236,7 +295,7 @@ impl Rtc {
         self.regs.cr.modify(|_, w| w.wutie().set_bit());
 
         // Clear the  wakeup flag.
-        // self.regs.isr.modify(|_, w| w.wutf().clear_bit());
+        self.regs.isr.modify(|_, w| w.wutf().clear_bit());
 
         // Enable the RTC registers Write protection. Write 0xFF into the
         // RTC_WPR register. RTC registers can no more be modified.
