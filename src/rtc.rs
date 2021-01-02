@@ -146,15 +146,15 @@ impl Rtc {
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
         self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
 
-        self.regs.cr.modify(|_, w| unsafe { w.alrae.clear_bit() });
+        self.regs.cr.modify(|_, w| unsafe { w.alrae().clear_bit() });
         while self.regs.cr.read().alrae().bit_is_set() {}
 
-        // If using RTC2, we also need to Poll ALRAWF(4) bit until it is set in RTC_ISR.
-        // This may not be a feature F3 has.
+        // RTC 2 only. (May not be avail on F3)
+        while self.regs.isr.read().alrawf().bit_is_clear() {}
 
-        self.regs.alrmar.modify(|_, w| unsafe {});
+        // self.regs.alrmar.modify(|_, w| unsafe {}); // todo
 
-        self.regs.cr.modify(|_, w| unsafe { w.alrae.set_bit() });
+        self.regs.cr.modify(|_, w| unsafe { w.alrae().set_bit() });
         while self.regs.cr.read().alrae().bit_is_clear() {}
 
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
@@ -187,8 +187,8 @@ impl Rtc {
         self.regs.cr.modify(|_, w| w.wute().clear_bit());
 
         // Ensure access to Wakeup auto-reload counter and bits WUCKSEL[2:0] is allowed.
-        // Poll WUTWF until it is set in RTC_ISR (RTC2)/RTC_ICSR (RTC3)
-        while !self.regs.isr.read().wutwf().bit_is_set() {}
+        // Poll WUTWF until it is set in RTC_ISR (RTC2)/RTC_ICSR (RTC3) (May not be avail on F3)
+        while self.regs.isr.read().wutwf().bit_is_clear() {}
 
         // Program the value into the wakeup timer
         // Set WUT[15:0] in RTC_WUTR register. For RTC3 the user must also program
@@ -236,7 +236,7 @@ impl Rtc {
         self.regs.cr.modify(|_, w| w.wutie().set_bit());
 
         // Clear the  wakeup flag.
-        self.regs.isr.modify(|_, w| w.wutf().clear_bit());
+        // self.regs.isr.modify(|_, w| w.wutf().clear_bit());
 
         // Enable the RTC registers Write protection. Write 0xFF into the
         // RTC_WPR register. RTC registers can no more be modified.
