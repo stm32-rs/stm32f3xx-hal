@@ -26,24 +26,18 @@ macro_rules! make_rtc_interrupt_handler {
         #[interrupt]
         fn $line() {
             free(|cs| {
-                // Reset pending bit for interrupt line
                 unsafe {
+                    // Reset pending bit for interrupt line
                     (*pac::EXTI::ptr()).pr1.modify(|_, w| w.pr20().bit(true));
 
                     // Clear the wakeup timer flag, after disabling write protections.
                     (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xCA));
                     (*pac::RTC::ptr()).wpr.write(|w| w.bits(0x53));
+                    (*pac::RTC::ptr()).cr.modify(|_, w| w.wute().clear_bit());
 
                     (*pac::RTC::ptr()).isr.modify(|_, w| w.wutf().clear_bit());
 
-                    // This line is from section 27.3.8 of RM:
-                    // After waking up from low-power mode (Stop or Standby), RSF must be cleared by software.
-                    // The software must then wait until it is set again before reading the RTC_SSR, RTC_TR and
-                    // RTC_DR registers.
-                    // The RSF bit must be cleared after wakeup and not before entering low-power mode.
-                    // (*pac::RTC::ptr()).isr.modify(|_, w| w.rsf().clear_bit());
-                    // while (*pac::RTC::ptr()).isr.read().rsf().bit_is_clear() {}
-
+                    (*pac::RTC::ptr()).cr.modify(|_, w| w.wute().set_bit());
                     (*pac::RTC::ptr()).wpr.write(|w| w.bits(0xFF));
                 }
             });
@@ -255,8 +249,8 @@ impl Rtc {
     /// It also handles the additional step required to set a clock or calendar
     /// value.
     fn modify<F>(&mut self, mut closure: F)
-    where
-        F: FnMut(&mut RTC),
+        where
+            F: FnMut(&mut RTC),
     {
         // Disable write protection
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
@@ -273,7 +267,7 @@ impl Rtc {
         // Exit init mode
         self.regs.isr.modify(|_, w| w.init().clear_bit());
         // wait for last write to be done
-        while !self.regs.isr.read().initf().bit_is_clear() {}
+        while self.regs.isr.read().initf().bit_is_set() {}
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
     }
 }
