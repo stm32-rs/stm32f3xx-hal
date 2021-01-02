@@ -79,12 +79,6 @@ pub struct Rtc {
     pub regs: RTC,
 }
 
-/// Calculate the portion through a range. We use this to calculate `RTC_WUTR` value
-/// when setting the wakeup period
-fn portion_through(v: f32, min: f32, max: f32) -> f32 {
-    (v - min) / (max - min)
-}
-
 impl Rtc {
     /// Create and enable a new RTC, and configure its clock source and prescalers.
     /// From AN4759, Table 7, when using the LSE (The only clock source this module
@@ -211,7 +205,13 @@ impl Rtc {
         // on sleep time. If in the overlap area, choose the lower (more precise) mode.
         // These all assume a 1hz `ck_spre`.
 
-        // let lfe_freq = 32_768;
+        let lfe_freq = 32_768;
+
+        // sleep_time = (1/lfe_freq) * div * wutr
+        // res = 1/lfe_freq * div
+        // sleep_time = res * WUTR = 1/lfe_freq * div * (wutr + 1)
+        // wutr = sleep_time * lfe_freq / div - 1
+
 
         let clock_cfg;
         let wutr;
@@ -220,23 +220,26 @@ impl Rtc {
         // todo quite right (Maybe they should be 0?) But it doesn't matter.
         if sleep_time > 0.12207 && sleep_time < 32_000. {
             let division;
+            let div;
             if sleep_time < 4_000. {
                 division = WakeupDivision::Two; // Resolution: 61.035µs
-                wutr = portion_through(sleep_time, 0.061035, 4_000.);
-            } else if sleeptime < 8_000. {
+                div = 2.;
+            } else if sleep_time < 8_000. {
                 division = WakeupDivision::Four; // Resolution: 122.08µs
-                wutr = portion_through(sleep_time, 0.12207, 8_000.);
+                div = 4.;
             } else if sleep_time < 16_000. {
                 division = WakeupDivision::Eight; // Resolution: 244.141
-                wutr = portion_through(sleep_time, 0.244141, 16_000.);
+                div = 8.;
             } else {
                 division = WakeupDivision::Sixteen; // Resolution: 488.281
-                wutr = portion_through(sleep_time, 0.488281, 32_000.);
+                div = 16.;
             }
             clock_cfg = ClockConfig::One(division);
+            wutr = sleep_time / 1_000. * lfe_freq / div - 1.
         } else if sleep_time < (65_536. * 1_000.) {
             // 32s to 18 hours
             clock_cfg = ClockConfig::Two;
+            // todo: Is `portion_through` the right approach?
             wutr = portion_through(sleep_time, 0., 65_536. * 1_000.);
         } else if sleep_time < (131_072. * 1_000.) {
             // 18 to 36 hours
@@ -360,6 +363,12 @@ impl Rtc {
         while self.regs.isr.read().initf().bit_is_set() {}
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
     }
+}
+
+/// Calculate the portion through a range. We use this to calculate `RTC_WUTR` value
+/// when setting the wakeup period
+fn portion_through(v: f32, min: f32, max: f32) -> f32 {
+    (v - min) / (max - min)
 }
 
 impl Rtcc for Rtc {
