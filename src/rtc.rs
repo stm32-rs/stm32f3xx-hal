@@ -5,7 +5,7 @@
 //! For more details, see
 //! [ST AN4759](https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h)
 
-use crate::pac::{PWR, RTC};
+use crate::pac::{PWR, RCC, RTC};
 use crate::rcc::{APB1, BDCR};
 use core::convert::TryInto;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
@@ -48,6 +48,15 @@ macro_rules! make_wakeup_interrupt_handler {
     };
 }
 
+/// RTC Clock source.
+#[derive(Clone, Copy, Debug)]
+#[repr(u8)]
+pub enum ClockSource {
+    Lse = 0b01,
+    Lsi = 0b10,
+    Hse = 0b11,
+}
+
 /// RTC error type
 #[derive(Debug)]
 pub enum Error {
@@ -58,7 +67,7 @@ pub enum Error {
 /// See ref man, section 27.6.3, or AN4769, section 2.4.2.
 /// To be used with WakeupPrescaler
 #[derive(Clone, Copy, Debug)]
-pub enum WakeupDivision {
+enum WakeupDivision {
     Sixteen,
     Eight,
     Four,
@@ -67,7 +76,7 @@ pub enum WakeupDivision {
 
 /// See AN4759, table 13.
 #[derive(Clone, Copy, Debug)]
-pub enum ClockConfig {
+enum ClockConfig {
     One(WakeupDivision),
     Two,
     Three,
@@ -88,8 +97,11 @@ impl Rtc {
     /// doesn't connect to `OSC32_IN`, such as a MEMS resonator.
     /// Note: You may need to run `dp.RCC.apb1enr.modify(|_, w| w.pwren().set_bit());` before
     /// constraining RCC, eg before running this constructor.
+    /// Note that if using HSE as the clock source, we assume you've already enabled it, eg
+    /// in clock config.
     pub fn new(
         regs: RTC,
+        clock_source: ClockSource,
         // prediv_s: u16,
         // prediv_a: u8,
         bypass: bool,
@@ -105,7 +117,21 @@ impl Rtc {
         // These 4 steps don't modifiy RTC registers, so don't need unlock behavior.
         reset(bdcr);
         unlock(apb1, pwr); // Must unlock before enabling LSE.
-        enable_lse(bdcr, bypass);
+
+        match clock_source {
+            ClockSource::Lse => {
+                enable_lse(bdcr, bypass);
+                bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
+            }
+            ClockSource::Lsi => {
+                enable_lsi();
+                bdcr.bdcr().modify(|_, w| w.rtcsel().lsi());
+            }
+            ClockSource::Hse => {
+                // We assume you've already enabled HSE in clock config.
+                bdcr.bdcr().modify(|_, w| w.rtcsel().hse());
+            }
+        }
         enable(bdcr);
 
         result.set_24h_fmt();
@@ -139,7 +165,7 @@ impl Rtc {
     #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
     /// Setup the alarm. See AN4759, section 2.3.1.
     /// `sleep_time` is in ms. `Table 8` desribes these steps.
-    pub fn set_alarm(&mut self, exti: &mut EXTI, clock_cfg: ClockConfig, sleep_time: u32) {
+    pub fn set_alarm(&mut self, exti: &mut EXTI) {
         exti.imr1.modify(|_, w| w.mr17().unmasked());
         exti.rtsr1.modify(|_, w| w.tr17().bit(true));
         exti.ftsr1.modify(|_, w| w.tr17().bit(false));
@@ -149,7 +175,7 @@ impl Rtc {
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
         self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
 
-        self.regs.cr.modify(|_, w| unsafe { w.alrae().clear_bit() });
+        self.regs.cr.modify(|_, w| w.alrae().clear_bit());
         while self.regs.cr.read().alrae().bit_is_set() {}
 
         // RTC 2 only. (May not be avail on F3)
@@ -157,7 +183,7 @@ impl Rtc {
 
         // self.regs.alrmar.modify(|_, w| unsafe {}); // todo
 
-        self.regs.cr.modify(|_, w| unsafe { w.alrae().set_bit() });
+        self.regs.cr.modify(|_, w| w.alrae().set_bit());
         while self.regs.cr.read().alrae().bit_is_clear() {}
 
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
@@ -298,6 +324,7 @@ impl Rtc {
         self.regs.cr.modify(|_, w| w.wute().set_bit());
 
         // Enable the wakeup timer interrupt.
+        self.regs.cr.modify(|_, w| w.wutie().set_bit());
         self.regs.cr.modify(|_, w| w.wutie().set_bit());
 
         // Clear the  wakeup flag.
@@ -668,6 +695,14 @@ fn hours_to_u8(hours: Hours) -> Result<u8, Error> {
     }
 }
 
+fn enable_lsi() {
+    // todo: Unsafe API for now due to upstream exposure of CSR
+    unsafe {
+        (*RCC::ptr()).csr.modify(|_, w| w.lsion().set_bit());
+        while (*RCC::ptr()).csr.read().lsion().bit_is_clear() {}
+    }
+}
+
 /// Enable the low frequency external oscillator. This is the only mode currently
 /// supported, to avoid exposing the `CR` and `CRS` registers.
 fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
@@ -696,7 +731,6 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
 
 /// Enables the RTC, and sets LSE as the timing source.
 pub fn enable(bdcr: &mut BDCR) {
-    bdcr.bdcr().modify(|_, w| w.rtcsel().lse());
     bdcr.bdcr().modify(|_, w| w.rtcen().enabled());
 }
 
