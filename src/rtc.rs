@@ -187,16 +187,16 @@ impl Rtc {
 
         // todo: QC this logic. I think the lower bounds on `portion_through` aren't
         // todo quite right (Maybe they should be 0?) But it doesn't matter.
-        if sleep_time > 0.12207 && sleep_time < 32_000. {
+        if sleep_time > 0.00012207 && sleep_time < 32. {
             let division;
             let div;
-            if sleep_time < 4_000. {
+            if sleep_time < 4. {
                 division = WakeupDivision::Two; // Resolution: 61.035µs
                 div = 2.;
-            } else if sleep_time < 8_000. {
+            } else if sleep_time < 8. {
                 division = WakeupDivision::Four; // Resolution: 122.08µs
                 div = 4.;
-            } else if sleep_time < 16_000. {
+            } else if sleep_time < 16. {
                 division = WakeupDivision::Eight; // Resolution: 244.141
                 div = 8.;
             } else {
@@ -204,16 +204,16 @@ impl Rtc {
                 div = 16.;
             }
             clock_cfg = ClockConfig::One(division);
-            wutr = sleep_time / 1_000. * lfe_freq / div - 1.
-        } else if sleep_time < (65_536. * 1_000.) {
+            wutr = sleep_time * lfe_freq / div - 1.
+        } else if sleep_time < 65_536. {
             // 32s to 18 hours
             clock_cfg = ClockConfig::Two;
             // todo: Is `portion_through` the right approach?
-            wutr = portion_through(sleep_time, 0., 65_536. * 1_000.);
-        } else if sleep_time < (131_072. * 1_000.) {
+            wutr = portion_through(sleep_time, 0., 65_536.);
+        } else if sleep_time < 131_072. {
             // 18 to 36 hours
             clock_cfg = ClockConfig::Three;
-            wutr = portion_through(sleep_time, 65_536. * 1_000., 131_072. * 1_000.);
+            wutr = portion_through(sleep_time, 65_536., 131_072.);
         } else {
             panic!("Wakeup period must be between 0122.07µs and 36 hours.")
         }
@@ -271,7 +271,7 @@ impl Rtc {
     pub fn set_wakeup(&mut self, exti: &mut EXTI, sleep_time: f32) {
         // Configure and enable the EXTI line corresponding to the Wakeup timer even in
         // interrupt mode and select the rising edge sensitivity.
-        // Sleep time is in ms
+        // Sleep time is in seconds
 
         exti.imr1.modify(|_, w| w.mr20().unmasked());
         exti.rtsr1.modify(|_, w| w.tr20().bit(true));
@@ -313,6 +313,7 @@ impl Rtc {
     /// Change the sleep time for the auto wakeup, after it's been set up.
     /// Sleep time is in MS. Major DRY from `set_wakeup`.
     pub fn set_wakeup_interval(&mut self, sleep_time: f32) {
+        // `sleep_time` is in seconds.
         // See comments in `set_auto_wakeup` for what these writes do.
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
         self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
