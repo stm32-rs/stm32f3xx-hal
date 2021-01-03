@@ -86,6 +86,7 @@ enum ClockConfig {
 pub struct Rtc {
     /// RTC Peripheral register definition
     pub regs: RTC,
+    clock_source: ClockSource,
 }
 
 impl Rtc {
@@ -109,7 +110,7 @@ impl Rtc {
         bdcr: &mut BDCR,
         pwr: &mut PWR,
     ) -> Self {
-        let mut result = Self { regs };
+        let mut result = Self { regs, clock_source };
 
         let prediv_s = 255; // sync prediv
         let prediv_a = 127; // async prediv
@@ -132,6 +133,7 @@ impl Rtc {
                 bdcr.bdcr().modify(|_, w| w.rtcsel().hse());
             }
         }
+
         enable(bdcr);
 
         result.set_24h_fmt();
@@ -201,7 +203,11 @@ impl Rtc {
         // See notes reffed below about WUCKSEL. We choose one of 3 "modes" described in AN4759 based
         // on sleep time. If in the overlap area, choose the lower (more precise) mode.
         // These all assume a 1hz `ck_spre`.
-        let lfe_freq = 32_768.;
+        let lfe_freq = match self.clock_source {
+            ClockSource::Lse => 32_768.,
+            ClockSource::Lsi => 40_000.,  // 30-50Khz, 'around 40kHz.`
+            ClockSource::Hse => 250_000., // Assuming 8Mhz HSE, which may not be the case
+        };
 
         // sleep_time = (1/lfe_freq) * div * (wutr + 1)
         // res = 1/lfe_freq * div
@@ -211,8 +217,6 @@ impl Rtc {
         let clock_cfg;
         let wutr;
 
-        // todo: QC this logic. I think the lower bounds on `portion_through` aren't
-        // todo quite right (Maybe they should be 0?) But it doesn't matter.
         if sleep_time >= 0.00012207 && sleep_time < 32. {
             let division;
             let div;
@@ -232,9 +236,8 @@ impl Rtc {
             clock_cfg = ClockConfig::One(division);
             wutr = sleep_time * lfe_freq / div - 1.
         } else if sleep_time < 65_536. {
-            // 32s to 18 hours
+            // 32s to 18 hours (This mode goes 1s to 18 hours; we use Config1 for the overlap)
             clock_cfg = ClockConfig::Two;
-            // todo: Is `portion_through` the right approach?
             wutr = sleep_time; // This works out conveniently!
         } else if sleep_time < 131_072. {
             // 18 to 36 hours
