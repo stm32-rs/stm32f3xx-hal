@@ -203,7 +203,7 @@ impl Rtc {
         // These all assume a 1hz `ck_spre`.
         let lfe_freq = 32_768.;
 
-        // sleep_time = (1/lfe_freq) * div * wutr
+        // sleep_time = (1/lfe_freq) * div * (wutr + 1)
         // res = 1/lfe_freq * div
         // sleep_time = res * WUTR = 1/lfe_freq * div * (wutr + 1)
         // wutr = sleep_time * lfe_freq / div - 1
@@ -213,7 +213,7 @@ impl Rtc {
 
         // todo: QC this logic. I think the lower bounds on `portion_through` aren't
         // todo quite right (Maybe they should be 0?) But it doesn't matter.
-        if sleep_time > 0.00012207 && sleep_time < 32. {
+        if sleep_time >= 0.00012207 && sleep_time < 32. {
             let division;
             let div;
             if sleep_time < 4. {
@@ -235,11 +235,11 @@ impl Rtc {
             // 32s to 18 hours
             clock_cfg = ClockConfig::Two;
             // todo: Is `portion_through` the right approach?
-            wutr = portion_through(sleep_time, 0., 65_536.);
+            wutr = sleep_time; // This works out conveniently!
         } else if sleep_time < 131_072. {
             // 18 to 36 hours
             clock_cfg = ClockConfig::Three;
-            wutr = portion_through(sleep_time, 65_536., 131_072.);
+            wutr = sleep_time - 65_537.;
         } else {
             panic!("Wakeup period must be between 0122.07µs and 36 hours.")
         }
@@ -391,12 +391,6 @@ impl Rtc {
         while self.regs.isr.read().initf().bit_is_set() {}
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
     }
-}
-
-/// Calculate the portion through a range. We use this to calculate `RTC_WUTR` value
-/// when setting the wakeup period
-fn portion_through(v: f32, min: f32, max: f32) -> f32 {
-    (v - min) / (max - min)
 }
 
 impl Rtcc for Rtc {
