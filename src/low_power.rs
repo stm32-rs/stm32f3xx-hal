@@ -2,10 +2,11 @@
 //! Reference section 3.7: `Power management` of the user manual,
 //! and more importantly, 7.3: `Low-power modes` of reference manual.
 
+use crate::clocks::InputSrc;
 /// Enter `Sleep now` mode: the lightest of the 3 low-power states avail on the
 /// STM32f3.
 /// TO exit: Interrupt. Refer to Table 82.
-use crate::pac::PWR;
+use crate::pac::{PWR, RCC};
 use cortex_m::{asm::wfi, peripheral::SCB};
 
 /// Ref man, table 18.
@@ -34,12 +35,47 @@ pub fn sleep_on_exit(scb: &mut SCB) {
     wfi();
 }
 
+/// Re-select innput source; used on Stop and Standby modes, where the system reverts
+/// to HSI after wake.
+fn re_select_input(input_src: InputSrc) {
+    // Re-select the input source; it will revert to HSI during `Stop` or `Standby` mode.
+
+    // Note: It would save code repetition to pass the `Clocks` struct in and re-run setup
+    // todo: But this saves a few reg writes.
+    match input_src {
+        InputSrc::Hse => unsafe {
+            (*RCC::ptr()).cr.modify(|_, w| w.hseon().set_bit());
+            while (*RCC::ptr()).cr.read().hserdy().is_not_ready() {}
+
+            (*RCC::ptr())
+                .cfgr
+                .modify(|_, w| w.sw().bits(input_src.bits()));
+        },
+        InputSrc::Pll(_) => unsafe {
+            // todo: DRY with above.
+            (*RCC::ptr()).cr.modify(|_, w| w.hseon().set_bit());
+            while (*RCC::ptr()).cr.read().hserdy().is_not_ready() {}
+
+            (*RCC::ptr()).cr.modify(|_, w| w.pllon().off());
+            while (*RCC::ptr()).cr.read().pllrdy().is_ready() {}
+
+            (*RCC::ptr())
+                .cfgr
+                .modify(|_, w| w.sw().bits(input_src.bits()));
+
+            (*RCC::ptr()).cr.modify(|_, w| w.pllon().on());
+            while (*RCC::ptr()).cr.read().pllrdy().is_not_ready() {}
+        },
+        InputSrc::Hsi => (), // Already reset to this.
+    }
+}
+
 /// Enter `Stop` mode: the middle of the 3 low-power states avail on the
 /// STM32f3.
 /// To exit:  Any EXTI Line configured in Interrupt mode (the corresponding EXTI
 /// Interrupt vector must be enabled in the NVIC). Refer to Table 82.
 /// Ref man, table 20.
-pub fn stop(scb: &mut SCB, pwr: &mut PWR) {
+pub fn stop(scb: &mut SCB, pwr: &mut PWR, input_src: InputSrc) {
     //WFI (Wait for Interrupt) or WFE (Wait for Event) while:
 
     // Set SLEEPDEEP bit in ARM® Cortex®-M4 System Control register
@@ -60,6 +96,8 @@ pub fn stop(scb: &mut SCB, pwr: &mut PWR) {
     pwr.cr.modify(|_, w| w.lpds().set_bit());
 
     wfi();
+
+    re_select_input(input_src);
 }
 
 /// Enter `Standby` mode: the lowest-power of the 3 low-power states avail on the
@@ -67,7 +105,7 @@ pub fn stop(scb: &mut SCB, pwr: &mut PWR) {
 /// To exit: WKUP pin rising edge, RTC alarm event’s rising edge, external Reset in
 /// NRST pin, IWDG Reset.
 /// Ref man, table 21.
-pub fn standby(scb: &mut SCB, pwr: &mut PWR) {
+pub fn standby(scb: &mut SCB, pwr: &mut PWR, input_src: InputSrc) {
     // WFI (Wait for Interrupt) or WFE (Wait for Event) while:
 
     // Set SLEEPDEEP bit in ARM® Cortex®-M4 System Control register
@@ -85,4 +123,6 @@ pub fn standby(scb: &mut SCB, pwr: &mut PWR) {
     pwr.cr.modify(|_, w| w.cwuf().set_bit());
 
     wfi();
+
+    re_select_input(input_src);
 }

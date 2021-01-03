@@ -41,13 +41,17 @@ pub enum Validation {
 
 #[derive(Clone, Copy)]
 #[repr(u8)]
+/// Note that this corresponds to Bits 16:15: Applicable only to some models,
+///303xB/C etc use only bit 16, with bit 15 at reset value (0?) but it's equiv. 303xD/E and xE use bits 16:15.
 pub enum PllSrc {
     HsiDiv2 = 0b00,
     Hsi = 0b01,
     Hse = 0b10,
+    // HsiDiv2 = 0,
+    // Hse = 1,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum InputSrc {
     Hsi,
     Hse,
@@ -155,7 +159,7 @@ impl PllMul {
 
 #[derive(Clone, Copy)]
 #[repr(u8)]
-/// Division factor for the AHB clock.
+/// Division factor for the AHB clock. Also known as AHB Prescaler.
 pub enum HclkPrescaler {
     Div1 = 0b0000,
     Div2 = 0b1000,
@@ -186,7 +190,7 @@ impl HclkPrescaler {
 
 #[derive(Clone, Copy)]
 #[repr(u8)]
-/// For use with `RCC_APBPPRE1`, and `RCC_APBPPRE2`.
+/// For use with `RCC_APBPPRE1`, and `RCC_APBPPRE2`. Ie, low-speed and high-speed prescalers respectively.
 pub enum ApbPrescaler {
     Div1 = 0b000,
     Div2 = 0b100,
@@ -280,7 +284,7 @@ impl Clocks {
             InputSrc::Hsi => (),
             InputSrc::Pll(pll_src) => {
                 if let PllSrc::Hse = pll_src {
-                    // todo: DRY
+                    // DRY
                     rcc.cr.modify(|_, w| w.hseon().bit(true));
                     while rcc.cr.read().hserdy().is_not_ready() {}
                 }
@@ -308,16 +312,17 @@ impl Clocks {
 
             // Now turn PLL back on, once we're configured things that can only be set with it off.
             rcc.cr.modify(|_, w| w.pllon().on());
+
             while rcc.cr.read().pllrdy().is_not_ready() {}
         }
 
         rcc.cfgr.modify(|_, w| {
             w.usbpre().bit(self.usb_pre.bit()); // eg: Divide by 1.5: 72/1.5 = 48Mhz, required by USB clock.
 
-            unsafe { w.ppre2().bits(self.apb2_prescaler as u8) }; // HCLK division for APB2.
-            unsafe { w.ppre1().bits(self.apb1_prescaler as u8) }; // HCLK division for APB1
+            unsafe { w.sw().bits(self.input_src.bits()) };
             unsafe { w.hpre().bits(self.hclk_prescaler as u8) }; // eg: Divide SYSCLK by 2 to get HCLK of 36Mhz.
-            unsafe { w.sw().bits(self.input_src.bits()) }
+            unsafe { w.ppre2().bits(self.apb2_prescaler as u8) }; // HCLK division for APB2.
+            unsafe { w.ppre1().bits(self.apb1_prescaler as u8) } // HCLK division for APB1
         });
 
         rcc.cr.modify(|_, w| w.csson().bit(self.security_system));

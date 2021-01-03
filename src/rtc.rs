@@ -205,7 +205,7 @@ impl Rtc {
         // These all assume a 1hz `ck_spre`.
         let lfe_freq = match self.clock_source {
             ClockSource::Lse => 32_768.,
-            ClockSource::Lsi => 40_000.,  // 30-50Khz, 'around 40kHz.`
+            ClockSource::Lsi => 40_000.,
             ClockSource::Hse => 250_000., // Assuming 8Mhz HSE, which may not be the case
         };
 
