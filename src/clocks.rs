@@ -20,15 +20,15 @@ pub struct SpeedError {}
 /// Calculated clock speeds. All in Mhz
 #[derive(Clone, Debug)]
 pub struct Speeds {
-    sysclk: f32,
-    hclk: f32,    // AHB bus, core, memory and DMA
-    systick: f32, // Cortex System Timer
-    fclk: f32,    // FCLK Cortex clock
-    pclk1: f32,   // APB1 peripheral clocks
-    timer1: f32,  // APB1 timer clocks
-    pclk2: f32,   // APB2 peripheral clocks
-    timer2: f32,  // APB2 timer clocks
-    usb: f32,
+    pub sysclk: f32,
+    pub hclk: f32,    // AHB bus, core, memory and DMA
+    pub systick: f32, // Cortex System Timer
+    pub fclk: f32,    // FCLK Cortex clock
+    pub pclk1: f32,   // APB1 peripheral clocks
+    pub timer1: f32,  // APB1 timer clocks
+    pub pclk2: f32,   // APB2 peripheral clocks
+    pub timer2: f32,  // APB2 timer clocks
+    pub usb: f32,
 }
 
 /// Is a set of speeds valid?

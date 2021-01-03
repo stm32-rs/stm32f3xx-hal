@@ -1,60 +1,64 @@
 //! Timers
 
 use core::convert::{From, TryFrom};
+use num_traits::float::Float;
 
 use crate::hal::timer::{CountDown, Periodic};
 #[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f302",
-    feature = "stm32f303",
-    feature = "stm32f334",
-    feature = "stm32f318",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398",
+feature = "stm32f301",
+feature = "stm32f302",
+feature = "stm32f303",
+feature = "stm32f334",
+feature = "stm32f318",
+feature = "stm32f328",
+feature = "stm32f358",
+feature = "stm32f398",
 ))]
 use crate::pac::TIM1;
 #[cfg(any(
-    feature = "stm32f303",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
+feature = "stm32f303",
+feature = "stm32f328",
+feature = "stm32f358",
+feature = "stm32f398"
 ))]
 use crate::pac::TIM20;
 #[cfg(any(
-    feature = "stm32f303",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f398"
+feature = "stm32f303",
+feature = "stm32f328",
+feature = "stm32f358",
+feature = "stm32f373",
+feature = "stm32f378",
+feature = "stm32f398"
 ))]
 use crate::pac::TIM4;
 #[cfg(any(
-    feature = "stm32f303",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398",
+feature = "stm32f303",
+feature = "stm32f328",
+feature = "stm32f358",
+feature = "stm32f398",
 ))]
 use crate::pac::TIM8;
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 use crate::pac::{TIM12, TIM13, TIM14, TIM18, TIM19, TIM5};
 use crate::pac::{TIM16, TIM17, TIM2, TIM6};
 #[cfg(any(
-    feature = "stm32f303",
-    feature = "stm32f328",
-    feature = "stm32f334",
-    feature = "stm32f358",
-    feature = "stm32f373",
-    feature = "stm32f378",
-    feature = "stm32f398"
+feature = "stm32f303",
+feature = "stm32f328",
+feature = "stm32f334",
+feature = "stm32f358",
+feature = "stm32f373",
+feature = "stm32f378",
+feature = "stm32f398"
 ))]
 use crate::pac::{TIM3, TIM7};
 
 use void::Void;
 
-use crate::rcc::{Clocks, APB1, APB2};
-use crate::time::Hertz;
+use crate::{
+    clocks,
+    rcc::{Clocks, APB1, APB2},
+    time::Hertz,
+};
 
 /// Associated clocks with timers
 pub trait PclkSrc {
@@ -534,6 +538,35 @@ macro_rules! gp_timer {
                 pub fn release(mut self) -> $TIMX {
                     self.stop();
                     self.tim
+                }
+
+                /// Set the timer period, in seconds. Overrides the period or frequency set
+                /// in the constructor.
+                /// This allows you to set periods greater than 1hz.
+                pub fn set_period(&mut self, period: f32, clocks: &clocks::Clocks) {
+                    // PSC and ARR range: 0 to 65535
+                    // (PSC+1)*(ARR+1) = TIMclk/Updatefrequency = TIMclk * period
+                    // APB1 (pclk1) is used by Tim2, 3, 4, 6, 7.
+                    // APB2 (pclk2) is used by Tim8, 15-20 etc.
+                    // todo: It appears there's a (fixed?) 2x multiplier on APB1
+                    // clocks; it's twice `pclk1`. See clocks diagram in RM, or `Clock Configuration`
+                    // tool in STM32CubeIDE.
+                    let tim_clk = clocks.calc_speeds().pclk1 * 1_000_000. * 2.;
+
+                    // We need to factor the right-hand-side of the above equation (`rhs` variable)
+                    // into integers. There are likely clever algorithms available to do this.
+                    // Some examples: https://cp-algorithms.com/algebra/factorization.html
+                    // We've chosen something quick to write, and with sloppy precision;
+                    // should be good enough for most cases.
+
+                    let rhs = tim_clk * period;
+
+                    // todo: Round instead of cast?
+                    let arr = (rhs.sqrt() - 1.) as u16;
+                    let psc = arr;
+
+                    self.tim.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
+                    self.tim.psc.write(|w| unsafe { w.bits(u32::from(psc)) });
                 }
             }
         )+
