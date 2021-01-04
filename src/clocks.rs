@@ -261,6 +261,26 @@ impl Clocks {
             return Err(SpeedError {});
         }
 
+        // Adjust flash wait states according to the HCLK frequency.
+        // We need to do this before enabling PLL, or it won't enable.
+        // todo: This hclk calculation is DRY from `calc_speeds`.
+        let sysclk = match self.input_src {
+            InputSrc::Pll(_) => self.input_freq / self.prediv.value() * self.pll_mul.value(),
+            _ => self.input_freq,
+        };
+
+        let hclk = sysclk as f32 / self.hclk_prescaler.value() as f32;
+        // f3 ref man section 4.5.1.
+        flash.acr.modify(|_, w| {
+            if hclk <= 24. {
+                w.latency().ws0()
+            } else if hclk <= 48. {
+                w.latency().ws1()
+            } else {
+                w.latency().ws2()
+            }
+        });
+
         // 303 FM, 9.2.3:
         // The internal PLL can be used to multiply the HSI or HSE output clock frequency. Refer to
         // Figure 13 and Clock control register (RCC_CR).
@@ -326,25 +346,6 @@ impl Clocks {
         });
 
         rcc.cr.modify(|_, w| w.csson().bit(self.security_system));
-
-        // Adjust flash wait states according to the HCLK frequency
-        // todo: This hclk calculation is DRY from `calc_speeds`.
-        let sysclk = match self.input_src {
-            InputSrc::Pll(_) => self.input_freq / self.prediv.value() * self.pll_mul.value(),
-            _ => self.input_freq,
-        };
-        let hclk = sysclk as f32 / self.hclk_prescaler.value() as f32;
-
-        // f3 ref man section 4.5.1
-        flash.acr.modify(|_, w| {
-            if hclk <= 24. {
-                w.latency().ws0()
-            } else if hclk <= 48. {
-                w.latency().ws1()
-            } else {
-                w.latency().ws2()
-            }
-        });
 
         Ok(())
     }

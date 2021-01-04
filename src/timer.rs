@@ -562,6 +562,13 @@ macro_rules! gp_timer {
                     // We've chosen something quick to write, and with sloppy precision;
                     // should be good enough for most cases.
 
+                    // - If you work with pure floats, there are an infinite number of solutions: Ie for any value of PSC, you can find an ARR to solve the equation.
+                    // - The actual values are integers that must be between 0 and 65_536
+                    // - Different combinations will result in different amounts of rounding errors. Ideally, we pick the one with the lowest rounding error.
+                    // - The aboveapproach sets PSC and ARR always equal to each other.
+                    // This results in concise code, is computationally easy, and doesn't limit
+                    // the maximum period. There will usually be solutions that have a smaller rounding error.
+
                     let max_val = 65_535;
                     let rhs = tim_clk * period;
 
