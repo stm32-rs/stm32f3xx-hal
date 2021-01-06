@@ -2,7 +2,6 @@
 //! See STM32f303 reference man section 14, including Table 82.
 
 use crate::pac::{interrupt, EXTI, SYSCFG};
-use cortex_m::peripheral::NVIC;
 
 #[derive(Copy, Clone, Debug)]
 pub enum GpioReg {
@@ -64,203 +63,167 @@ pub fn setup_line(exti: &mut EXTI, line: u8, edge: Edge) {
             // EXTI so that an interrupt coming from one of the EXTI line can be correctly
             // acknowledged.
             // See reference manual Table 83.
-            unsafe { NVIC::unmask(interrupt::EXTI0) };
         }
         // todo: DRY, in lieu of a working macro.
         1 => {
             exti.imr1.modify(|_, w| w.mr1().unmasked());
             exti.rtsr1.modify(|_, w| w.tr1().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr1().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI1) };
         }
         2 => {
             exti.imr1.modify(|_, w| w.mr2().unmasked());
             exti.rtsr1.modify(|_, w| w.tr2().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr2().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI2_TSC) };
         }
         3 => {
             exti.imr1.modify(|_, w| w.mr3().unmasked());
             exti.rtsr1.modify(|_, w| w.tr3().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr3().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI3) };
         }
         4 => {
             exti.imr1.modify(|_, w| w.mr4().unmasked());
             exti.rtsr1.modify(|_, w| w.tr4().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr4().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI4) };
         }
         5 => {
             exti.imr1.modify(|_, w| w.mr5().unmasked());
             exti.rtsr1.modify(|_, w| w.tr5().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr5().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI9_5) };
         }
         6 => {
             exti.imr1.modify(|_, w| w.mr6().unmasked());
             exti.rtsr1.modify(|_, w| w.tr6().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr6().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI9_5) };
         }
         7 => {
             exti.imr1.modify(|_, w| w.mr7().unmasked());
             exti.rtsr1.modify(|_, w| w.tr7().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr7().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI9_5) };
         }
         8 => {
             exti.imr1.modify(|_, w| w.mr8().unmasked());
             exti.rtsr1.modify(|_, w| w.tr8().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr8().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI9_5) };
         }
         9 => {
             exti.imr1.modify(|_, w| w.mr9().unmasked());
             exti.rtsr1.modify(|_, w| w.tr9().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr9().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI9_5) };
         }
         10 => {
             exti.imr1.modify(|_, w| w.mr10().unmasked());
             exti.rtsr1.modify(|_, w| w.tr10().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr10().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI15_10) };
         }
         11 => {
             exti.imr1.modify(|_, w| w.mr11().unmasked());
             exti.rtsr1.modify(|_, w| w.tr11().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr11().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI15_10) };
         }
         12 => {
             exti.imr1.modify(|_, w| w.mr12().unmasked());
             exti.rtsr1.modify(|_, w| w.tr12().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr12().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI15_10) };
         }
         13 => {
             exti.imr1.modify(|_, w| w.mr13().unmasked());
             exti.rtsr1.modify(|_, w| w.tr13().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr13().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI15_10) };
         }
         14 => {
             exti.imr1.modify(|_, w| w.mr14().unmasked());
             exti.rtsr1.modify(|_, w| w.tr14().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr14().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI15_10) };
         }
         // Internal interrupts
         15 => {
             exti.imr1.modify(|_, w| w.mr15().unmasked());
             exti.rtsr1.modify(|_, w| w.tr15().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr15().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::EXTI15_10) };
         }
         16 => {
             exti.imr1.modify(|_, w| w.mr16().unmasked());
             exti.rtsr1.modify(|_, w| w.tr16().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr16().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::PVD) };
         }
         17 => {
             exti.imr1.modify(|_, w| w.mr17().unmasked());
             exti.rtsr1.modify(|_, w| w.tr17().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr17().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::RTCALARM) };
         }
         18 => {
             exti.imr1.modify(|_, w| w.mr18().unmasked());
             exti.rtsr1.modify(|_, w| w.tr18().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr18().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::USB_WKUP) };
         }
         19 => {
             exti.imr1.modify(|_, w| w.mr19().unmasked());
             exti.rtsr1.modify(|_, w| w.tr19().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr19().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::TAMP_STAMP) };
         }
         20 => {
             exti.imr1.modify(|_, w| w.mr20().unmasked());
             exti.rtsr1.modify(|_, w| w.tr20().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr20().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::RTC_WKUP) };
         }
         21 => {
             exti.imr1.modify(|_, w| w.mr21().unmasked());
             exti.rtsr1.modify(|_, w| w.tr21().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr21().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::COMP1_2_3) };
         }
         22 => {
             exti.imr1.modify(|_, w| w.mr22().unmasked());
             exti.rtsr1.modify(|_, w| w.tr22().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr22().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::COMP1_2_3) };
         }
         23 => {
             exti.imr1.modify(|_, w| w.mr23().unmasked());
-            unsafe { NVIC::unmask(interrupt::I2C1_EV_EXTI23) };
         }
         24 => {
             exti.imr1.modify(|_, w| w.mr24().unmasked());
-            unsafe { NVIC::unmask(interrupt::I2C2_EV_EXTI24) };
         }
         25 => {
             exti.imr1.modify(|_, w| w.mr25().unmasked());
-            unsafe { NVIC::unmask(interrupt::USART1_EXTI25) };
         }
         26 => {
             exti.imr1.modify(|_, w| w.mr26().unmasked());
-            unsafe { NVIC::unmask(interrupt::USART2_EXTI26) };
         }
         27 => {
             exti.imr1.modify(|_, w| w.mr27().unmasked());
-            unsafe { NVIC::unmask(interrupt::I2C3_EV) };
         }
         28 => {
             exti.imr1.modify(|_, w| w.mr28().unmasked());
-            unsafe { NVIC::unmask(interrupt::USART3_EXTI28) };
         }
         29 => {
             exti.imr1.modify(|_, w| w.mr29().unmasked());
             exti.rtsr1.modify(|_, w| w.tr29().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr29().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::COMP1_2_3) };
         }
         30 => {
             exti.imr1.modify(|_, w| w.mr30().unmasked());
             exti.rtsr1.modify(|_, w| w.tr30().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr30().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::COMP4_5_6) };
         }
         31 => {
             exti.imr1.modify(|_, w| w.mr31().unmasked());
             exti.rtsr1.modify(|_, w| w.tr31().bit(rise_trigger));
             exti.ftsr1.modify(|_, w| w.tr31().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::COMP4_5_6) };
         }
         32 => {
             exti.imr2.modify(|_, w| w.mr32().unmasked());
             exti.rtsr2.modify(|_, w| w.tr32().bit(rise_trigger));
             exti.ftsr2.modify(|_, w| w.tr32().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::COMP4_5_6) };
         }
         33 => {
             exti.imr2.modify(|_, w| w.mr33().unmasked());
             exti.rtsr2.modify(|_, w| w.tr33().bit(rise_trigger));
             exti.ftsr2.modify(|_, w| w.tr33().bit(!rise_trigger));
-            unsafe { NVIC::unmask(interrupt::COMP7) };
         }
         34 => {
             exti.imr2.modify(|_, w| w.mr34().unmasked());
-            unsafe { NVIC::unmask(interrupt::UART4_EXTI34) };
         }
         35 => {
             exti.imr2.modify(|_, w| w.mr35().unmasked());
-            unsafe { NVIC::unmask(interrupt::UART5_EXTI35) };
         }
 
         _ => panic!("Interrupt line must be between 0 and 35."),

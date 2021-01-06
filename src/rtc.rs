@@ -12,16 +12,11 @@ use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike}
 
 #[cfg(any(feature = "rt"))]
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-use crate::pac::{
-    interrupt::{RTCALARM, RTC_WKUP},
-    EXTI,
-};
-#[cfg(any(feature = "rt"))]
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-use cortex_m::peripheral::NVIC;
+use crate::pac::EXTI;
 
 #[cfg(any(feature = "rt"))]
-/// To enable RTC wakeup interrupts, run this in the main body of your program, eg:
+/// This provides a default handler for RTC inputs that clears the EXTI line and
+/// wakeup flag. If you don't need additional functionality, run this in the main body of your program, eg:
 /// `make_rtc_interrupt_handler!(RTC_WKUP);`
 #[macro_export]
 macro_rules! make_wakeup_interrupt_handler {
@@ -172,8 +167,6 @@ impl Rtc {
         exti.rtsr1.modify(|_, w| w.tr17().bit(true));
         exti.ftsr1.modify(|_, w| w.tr17().bit(false));
 
-        unsafe { NVIC::unmask(RTCALARM) };
-
         self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
         self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
 
@@ -305,9 +298,6 @@ impl Rtc {
         exti.imr1.modify(|_, w| w.mr20().unmasked());
         exti.rtsr1.modify(|_, w| w.tr20().bit(true));
         exti.ftsr1.modify(|_, w| w.tr20().bit(false));
-
-        // Configure and Enable the RTC_WKUP IRQ channel in the NVIC.
-        unsafe { NVIC::unmask(RTC_WKUP) };
 
         // Disable the RTC registers Write protection.
         // Write 0xCA and then 0x53 into the RTC_WPR register. RTC registers can then be modified.

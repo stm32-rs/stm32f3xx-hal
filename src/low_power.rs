@@ -3,37 +3,8 @@
 //! and more importantly, 7.3: `Low-power modes` of reference manual.
 
 use crate::clocks::InputSrc;
-/// Enter `Sleep now` mode: the lightest of the 3 low-power states avail on the
-/// STM32f3.
-/// TO exit: Interrupt. Refer to Table 82.
 use crate::pac::{PWR, RCC};
 use cortex_m::{asm::wfi, peripheral::SCB};
-
-/// Ref man, table 18.
-pub fn sleep_now(scb: &mut SCB) {
-    // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
-
-    // SLEEPDEEP = 0 and SLEEPONEXIT = 0
-    scb.clear_sleepdeep();
-    // Sleep-now: if the SLEEPONEXIT bit is cleared, the MCU enters Sleep mode as soon
-    // as WFI or WFE instruction is executed.
-    scb.clear_sleeponexit();
-
-    wfi();
-}
-
-// Ref man, table 19.
-pub fn sleep_on_exit(scb: &mut SCB) {
-    // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
-
-    // SLEEPDEEP = 0 and SLEEPONEXIT = 0
-    scb.clear_sleepdeep();
-    // Sleep-now: if the SLEEPONEXIT bit is cleared, the MCU enters Sleep mode as soon
-    // as WFI or WFE instruction is executed.
-    scb.set_sleeponexit();
-
-    wfi();
-}
 
 /// Re-select innput source; used on Stop and Standby modes, where the system reverts
 /// to HSI after wake.
@@ -68,6 +39,35 @@ fn re_select_input(input_src: InputSrc) {
         },
         InputSrc::Hsi => (), // Already reset to this.
     }
+}
+
+/// Enter `Sleep now` mode: the lightest of the 3 low-power states avail on the
+/// STM32f3.
+/// TO exit: Interrupt. Refer to Table 82.
+/// Ref man, table 18.
+pub fn sleep_now(scb: &mut SCB) {
+    // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
+
+    // SLEEPDEEP = 0 and SLEEPONEXIT = 0
+    scb.clear_sleepdeep();
+    // Sleep-now: if the SLEEPONEXIT bit is cleared, the MCU enters Sleep mode as soon
+    // as WFI or WFE instruction is executed.
+    scb.clear_sleeponexit();
+
+    wfi();
+}
+
+/// Ref man, table 19.
+pub fn sleep_on_exit(scb: &mut SCB) {
+    // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
+
+    // SLEEPDEEP = 0 and SLEEPONEXIT = 0
+    scb.clear_sleepdeep();
+    // Sleep-now: if the SLEEPONEXIT bit is cleared, the MCU enters Sleep mode as soon
+    // as WFI or WFE instruction is executed.
+    scb.set_sleeponexit();
+
+    wfi();
 }
 
 /// Enter `Stop` mode: the middle of the 3 low-power states avail on the
