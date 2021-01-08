@@ -1,7 +1,7 @@
 //! Configure external interrupts for the stm32f3xx.
 //! See STM32f303 reference man section 14, including Table 82.
 
-use crate::pac::{interrupt, EXTI, SYSCFG};
+use crate::pac::{EXTI, SYSCFG};
 
 #[derive(Copy, Clone, Debug)]
 pub enum GpioReg {

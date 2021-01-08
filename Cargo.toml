@@ -9,11 +9,11 @@ categories = ["embedded", "hardware-support", "no-std"]
 description = "Peripheral access API for STM32F3 series microcontrollers"
 keywords = ["arm", "cortex-m", "stm32f3xx", "hal"]
 license = "0BSD"
-name = "stm32f3xx-hal-v2"
+name = "stm32f3xx-hal"
 readme = "README.md"
 repository = "https://github.com/stm32-rs/stm32f3xx-hal"
 documentation = "https://docs.rs/stm32f3xx-hal"
-version = "0.6.0"
+version = "0.6.1"
 exclude = [
     "codegen",
     ".markdownlint.yml"
@@ -30,7 +30,7 @@ cortex-m-rt = "0.6"
 embedded-dma = "0.1"
 embedded-hal = "0.2"
 nb = "0.1"
-num-traits = { version = "0.2.11", default-features = false, features=["libm"] }  # For float rounding and abs.
+num-traits = { version = "0.2.11", default-features = false, features=["libm"] }  # For sqrt in timers
 paste = "1"
 rtcc = "0.2"
 stm32f3 = "0.12"

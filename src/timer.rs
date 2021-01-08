@@ -382,14 +382,6 @@ macro_rules! pwm_features {
     },)+) => {
         $(
             impl Timer<$TIMX> {
-
-                /// Set the value of the auto-reload resolution. Use a lower value to increase
-                /// precision. If you wish for a precise tick speed, multiply the system clock
-                /// speed by the desired frequency, then round to the nearest integer.
-                pub fn set_resolution(&mut self, word: $res) {
-                    self.tim.arr.write(|w| w.arr().bits(word) );
-                }
-
                 /// Set Output Compare Mode. See docs on the `OutputCompare` enum.
                 pub fn set_output_compare(&mut self, channel: Channel, mode: OutputCompare) {
                     match channel {
@@ -793,8 +785,6 @@ hal! {
     },
 }
 
-// todo: Run `pwm_features` for more timer types. Currently only set up for first
-// set of gp timers.
 #[cfg(feature = "stm32f303")]
 pwm_features! {
     {
