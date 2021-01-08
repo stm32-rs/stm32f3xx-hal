@@ -361,6 +361,11 @@ macro_rules! hal {
 
                     Ok(())
                 }
+
+                /// Reset the countdown; set the counter to 0.
+                pub fn reset_countdown(&mut self) {
+                    self.tim.cnt.write(|w| unsafe { w.bits(0) });
+                }
             }
         )+
     }
