@@ -7,7 +7,7 @@
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 
 use crate::pac::{DBGMCU, IWDG};
-use embedded_time::duration::Milliseconds;
+use crate::time::duration::Milliseconds;
 
 const LSI_KHZ: u32 = 40;
 const MAX_PR: u8 = 8;

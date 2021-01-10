@@ -6,13 +6,13 @@
 
 use core::convert::TryFrom;
 use core::ops::Deref;
-use embedded_time::rate::Hertz;
 
 use crate::{
     gpio::{gpioa, gpiob, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
     pac::{i2c1::RegisterBlock, rcc::cfgr3::I2C1SW_A, I2C1, RCC},
     rcc::{Clocks, APB1},
+    time::rate::Hertz,
 };
 
 #[cfg(not(feature = "gpio-f333"))]

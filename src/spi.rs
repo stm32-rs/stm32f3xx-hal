@@ -132,7 +132,7 @@ use crate::rcc::APB1;
 ))]
 use crate::rcc::APB2;
 use core::marker::PhantomData;
-use embedded_time::rate::Hertz;
+use crate::time::rate::Hertz;
 
 /// SPI error
 #[derive(Debug)]
