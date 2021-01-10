@@ -27,7 +27,7 @@ const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 /// Options the CAN bus. This is primarily used to set bus timings, but also controls options like enabling loopback or silent mode for debugging.
 /// See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
 ///
-/// Use `CanBitRateOpts::default()` to get 250kbps at 32mhz system clock
+/// Use `CanOpts::default()` to get 250kbps at 32mhz system clock
 pub struct CanOpts {
     pub brp: u16,
     pub sjw: u8,
