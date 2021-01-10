@@ -60,7 +60,7 @@ use crate::pac::{
 };
 
 use crate::flash::ACR;
-use crate::time::Hertz;
+use embedded_time::rate::Hertz;
 
 /// Extension trait that constrains the `RCC` peripheral
 pub trait RccExt {

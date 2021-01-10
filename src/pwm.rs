@@ -159,10 +159,10 @@ use crate::{
     gpio::{self, gpioa, gpiob},
     hal::PwmPin,
     pac::{RCC, TIM15, TIM16, TIM17, TIM2},
-    rcc::Clocks,
-    time::Hertz,
+    rcc::Clocks
 };
 use core::marker::PhantomData;
+use embedded_time::rate::Hertz;
 
 #[cfg(any(
     feature = "stm32f302xb",

@@ -6,13 +6,13 @@
 
 use core::convert::TryFrom;
 use core::ops::Deref;
+use embedded_time::rate::Hertz;
 
 use crate::{
     gpio::{gpioa, gpiob, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
     pac::{i2c1::RegisterBlock, rcc::cfgr3::I2C1SW_A, I2C1, RCC},
     rcc::{Clocks, APB1},
-    time::{Hertz, U32Ext},
 };
 
 #[cfg(not(feature = "gpio-f333"))]
@@ -451,7 +451,7 @@ macro_rules! i2c {
                 fn clock(clocks: &Clocks) -> Hertz {
                     // NOTE(unsafe) atomic read with no side effects
                     match unsafe { (*RCC::ptr()).cfgr3.read().$i2cXsw().variant() } {
-                        I2C1SW_A::HSI => 8.mhz().into(),
+                        I2C1SW_A::HSI => Hertz(8_000_000),
                         I2C1SW_A::SYSCLK => clocks.sysclk(),
                     }
                 }

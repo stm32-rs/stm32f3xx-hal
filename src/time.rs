@@ -1,5 +1,6 @@
 //! Time units
 
+/*
 use cortex_m::peripheral::DWT;
 
 use crate::rcc::Clocks;
@@ -126,3 +127,4 @@ impl Instant {
         DWT::get_cycle_count().wrapping_sub(self.now)
     }
 }
+*/
