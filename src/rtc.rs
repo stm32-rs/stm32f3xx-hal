@@ -192,6 +192,7 @@ impl Rtc {
         // You must enable the `pwren()` bit before making RTC register writes, or they won't stay
         // set. Enable the backup interface by setting PWREN
         apb1.enr().modify(|_, w| w.pwren().set_bit());
+        // Some HALs like L0 need to set the `rtcapben` bit here in apb1r1enr. Not applicable for F3.
         pwr.cr.read(); // read to allow the pwr clock to enable
 
         // Unlock the backup domain

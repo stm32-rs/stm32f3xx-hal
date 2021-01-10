@@ -109,18 +109,14 @@ macro_rules! busy_wait {
     };
 }
 
-impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)>
-    where I2C: Instance,
-            SCL: SclPin<I2C>,
-            SDA: SdaPin<I2C>,
-{
+impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
     /// Configures the I2C peripheral to work in master mode
     pub fn new<F>(i2c: I2C, pins: (SCL, SDA), freq: F, clocks: Clocks, apb1: &mut APB1) -> Self
-        where
-            // I2C: Instance,
-            // SCL: SclPin<I2C>,
-            // SDA: SdaPin<I2C>,
-            F: Into<Hertz>,
+    where
+        I2C: Instance,
+        SCL: SclPin<I2C>,
+        SDA: SdaPin<I2C>,
+        F: Into<Hertz>,
     {
         let freq = freq.into().0;
 
@@ -206,80 +202,11 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)>
     pub fn free(self) -> (I2C, (SCL, SDA)) {
         (self.i2c, self.pins)
     }
-
-    fn write_bytes(&mut self, addr: u8, bytes: &[u8]) -> Result<(), Error> {
-        // Send a START condition
-        self.i2c.cr2.modify(|_, w| w.start().set_bit());
-
-        // Can't find equiv in F3 or L4.
-        // Wait until START condition was generated
-        // while {
-        //     let isr = self.i2c.isr.read();
-        //     isr.sb().bit_is_clear()
-        // } {}
-
-        // Also wait until signalled we're master and everything is waiting for us
-        // while {
-        //     let sr2 = self.i2c.sr2.read();
-        //     sr2.msl().bit_is_clear() && sr2.busy().bit_is_clear()
-        // } {}
-
-        // Set up current address, we're trying to talk to.
-        // todo: rxdr too?
-        self.i2c
-            .txdr
-            .write(|w| unsafe { w.bits(u32::from(addr) << 1) });
-
-        // Wait until address was sent
-        while {
-            let isr = self.i2c.isr.read();
-            isr.addr().bit_is_clear()
-        } {}
-
-        // Clear condition by reading SR2
-        self.i2c.isr.read();
-
-        // Send bytes
-        for c in bytes {
-            self.send_byte(*c)?;
-        }
-
-        // Fallthrough is success
-        Ok(())
-    }
-
-    fn send_byte(&self, byte: u8) -> Result<(), Error> {
-        // Wait until we're ready for sending
-        while self.i2c.isr.read().txe().bit_is_clear() {}
-
-        // Push out a byte of data
-        self.i2c.txdr.write(|w| unsafe { w.bits(u32::from(byte)) });
-
-        // While until byte is transferred
-        while {
-            let isr = self.i2c.isr.read();
-
-            // If we received a NACK, then this is an error
-            if isr.nackf().bit_is_set() {
-                return Err(Error::Nack);
-            }
-
-            isr.tc().bit_is_clear()
-        } {}
-
-        Ok(())
-    }
-
-    fn recv_byte(&self) -> Result<u8, Error> {
-        while self.i2c.isr.read().rxne().bit_is_clear() {}
-        let value = self.i2c.rxdr.read().bits() as u8;
-        Ok(value)
-    }
 }
 
 impl<I2C, PINS> Read for I2c<I2C, PINS>
-    where
-        I2C: Instance,
+where
+    I2C: Instance,
 {
     type Error = Error;
 
@@ -335,11 +262,10 @@ impl<I2C, PINS> Read for I2c<I2C, PINS>
 }
 
 impl<I2C, PINS> Write for I2c<I2C, PINS>
-    where
-        I2C: Instance,
+where
+    I2C: Instance,
 {
     type Error = Error;
-
 
     fn write(&mut self, addr: u8, bytes: &[u8]) -> Result<(), Error> {
         // Detect Bus busy
@@ -407,8 +333,8 @@ impl<I2C, PINS> Write for I2c<I2C, PINS>
 }
 
 impl<I2C, PINS> WriteRead for I2c<I2C, PINS>
-    where
-        I2C: Instance,
+where
+    I2C: Instance,
 {
     type Error = Error;
 
