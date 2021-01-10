@@ -20,6 +20,7 @@ use crate::stm32;
 use nb::{self, Error};
 
 use core::sync::atomic::{AtomicU8, Ordering};
+use stm32::can::btr::LBKM_A;
 
 const EXID_MASK: u32 = 0b1_1111_1111_1100_0000_0000_0000_0000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
@@ -33,7 +34,7 @@ pub struct CanOpts {
     pub sjw: u8,
     pub ts1: u8,
     pub ts2: u8,
-    pub lbkm: bool,
+    pub lbkm: LBKM_A,
 }
 
 impl CanOpts {
@@ -61,7 +62,7 @@ impl CanOpts {
         self
     }
 
-    pub fn lbkm(mut self, lbkm: bool) -> Self {
+    pub fn lbkm(mut self, lbkm: LBKM_A) -> Self {
         self.lbkm = lbkm;
         self
     }
@@ -74,7 +75,7 @@ impl Default for CanOpts {
             sjw: 0,
             ts1: 10,
             ts2: 3,
-            lbkm: false,
+            lbkm: LBKM_A::DISABLED,
         }
     }
 }
@@ -338,7 +339,7 @@ impl Can {
                 .ts2()
                 .bits(ts2)
                 .lbkm()
-                .bit(lbkm)
+                .variant(lbkm)
         });
 
         // Leave initialization mode by clearing INRQ and switch to normal mode
