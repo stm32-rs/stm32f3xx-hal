@@ -66,7 +66,7 @@ defmt-rtt = "0.1.0"
 defmt-test = "0.1.0"
 
 [features]
-default = ["unproven"]
+default = ["unproven", "rt"]
 unproven = ["embedded-hal/unproven"]
 device-selected = []
 direct-call-deprecated = []
