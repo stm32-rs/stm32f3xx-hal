@@ -37,20 +37,45 @@ pub struct CanOpts {
 }
 
 impl CanOpts {
-    pub fn new(brp: u16, sjw: u8, ts1: u8, ts2: u8, lbkm: bool) -> CanOpts {
-        CanOpts {
-            brp,
-            sjw,
-            ts1,
-            ts2,
-            lbkm,
-        }
+    pub fn new() -> CanOpts {
+        CanOpts::default()
+    }
+
+    pub fn brp(mut self, brp: u16) -> Self {
+        self.brp = brp;
+        self
+    }
+
+    pub fn sjw(mut self, sjw: u8) -> Self {
+        self.sjw = sjw;
+        self
+    }
+
+    pub fn ts1(mut self, ts1: u8) -> Self {
+        self.ts1 = ts1;
+        self
+    }
+
+    pub fn ts2(mut self, ts2: u8) -> Self {
+        self.ts2 = ts2;
+        self
+    }
+
+    pub fn lbkm(mut self, lbkm: bool) -> Self {
+        self.lbkm = lbkm;
+        self
     }
 }
 
 impl Default for CanOpts {
     fn default() -> Self {
-        CanOpts::new(4, 0, 10, 3, false)
+        CanOpts {
+            brp: 4,
+            sjw: 0,
+            ts1: 10,
+            ts2: 3,
+            lbkm: false,
+        }
     }
 }
 
