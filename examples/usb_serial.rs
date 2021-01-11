@@ -14,8 +14,8 @@ use core::convert::TryFrom;
 
 use hal::pac;
 use hal::prelude::*;
-use hal::usb::{Peripheral, UsbBus};
 use hal::time::rate::*;
+use hal::usb::{Peripheral, UsbBus};
 
 use usb_device::prelude::*;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};

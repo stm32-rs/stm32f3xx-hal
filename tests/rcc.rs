@@ -124,7 +124,7 @@ mod tests {
         let clock = rcc
             .cfgr
             .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
-            .sysclk( Hertz::try_from(48u32.MHz()).unwrap())
+            .sysclk(Hertz::try_from(48u32.MHz()).unwrap())
             .freeze(&mut flash.acr); // works
 
         defmt::assert!(clock.sysclk() == 48u32.MHz());
@@ -168,8 +168,8 @@ mod tests {
         let clock = rcc
             .cfgr
             .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
-            .pclk1(  Hertz::try_from(16u32.MHz()).unwrap())
-            .sysclk( Hertz::try_from(64u32.MHz()).unwrap())
+            .pclk1(Hertz::try_from(16u32.MHz()).unwrap())
+            .sysclk(Hertz::try_from(64u32.MHz()).unwrap())
             .freeze(&mut flash.acr);
 
         defmt::assert!(clock.sysclk() == 64u32.MHz());
@@ -191,7 +191,7 @@ mod tests {
         let clock = rcc
             .cfgr
             .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
-            .sysclk( Hertz::try_from(72u32.MHz()).unwrap())
+            .sysclk(Hertz::try_from(72u32.MHz()).unwrap())
             .freeze(&mut flash.acr);
 
         defmt::assert!(clock.sysclk() == 72u32.MHz());

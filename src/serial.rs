@@ -5,7 +5,7 @@ use crate::{
     hal::{blocking, serial},
     pac::{USART1, USART2, USART3},
     rcc::{Clocks, APB1, APB2},
-    time::rate::Baud
+    time::rate::Baud,
 };
 
 use cfg_if::cfg_if;

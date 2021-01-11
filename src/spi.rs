@@ -131,8 +131,8 @@ use crate::rcc::APB1;
     feature = "stm32f398"
 ))]
 use crate::rcc::APB2;
-use core::marker::PhantomData;
 use crate::time::rate::Hertz;
+use core::marker::PhantomData;
 
 /// SPI error
 #[derive(Debug)]
