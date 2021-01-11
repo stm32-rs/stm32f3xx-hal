@@ -6,7 +6,7 @@
 //! See STM32CubeIDE for an interactive editor that's very useful for seeing what
 //! settings are available, and validating them.
 //!
-//! See Figure 15 of theF303 reference manual for a non-interactive visualization.
+//! See Figure 15 of the Reference Manual for a non-interactive visualization.
 
 use crate::{
     pac::{FLASH, RCC},
@@ -40,21 +40,30 @@ pub enum Validation {
 }
 
 #[derive(Clone, Copy)]
-#[repr(u8)]
 /// Note that this corresponds to Bits 16:15: Applicable only to some models,
 ///303xB/C etc use only bit 16, with bit 15 at reset value (0?) but it's equiv. 303xD/E and xE use bits 16:15.
 pub enum PllSrc {
-    HsiDiv2 = 0b00,
-    Hsi = 0b01,
-    Hse = 0b10,
-    // HsiDiv2 = 0,
-    // Hse = 1,
+    HsiDiv2,
+    Hsi,
+    Hse(u8),
+}
+
+impl PllSrc {
+    /// Required due to numerical value on non-uniform discrim being experimental.
+    /// (ie, can't set on `Pll(Pllsrc)`.
+    pub fn bits(&self) -> u8 {
+        match self {
+            Self::HsiDiv2 => 0b00,
+            Self::Hsi => 0b01,
+            Self::Hse(_) => 0b10,
+        }
+    }
 }
 
 #[derive(Clone, Copy)]
 pub enum InputSrc {
     Hsi,
-    Hse,
+    Hse(u8), // freq in Mhz
     Pll(PllSrc),
 }
 
@@ -64,7 +73,7 @@ impl InputSrc {
     pub fn bits(&self) -> u8 {
         match self {
             Self::Hsi => 0b00,
-            Self::Hse => 0b01,
+            Self::Hse(_) => 0b01,
             Self::Pll(_) => 0b10,
         }
     }
@@ -237,7 +246,6 @@ impl UsbPrescaler {
 
 /// Settings used to configure clocks
 pub struct Clocks {
-    pub input_freq: u8,                // Mhz, eg HSE speed
     pub input_src: InputSrc,           //
     pub prediv: Prediv,                // Input source predivision, for PLL.
     pub pll_mul: PllMul,               // PLL multiplier: SYSCLK speed is input source × this value.
@@ -265,11 +273,19 @@ impl Clocks {
         // We need to do this before enabling PLL, or it won't enable.
         // todo: This hclk calculation is DRY from `calc_speeds`.
         let sysclk = match self.input_src {
-            InputSrc::Pll(_) => self.input_freq / self.prediv.value() * self.pll_mul.value(),
-            _ => self.input_freq,
+            InputSrc::Pll(pll_src) => {
+                let input_freq = match pll_src {
+                    PllSrc::Hsi => 8,
+                    PllSrc::HsiDiv2 => 4,
+                    PllSrc::Hse(freq) => freq
+                };
+                input_freq as f32 / self.prediv.value() as f32 * self.pll_mul.value() as f32
+            },
+            InputSrc::Hsi => 8.,
+            InputSrc::Hse(freq) => freq as f32,
         };
 
-        let hclk = sysclk as f32 / self.hclk_prescaler.value() as f32;
+        let hclk = sysclk  / self.hclk_prescaler.value() as f32;
         // f3 ref man section 4.5.1.
         flash.acr.modify(|_, w| {
             if hclk <= 24. {
@@ -281,7 +297,7 @@ impl Clocks {
             }
         });
 
-        // 303 FM, 9.2.3:
+        // 303 RM, 9.2.3:
         // The internal PLL can be used to multiply the HSI or HSE output clock frequency. Refer to
         // Figure 13 and Clock control register (RCC_CR).
         // The PLL configuration (selection of the input clock, and multiplication factor) must be done
@@ -296,18 +312,28 @@ impl Clocks {
         // The PLL output frequency must be set in the range 16-72 MHz.
         // Set up the HSE if required.
         match self.input_src {
-            InputSrc::Hse => {
+            InputSrc::Hse(_) => {
                 rcc.cr.modify(|_, w| w.hseon().bit(true));
                 // Wait for the HSE to be ready.
                 while rcc.cr.read().hserdy().is_not_ready() {}
             }
-            InputSrc::Hsi => (),
+            InputSrc::Hsi => {
+                rcc.cr.modify(|_, w| w.hsion().bit(true));
+                while rcc.cr.read().hsirdy().is_not_ready() {}
+            },
             InputSrc::Pll(pll_src) => {
-                if let PllSrc::Hse = pll_src {
-                    // DRY
-                    rcc.cr.modify(|_, w| w.hseon().bit(true));
-                    while rcc.cr.read().hserdy().is_not_ready() {}
+                match pll_src {
+                    PllSrc::Hse(_) => {
+                        // DRY
+                        rcc.cr.modify(|_, w| w.hseon().bit(true));
+                        while rcc.cr.read().hserdy().is_not_ready() {}
+                    }
+                    _ => { // Hsi or HsiDiv2: In both cases, set up the HSI.
+                        rcc.cr.modify(|_, w| w.hsion().bit(true));
+                        while rcc.cr.read().hsirdy().is_not_ready() {}
+                    }
                 }
+
             }
         }
         rcc.cr.modify(|_, w| {
@@ -325,7 +351,7 @@ impl Clocks {
 
             rcc.cfgr.modify(|_, w| {
                 w.pllmul().bits(self.pll_mul as u8); // eg: 8Mhz HSE x 9 = 72Mhz
-                unsafe { w.pllsrc().bits(pll_src as u8) } // eg: Set HSE as PREDIV1 entry.
+                unsafe { w.pllsrc().bits(pll_src.bits()) } // eg: Set HSE as PREDIV1 entry.
             });
 
             rcc.cfgr2.modify(|_, w| w.prediv().bits(self.prediv as u8));
@@ -354,10 +380,16 @@ impl Clocks {
     /// todo: Handle fractions of mhz. Do floats.
     pub fn calc_speeds(&self) -> Speeds {
         let sysclk = match self.input_src {
-            InputSrc::Pll(_) => {
-                self.input_freq as f32 / self.prediv.value() as f32 * self.pll_mul.value() as f32
-            }
-            _ => self.input_freq as f32,
+            InputSrc::Pll(pll_src) => {
+                let input_freq = match pll_src {
+                    PllSrc::Hsi => 8,
+                    PllSrc::HsiDiv2 => 4,
+                    PllSrc::Hse(freq) => freq
+                };
+                input_freq as f32 / self.prediv.value() as f32 * self.pll_mul.value() as f32
+            },
+            InputSrc::Hsi => 8.,
+            InputSrc::Hse(freq) => freq as f32,
         };
 
         let usb = sysclk / self.usb_pre.value() as f32;
@@ -412,8 +444,7 @@ impl Clocks {
     /// HSE output is not bypassed.
     pub fn full_speed() -> Self {
         Self {
-            input_freq: 8,
-            input_src: InputSrc::Pll(PllSrc::Hse),
+            input_src: InputSrc::Pll(PllSrc::Hse(8)),
             prediv: Prediv::Div1,
             pll_mul: PllMul::Mul9,
             usb_pre: UsbPrescaler::Div1_5,
@@ -432,8 +463,7 @@ impl Default for Clocks {
     /// HSE output is not bypassed.
     fn default() -> Self {
         Self {
-            input_freq: 8,
-            input_src: InputSrc::Pll(PllSrc::Hse),
+            input_src: InputSrc::Pll(PllSrc::Hse(8)),
             prediv: Prediv::Div1,
             pll_mul: PllMul::Mul6,
             usb_pre: UsbPrescaler::Div1,

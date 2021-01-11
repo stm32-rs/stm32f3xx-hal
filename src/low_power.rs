@@ -14,7 +14,7 @@ fn re_select_input(input_src: InputSrc) {
     // Note: It would save code repetition to pass the `Clocks` struct in and re-run setup
     // todo: But this saves a few reg writes.
     match input_src {
-        InputSrc::Hse => unsafe {
+        InputSrc::Hse(_) => unsafe {
             (*RCC::ptr()).cr.modify(|_, w| w.hseon().set_bit());
             while (*RCC::ptr()).cr.read().hserdy().is_not_ready() {}
 
