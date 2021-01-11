@@ -10,6 +10,7 @@ use panic_semihosting as _;
 use cortex_m::{asm, singleton};
 use cortex_m_rt::entry;
 use stm32f3xx_hal::{pac, prelude::*, serial::Serial};
+use stm32f3xx_hal::time::rate::*;
 
 #[entry]
 fn main() -> ! {
@@ -25,7 +26,7 @@ fn main() -> ! {
         gpioa.pa9.into_af7(&mut gpioa.moder, &mut gpioa.afrh),
         gpioa.pa10.into_af7(&mut gpioa.moder, &mut gpioa.afrh),
     );
-    let serial = Serial::usart1(dp.USART1, pins, 9600.bps(), clocks, &mut rcc.apb2);
+    let serial = Serial::usart1(dp.USART1, pins, 9600.Bd(), clocks, &mut rcc.apb2);
     let (tx, rx) = serial.split();
 
     let dma1 = dp.DMA1.split(&mut rcc.ahb);

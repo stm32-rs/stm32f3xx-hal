@@ -6,7 +6,8 @@ use panic_probe as _;
 
 #[defmt_test::tests]
 mod tests {
-    use stm32f3xx_hal::{pac, prelude::*};
+    use core::convert::TryFrom;
+    use stm32f3xx_hal::{pac, prelude::*, time::rate::*};
 
     // Test the defaults with no configuration
     #[test]
@@ -18,10 +19,10 @@ mod tests {
 
         let clock = rcc.cfgr.freeze(&mut flash.acr);
 
-        defmt::assert!(clock.sysclk() == 8.mhz().into());
-        defmt::assert!(clock.hclk() == 8.mhz().into());
-        defmt::assert!(clock.pclk2() == 8.mhz().into());
-        defmt::assert!(clock.pclk1() == 8.mhz().into());
+        defmt::assert!(clock.sysclk() == 8u32.MHz());
+        defmt::assert!(clock.hclk() == 8u32.MHz());
+        defmt::assert!(clock.pclk2() == 8u32.MHz());
+        defmt::assert!(clock.pclk1() == 8u32.MHz());
         defmt::assert!(!clock.usbclk_valid());
     }
 
@@ -37,14 +38,14 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8.mhz())
-            .sysclk(15.mhz())
+            .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
+            .sysclk(Hertz::try_from(15u32.MHz()).unwrap())
             .freeze(&mut flash.acr);
 
-        defmt::assert!(clock.sysclk() == 15.mhz().into());
-        defmt::assert!(clock.hclk() == 15.mhz().into());
-        defmt::assert!(clock.pclk2() == 15.mhz().into());
-        defmt::assert!(clock.pclk1() == 15.mhz().into());
+        defmt::assert!(clock.sysclk() == 15u32.MHz());
+        defmt::assert!(clock.hclk() == 15u32.MHz());
+        defmt::assert!(clock.pclk2() == 15u32.MHz());
+        defmt::assert!(clock.pclk1() == 15u32.MHz());
         defmt::assert!(!clock.usbclk_valid());
     }
 
@@ -64,12 +65,12 @@ mod tests {
                     feature = "stm32f303xe",
                     feature = "stm32f398",
             ))] {
-                let clock = rcc.cfgr.sysclk(72.mhz()).freeze(&mut flash.acr);
+                let clock = rcc.cfgr.sysclk(Hertz::try_from(72u32.MHz()).unwrap()).freeze(&mut flash.acr);
 
-                defmt::assert!(clock.sysclk() == 72.mhz().into());
-                defmt::assert!(clock.hclk() == 72.mhz().into());
-                defmt::assert!(clock.pclk2() == 72.mhz().into());
-                defmt::assert!(clock.pclk1() == 36.mhz().into());
+                defmt::assert!(clock.sysclk() == 72u32.MHz());
+                defmt::assert!(clock.hclk() == 72u32.MHz());
+                defmt::assert!(clock.pclk2() == 72u32.MHz());
+                defmt::assert!(clock.pclk1() == 36u32.MHz());
             } else {
                 // Notice the strange part about 67 being reduced to 64?
                 //
@@ -78,12 +79,12 @@ mod tests {
                 // and the resolution is therefor lower.
                 // Because of the implementation the clock is then approximated to
                 // the highest possible value (64 Mhz).
-                let clock = rcc.cfgr.sysclk(67.mhz()).freeze(&mut flash.acr);
+                let clock = rcc.cfgr.sysclk(Hertz::try_from(67u32.MHz()).unwrap()).freeze(&mut flash.acr);
 
-                defmt::assert!(clock.sysclk() == 64.mhz().into());
-                defmt::assert!(clock.hclk() == 64.mhz().into());
-                defmt::assert!(clock.pclk2() == 64.mhz().into());
-                defmt::assert!(clock.pclk1() == 32.mhz().into());
+                defmt::assert!(clock.sysclk() == 64u32.MHz());
+                defmt::assert!(clock.hclk() == 64u32.MHz());
+                defmt::assert!(clock.pclk2() == 64u32.MHz());
+                defmt::assert!(clock.pclk1() == 32u32.MHz());
             }
         }
 
@@ -100,14 +101,14 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8.mhz())
-            .sysclk(32.mhz())
+            .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
+            .sysclk(Hertz::try_from(32u32.MHz()).unwrap())
             .freeze(&mut flash.acr);
 
-        defmt::assert!(clock.sysclk() == 32.mhz().into());
-        defmt::assert!(clock.hclk() == 32.mhz().into());
-        defmt::assert!(clock.pclk2() == 32.mhz().into());
-        defmt::assert!(clock.pclk1() == 32.mhz().into());
+        defmt::assert!(clock.sysclk() == 32u32.MHz());
+        defmt::assert!(clock.hclk() == 32u32.MHz());
+        defmt::assert!(clock.pclk2() == 32u32.MHz());
+        defmt::assert!(clock.pclk1() == 32u32.MHz());
         defmt::assert!(!clock.usbclk_valid());
     }
 
@@ -122,14 +123,14 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8.mhz())
-            .sysclk(48.mhz())
+            .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
+            .sysclk( Hertz::try_from(48u32.MHz()).unwrap())
             .freeze(&mut flash.acr); // works
 
-        defmt::assert!(clock.sysclk() == 48.mhz().into());
-        defmt::assert!(clock.hclk() == 48.mhz().into());
-        defmt::assert!(clock.pclk2() == 48.mhz().into());
-        defmt::assert!(clock.pclk1() == 24.mhz().into());
+        defmt::assert!(clock.sysclk() == 48u32.MHz());
+        defmt::assert!(clock.hclk() == 48u32.MHz());
+        defmt::assert!(clock.pclk2() == 48u32.MHz());
+        defmt::assert!(clock.pclk1() == 24u32.MHz());
         defmt::assert!(clock.usbclk_valid());
     }
 
@@ -142,21 +143,21 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8.mhz())
-            .hclk(48.mhz())
-            .sysclk(48.mhz())
-            .pclk1(12.mhz())
-            .pclk2(12.mhz())
+            .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
+            .hclk(Hertz::try_from(48u32.MHz()).unwrap())
+            .sysclk(Hertz::try_from(48u32.MHz()).unwrap())
+            .pclk1(Hertz::try_from(12u32.MHz()).unwrap())
+            .pclk2(Hertz::try_from(12u32.MHz()).unwrap())
             .freeze(&mut flash.acr);
 
-        defmt::assert!(clock.sysclk() == 48.mhz().into());
-        defmt::assert!(clock.hclk() == 48.mhz().into());
-        defmt::assert!(clock.pclk2() == 12.mhz().into());
-        defmt::assert!(clock.pclk1() == 12.mhz().into());
+        defmt::assert!(clock.sysclk() == 48u32.MHz());
+        defmt::assert!(clock.hclk() == 48u32.MHz());
+        defmt::assert!(clock.pclk2() == 12u32.MHz());
+        defmt::assert!(clock.pclk1() == 12u32.MHz());
         defmt::assert!(clock.usbclk_valid());
     }
 
-    // Another multiple of 8.mhz() external crystal
+    // Another multiple of 8.MHz() external crystal
     #[test]
     fn hse_sysclk_64mhz() {
         let dp = unsafe { pac::Peripherals::steal() };
@@ -166,15 +167,15 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8.mhz())
-            .pclk1(16.mhz())
-            .sysclk(64.mhz())
+            .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
+            .pclk1(  Hertz::try_from(16u32.MHz()).unwrap())
+            .sysclk( Hertz::try_from(64u32.MHz()).unwrap())
             .freeze(&mut flash.acr);
 
-        defmt::assert!(clock.sysclk() == 64.mhz().into());
-        defmt::assert!(clock.hclk() == 64.mhz().into());
-        defmt::assert!(clock.pclk2() == 64.mhz().into());
-        defmt::assert!(clock.pclk1() == 16.mhz().into());
+        defmt::assert!(clock.sysclk() == 64u32.MHz());
+        defmt::assert!(clock.hclk() == 64u32.MHz());
+        defmt::assert!(clock.pclk2() == 64u32.MHz());
+        defmt::assert!(clock.pclk1() == 16u32.MHz());
         defmt::assert!(!clock.usbclk_valid());
     }
 
@@ -189,14 +190,14 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8.mhz())
-            .sysclk(72.mhz())
+            .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
+            .sysclk( Hertz::try_from(72u32.MHz()).unwrap())
             .freeze(&mut flash.acr);
 
-        defmt::assert!(clock.sysclk() == 72.mhz().into());
-        defmt::assert!(clock.hclk() == 72.mhz().into());
-        defmt::assert!(clock.pclk2() == 72.mhz().into());
-        defmt::assert!(clock.pclk1() == 36.mhz().into());
+        defmt::assert!(clock.sysclk() == 72u32.MHz());
+        defmt::assert!(clock.hclk() == 72u32.MHz());
+        defmt::assert!(clock.pclk2() == 72u32.MHz());
+        defmt::assert!(clock.pclk1() == 36u32.MHz());
         defmt::assert!(clock.usbclk_valid());
     }
 }

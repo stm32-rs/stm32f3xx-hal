@@ -6,12 +6,15 @@ use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
+use core::convert::TryFrom;
+
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
 use hal::prelude::*;
 use hal::stm32;
 use hal::watchdog::IndependentWatchDog;
+use hal::time::{duration::*, rate::*};
 
 use hal::can::{Can, CanFilter, CanFrame, CanId, Filter, Frame, Receiver, Transmitter};
 use nb::block;
@@ -31,10 +34,10 @@ fn main() -> ! {
 
     let _clocks = rcc
         .cfgr
-        .use_hse(32.mhz())
-        .sysclk(32.mhz())
-        .pclk1(16.mhz())
-        .pclk2(16.mhz())
+        .use_hse(Hertz::try_from(32u32.MHz()).unwrap())
+        .sysclk(Hertz::try_from(32u32.MHz()).unwrap())
+        .pclk1(Hertz::try_from(16u32.MHz()).unwrap())
+        .pclk2(Hertz::try_from(16u32.MHz()).unwrap())
         .freeze(&mut flash.acr);
 
     // Configure CAN RX and TX pins (AF9)
@@ -60,7 +63,7 @@ fn main() -> ! {
     // Watchdog makes sure this gets restarted periodically if nothing happens
     let mut iwdg = IndependentWatchDog::new(dp.IWDG);
     iwdg.stop_on_debug(&dp.DBGMCU, true);
-    iwdg.start(100.ms());
+    iwdg.start(100u32.milliseconds());
 
     // Send an initial message!
     asm::delay(100_000);

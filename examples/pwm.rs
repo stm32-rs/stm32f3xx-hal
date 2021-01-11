@@ -7,6 +7,8 @@ use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
+use core::convert::TryFrom;
+
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
@@ -18,7 +20,7 @@ use hal::gpio::GpioExt;
 use hal::pac;
 use hal::pwm::{tim16, tim2, tim3, tim8};
 use hal::rcc::RccExt;
-use hal::time::U32Ext;
+use hal::time::rate::*;
 
 #[entry]
 fn main() -> ! {
@@ -28,7 +30,7 @@ fn main() -> ! {
     // Configure our clocks
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.sysclk(16.mhz()).freeze(&mut flash.acr);
+    let clocks = rcc.cfgr.sysclk(Hertz::try_from(16u32.MHz()).unwrap()).freeze(&mut flash.acr);
 
     // Prep the pins we need in their correct alternate function
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
@@ -53,7 +55,7 @@ fn main() -> ! {
     let tim3_channels = tim3(
         dp.TIM3,
         1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
+        50u32.Hz(), // frequency of period
         &clocks, // To get the timer's clock speed
     );
 
@@ -102,7 +104,7 @@ fn main() -> ! {
     let tim2_channels = tim2(
         dp.TIM2,
         160000,  // resolution of duty cycle
-        50.hz(), // frequency of period
+        50u32.Hz(), // frequency of period
         &clocks, // To get the timer's clock speed
     );
 
@@ -117,7 +119,7 @@ fn main() -> ! {
     let mut tim16_ch1 = tim16(
         dp.TIM16,
         1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
+        50u32.Hz(), // frequency of period
         &clocks, // To get the timer's clock speed
     )
     .output_to_pb8(pb8);
@@ -131,7 +133,7 @@ fn main() -> ! {
     let tim8_channels = tim8(
         dp.TIM8,
         1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
+        50u32.Hz(), // frequency of period
         &clocks, // To get the timer's clock speed
     );
 

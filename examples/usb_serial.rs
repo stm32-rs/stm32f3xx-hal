@@ -10,9 +10,12 @@ use stm32f3xx_hal as hal;
 use cortex_m::asm::delay;
 use cortex_m_rt::entry;
 
+use core::convert::TryFrom;
+
 use hal::pac;
 use hal::prelude::*;
 use hal::usb::{Peripheral, UsbBus};
+use hal::time::rate::*;
 
 use usb_device::prelude::*;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
@@ -26,10 +29,10 @@ fn main() -> ! {
 
     let clocks = rcc
         .cfgr
-        .use_hse(8.mhz())
-        .sysclk(48.mhz())
-        .pclk1(24.mhz())
-        .pclk2(24.mhz())
+        .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
+        .sysclk(Hertz::try_from(48u32.MHz()).unwrap())
+        .pclk1(Hertz::try_from(24u32.MHz()).unwrap())
+        .pclk2(Hertz::try_from(24u32.MHz()).unwrap())
         .freeze(&mut flash.acr);
 
     assert!(clocks.usbclk_valid());
