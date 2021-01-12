@@ -6,8 +6,6 @@ use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
-use core::convert::TryFrom;
-
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
@@ -34,10 +32,14 @@ fn main() -> ! {
 
     let _clocks = rcc
         .cfgr
-        .use_hse(Hertz::try_from(32u32.MHz()).unwrap())
-        .sysclk(Hertz::try_from(32u32.MHz()).unwrap())
-        .pclk1(Hertz::try_from(16u32.MHz()).unwrap())
-        .pclk2(Hertz::try_from(16u32.MHz()).unwrap())
+        .use_hse(32u32.MHz())
+        .unwrap()
+        .sysclk(32u32.MHz())
+        .unwrap()
+        .pclk1(16u32.MHz())
+        .unwrap()
+        .pclk2(16u32.MHz())
+        .unwrap()
         .freeze(&mut flash.acr);
 
     // Configure CAN RX and TX pins (AF9)

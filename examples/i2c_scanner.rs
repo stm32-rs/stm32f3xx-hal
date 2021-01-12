@@ -10,8 +10,6 @@ use core::ops::Range;
 
 use panic_semihosting as _;
 
-use core::convert::TryFrom;
-
 use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{hprint, hprintln};
@@ -37,13 +35,7 @@ fn main() -> ! {
         gpiob.pb7.into_af4(&mut gpiob.moder, &mut gpiob.afrl), // SDA
     );
 
-    let mut i2c = hal::i2c::I2c::new(
-        dp.I2C1,
-        pins,
-        Hertz::try_from(100u32.kHz()).unwrap(),
-        clocks,
-        &mut rcc.apb1,
-    );
+    let mut i2c = hal::i2c::I2c::new(dp.I2C1, pins, 100u32.kHz(), clocks, &mut rcc.apb1).unwrap();
 
     hprintln!("Start i2c scanning...").expect("Error using hprintln.");
     hprintln!().unwrap();

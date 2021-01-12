@@ -7,8 +7,6 @@ use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
-use core::convert::TryFrom;
-
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
@@ -30,10 +28,7 @@ fn main() -> ! {
     // Configure our clocks
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let clocks = rcc
-        .cfgr
-        .sysclk(Hertz::try_from(16u32.MHz()).unwrap())
-        .freeze(&mut flash.acr);
+    let clocks = rcc.cfgr.sysclk(16u32.MHz()).unwrap().freeze(&mut flash.acr);
 
     // Prep the pins we need in their correct alternate function
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);

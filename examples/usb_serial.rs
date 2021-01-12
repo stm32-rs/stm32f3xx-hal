@@ -10,8 +10,6 @@ use stm32f3xx_hal as hal;
 use cortex_m::asm::delay;
 use cortex_m_rt::entry;
 
-use core::convert::TryFrom;
-
 use hal::pac;
 use hal::prelude::*;
 use hal::time::rate::*;
@@ -29,10 +27,14 @@ fn main() -> ! {
 
     let clocks = rcc
         .cfgr
-        .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
-        .sysclk(Hertz::try_from(48u32.MHz()).unwrap())
-        .pclk1(Hertz::try_from(24u32.MHz()).unwrap())
-        .pclk2(Hertz::try_from(24u32.MHz()).unwrap())
+        .use_hse(8u32.MHz())
+        .unwrap()
+        .sysclk(48u32.MHz())
+        .unwrap()
+        .pclk1(24u32.MHz())
+        .unwrap()
+        .pclk2(24u32.MHz())
+        .unwrap()
         .freeze(&mut flash.acr);
 
     assert!(clocks.usbclk_valid());

@@ -7,8 +7,6 @@ use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
 
-use core::convert::TryFrom;
-
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
@@ -27,9 +25,12 @@ fn main() -> ! {
 
     let clocks = rcc
         .cfgr
-        .use_hse(Hertz::try_from(8u32.MHz()).unwrap())
-        .sysclk(Hertz::try_from(48u32.MHz()).unwrap())
-        .pclk1(Hertz::try_from(24u32.MHz()).unwrap())
+        .use_hse(8u32.MHz())
+        .unwrap()
+        .sysclk(48u32.MHz())
+        .unwrap()
+        .pclk1(24u32.MHz())
+        .unwrap()
         .freeze(&mut flash.acr);
 
     // Configure pins for SPI
@@ -46,10 +47,11 @@ fn main() -> ! {
         dp.SPI1,
         (sck, miso, mosi),
         spi_mode,
-        Hertz::try_from(3u32.MHz()).unwrap(),
+        3u32.MHz(),
         clocks,
         &mut rcc.apb2,
-    );
+    )
+    .unwrap();
 
     // Create an `u8` array, which can be transfered via SPI.
     let msg_send: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
