@@ -4,7 +4,7 @@
 //!
 //! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/i2c_scanner.rs
 
-use core::convert::{TryFrom, TryFrom};
+use core::convert::{TryFrom, TryInto};
 use core::ops::Deref;
 
 use crate::{
