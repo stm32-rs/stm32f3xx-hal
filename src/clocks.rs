@@ -277,15 +277,15 @@ impl Clocks {
                 let input_freq = match pll_src {
                     PllSrc::Hsi => 8,
                     PllSrc::HsiDiv2 => 4,
-                    PllSrc::Hse(freq) => freq
+                    PllSrc::Hse(freq) => freq,
                 };
                 input_freq as f32 / self.prediv.value() as f32 * self.pll_mul.value() as f32
-            },
+            }
             InputSrc::Hsi => 8.,
             InputSrc::Hse(freq) => freq as f32,
         };
 
-        let hclk = sysclk  / self.hclk_prescaler.value() as f32;
+        let hclk = sysclk / self.hclk_prescaler.value() as f32;
         // f3 ref man section 4.5.1.
         flash.acr.modify(|_, w| {
             if hclk <= 24. {
@@ -311,6 +311,8 @@ impl Clocks {
         // register (RCC_CIR).
         // The PLL output frequency must be set in the range 16-72 MHz.
         // Set up the HSE if required.
+
+        // Enable oscillators, and wait until ready.
         match self.input_src {
             InputSrc::Hse(_) => {
                 rcc.cr.modify(|_, w| w.hseon().bit(true));
@@ -320,7 +322,7 @@ impl Clocks {
             InputSrc::Hsi => {
                 rcc.cr.modify(|_, w| w.hsion().bit(true));
                 while rcc.cr.read().hsirdy().is_not_ready() {}
-            },
+            }
             InputSrc::Pll(pll_src) => {
                 match pll_src {
                     PllSrc::Hse(_) => {
@@ -328,19 +330,17 @@ impl Clocks {
                         rcc.cr.modify(|_, w| w.hseon().bit(true));
                         while rcc.cr.read().hserdy().is_not_ready() {}
                     }
-                    _ => { // Hsi or HsiDiv2: In both cases, set up the HSI.
+                    _ => {
+                        // Hsi or HsiDiv2: In both cases, set up the HSI.
                         rcc.cr.modify(|_, w| w.hsion().bit(true));
                         while rcc.cr.read().hsirdy().is_not_ready() {}
                     }
                 }
-
             }
         }
         rcc.cr.modify(|_, w| {
             // Enable bypass mode on HSE, since we're using a ceramic oscillator.
-            w.hsebyp().bit(self.hse_bypass);
-            // Turn off the PLL: Required for modifying some of the settings below.
-            w.pllon().off()
+            w.hsebyp().bit(self.hse_bypass)
         });
 
         if let InputSrc::Pll(pll_src) = self.input_src {
@@ -384,10 +384,10 @@ impl Clocks {
                 let input_freq = match pll_src {
                     PllSrc::Hsi => 8,
                     PllSrc::HsiDiv2 => 4,
-                    PllSrc::Hse(freq) => freq
+                    PllSrc::Hse(freq) => freq,
                 };
                 input_freq as f32 / self.prediv.value() as f32 * self.pll_mul.value() as f32
-            },
+            }
             InputSrc::Hsi => 8.,
             InputSrc::Hse(freq) => freq as f32,
         };
@@ -439,15 +439,15 @@ impl Clocks {
         }
     }
 
-    /// This preset configures clocks with a HSE, a 72Mhz sysclck. All peripheral clocks are at
-    /// 72Mhz, except for APB1, which is at and 36Mhz. USB is set to 48Mhz.
+    /// This preset configures clocks with a HSE, a 48Mhz sysclck. All peripheral clocks are at
+    /// 48Mhz, except for APB1, which is at and 24Mhz. USB is set to 48Mhz.
     /// HSE output is not bypassed.
-    pub fn full_speed() -> Self {
+    pub fn hsi_preset() -> Self {
         Self {
-            input_src: InputSrc::Pll(PllSrc::Hse(8)),
+            input_src: InputSrc::Pll(PllSrc::HsiDiv2),
             prediv: Prediv::Div1,
-            pll_mul: PllMul::Mul9,
-            usb_pre: UsbPrescaler::Div1_5,
+            pll_mul: PllMul::Mul12,
+            usb_pre: UsbPrescaler::Div1,
             hclk_prescaler: HclkPrescaler::Div1,
             apb1_prescaler: ApbPrescaler::Div2,
             apb2_prescaler: ApbPrescaler::Div1,
@@ -458,15 +458,15 @@ impl Clocks {
 }
 
 impl Default for Clocks {
-    /// This default configures clocks with a HSE, a 48Mhz sysclck. All peripheral clocks are at
-    /// 48 Mhz, except for APB1, which is at and 24Mhz. USB is set to 48Mhz.
+    /// This default configures clocks with a HSE, a 72Mhz sysclck. All peripheral clocks are at
+    /// 72 Mhz, except for APB1, which is at and 36Mhz. USB is set to 48Mhz.
     /// HSE output is not bypassed.
     fn default() -> Self {
         Self {
             input_src: InputSrc::Pll(PllSrc::Hse(8)),
             prediv: Prediv::Div1,
-            pll_mul: PllMul::Mul6,
-            usb_pre: UsbPrescaler::Div1,
+            pll_mul: PllMul::Mul9,
+            usb_pre: UsbPrescaler::Div1_5,
             hclk_prescaler: HclkPrescaler::Div1,
             apb1_prescaler: ApbPrescaler::Div2,
             apb2_prescaler: ApbPrescaler::Div1,
