@@ -241,6 +241,43 @@ pub struct PwmChannel<X, T> {
     pin_status: PhantomData<T>,
 }
 
+pub struct ExactArrAndPsc<r> {
+    pub arr: r,
+    pub psc: u16,
+}
+
+pub trait ClocksToArrAndPsc {
+    type Arr;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr>;
+}
+
+impl<arr> ClocksToArrAndPsc for ExactArrAndPsc<arr> {
+    type Arr = arr;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        self
+    }
+}
+
+pub struct ResAndFreq<r> {
+    resolution: r,
+    frequency: Hertz,
+}
+
+impl<arr: Into<u32>> ClocksToArrAndPsc for ResAndFreq<arr> {
+    type Arr = arr;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // calculate the pre-scaler
+        let prescale_factor = timer_freq / self.resolution.into() / self.frequency.0;
+        ExactArrAndPsc {
+            arr: self.resolution,
+            psc: prescale_factor as u16 - 1,
+        }
+    }
+}
+
 macro_rules! pwm_timer_private {
     ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $apbxrstr:ident, $pclkz:ident, $timxrst:ident, $timxen:ident, $enable_break_timer:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         /// Create one or more output channels from a TIM Peripheral
@@ -253,7 +290,7 @@ macro_rules! pwm_timer_private {
         /// a resolution of 9000.  This allows the servo to be set in increments
         /// of exactly one degree.
         #[allow(unused_parens)]
-        pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
+        pub fn $timx<cc: ClocksToArrAndPsc<Arr = $res>>(tim: $TIMx, clock_config: cc, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer and reset it to ensure a clean state
             // We use unsafe here to abstract away this implementation detail
             // Justification: It is safe because only scopes with mutable references
@@ -267,6 +304,12 @@ macro_rules! pwm_timer_private {
             // enable auto reload preloader
             tim.cr1.modify(|_, w| w.arpe().set_bit());
 
+            // TODO: This is repeated in the timer/pwm module.
+            // It might make sense to move into the clocks as a crate-only property.
+            // TODO: ppre1 is used in timer.rs (never ppre2), should this be dynamic?
+            let clock_freq = clocks.$pclkz().0 * if clocks.ppre1() == 1 { 1 } else { 2 };
+            let ExactArrAndPsc { arr, psc } : ExactArrAndPsc<$res> = clock_config.timer_freq_to_arr_and_psc(clock_freq);
+
             // Set the "resolution" of the duty cycle (ticks before restarting at 0)
             // Oddly this is unsafe for some timers and not others
             //
@@ -274,17 +317,12 @@ macro_rules! pwm_timer_private {
             // This write uses all bits of this register so there are no unknown side effects.
             #[allow(unused_unsafe)]
             tim.arr.write(|w| unsafe {
-                w.arr().bits(res)
+                w.arr().bits(arr)
             });
 
             // Set the pre-scaler
-            // TODO: This is repeated in the timer/pwm module.
-            // It might make sense to move into the clocks as a crate-only property.
-            // TODO: ppre1 is used in timer.rs (never ppre2), should this be dynamic?
-            let clock_freq = clocks.$pclkz().0 * if clocks.ppre1() == 1 { 1 } else { 2 };
-            let prescale_factor = clock_freq / res as u32 / freq.0;
             // NOTE(write): uses all bits of this register.
-            tim.psc.write(|w| w.psc().bits(prescale_factor as u16 - 1));
+            tim.psc.write(|w| w.psc().bits(psc));
 
             // Make the settings reload immediately
             // NOTE(write): write to a state-less register.
