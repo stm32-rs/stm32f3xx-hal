@@ -30,38 +30,44 @@ const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 ///
 /// Use `CanOpts::default()` to get 250kbps at 32mhz system clock
 pub struct CanOpts {
-    pub brp: u16,
-    pub sjw: u8,
-    pub ts1: u8,
-    pub ts2: u8,
-    pub lbkm: LBKM_A,
+    brp: u16,
+    sjw: u8,
+    ts1: u8,
+    ts2: u8,
+    lbkm: LBKM_A,
 }
 
 impl CanOpts {
+    /// Create new `CanOpts` using the default settings from `CanOpts::default()` to get 250kbps at 32mhz system clock.
     pub fn new() -> CanOpts {
         CanOpts::default()
     }
 
+    /// Set the Baud Rate Prescaler. See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
     pub fn brp(mut self, brp: u16) -> Self {
         self.brp = brp;
         self
     }
 
+    /// Set the Resynchronisation Jump Width. See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
     pub fn sjw(mut self, sjw: u8) -> Self {
         self.sjw = sjw;
         self
     }
 
+    /// Set Time Segment One. See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
     pub fn ts1(mut self, ts1: u8) -> Self {
         self.ts1 = ts1;
         self
     }
 
+    /// Set Time Segment Two. See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
     pub fn ts2(mut self, ts2: u8) -> Self {
         self.ts2 = ts2;
         self
     }
 
+    /// Enable or disable loopback mode on the CAN device. This is useful for debugging.
     pub fn lbkm(mut self, lbkm: LBKM_A) -> Self {
         self.lbkm = lbkm;
         self
@@ -308,6 +314,7 @@ impl CanFilterData {
 }
 
 impl Can {
+    /// Initialize the CAN peripheral using the options specified by `opts`.
     pub fn new_with_opts(
         can: stm32::CAN,
         rx: gpioa::PA11<AF9>,
@@ -619,7 +626,7 @@ impl CanFrame {
     ///
     /// # Panics
     ///
-    /// This function will panic if `dlc` is not inside the vliad range `0..=8`.
+    /// This function will panic if `dlc` is not inside the valid range `0..=8`.
     pub fn new_remote(id: CanId, dlc: usize) -> CanFrame {
         assert!((0..=8).contains(&dlc));
 
@@ -630,7 +637,13 @@ impl CanFrame {
         }
     }
 
+    /// Length of the frame data
     pub fn len(&self) -> usize {
         self.dlc
+    }
+
+    /// Is this frame empty. This usually indicates a remote frame.
+    pub fn is_empty(&self) -> bool {
+        self.dlc == 0
     }
 }
