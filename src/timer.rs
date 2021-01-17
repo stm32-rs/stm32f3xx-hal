@@ -345,10 +345,7 @@ fn calc_period_vals(period: f32, clocks: &clocks::Clocks) -> Result<(u16, u16), 
     // (PSC+1)*(ARR+1) = TIMclk/Updatefrequency = TIMclk * period
     // APB1 (pclk1) is used by Tim2, 3, 4, 6, 7.
     // APB2 (pclk2) is used by Tim8, 15-20 etc.
-    // todo: It appears there's a (fixed?) 2x multiplier on APB1
-    // timers; it's twice `pclk1`. See clocks diagram in RM, or `Clock Configuration`
-    // tool in STM32CubeIDE.
-    let tim_clk = clocks.calc_speeds().pclk1 * 1_000_000. * 2.;
+    let tim_clk = clocks.calc_speeds().timer1 * 1_000_000.;
 
     // We need to factor the right-hand-side of the above equation (`rhs` variable)
     // into integers. There are likely clever algorithms available to do this.
