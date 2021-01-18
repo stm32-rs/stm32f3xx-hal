@@ -5,50 +5,50 @@ use num_traits::float::Float;
 
 use crate::hal::timer::{CountDown, Periodic};
 #[cfg(any(
-feature = "stm32f301",
-feature = "stm32f302",
-feature = "stm32f303",
-feature = "stm32f334",
-feature = "stm32f318",
-feature = "stm32f328",
-feature = "stm32f358",
-feature = "stm32f398",
+    feature = "stm32f301",
+    feature = "stm32f302",
+    feature = "stm32f303",
+    feature = "stm32f334",
+    feature = "stm32f318",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398",
 ))]
 use crate::pac::TIM1;
 #[cfg(any(
-feature = "stm32f303",
-feature = "stm32f328",
-feature = "stm32f358",
-feature = "stm32f398"
+    feature = "stm32f303",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
 ))]
 use crate::pac::TIM20;
 #[cfg(any(
-feature = "stm32f303",
-feature = "stm32f328",
-feature = "stm32f358",
-feature = "stm32f373",
-feature = "stm32f378",
-feature = "stm32f398"
+    feature = "stm32f303",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f398"
 ))]
 use crate::pac::TIM4;
 #[cfg(any(
-feature = "stm32f303",
-feature = "stm32f328",
-feature = "stm32f358",
-feature = "stm32f398",
+    feature = "stm32f303",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398",
 ))]
 use crate::pac::TIM8;
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 use crate::pac::{TIM12, TIM13, TIM14, TIM18, TIM19, TIM5};
 use crate::pac::{TIM15, TIM16, TIM17, TIM2, TIM6};
 #[cfg(any(
-feature = "stm32f303",
-feature = "stm32f328",
-feature = "stm32f334",
-feature = "stm32f358",
-feature = "stm32f373",
-feature = "stm32f378",
-feature = "stm32f398"
+    feature = "stm32f303",
+    feature = "stm32f328",
+    feature = "stm32f334",
+    feature = "stm32f358",
+    feature = "stm32f373",
+    feature = "stm32f378",
+    feature = "stm32f398"
 ))]
 use crate::pac::{TIM3, TIM7};
 
@@ -363,12 +363,11 @@ fn calc_period_vals(period: f32, clocks: &clocks::Clocks) -> Result<(u16, u16), 
     let max_val = 65_535;
     let rhs = tim_clk * period;
 
-    // todo: Round instead of cast?
-    let arr = (rhs.sqrt() - 1.) as u16;
+    let arr = rhs.sqrt().round() as u16 - 1;
     let psc = arr;
 
     if arr > max_val || psc > max_val {
-        return Err(ValueError {})
+        return Err(ValueError {});
     }
 
     Ok((psc, arr))
