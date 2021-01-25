@@ -278,6 +278,96 @@ impl<arr: Into<u32>> ClocksToArrAndPsc for ResAndFreq<arr> {
     }
 }
 
+// Picks the greatest resolution that yields a reasonably approximate frequency.
+// In many cases (the higher the frequency), the frequency will be exact or have
+// maximum possible accuracy regardless (as not all frequencies _can_ be
+// perfectly expressed).
+// Error is bounded by: `(Fi + m * Fo + 2 Fo) / ((m - 2) * (Fi + Fo))` where
+// Fi is the input clock frequency
+// Fo is the output clock frequency
+// m is the maximum resolution
+//
+// Example:
+//   - Fi = 72MHz
+//   - Fo = 50Hz
+//   - Max Resolution = 2^16 (standard timer)
+//
+// Then:
+//   - Worst Case Error ~= 0.00146%
+//   - Worst Case Frequency ~= 50.000728Hz
+//   - Actual Frequency ~= 0.000833%
+//   - Actual Frequency ~= 50.0004167Hz
+//
+// From:
+// `Fi / Fo = (a - 1) * m + Rm` such that `Rm >= 0`, and `Rm < m`
+// `Fi / Fo = b * a + Ra` such that `Ra >= 0`, and `Ra < a`
+// `b <= m`
+//
+// `Fi / Fo = b * a + Ra`
+// Worst case Ra = (a - 1)
+//
+// `Fi / Fo = b * a + (a - 1)`
+// `Fi / Fo - (a - 1) = b * a`
+// `Fi / Fo - a + 1 = b * a`
+// `(Fi / Fo - a + 1) / a = b`
+// `(Fi / Fo - a + 1) / a <= m`
+// `Fi / Fo - a + 1 <= m * a`
+// `Fi / Fo + 1 <= m * a - a`
+// `Fi / Fo + 1 <= a * (m - 1)`
+// `(Fi / Fo + 1) / (m - 1) <= a`
+//
+// error:
+// (Fo - (Fi / (b * a))) / Fo
+// (Fo - (Fi / (Fi / Fo - Ra))) / Fo
+//
+// Worst case Ra = (a - 1)
+// (Fo - (Fi / (Fi / Fo - (a - 1)))) / Fo
+//
+// worst case a = (Fi / Fo + 1) / (m - 1)
+// (Fo - (Fi / (Fi / Fo - ((Fi / Fo + 1) / (m - 1) - 1)))) / Fo
+//
+// simplified:
+// (Fi + m * Fo + 2 Fo) / ((m - 2) * (Fi + Fo))
+pub struct PrioritizeResolution<r> {
+    resolution: PhantomData<r>,
+    frequency: Hertz,
+}
+
+impl ClocksToArrAndPsc for PrioritizeResolution<u16> {
+    type Arr = u16;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // calculate the pre-scaler
+        // We need the resolution * prescale factor to equal the total_scaling
+        let total_scaling = timer_freq / self.frequency.0;
+        // We find the smallest factor that will result in the other factor
+        // being less than 2^16.
+        let prescale_factor =
+            total_scaling / 2 ^ 16 + if total_scaling % 2 ^ 16 == 0 { 1 } else { 0 };
+        // Given the smallest factor, we can now find its complement
+        // Together, the two give an error bounded approximate of the total
+        // scaling target.
+        let resolution = total_scaling / prescale_factor;
+        ExactArrAndPsc {
+            arr: (resolution - 1) as u16,
+            psc: (prescale_factor - 1) as u16,
+        }
+    }
+}
+
+impl ClocksToArrAndPsc for PrioritizeResolution<u32> {
+    type Arr = u32;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // A high-resolution timer will always have enough bits to divide out even to the lowest
+        // frequency for the Hertz type (1hz).
+        ExactArrAndPsc {
+            arr: (timer_freq / self.frequency.0) - 1,
+            psc: 1,
+        }
+    }
+}
+
 macro_rules! pwm_timer_private {
     ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $apbxrstr:ident, $pclkz:ident, $timxrst:ident, $timxen:ident, $enable_break_timer:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         /// Create one or more output channels from a TIM Peripheral
