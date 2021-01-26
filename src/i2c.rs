@@ -81,8 +81,8 @@ cfg_if! {
 
 /// I2C peripheral operating in master mode
 pub struct I2c<I2C, PINS> {
-    i2c: I2C,
-    pins: PINS,
+    pub(crate) i2c: I2C,
+    pub(crate) pins: PINS,
 }
 
 macro_rules! busy_wait {

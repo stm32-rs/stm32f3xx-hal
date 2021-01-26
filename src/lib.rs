@@ -181,6 +181,7 @@ cfg_if::cfg_if! {
         pub mod flash;
         pub mod gpio;
         pub mod i2c;
+        pub mod i2cint;
         pub mod prelude;
         pub mod pwm;
         pub mod rcc;
