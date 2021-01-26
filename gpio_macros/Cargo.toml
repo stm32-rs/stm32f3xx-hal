@@ -1,0 +1,25 @@
+[package]
+name = "gpio_macros"
+version = "0.1.0"
+authors = ["seanybaggins <seli2854@colorado.edu>"]
+edition = "2018"
+autotests = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = {version = "1.0.58", features = ["parsing"]}
+quote = "1.0.8"
+regex = "1.4.3"
+proc-macro2 = "1.0.24"
+seq-macro = "0.2.1"
+lazy_static = "1.4.0"
+
+[[test]]
+name = "tests"
+path = "tests/builds.rs"
+
+[dev-dependencies]
+trybuild = "1.0.38"
