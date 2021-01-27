@@ -22,6 +22,8 @@ pub enum I2cError {
     StateError,
     /// Transfer complete status but nothing do do next
     TransferCompleteNoRead,
+    /// Send buffer is empty
+    TxBufferEmpty,
 }
 
 /// State of i2c communication.
@@ -254,9 +256,12 @@ impl<I2C, SCL, SDA> I2cInt<I2C, (SCL, SDA)> where I2C: Instance {
         let isr_state = self.isr_state();
         match isr_state {
             Ok(State::TxReady) => {
-                self.tx_buf
-                    .map(|buf| self.write_tx_buffer(buf[self.tx_ind]));
-                self.tx_ind += 1;
+                if let Some(buf) = self.tx_buf {
+                    self.write_tx_buffer(buf[self.tx_ind]);
+                    self.tx_ind += 1;
+                } else {
+                    self.last_error = Some(I2cError::TxBufferEmpty);
+                }
             }
             Ok(State::RxReady) => {
                 self.rx_buf[self.rx_ind] = self.dev.i2c.rxdr.read().rxdata().bits();
