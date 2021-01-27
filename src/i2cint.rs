@@ -1,9 +1,9 @@
 //! Inter-Integrated Circuit (I2C) bus interruption
 
-use core::fmt;
-use crate::{i2c::{I2c, Instance, SclPin, SdaPin}};
+use crate::i2c::{I2c, Instance, SclPin, SdaPin};
 use crate::rcc::{Clocks, APB1};
 use crate::time::Hertz;
+use core::fmt;
 
 /// I2c errors.
 #[derive(Debug, Copy, Clone)]
@@ -71,9 +71,18 @@ pub struct I2cInt<I2C, PINS> {
     recv: Option<(u8, usize)>,
 }
 
-impl<I2C, SCL, SDA> I2cInt<I2C, (SCL, SDA)> where I2C: Instance {
+impl<I2C, SCL, SDA> I2cInt<I2C, (SCL, SDA)>
+where
+    I2C: Instance,
+{
     /// Configures the I2C peripheral to work in master mode
-    pub fn new_int<F>(i2c: I2C, pins: (SCL, SDA), freq: F, clocks: Clocks, apb1: &mut APB1) -> I2cInt<I2C, (SCL, SDA)>
+    pub fn new_int<F>(
+        i2c: I2C,
+        pins: (SCL, SDA),
+        freq: F,
+        clocks: Clocks,
+        apb1: &mut APB1,
+    ) -> I2cInt<I2C, (SCL, SDA)>
     where
         SCL: SclPin<I2C>,
         SDA: SdaPin<I2C>,
@@ -245,7 +254,8 @@ impl<I2C, SCL, SDA> I2cInt<I2C, (SCL, SDA)> where I2C: Instance {
     /// # Errors
     /// * `I2cError::DeviceBusy` if the device is already busy.
     pub fn stop(&mut self, addr: u8) {
-        self.dev.i2c
+        self.dev
+            .i2c
             .cr2
             .modify(|_, w| w.sadd().bits(u16::from(addr << 1)).stop().stop());
     }
