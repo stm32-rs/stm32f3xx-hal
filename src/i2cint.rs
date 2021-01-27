@@ -275,16 +275,10 @@ impl<I2C, SCL, SDA> I2cInt<I2C, (SCL, SDA)> where I2C: Instance {
                 self.tx_ind = 0;
                 // When receiving Tx complete, we should read after
                 // if not it should be a tx stop
-                self.last_error = self.recv.map_or_else(
-                    || Some(I2cError::TransferCompleteNoRead),
-                    |recv| {
-                        self.read(recv.0, recv.1);
-                        None
-                    },
-                );
-                // if there was an error send a stop
-                if self.last_error.is_some() {
-                    self.current_write_addr.map(|addr| self.stop(addr));
+                if let Some(recv) = self.recv {
+                    self.read(recv.0, recv.1)
+                } else {
+                    self.last_error = Some(I2cError::TransferCompleteNoRead);
                 }
                 self.current_write_addr = None;
             }
