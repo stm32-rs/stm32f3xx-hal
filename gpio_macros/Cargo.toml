@@ -10,16 +10,18 @@ autotests = false
 proc-macro = true
 
 [dependencies]
-syn = {version = "1.0.58", features = ["parsing"]}
+syn = {version = "1.0.58", features = ["parsing", "extra-traits", "full"]}
 quote = "1.0.8"
 regex = "1.4.3"
 proc-macro2 = "1.0.24"
-seq-macro = "0.2.1"
-lazy_static = "1.4.0"
 
 [[test]]
 name = "tests"
 path = "tests/builds.rs"
+
+# [[bin]]
+# name = "gpio_pin_partially_erased"
+# path = "tests/gpio_pin_partially_erased_bad_pin.rs"
 
 [dev-dependencies]
 trybuild = "1.0.38"
