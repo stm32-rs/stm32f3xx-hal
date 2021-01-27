@@ -5,7 +5,7 @@ use quote::{format_ident, quote};
 use regex::Regex;
 use syn::parse::{Error, Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, Ident, LitInt, Token, Visibility};
+use syn::{bracketed, parse_macro_input, Ident, LitInt, Token, Visibility};
 
 // Point out bazaar exception for stm32f373 port d mapping.
 // gpio!
@@ -44,7 +44,7 @@ impl Parse for GpioPartiallyErasedParsedInfo {
         let port = PIx_iter.next().expect("A regex check failed").to_string();
         let port = Ident::new(&port, Span::call_site());
 
-        Ok(Self {port })
+        Ok(Self { port })
     }
 }
 
@@ -60,9 +60,8 @@ impl Parse for GpioPartiallyErasedParsedInfo {
 /// ```
 #[proc_macro]
 pub fn gpio_partially_erased(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let GpioPartiallyErasedParsedInfo {
-        port,
-    } = parse_macro_input!(input as GpioPartiallyErasedParsedInfo);
+    let GpioPartiallyErasedParsedInfo { port } =
+        parse_macro_input!(input as GpioPartiallyErasedParsedInfo);
 
     let PIx = format_ident!("P{}x", port);
     let GPIOX = format_ident!("GPIO{}", port);
@@ -151,7 +150,6 @@ pub fn gpio_partially_erased(input: proc_macro::TokenStream) -> proc_macro::Toke
     proc_macro::TokenStream::from(expanded)
 }
 
-
 /// Holds relevant information that is parsed from the
 /// invocation of the gpio pin macro
 struct GpioPinParsedInfo {
@@ -187,8 +185,10 @@ impl Parse for GpioPinParsedInfo {
         let _af: Ident = input.parse()?;
         let _collon: Token![:] = input.parse()?;
 
+        let alternate_functions;
+        bracketed!(alternate_functions in input);
         let alternate_functions: Punctuated<LitInt, Token![,]> =
-            Punctuated::parse_terminated(&input)?;
+            Punctuated::parse_terminated(&alternate_functions)?;
 
         Ok(Self {
             port,
@@ -213,7 +213,7 @@ pub fn gpio_pin(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         pin,
         alternate_functions,
     } = parse_macro_input!(input as GpioPinParsedInfo);
- 
+
     let PIi = format_ident!("P{}{}", port, pin);
     let PIx = format_ident!("P{}x", port);
     let moderi = format_ident!("moder{}", pin);
@@ -229,6 +229,8 @@ pub fn gpio_pin(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         .iter()
         .map(|alternate_function| format_ident!("af{}", alternate_function.base10_digits()));
 
+    let into_afis = afis.clone().map(|afi| format_ident!("into_{}", afi));
+
     let AFis = alternate_functions
         .iter()
         .map(|alternate_function| format_ident!("AF{}", alternate_function.base10_digits()));
@@ -240,7 +242,7 @@ pub fn gpio_pin(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         }
         impl<MODE> #PIi<MODE> {
             #(///Configures `#PIi` to serve as alternate function: `#AFis`
-            pub fn into_#afis(self, moder: &mut MODER, afr: &mut AFRL) -> #PIi<#AFis> {
+            pub fn #into_afis(self, moder: &mut MODER, afr: &mut AFRL) -> #PIi<#AFis> {
                 moder.moder().modify(|_, w| w.#moderi().alternate());
                 afr.afr().modify(|_, w| w.#afrli().#afis());
                 #PIi { _mode: PhantomData }
@@ -384,11 +386,7 @@ pub fn gpio_pin(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         impl<MODE> toggleable::Default for #PIi<Output<MODE>> {}
     };
 
+    eprintln!("{}", expanded);
+
     proc_macro::TokenStream::from(expanded)
 }
-
-
-
-
-
-

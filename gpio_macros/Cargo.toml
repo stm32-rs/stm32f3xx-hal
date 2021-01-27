@@ -19,9 +19,11 @@ proc-macro2 = "1.0.24"
 name = "tests"
 path = "tests/builds.rs"
 
-# [[bin]]
-# name = "gpio_pin_partially_erased"
-# path = "tests/gpio_pin_partially_erased_bad_pin.rs"
+# uncomment for see macro expansion of a macro with
+# cargo expand --bin gpio_pin_intended
+[[bin]]
+name = "gpio_pin_intended"
+path = "tests/gpio_pin_intended.rs"
 
 [dev-dependencies]
 trybuild = "1.0.38"
