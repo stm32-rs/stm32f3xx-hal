@@ -295,7 +295,7 @@ impl<arr: Into<u32>> ClocksToArrAndPsc for ResAndFreq<arr> {
 // Then:
 //   - Worst Case Error ~= 0.00146%
 //   - Worst Case Frequency ~= 50.000728Hz
-//   - Actual Frequency ~= 0.000833%
+//   - Actual Error ~= 0.000833%
 //   - Actual Frequency ~= 50.0004167Hz
 //
 // From:
