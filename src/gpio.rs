@@ -139,67 +139,198 @@ pub trait ExtiPin {
     fn clear_interrupt_pending_bit(&mut self);
 }
 
-macro_rules! exti {
-    ($PIN:ty, $extigpionr:expr, $exticri:ident) => {
-        impl<MODE> ExtiPin for $PIN {
-            /// Configure EXTI Line $i to trigger from this pin.
-            fn make_interrupt_source(&mut self, syscfg: &mut SysCfg) {
+/// GPIO discriminator enum.
+///
+/// Use to store the gpio bank, when using
+/// fully erased pins [`PXx`]
+pub enum Gpio {
+    GPIOA,
+    GPIOB,
+    GPOIC,
+    GPOID,
+    GPIOE,
+    GPIOF,
+    #[cfg(feature = "gpio-f303e")]
+    GPIOG,
+    #[cfg(feature = "gpio-f303e")]
+    GPIOH
+}
+
+        /// Fully erased pin
+        ///
+        /// This moves the pin type information to be known
+        /// at runtime, and erases the specific compile time type of the GPIO.
+        /// It does only matter, that it is a GPIO pin with a specific MODE.
+        ///
+        /// See [examples/gpio_erased.rs] as an example.
+        ///
+        /// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/gpio_erased.rs
+        pub struct PXx<MODE> {
+            i: u8,
+            gpio: Gpio,
+            _mode: PhantomData<MODE>,
+        }
+
+        impl<MODE> OutputPin for PXx<Output<MODE>> {
+            type Error = Infallible;
+
+            fn set_high(&mut self) -> Result<(), Self::Error> {
+                // NOTE(unsafe, write) atomic write to a stateless register
+                unsafe {
+                    match &self.gpio {
+                        $(
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << self.i)),
+                        )+
+                    }
+                }
+                Ok(())
+            }
+
+            fn set_low(&mut self) -> Result<(), Self::Error> {
+                // NOTE(unsafe, write) atomic write to a stateless register
+                unsafe {
+                    match &self.gpio {
+                        $(
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).bsrr.write(|w| w.bits(1 << (16 + self.i))),
+                        )+
+                    }
+                }
+                Ok(())
+            }
+        }
+
+        #[cfg(feature = "unproven")]
+        impl<MODE> InputPin for PXx<Input<MODE>> {
+            type Error = Infallible;
+
+            fn is_high(&self) -> Result<bool, Self::Error> {
+                Ok(!self.is_low()?)
+            }
+
+             fn is_low(&self) -> Result<bool, Self::Error> {
+                // NOTE(unsafe) atomic read with no side effects
+                Ok(unsafe {
+                    match &self.gpio {
+                        $(
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0,
+                        )+
+                    }
+                })
+            }
+        }
+
+        impl<MODE> ExtiPin for PXx<Input<MODE>> {
+            /// Make corresponding EXTI line sensitive to this pin
+            fn make_interrupt_source(&mut self, syscfg: &mut SYSCFG) {
                 let offset = 4 * (self.i % 4);
-                syscfg.$exticri.modify(|r, w| unsafe {
-                    let mut exticr = r.bits();
-                    exticr = (exticr & !(0xf << offset)) | ($extigpionr << offset);
-                    w.bits(exticr)
-                });
+                let extigpionr = match &self.gpio {
+                    Gpio::GPIOA => 0,
+                    Gpio::GPIOB => 1,
+                    Gpio::GPIOC => 2,
+                    Gpio::GPIOD => 3,
+                    Gpio::GPIOE => 4,
+                    Gpio::GPIOF => 5,
+                };
+
+                match self.i {
+                    0..=3 => {
+                        syscfg.exticr1.modify(|r, w| unsafe {
+                            w.bits((r.bits() & !(0xf << offset)) | (extigpionr << offset))
+                        });
+                    },
+                    4..=7 => {
+                        syscfg.exticr2.modify(|r, w| unsafe {
+                            w.bits((r.bits() & !(0xf << offset)) | (extigpionr << offset))
+                        });
+                    },
+                    8..=11 => {
+                        syscfg.exticr3.modify(|r, w| unsafe {
+                            w.bits((r.bits() & !(0xf << offset)) | (extigpionr << offset))
+                        });
+                    },
+                    12..=15 => {
+                        syscfg.exticr4.modify(|r, w| unsafe {
+                            w.bits((r.bits() & !(0xf << offset)) | (extigpionr << offset))
+                        });
+                    },
+                    _ => {}
+                }
             }
 
             /// Generate interrupt on rising edge, falling edge or both
             fn trigger_on_edge(&mut self, exti: &mut EXTI, edge: Edge) {
                 match edge {
                     Edge::RISING => {
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << $i)) });
-                    }
+                        exti.rtsr1.modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
+                        exti.ftsr1.modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.i)) });
+                    },
                     Edge::FALLING => {
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << $i)) });
-                    }
+                        exti.ftsr1.modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
+                        exti.rtsr1.modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.i)) });
+                    },
                     Edge::RISING_FALLING => {
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
+                        exti.rtsr1.modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
+                        exti.ftsr1.modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
                     }
                 }
             }
 
             /// Enable external interrupts from this pin.
             fn enable_interrupt(&mut self, exti: &mut EXTI) {
-                exti.imr
-                    .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
+                exti.imr1.modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
             }
 
             /// Disable external interrupts from this pin
             fn disable_interrupt(&mut self, exti: &mut EXTI) {
-                exti.imr
-                    .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << $i)) });
+                exti.imr1.modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.i)) });
             }
 
             /// Clear the interrupt pending bit for this pin
             fn clear_interrupt_pending_bit(&mut self) {
-                unsafe { (*EXTI::ptr()).pr.write(|w| w.bits(1 << $i)) };
-            }
-
-            /// Reads the interrupt pending bit for this pin
-            fn check_interrupt(&self) -> bool {
-                unsafe { ((*EXTI::ptr()).pr.read().bits() & (1 << $i)) != 0 }
+                unsafe { (*EXTI::ptr()).pr1.write(|w| w.bits(1 << self.i) ) };
             }
         }
-    };
-}
+
+        #[cfg(feature = "unproven")]
+        impl InputPin for PXx<Output<OpenDrain>> {
+            type Error = Infallible;
+
+            fn is_high(&self) -> Result<bool, Self::Error> {
+                Ok(!self.is_low()?)
+            }
+
+             fn is_low(&self) -> Result<bool, Self::Error> {
+                // NOTE(unsafe) atomic read with no side effects
+                Ok(unsafe {
+                    match &self.gpio {
+                        $(
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).idr.read().bits() & (1 << self.i) == 0,
+                        )+
+                    }
+                })
+            }
+        }
+
+        #[cfg(feature = "unproven")]
+        impl <MODE> StatefulOutputPin for PXx<Output<MODE>> {
+            fn is_set_high(&self) -> Result<bool, Self::Error> {
+                self.is_set_low().map(|b| !b)
+            }
+
+            fn is_set_low(&self) -> Result<bool, Self::Error> {
+                // NOTE(unsafe) atomic read with no side effects
+                Ok(unsafe {
+                    match &self.gpio {
+                        $(
+                            Gpio::$GPIOX => (*$GPIOX::ptr()).odr.read().bits() & (1 << self.i) == 0,
+                        )+
+                    }
+                })
+            }
+        }
+
+        #[cfg(feature = "unproven")]
+        impl <MODE> toggleable::Default for PXx<Output<MODE>> {}
 
 macro_rules! gpio {
     ([
