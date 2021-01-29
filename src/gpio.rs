@@ -220,7 +220,7 @@ macro_rules! gpio {
         },)+
     ]) => {
         $( use crate::pac::$GPIOX; )+
-    
+
         use crate::stm32::{EXTI, SYSCFG};
 
         /// GPIO discriminator enum.
@@ -412,7 +412,7 @@ macro_rules! gpio {
 
         $(
             paste::paste!{
-                #[doc = "All Pins and associated functions for GPIO Bank: `" $GPIOX "`"]
+                /// "All Pins and associated functions for GPIO Bank: `" $GPIOX "`
                 pub mod $gpiox {
                     use core::marker::PhantomData;
                     use core::convert::Infallible;

@@ -421,7 +421,7 @@ macro_rules! dma {
         },
     ) => {
         paste::paste! {
-            #[doc = "All associated types, traits and methods of the `" $DMAx "` peripheral."]
+            /// "All associated types, traits and methods of the `" $DMAx "` peripheral.
             pub mod $dmax {
                 use super::*;
                 use crate::pac::$DMAx;

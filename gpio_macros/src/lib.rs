@@ -5,10 +5,7 @@ use quote::{format_ident, quote};
 use regex::Regex;
 use syn::parse::{Error, Parse, ParseStream, Result};
 use syn::punctuated::Punctuated;
-use syn::{bracketed, parse_macro_input, Ident, LitInt, Token, Visibility};
-
-// Point out bazaar exception for stm32f373 port d mapping.
-// gpio!
+use syn::{bracketed, parse_macro_input, Ident, LitInt, Token, Visibility, ExprArray};
 
 fn test_input_against_regex(input: &str, pattern: &Regex) -> Result<()> {
     if !pattern.is_match(&input) {
@@ -406,7 +403,7 @@ pub fn gpio_pin(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 struct GpioParsedInfo {
     port_lower: String,
     port_upper: String,
-    pins_to_alternate_functions: Vec<(u8, Vec<u8>)>,
+    pins_to_alternate_functions: Vec<(u8, ExprArray)>,
 }
 
 impl Parse for GpioParsedInfo {
@@ -430,30 +427,18 @@ impl Parse for GpioParsedInfo {
             let _arrow: Token![=>] = input.parse()?;
             let _af: Ident = input.parse()?;
             let _collon: Token![:] = input.parse()?;
-            let alternate_functions;
-            bracketed!(alternate_functions in input);
-            let alternate_functions: Punctuated<LitInt, Token![,]> =
-                Punctuated::parse_separated_nonempty(&alternate_functions)?; // being empty may be fine
-            let alternate_functions: Vec<u8> = alternate_functions
-                .iter()
-                .map(|alternate_function| {
-                    alternate_function
-                        .base10_parse::<u8>()
-                        .expect("unable to parse an integer for an alternate function")
-                })
-                .collect();
+            let alternate_functions = input.parse()?;
 
             Ok((pin, alternate_functions))
         };
 
-        let pins_to_alternate_functions: Punctuated<(u8, Vec<u8>), Token![,]> =
+        let pins_to_alternate_functions: Punctuated<(u8, ExprArray), Token![,]> =
             Punctuated::parse_separated_nonempty_with(
                 &bracketed_content,
                 pin_to_alternate_functions_parser,
             )?;
 
-        //let pins_to_alternate_functions: syn::ExprArray = input.parse()?;
-        let pins_to_alternate_functions: Vec<(u8, Vec<u8>)> =
+        let pins_to_alternate_functions: Vec<(u8, ExprArray)> =
             pins_to_alternate_functions.iter().cloned().collect();
 
         Ok(Self {
@@ -513,11 +498,6 @@ pub fn gpio(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         .iter()
         .map(|pin| format_ident!("p{}{}", port_lower, pin))
         .collect();
-    // let AFIs = alternate_functionsi.clone().map(|alternate_functions| {
-    //     alternate_functions
-    //         .iter()
-    //         .map(|alternate_function| format_ident!("AF{}", alternate_function))
-    // });
     let resets = pini.iter().map(|pin| match (port_lower.as_str(), pin) {
         ("a", _pin @ 13..=15) => format_ident!("AF0"),
         ("b", _pin @ 3..=4) => format_ident!("AF0"),
@@ -639,7 +619,7 @@ pub fn gpio(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
 
             gpio_partially_erased!(#PIx);
-            #(gpio_pin!(#PIis, af: #alternate_functionsi));* // Currently have a compiler error on this line.
+            #(gpio_pin!(#PIis, af: #alternate_functionsi));*
         }
     };
 
