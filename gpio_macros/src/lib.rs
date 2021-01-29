@@ -356,11 +356,11 @@ pub fn gpio_pin(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         impl<MODE> OutputPin for #PIi<Output<MODE>> {
             type Error = Infallible;
             fn set_high(&mut self) -> Result<(), Self::Error> {
-                unsafe { (*GPIOB::ptr()).bsrr.write(|w| w.#bsi().set()) }
+                unsafe { (*#GPIOI::ptr()).bsrr.write(|w| w.#bsi().set()) }
                 Ok(())
             }
             fn set_low(&mut self) -> Result<(), Self::Error> {
-                unsafe { (*GPIOB::ptr()).bsrr.write(|w| w.#bri().reset()) }
+                unsafe { (*#GPIOI::ptr()).bsrr.write(|w| w.#bri().reset()) }
                 Ok(())
             }
         }
@@ -606,7 +606,7 @@ pub fn gpio(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
             impl AFRH {
                 #[allow(dead_code)]
-                pub(crate) fn afr(&mut self) -> &gpioa::AFRH {
+                pub(crate) fn afr(&mut self) -> &#gpio_mapped::AFRH {
                     unsafe { &(*#GPIOI::ptr()).afrh }
                 }
             }
@@ -615,7 +615,7 @@ pub fn gpio(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
                 _0: (),
             }
             impl MODER {
-                pub(crate) fn moder(&mut self) -> &gpioa::MODER {
+                pub(crate) fn moder(&mut self) -> &#gpio_mapped::MODER {
                     unsafe { &(*#GPIOI::ptr()).moder }
                 }
             }
@@ -639,7 +639,7 @@ pub fn gpio(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
             }
 
             gpio_partially_erased!(#PIx);
-
+            #(gpio_pin!(#PIis, af: #alternate_functionsi));* // Currently have a compiler error on this line.
         }
     };
 
