@@ -163,6 +163,7 @@ use crate::{
     time::Hertz,
 };
 use core::marker::PhantomData;
+use core::u16;
 
 #[cfg(any(
     feature = "stm32f302xb",
@@ -356,6 +357,151 @@ impl ClocksToArrAndPsc for PrioritizeResolution<u16> {
 }
 
 impl ClocksToArrAndPsc for PrioritizeResolution<u32> {
+    type Arr = u32;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // A high-resolution timer will always have enough bits to divide out even to the lowest
+        // frequency for the Hertz type (1hz).
+        ExactArrAndPsc {
+            arr: (timer_freq / self.frequency.0) - 1,
+            psc: 1,
+        }
+    }
+}
+
+struct Wheel {
+    n: u32,
+    pre_division: Option<u32>,
+    k: u32,
+    i: usize,
+}
+
+// Gaps between the primes <= 31 excluding 2 and 3
+// AKA: the wheel in our wheel.
+const inc: [u32; 9] = [2, 4, 2, 4, 2, 4, 4, 2, 2];
+
+impl Iterator for Wheel {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.pre_division {
+            Some(i) => {
+                if self.n % i == 0 {
+                    self.n = self.n / i;
+                    Some(i)
+                } else {
+                    self.pre_division = match i {
+                        2 => Some(3),
+                        2 => Some(5),
+                        5 => None,
+                    };
+                    self.next()
+                }
+            }
+            None => {
+                if self.k * self.k > self.n {
+                    None
+                } else if self.n % self.k == 0 {
+                    self.n = self.n / self.k;
+                    Some(self.k)
+                } else {
+                    self.k += inc[self.i];
+                    self.i = if self.i == 7 { 0 } else { self.i + 1 };
+                    self.next()
+                }
+            }
+        }
+    }
+}
+
+fn factor(n: u32) -> Wheel {
+    Wheel {
+        n: n,
+        pre_division: Some(2),
+        k: 7,
+        i: 0,
+    }
+}
+
+// PrioritizeFreq will give the most accurate frequency possible, while
+// attempting to give a reasonably large resolution (but not necessarily
+// optimal).
+//
+// While it is theoretically possible that frequency will not be optimal if a
+// specific combination of factors must be used (rather than simply the product
+// of the smallest) to fit the values into the dividing registers, these are
+// exceedingly rare and strange cases that require ratios (such as a period of
+// 3284894596/72000000s).
+//
+// Some inputs are pathalogical in time when the total clock division must be
+// factored, but it and its neighbors do not have factors that fit into the
+// dividing registers.
+pub struct PrioritizeFreq<r> {
+    resolution: PhantomData<r>,
+    frequency: Hertz,
+}
+
+impl ClocksToArrAndPsc for PrioritizeFreq<u16> {
+    type Arr = u16;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // Our target is the total clock division.  We now must find the closest
+        // value that factors nicely into our two registers.
+        let target = timer_freq / self.frequency.0;
+
+        // If our target fails to factor, we're start alternating incrementing
+        // up and down from our target.  This tells us which way we're hunting
+        // currently.
+        let mut searchUp = true;
+
+        // Our search offset tells us how far we've strayed from our target
+        let mut searchOffset = 1;
+
+        let mut resolution = target;
+        let mut prescale_factor;
+
+        loop {
+            prescale_factor = 1;
+            // If needed, start shifting factors from our resolution to our
+            // prescaler
+            if resolution > u16::MAX as u32 {
+                for x in factor(resolution) {
+                    prescale_factor *= x;
+                    resolution = resolution / x;
+                    if resolution <= u16::MAX as u32 {
+                        break;
+                    }
+                }
+            }
+
+            // We've completed shifting factors, but there's a few possibilies:
+            //   1. We now have an acceptable divide and we're done
+            //   2. Our factors didn't shrink the resolution enough so we
+            //      continue
+            //   3. Our factors shrank the resolution, but then blew out the
+            //      prescaler so we continue (very unlikely, but possible)
+            if resolution <= u16::MAX as u32 && prescale_factor <= u16::MAX as u32 {
+                break;
+            }
+
+            // Since our current target failed to factor, we try the next
+            // closest value to our target.
+            if searchUp {
+                resolution = target + searchOffset;
+            } else {
+                resolution = target - searchOffset;
+                searchOffset += 1
+            }
+            searchUp = !searchUp;
+        }
+        ExactArrAndPsc {
+            arr: (resolution as u16) - 1,
+            psc: (prescale_factor as u16) - 1,
+        }
+    }
+}
+
+impl ClocksToArrAndPsc for PrioritizeFreq<u32> {
     type Arr = u32;
 
     fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
