@@ -134,12 +134,12 @@ pub enum Edge {
     /// Rising and falling edge of voltage
     RISING_FALLING,
 }
-/// External Interrupt Pin
+/// Trait allowing pins to be configured for external interrupts
 pub trait ExtiPin {
     /// Configures a pin to be an interrupt source
     fn make_interrupt_source(&mut self, syscfg: &mut SYSCFG);
 
-    /// Configures a pins interrupt to trigger on a Rising, Falling, or Rising and Falling edge
+    /// Configures a pin's interrupt to trigger on a Rising, Falling, or Rising and Falling edge
     fn trigger_on_edge(&mut self, exti: &mut EXTI, level: Edge);
 
     /// Enables interrupts for a pin
