@@ -70,13 +70,25 @@ fn gen_gpio_macro_call(ports: &[Port], feature: &str) -> Result<()> {
 
 fn gen_port(port: &Port, feature: &str) -> Result<()> {
     let pac_module = get_port_pac_module(port, feature);
+    let extigpionr = match port.id {
+        'A' => 0,
+        'B' => 1,
+        'C' => 2,
+        'D' => 3,
+        'E' => 4,
+        'F' => 5,
+        'G' => 6,
+        'H' => 7,
+        _ => unreachable!(), 
+    };
 
     println!("    {{");
     println!(
-        "        port: ({}/{}, pac: {}),",
+        "        port: ({}/{}, pac: {}, extigpionr: {}),",
         port.id,
         port.id.to_lowercase(),
         pac_module,
+        extigpionr,
     );
     println!("        pins: [");
 
@@ -105,13 +117,17 @@ fn gen_pin(pin: &gpio::Pin) -> Result<()> {
     let reset_mode = get_pin_reset_mode(pin)?;
     let afr = if nr < 8 { 'L' } else { 'H' };
     let af_numbers = get_pin_af_numbers(pin)?;
+    let exticri = pin.number()? / 4 + 1;
+    let imri_pri_rstri_ftsri = pin.number()? / 32 + 1;
 
     println!(
-        "            {} => {{ reset: {}, afr: {}/{}, af: {:?} }},",
+        "            {} => {{ reset: {}, afr: {}/{}, exticri: {}, imri_pri_rstri_ftsri: {}, af: {:?} }},",
         nr,
         reset_mode,
         afr,
         afr.to_lowercase(),
+        exticri,
+        imri_pri_rstri_ftsri,
         af_numbers,
     );
 
