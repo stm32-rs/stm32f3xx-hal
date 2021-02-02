@@ -125,12 +125,15 @@ pub struct AF14;
 pub struct AF15;
 
 #[derive(Debug, PartialEq)]
+/// An enum used for identifying when an interrupt should trigger
 pub enum Edge {
+    /// Rising edge of voltage
     RISING,
+    /// Falling edge of voltage
     FALLING,
+    /// Rising and falling edge of voltage
     RISING_FALLING,
 }
-
 /// External Interrupt Pin
 pub trait ExtiPin {
     fn make_interrupt_source(&mut self, syscfg: &mut SYSCFG);
@@ -139,148 +142,6 @@ pub trait ExtiPin {
     fn disable_interrupt(&mut self, exti: &mut EXTI);
     fn clear_interrupt_pending_bit(&mut self);
     fn check_interrupt(&self) -> bool;
-}
-
-macro_rules! exti_erased {
-    (PXx: $PIN:ty, extigpionr: $extigpionr:literal) => {
-        impl<MODE> ExtiPin for $PIN {
-            /// Make corresponding EXTI line sensitive to this pin
-            fn make_interrupt_source(&mut self, syscfg: &mut SYSCFG) {
-                let offset = 4 * (self.i % 4);
-                match self.i {
-                    0..=3 => {
-                        syscfg.exticr1.modify(|r, w| unsafe {
-                            w.bits((r.bits() & !(0xf << offset)) | ($extigpionr << offset))
-                        });
-                    }
-                    4..=7 => {
-                        syscfg.exticr2.modify(|r, w| unsafe {
-                            w.bits((r.bits() & !(0xf << offset)) | ($extigpionr << offset))
-                        });
-                    }
-                    8..=11 => {
-                        syscfg.exticr3.modify(|r, w| unsafe {
-                            w.bits((r.bits() & !(0xf << offset)) | ($extigpionr << offset))
-                        });
-                    }
-                    12..=15 => {
-                        syscfg.exticr4.modify(|r, w| unsafe {
-                            w.bits((r.bits() & !(0xf << offset)) | ($extigpionr << offset))
-                        });
-                    }
-                    _ => {}
-                }
-            }
-
-            /// Generate interrupt on rising edge, falling edge or both
-            fn trigger_on_edge(&mut self, exti: &mut EXTI, edge: Edge) {
-                match edge {
-                    Edge::RISING => {
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.i)) });
-                    }
-                    Edge::FALLING => {
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.i)) });
-                    }
-                    Edge::RISING_FALLING => {
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
-                    }
-                }
-            }
-
-            /// Enable external interrupts from this pin.
-            fn enable_interrupt(&mut self, exti: &mut EXTI) {
-                exti.imr
-                    .modify(|r, w| unsafe { w.bits(r.bits() | (1 << self.i)) });
-            }
-
-            /// Disable external interrupts from this pin
-            fn disable_interrupt(&mut self, exti: &mut EXTI) {
-                exti.imr
-                    .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << self.i)) });
-            }
-
-            /// Clear the interrupt pending bit for this pin
-            fn clear_interrupt_pending_bit(&mut self) {
-                unsafe { (*EXTI::ptr()).pr.write(|w| w.bits(1 << self.i)) };
-            }
-
-            /// Reads the interrupt pending bit for this pin
-            fn check_interrupt(&self) -> bool {
-                unsafe { ((*EXTI::ptr()).pr.read().bits() & (1 << self.i)) != 0 }
-            }
-        }
-    };
-}
-
-macro_rules! exti {
-    ($PIN:ty, $extigpionr:expr, $i:expr, $exticri:ident) => {
-        impl<MODE> ExtiPin for $PIN {
-            /// Configure EXTI Line $i to trigger from this pin.
-            fn make_interrupt_source(&mut self, syscfg: &mut SysCfg) {
-                let offset = 4 * ($i % 4);
-                syscfg.$exticri.modify(|r, w| unsafe {
-                    let mut exticr = r.bits();
-                    exticr = (exticr & !(0xf << offset)) | ($extigpionr << offset);
-                    w.bits(exticr)
-                });
-            }
-
-            /// Generate interrupt on rising edge, falling edge or both
-            fn trigger_on_edge(&mut self, exti: &mut EXTI, edge: Edge) {
-                match edge {
-                    Edge::RISING => {
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << $i)) });
-                    }
-                    Edge::FALLING => {
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << $i)) });
-                    }
-                    Edge::RISING_FALLING => {
-                        exti.rtsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
-                        exti.ftsr
-                            .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
-                    }
-                }
-            }
-
-            /// Enable external interrupts from this pin.
-            fn enable_interrupt(&mut self, exti: &mut EXTI) {
-                exti.imr
-                    .modify(|r, w| unsafe { w.bits(r.bits() | (1 << $i)) });
-            }
-
-            /// Disable external interrupts from this pin
-            fn disable_interrupt(&mut self, exti: &mut EXTI) {
-                exti.imr
-                    .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << $i)) });
-            }
-
-            /// Clear the interrupt pending bit for this pin
-            fn clear_interrupt_pending_bit(&mut self) {
-                unsafe { (*EXTI::ptr()).pr.write(|w| w.bits(1 << $i)) };
-            }
-
-            /// Reads the interrupt pending bit for this pin
-            fn check_interrupt(&self) -> bool {
-                unsafe { ((*EXTI::ptr()).pr.read().bits() & (1 << $i)) != 0 }
-            }
-        }
-    };
 }
 
 macro_rules! gpio {
@@ -297,6 +158,7 @@ macro_rules! gpio {
                 $($PXi:ident: (
                     $pxi:ident, $i:expr, $MODE:ty, $moderi:ident, $AFR:ident, $afri:ident,
                     $bsi:ident, $bri:ident, $odri:ident, $idri:ident, $pupdri:ident, $oti:ident, $exticri:ident,
+                    $imri:ident, $pri:ident, $rtsri:ident, $ftsri:ident,
                     { $( $AFi:ty: ($into_afi:ident, $afi:ident), )* },
                 ),)+
             ],
@@ -1089,6 +951,7 @@ macro_rules! gpio {
                     reset: $mode:ty,
                     afr: $LH:ident/$lh:ident,
                     exticri: $exticri:literal,
+                    imri_pri_rstri_ftsri: $imri_pri_rstri_ftsri:literal,
                     af: [$( $af:expr ),*]
                 }, )+
             ],
@@ -1108,6 +971,8 @@ macro_rules! gpio {
                         $([<P $X $i>]: (
                             [<p $x $i>], $i, $mode, [<moder $i>], [<AFR $LH>], [<afr $lh $i>],
                             [<bs $i>], [<br $i>], [<odr $i>], [<idr $i>], [<pupdr $i>], [<ot $i>], [<exticr $exticri>],
+                            [<imr $imri_pri_rstri_ftsri>], [<pr $imri_pri_rstri_ftsri>], [<rtsr $imri_pri_rstri_ftsri>],
+                            [<ftsr $imri_pri_rstri_ftsri>],
                             { $( [<AF $af>]: ([<into_af $af>], [<af $af>]), )* },
                         ),)+
                     ],
@@ -1116,6 +981,7 @@ macro_rules! gpio {
         }
     };
 }
+
 // auto-generated using codegen
 // STM32CubeMX DB release: DB.6.0.10
 
@@ -1124,77 +990,77 @@ gpio!([
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 3, 7, 9, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 8, 9, 15] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 9, 15] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [3, 6, 7, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 6, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 6, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [0, 3, 4, 5, 6, 7, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [2, 3, 4, 5, 6, 7, 9, 10, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 4, 5, 6, 7, 8, 10, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [5, 6, 7, 9, 11, 12, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 5, 6, 7, 8, 9, 11, 15] },
-            13 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 3, 5, 7, 15] },
-            14 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 3, 4, 6, 7, 15] },
-            15 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 3, 4, 6, 7, 9, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 7, 9, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 8, 9, 15] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 9, 15] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [3, 6, 7, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 6, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 6, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [0, 3, 4, 5, 6, 7, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [2, 3, 4, 5, 6, 7, 9, 10, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 5, 6, 7, 8, 10, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [5, 6, 7, 9, 11, 12, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 5, 6, 7, 8, 9, 11, 15] },
+            13 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 5, 7, 15] },
+            14 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 3, 4, 6, 7, 15] },
+            15 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 4, 6, 7, 9, 15] },
         ],
     },
     {
         port: (B/b, pac: gpiob, extigpionr: 1),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [3, 6, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [3, 6, 8, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [3, 15] },
-            3 => { reset: AF0, afr: L/l, exticri: 1, af: [0, 1, 3, 6, 7, 15] },
-            4 => { reset: AF0, afr: L/l, exticri: 2, af: [0, 1, 3, 6, 7, 10, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 4, 6, 7, 8, 10, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 4, 7, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 4, 7, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 4, 7, 9, 12, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 4, 6, 7, 8, 9, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [3, 4, 5, 6, 7, 15] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [3, 5, 6, 7, 15] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 3, 5, 6, 7, 15] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [0, 1, 2, 4, 5, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [3, 6, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [3, 6, 8, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [3, 15] },
+            3 => { reset: AF0, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 6, 7, 15] },
+            4 => { reset: AF0, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 6, 7, 10, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 4, 6, 7, 8, 10, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 7, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 7, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 7, 9, 12, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 4, 6, 7, 8, 9, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [3, 4, 5, 6, 7, 15] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [3, 5, 6, 7, 15] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 6, 7, 15] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 4, 5, 15] },
         ],
     },
     {
         port: (C/c, pac: gpioc, extigpionr: 2),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 6] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 7] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 6, 7] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 6] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 5] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 6, 7] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 6, 7] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 6, 7] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [4] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 6] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 6, 7] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 6] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 5] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 6, 7] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 6, 7] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 6, 7] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [4] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
         ],
     },
     {
         port: (D/d, pac: gpioc, extigpionr: 3),
         pins: [
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1] },
         ],
     },
     {
         port: (F/f, pac: gpioc, extigpionr: 5),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [4, 5, 6] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [4, 5] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [4, 5, 6] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [4, 5] },
         ],
     },
 ]);
@@ -1204,156 +1070,156 @@ gpio!([
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 8, 9, 10, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 3, 7, 9, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 8, 9, 15] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 9, 15] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [2, 3, 5, 6, 7, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 5, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 6, 8, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 6, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [0, 3, 4, 5, 6, 7, 8, 10, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [2, 3, 4, 5, 6, 7, 8, 9, 10, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 4, 5, 6, 7, 8, 10, 11, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [5, 6, 7, 8, 9, 10, 11, 12, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 5, 6, 7, 8, 9, 10, 11, 15] },
-            13 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 3, 5, 7, 10, 15] },
-            14 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 3, 4, 5, 6, 7, 15] },
-            15 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 2, 3, 4, 5, 6, 7, 9, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 8, 9, 10, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 7, 9, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 8, 9, 15] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 9, 15] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [2, 3, 5, 6, 7, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 8, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [0, 3, 4, 5, 6, 7, 8, 10, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [2, 3, 4, 5, 6, 7, 8, 9, 10, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 5, 6, 7, 8, 10, 11, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [5, 6, 7, 8, 9, 10, 11, 12, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 5, 6, 7, 8, 9, 10, 11, 15] },
+            13 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 5, 7, 10, 15] },
+            14 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 3, 4, 5, 6, 7, 15] },
+            15 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 4, 5, 6, 7, 9, 15] },
         ],
     },
     {
         port: (B/b, pac: gpiob, extigpionr: 1),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [2, 3, 4, 6, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [2, 3, 4, 6, 8, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [3, 15] },
-            3 => { reset: AF0, afr: L/l, exticri: 1, af: [0, 1, 2, 3, 4, 5, 6, 7, 10, 15] },
-            4 => { reset: AF0, afr: L/l, exticri: 2, af: [0, 1, 2, 3, 4, 5, 6, 7, 10, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 6, 7, 8, 10, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 6, 7, 10, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 7, 10, 12, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 3, 4, 7, 8, 9, 10, 12, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 4, 6, 7, 8, 9, 10, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [3, 4, 5, 6, 7, 15] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [3, 5, 6, 7, 15] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 3, 5, 6, 7, 15] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [0, 1, 2, 4, 5, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [2, 3, 4, 6, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [2, 3, 4, 6, 8, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [3, 15] },
+            3 => { reset: AF0, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 4, 5, 6, 7, 10, 15] },
+            4 => { reset: AF0, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 4, 5, 6, 7, 10, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 7, 8, 10, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 7, 10, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 7, 10, 12, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 7, 8, 9, 10, 12, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 6, 7, 8, 9, 10, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [3, 4, 5, 6, 7, 15] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [3, 5, 6, 7, 15] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 6, 7, 15] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 4, 5, 15] },
         ],
     },
     {
         port: (C/c, pac: gpioc, extigpionr: 2),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 3] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 6] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 7] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 6, 7] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 6, 7] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 4, 7] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 3, 4, 5, 6] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 4, 5, 6, 7] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 4, 5, 6, 7] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 4, 5, 6, 7] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 4] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 6] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 6, 7] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 6, 7] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 7] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 4, 5, 6, 7] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 4, 5, 6, 7] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 4, 5, 6, 7] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 4] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1] },
         ],
     },
     {
         port: (D/d, pac: gpioc, extigpionr: 3),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 7, 12] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 4, 6, 7, 12] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 4, 5] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 7, 12] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7, 12] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 7, 12] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7, 12] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7, 12] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7, 12] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7, 12] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7, 12] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7, 12] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3, 7, 12] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3, 12] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3, 12] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3, 6, 12] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 7, 12] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 4, 6, 7, 12] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 5] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 7, 12] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7, 12] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 7, 12] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7, 12] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7, 12] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7, 12] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7, 12] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7, 12] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7, 12] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7, 12] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 12] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 12] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 6, 12] },
         ],
     },
     {
         port: (E/e, pac: gpioc, extigpionr: 4),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 4, 6, 7, 12] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 4, 6, 7, 12] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 2, 3, 5, 6, 12] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 2, 3, 5, 6, 12] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1, 2, 3, 5, 6, 12] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1, 2, 3, 5, 6, 12] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1, 5, 6, 12] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 12] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 12] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 12] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 12] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 5, 12] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 5, 12] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 5, 12] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 5, 6, 12] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 7, 12] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 6, 7, 12] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 4, 6, 7, 12] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 6, 12] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 6, 12] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 6, 12] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 6, 12] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 5, 6, 12] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 5, 12] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 5, 12] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 5, 12] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 5, 6, 12] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 7, 12] },
         ],
     },
     {
         port: (F/f, pac: gpioc, extigpionr: 5),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 4, 5, 6] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 4, 5] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 12] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 12] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 12] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 12] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 7, 12] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 12] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 12] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 3, 5, 12] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 3, 5, 12] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 12] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 12] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 12] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 12] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 4, 5, 6] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 4, 5] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 12] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 7, 12] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 5, 12] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 5, 12] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
         ],
     },
     {
         port: (G/g, pac: gpioc, extigpionr: 6),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 12] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 12] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 12] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 12] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 12] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 12] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 12] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 12] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 12] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 12] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 12] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 12] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 12] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 12] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 12] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 12] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 12] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 12] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 12] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 12] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 12] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 12] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1] },
         ],
     },
     {
         port: (H/h, pac: gpioc, extigpionr: 7),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 12] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 12] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 12] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1] },
         ],
     },
 ]);
@@ -1363,118 +1229,118 @@ gpio!([
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 8, 9, 10, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 3, 7, 9, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 8, 9, 15] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 9, 15] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [2, 3, 5, 6, 7, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 5, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 6, 8, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 6, 8, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [0, 4, 5, 6, 7, 8, 10, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [3, 4, 5, 6, 7, 8, 9, 10, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 4, 6, 7, 8, 10, 11, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [6, 7, 8, 9, 10, 11, 12, 14, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 6, 7, 8, 9, 10, 11, 14, 15] },
-            13 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 3, 5, 7, 10, 15] },
-            14 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 3, 4, 5, 6, 7, 15] },
-            15 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 2, 4, 5, 6, 7, 9, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 8, 9, 10, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 7, 9, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 8, 9, 15] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 9, 15] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [2, 3, 5, 6, 7, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 8, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 8, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [0, 4, 5, 6, 7, 8, 10, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [3, 4, 5, 6, 7, 8, 9, 10, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 6, 7, 8, 10, 11, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [6, 7, 8, 9, 10, 11, 12, 14, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 6, 7, 8, 9, 10, 11, 14, 15] },
+            13 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 5, 7, 10, 15] },
+            14 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 3, 4, 5, 6, 7, 15] },
+            15 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 4, 5, 6, 7, 9, 15] },
         ],
     },
     {
         port: (B/b, pac: gpiob, extigpionr: 1),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [2, 3, 4, 6, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [2, 3, 4, 6, 8, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [3, 15] },
-            3 => { reset: AF0, afr: L/l, exticri: 1, af: [0, 1, 2, 3, 4, 5, 6, 7, 10, 15] },
-            4 => { reset: AF0, afr: L/l, exticri: 2, af: [0, 1, 2, 3, 4, 5, 6, 7, 10, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 6, 7, 10, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 6, 7, 10, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 5, 7, 10, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 3, 4, 8, 9, 10, 12, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 4, 6, 8, 9, 10, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [3, 4, 5, 6, 7, 15] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [3, 5, 6, 7, 15] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 3, 5, 6, 7, 15] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [0, 1, 2, 4, 5, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [2, 3, 4, 6, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [2, 3, 4, 6, 8, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [3, 15] },
+            3 => { reset: AF0, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 4, 5, 6, 7, 10, 15] },
+            4 => { reset: AF0, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 4, 5, 6, 7, 10, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 7, 10, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 7, 10, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 7, 10, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 8, 9, 10, 12, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 6, 8, 9, 10, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [3, 4, 5, 6, 7, 15] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [3, 5, 6, 7, 15] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 6, 7, 15] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 4, 5, 15] },
         ],
     },
     {
         port: (C/c, pac: gpioc, extigpionr: 2),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 6] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 7] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 7] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 6, 7] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 6, 7] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 4, 7] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 4, 5, 6] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 4, 5, 6, 7] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 4, 5, 6, 7] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 4, 5, 6, 7] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [4] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 6] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 7] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 6, 7] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 6, 7] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 7] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 5, 6] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 4, 5, 6, 7] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 4, 5, 6, 7] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 4, 5, 6, 7] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [4] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
         ],
     },
     {
         port: (D/d, pac: gpioc, extigpionr: 3),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 7] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 4, 6, 7] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 4, 5] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 7] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 7] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3, 7] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3, 6] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 4, 6, 7] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 5] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 6] },
         ],
     },
     {
         port: (E/e, pac: gpioc, extigpionr: 4),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 4, 7] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 4, 7] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 2, 3] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 2, 3] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1, 2, 3] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1, 2, 3] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 6] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 7] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 7] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 4, 7] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 6] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
         ],
     },
     {
         port: (F/f, pac: gpioc, extigpionr: 5),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [4, 6] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [4] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 7] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 5] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 5] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [4, 6] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [4] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 7] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 5] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 5] },
         ],
     },
 ]);
@@ -1484,77 +1350,77 @@ gpio!([
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 9, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 8, 9, 15] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 3, 7, 9, 15] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [2, 3, 5, 7, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 5, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 5, 6, 13, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 5, 6, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [0, 6, 7, 13, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [3, 6, 7, 9, 10, 13, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 6, 7, 8, 10, 13, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [6, 7, 9, 11, 12, 13, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 6, 7, 8, 9, 11, 13, 15] },
-            13 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 3, 5, 7, 15] },
-            14 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 3, 4, 6, 7, 15] },
-            15 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 3, 4, 5, 7, 9, 13, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 9, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 8, 9, 15] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 9, 15] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [2, 3, 5, 7, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 5, 6, 13, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 5, 6, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [0, 6, 7, 13, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [3, 6, 7, 9, 10, 13, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 6, 7, 8, 10, 13, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [6, 7, 9, 11, 12, 13, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 6, 7, 8, 9, 11, 13, 15] },
+            13 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 5, 7, 15] },
+            14 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 3, 4, 6, 7, 15] },
+            15 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 4, 5, 7, 9, 13, 15] },
         ],
     },
     {
         port: (B/b, pac: gpiob, extigpionr: 1),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [2, 3, 6, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [2, 3, 6, 8, 13, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [3, 13, 15] },
-            3 => { reset: AF0, afr: L/l, exticri: 1, af: [0, 1, 3, 5, 7, 10, 12, 13, 15] },
-            4 => { reset: AF0, afr: L/l, exticri: 2, af: [0, 1, 2, 3, 5, 7, 10, 13, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 5, 7, 10, 13, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 4, 7, 12, 13, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 4, 7, 10, 13, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 4, 7, 9, 12, 13, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 4, 6, 7, 8, 9, 13, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7, 13, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7, 13, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [3, 6, 7, 13, 15] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [3, 6, 7, 13, 15] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 3, 6, 7, 13, 15] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 4, 13, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [2, 3, 6, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [2, 3, 6, 8, 13, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [3, 13, 15] },
+            3 => { reset: AF0, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 5, 7, 10, 12, 13, 15] },
+            4 => { reset: AF0, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 7, 10, 13, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 5, 7, 10, 13, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 7, 12, 13, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 7, 10, 13, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 7, 9, 12, 13, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 4, 6, 7, 8, 9, 13, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 13, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7, 13, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [3, 6, 7, 13, 15] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [3, 6, 7, 13, 15] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 3, 6, 7, 13, 15] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 13, 15] },
         ],
     },
     {
         port: (C/c, pac: gpioc, extigpionr: 2),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 6] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 7] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 7] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 7] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 3] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 3] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 3, 7] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [4] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 6] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 3, 7] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [4] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
         ],
     },
     {
         port: (D/d, pac: gpioc, extigpionr: 3),
         pins: [
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
         ],
     },
     {
         port: (F/f, pac: gpioc, extigpionr: 5),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [6] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [6] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [] },
         ],
     },
 ]);
@@ -1564,116 +1430,116 @@ gpio!([
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 3, 7, 8, 11, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 2, 3, 6, 7, 9, 11, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 3, 6, 7, 8, 9, 11, 15] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 3, 6, 7, 9, 11, 15] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [2, 3, 5, 6, 7, 10, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 5, 7, 9, 10, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 5, 8, 9, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 5, 8, 9, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [0, 2, 4, 5, 7, 10, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [2, 3, 4, 5, 7, 9, 10, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 4, 5, 7, 9, 10, 15] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [2, 5, 6, 7, 8, 9, 10, 14, 15] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 6, 7, 8, 9, 10, 14, 15] },
-            13 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 2, 3, 5, 6, 7, 10, 15] },
-            14 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 3, 4, 10, 15] },
-            15 => { reset: AF0, afr: H/h, exticri: 4, af: [0, 1, 3, 4, 5, 6, 10, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7, 8, 11, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 6, 7, 9, 11, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 6, 7, 8, 9, 11, 15] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 6, 7, 9, 11, 15] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [2, 3, 5, 6, 7, 10, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 7, 9, 10, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 5, 8, 9, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 5, 8, 9, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [0, 2, 4, 5, 7, 10, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [2, 3, 4, 5, 7, 9, 10, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 4, 5, 7, 9, 10, 15] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [2, 5, 6, 7, 8, 9, 10, 14, 15] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 6, 7, 8, 9, 10, 14, 15] },
+            13 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 6, 7, 10, 15] },
+            14 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 3, 4, 10, 15] },
+            15 => { reset: AF0, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 3, 4, 5, 6, 10, 15] },
         ],
     },
     {
         port: (B/b, pac: gpiob, extigpionr: 1),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [2, 3, 5, 10, 15] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [2, 3, 15] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [15] },
-            3 => { reset: AF0, afr: L/l, exticri: 1, af: [0, 1, 2, 3, 5, 6, 7, 9, 10, 15] },
-            4 => { reset: AF0, afr: L/l, exticri: 2, af: [0, 1, 2, 3, 5, 6, 7, 9, 10, 15] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 5, 6, 7, 10, 11, 15] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 7, 9, 10, 11, 15] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 4, 7, 9, 10, 11, 15] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 15] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 4, 5, 6, 7, 8, 9, 11, 15] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 5, 6, 7, 15] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 3, 5, 7, 9, 15] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [0, 1, 2, 3, 5, 9, 15] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [2, 3, 5, 10, 15] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [2, 3, 15] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [15] },
+            3 => { reset: AF0, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 6, 7, 9, 10, 15] },
+            4 => { reset: AF0, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 6, 7, 9, 10, 15] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 5, 6, 7, 10, 11, 15] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 7, 9, 10, 11, 15] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 7, 9, 10, 11, 15] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 15] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 5, 6, 7, 8, 9, 11, 15] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 6, 7, 15] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 7, 9, 15] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [0, 1, 2, 3, 5, 9, 15] },
         ],
     },
     {
         port: (C/c, pac: gpioc, extigpionr: 2),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 5] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 5] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 3, 7] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 3, 7] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 5] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 5] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 5] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 5] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 6, 7] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2, 6, 7] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 6, 7] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 5] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 5] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 3, 7] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 5] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 5] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 5] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 5] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 6, 7] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2, 6, 7] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 6, 7] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [] },
         ],
     },
     {
         port: (D/d, pac: gpiod, extigpionr: 3),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 7] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 7] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 5, 7] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 5, 7] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 7] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 5, 7] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 5, 7] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 5, 7] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 3, 7] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 7] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3, 7] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 2, 3] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 5, 7] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 5, 7] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 5, 7] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 5, 7] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 5, 7] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 3, 7] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3, 7] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 2, 3] },
         ],
     },
     {
         port: (E/e, pac: gpioc, extigpionr: 4),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 2, 7] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 7] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 3] },
-            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [0, 1, 3] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1, 3] },
-            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1, 3] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [0, 1] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1] },
-            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1] },
-            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1] },
-            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1] },
-            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1] },
-            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1] },
-            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, af: [1, 7] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 2, 7] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 7] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 3] },
+            3 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [0, 1, 3] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 3] },
+            5 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1, 3] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [0, 1] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1] },
+            8 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1] },
+            11 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1] },
+            12 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1] },
+            13 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1] },
+            14 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1] },
+            15 => { reset: Input<Floating>, afr: H/h, exticri: 4, imri_pri_rstri_ftsri: 1, af: [1, 7] },
         ],
     },
     {
         port: (F/f, pac: gpioc, extigpionr: 5),
         pins: [
-            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [4] },
-            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [4] },
-            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, af: [1, 4] },
-            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1] },
-            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 2, 4, 5, 7] },
-            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, af: [1, 4, 7] },
-            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1, 2] },
-            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, af: [1] },
+            0 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [4] },
+            1 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [4] },
+            2 => { reset: Input<Floating>, afr: L/l, exticri: 1, imri_pri_rstri_ftsri: 1, af: [1, 4] },
+            4 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1] },
+            6 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 2, 4, 5, 7] },
+            7 => { reset: Input<Floating>, afr: L/l, exticri: 2, imri_pri_rstri_ftsri: 1, af: [1, 4, 7] },
+            9 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1, 2] },
+            10 => { reset: Input<Floating>, afr: H/h, exticri: 3, imri_pri_rstri_ftsri: 1, af: [1] },
         ],
     },
 ]);

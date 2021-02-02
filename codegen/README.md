@@ -18,7 +18,8 @@ $ cargo run --target x86_64-apple-darwin -- help
 
 `codgen` can generate the following code:
 
-- [GPIO mappings](#gpio-mappings)
+- [Codegen](#codegen)
+  - [GPIO mappings](#gpio-mappings)
 
 ## GPIO mappings
 
