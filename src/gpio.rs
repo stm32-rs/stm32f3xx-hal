@@ -198,6 +198,16 @@ pub enum Resistor {
     PullDown,
 }
 
+/// GPIO interrupt trigger edge selection
+pub enum Edge {
+    /// Rising edge of voltage
+    Rising,
+    /// Falling edge of voltage
+    Falling,
+    /// Rising and falling edge of voltage
+    RisingFalling,
+}
+
 /// Generic pin
 pub struct Pin<GPIO, INDEX, MODE> {
     gpio: GPIO,
@@ -586,6 +596,7 @@ macro_rules! gpio {
         GPIO: $GPIOX:ident,
         gpio: $gpiox:ident,
         Gpio: $Gpiox:ty,
+        port_index: $port_index:literal,
         gpio_mapped: $gpioy:ident,
         gpio_mapped_ioen: $iopxen:ident,
         gpio_mapped_iorst: $iopxrst:ident,
@@ -769,7 +780,7 @@ macro_rules! gpio {
         pacs: $pacs:tt,
         ports: [$(
             {
-                port: ($X:ident/$x:ident, pac: $gpioy:ident),
+                port: ($X:ident/$x:ident, $port_index:literal, $gpioy:ident),
                 pins: [$(
                     $i:literal => {
                         reset: $MODE:ty,
@@ -787,6 +798,7 @@ macro_rules! gpio {
                     GPIO: [<GPIO $X>],
                     gpio: [<gpio $x>],
                     Gpio: [<Gpio $x>],
+                    port_index: $port_index,
                     gpio_mapped: $gpioy,
                     gpio_mapped_ioen: [<iop $x en>],
                     gpio_mapped_iorst: [<iop $x rst>],
@@ -802,14 +814,14 @@ macro_rules! gpio {
     };
 }
 // auto-generated using codegen
-// STM32CubeMX DB release: DB.6.0.0
+// STM32CubeMX DB release: DB.6.0.10
 
 #[cfg(feature = "gpio-f302")]
 gpio!({
     pacs: [gpioa, gpiob, gpioc],
     ports: [
         {
-            port: (A/a, pac: gpioa),
+            port: (A/a, 0, gpioa),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 3, 7, 15] },
                 1 => { reset: Input, afr: L, af: [0, 1, 3, 7, 9, 15] },
@@ -830,7 +842,7 @@ gpio!({
             ],
         },
         {
-            port: (B/b, pac: gpiob),
+            port: (B/b, 1, gpiob),
             pins: [
                 0 => { reset: Input, afr: L, af: [3, 6, 15] },
                 1 => { reset: Input, afr: L, af: [3, 6, 8, 15] },
@@ -851,7 +863,7 @@ gpio!({
             ],
         },
         {
-            port: (C/c, pac: gpioc),
+            port: (C/c, 2, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2] },
                 1 => { reset: Input, afr: L, af: [1, 2] },
@@ -872,13 +884,13 @@ gpio!({
             ],
         },
         {
-            port: (D/d, pac: gpioc),
+            port: (D/d, 3, gpioc),
             pins: [
                 2 => { reset: Input, afr: L, af: [1] },
             ],
         },
         {
-            port: (F/f, pac: gpioc),
+            port: (F/f, 5, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [4, 5, 6] },
                 1 => { reset: Input, afr: L, af: [4, 5] },
@@ -892,7 +904,7 @@ gpio!({
     pacs: [gpioa, gpiob, gpioc],
     ports: [
         {
-            port: (A/a, pac: gpioa),
+            port: (A/a, 0, gpioa),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 3, 7, 8, 9, 10, 15] },
                 1 => { reset: Input, afr: L, af: [0, 1, 3, 7, 9, 15] },
@@ -913,7 +925,7 @@ gpio!({
             ],
         },
         {
-            port: (B/b, pac: gpiob),
+            port: (B/b, 1, gpiob),
             pins: [
                 0 => { reset: Input, afr: L, af: [2, 3, 4, 6, 15] },
                 1 => { reset: Input, afr: L, af: [2, 3, 4, 6, 8, 15] },
@@ -934,7 +946,7 @@ gpio!({
             ],
         },
         {
-            port: (C/c, pac: gpioc),
+            port: (C/c, 2, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2] },
                 1 => { reset: Input, afr: L, af: [1, 2] },
@@ -955,7 +967,7 @@ gpio!({
             ],
         },
         {
-            port: (D/d, pac: gpioc),
+            port: (D/d, 3, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 7, 12] },
                 1 => { reset: Input, afr: L, af: [1, 4, 6, 7, 12] },
@@ -976,7 +988,7 @@ gpio!({
             ],
         },
         {
-            port: (E/e, pac: gpioc),
+            port: (E/e, 4, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2, 4, 6, 7, 12] },
                 1 => { reset: Input, afr: L, af: [1, 4, 6, 7, 12] },
@@ -997,7 +1009,7 @@ gpio!({
             ],
         },
         {
-            port: (F/f, pac: gpioc),
+            port: (F/f, 5, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 4, 5, 6] },
                 1 => { reset: Input, afr: L, af: [1, 4, 5] },
@@ -1018,7 +1030,7 @@ gpio!({
             ],
         },
         {
-            port: (G/g, pac: gpioc),
+            port: (G/g, 6, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2, 12] },
                 1 => { reset: Input, afr: L, af: [1, 2, 12] },
@@ -1039,7 +1051,7 @@ gpio!({
             ],
         },
         {
-            port: (H/h, pac: gpioc),
+            port: (H/h, 7, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2, 12] },
                 1 => { reset: Input, afr: L, af: [1, 2, 12] },
@@ -1054,7 +1066,7 @@ gpio!({
     pacs: [gpioa, gpiob, gpioc],
     ports: [
         {
-            port: (A/a, pac: gpioa),
+            port: (A/a, 0, gpioa),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 3, 7, 8, 9, 10, 15] },
                 1 => { reset: Input, afr: L, af: [0, 1, 3, 7, 9, 15] },
@@ -1075,7 +1087,7 @@ gpio!({
             ],
         },
         {
-            port: (B/b, pac: gpiob),
+            port: (B/b, 1, gpiob),
             pins: [
                 0 => { reset: Input, afr: L, af: [2, 3, 4, 6, 15] },
                 1 => { reset: Input, afr: L, af: [2, 3, 4, 6, 8, 15] },
@@ -1096,7 +1108,7 @@ gpio!({
             ],
         },
         {
-            port: (C/c, pac: gpioc),
+            port: (C/c, 2, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1] },
                 1 => { reset: Input, afr: L, af: [1] },
@@ -1117,7 +1129,7 @@ gpio!({
             ],
         },
         {
-            port: (D/d, pac: gpioc),
+            port: (D/d, 3, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 7] },
                 1 => { reset: Input, afr: L, af: [1, 4, 6, 7] },
@@ -1138,7 +1150,7 @@ gpio!({
             ],
         },
         {
-            port: (E/e, pac: gpioc),
+            port: (E/e, 4, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2, 4, 7] },
                 1 => { reset: Input, afr: L, af: [1, 4, 7] },
@@ -1159,7 +1171,7 @@ gpio!({
             ],
         },
         {
-            port: (F/f, pac: gpioc),
+            port: (F/f, 5, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [4, 6] },
                 1 => { reset: Input, afr: L, af: [4] },
@@ -1178,7 +1190,7 @@ gpio!({
     pacs: [gpioa, gpiob, gpioc],
     ports: [
         {
-            port: (A/a, pac: gpioa),
+            port: (A/a, 0, gpioa),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 3, 7, 15] },
                 1 => { reset: Input, afr: L, af: [1, 3, 7, 9, 15] },
@@ -1199,7 +1211,7 @@ gpio!({
             ],
         },
         {
-            port: (B/b, pac: gpiob),
+            port: (B/b, 1, gpiob),
             pins: [
                 0 => { reset: Input, afr: L, af: [2, 3, 6, 15] },
                 1 => { reset: Input, afr: L, af: [2, 3, 6, 8, 13, 15] },
@@ -1220,7 +1232,7 @@ gpio!({
             ],
         },
         {
-            port: (C/c, pac: gpioc),
+            port: (C/c, 2, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2] },
                 1 => { reset: Input, afr: L, af: [1, 2] },
@@ -1241,13 +1253,13 @@ gpio!({
             ],
         },
         {
-            port: (D/d, pac: gpioc),
+            port: (D/d, 3, gpioc),
             pins: [
                 2 => { reset: Input, afr: L, af: [1, 2] },
             ],
         },
         {
-            port: (F/f, pac: gpioc),
+            port: (F/f, 5, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [6] },
                 1 => { reset: Input, afr: L, af: [] },
@@ -1261,7 +1273,7 @@ gpio!({
     pacs: [gpioa, gpiob, gpioc, gpiod],
     ports: [
         {
-            port: (A/a, pac: gpioa),
+            port: (A/a, 0, gpioa),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2, 3, 7, 8, 11, 15] },
                 1 => { reset: Input, afr: L, af: [0, 1, 2, 3, 6, 7, 9, 11, 15] },
@@ -1282,7 +1294,7 @@ gpio!({
             ],
         },
         {
-            port: (B/b, pac: gpiob),
+            port: (B/b, 1, gpiob),
             pins: [
                 0 => { reset: Input, afr: L, af: [2, 3, 5, 10, 15] },
                 1 => { reset: Input, afr: L, af: [2, 3, 15] },
@@ -1300,7 +1312,7 @@ gpio!({
             ],
         },
         {
-            port: (C/c, pac: gpioc),
+            port: (C/c, 2, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2] },
                 1 => { reset: Input, afr: L, af: [1, 2] },
@@ -1321,7 +1333,7 @@ gpio!({
             ],
         },
         {
-            port: (D/d, pac: gpiod),
+            port: (D/d, 3, gpiod),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2, 7] },
                 1 => { reset: Input, afr: L, af: [1, 2, 7] },
@@ -1342,7 +1354,7 @@ gpio!({
             ],
         },
         {
-            port: (E/e, pac: gpioc),
+            port: (E/e, 4, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [1, 2, 7] },
                 1 => { reset: Input, afr: L, af: [1, 7] },
@@ -1363,7 +1375,7 @@ gpio!({
             ],
         },
         {
-            port: (F/f, pac: gpioc),
+            port: (F/f, 5, gpioc),
             pins: [
                 0 => { reset: Input, afr: L, af: [4] },
                 1 => { reset: Input, afr: L, af: [4] },
