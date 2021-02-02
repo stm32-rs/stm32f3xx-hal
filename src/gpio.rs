@@ -136,11 +136,22 @@ pub enum Edge {
 }
 /// External Interrupt Pin
 pub trait ExtiPin {
+    /// Configures a pin to be an interrupt source
     fn make_interrupt_source(&mut self, syscfg: &mut SYSCFG);
+
+    /// Configures a pins interrupt to trigger on a Rising, Falling, or Rising and Falling edge
     fn trigger_on_edge(&mut self, exti: &mut EXTI, level: Edge);
+
+    /// Enables interrupts for a pin
     fn enable_interrupt(&mut self, exti: &mut EXTI);
+
+    /// Disables interrupts for a pin
     fn disable_interrupt(&mut self, exti: &mut EXTI);
+
+    /// Clears the interrupt enable bit for a pin
     fn clear_interrupt_pending_bit(&mut self);
+
+    /// Returns a boolean indicating whether or not a interrupt is waiting to be serviced for a pin
     fn check_interrupt(&self) -> bool;
 }
 
