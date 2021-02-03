@@ -60,6 +60,7 @@ fn merge_pins_by_port(pins: &[gpio::Pin]) -> Result<Vec<Port>> {
 }
 
 fn gen_gpio_macro_call(ports: &[Port], feature: &str) -> Result<()> {
+    dbg!(feature);
     println!("gpio!([");
     for port in ports {
         gen_port(port, feature)?;
