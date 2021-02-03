@@ -78,7 +78,7 @@ fn gen_gpio_macro_call(
 ) -> Result<()> {
     println!("gpio!([");
     println!(
-        "   numbered_imri_pri_rstri_ftsri: {}",
+        "    numbered_imri_pri_rstri_ftsri: {},",
         numbered_imri_pri_rstri_ftsri
     );
     for port in ports {

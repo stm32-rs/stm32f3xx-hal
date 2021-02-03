@@ -428,8 +428,8 @@ macro_rules! gpio {
                     use super::{
                         Floating, GpioExt, Input, OpenDrain, Output, Analog,
                         PullDown, PullUp, PushPull,
-                        PXx, Gpio, ExtiPin, Edge, 
-                        make_interrupt_source_helper, trigger_on_edge_helper, enable_interrupt_helper, 
+                        PXx, Gpio, ExtiPin, Edge,
+                        make_interrupt_source_helper, trigger_on_edge_helper, enable_interrupt_helper,
                         disable_interrupt_helper, check_interrupt_helper, clear_interrupt_pending_bit_helper
                     };
 
@@ -580,7 +580,7 @@ macro_rules! gpio {
                         fn clear_interrupt_pending_bit(&mut self) {
                             clear_interrupt_pending_bit_helper(self.i);
                         }
- 
+
                         /// Reads the interrupt pending bit for this pin
                         fn check_interrupt(&self) -> bool {
                             check_interrupt_helper(self.i)
@@ -880,7 +880,7 @@ macro_rules! gpio {
     };
 
     ([
-        numbered_imri_pri_rstri_ftsri: true
+        numbered_imri_pri_rstri_ftsri: true,
         $({
             port: ($X:ident/$x:ident, pac: $gpioy:ident, extigpionr: $extigpionr:literal),
             pins: [
@@ -918,9 +918,9 @@ macro_rules! gpio {
             ]);
         }
     };
-    
+
     ([
-        numbered_imri_pri_rstri_ftsri: false
+        numbered_imri_pri_rstri_ftsri: false,
         $({
             port: ($X:ident/$x:ident, pac: $gpioy:ident, extigpionr: $extigpionr:literal),
             pins: [
@@ -965,7 +965,7 @@ macro_rules! gpio {
 
 #[cfg(all(feature = "gpio-f302", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: true
+    numbered_imri_pri_rstri_ftsri: true,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1045,7 +1045,7 @@ numbered_imri_pri_rstri_ftsri: true
 ]);
 #[cfg(all(feature = "gpio-f302", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: false
+    numbered_imri_pri_rstri_ftsri: false,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1126,7 +1126,7 @@ numbered_imri_pri_rstri_ftsri: false
 
 #[cfg(all(feature = "gpio-f303e", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: true
+    numbered_imri_pri_rstri_ftsri: true,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1285,7 +1285,7 @@ numbered_imri_pri_rstri_ftsri: true
 ]);
 #[cfg(all(feature = "gpio-f303e", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: false
+    numbered_imri_pri_rstri_ftsri: false,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1445,7 +1445,7 @@ numbered_imri_pri_rstri_ftsri: false
 
 #[cfg(all(feature = "gpio-f303", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: true
+    numbered_imri_pri_rstri_ftsri: true,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1566,7 +1566,7 @@ numbered_imri_pri_rstri_ftsri: true
 ]);
 #[cfg(all(feature = "gpio-f303", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: false
+    numbered_imri_pri_rstri_ftsri: false,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1688,7 +1688,7 @@ numbered_imri_pri_rstri_ftsri: false
 
 #[cfg(all(feature = "gpio-f333", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: true
+    numbered_imri_pri_rstri_ftsri: true,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1768,7 +1768,7 @@ numbered_imri_pri_rstri_ftsri: true
 ]);
 #[cfg(all(feature = "gpio-f333", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: false
+    numbered_imri_pri_rstri_ftsri: false,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1849,7 +1849,7 @@ numbered_imri_pri_rstri_ftsri: false
 
 #[cfg(all(feature = "gpio-f373", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: true
+    numbered_imri_pri_rstri_ftsri: true,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1968,7 +1968,7 @@ numbered_imri_pri_rstri_ftsri: true
 ]);
 #[cfg(all(feature = "gpio-f373", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-numbered_imri_pri_rstri_ftsri: false
+    numbered_imri_pri_rstri_ftsri: false,
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
