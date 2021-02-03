@@ -21,8 +21,20 @@ fn gen_gpio_ip(ip: &gpio::Ip) -> Result<()> {
     let feature = ip_version_to_feature(&ip.version)?;
     let ports = merge_pins_by_port(&ip.pins)?;
 
-    println!(r#"#[cfg(feature = "{}")]"#, feature);
-    gen_gpio_macro_call(&ports, &feature)?;
+    println!(
+        r#"#[cfg(all(feature = "{}", feature = "numbered_imri_pri_rstri_ftsri"))]"#,
+        feature
+    );
+    let numbered_imri_pri_rstri_ftsri = true;
+    gen_gpio_macro_call(&ports, &feature, numbered_imri_pri_rstri_ftsri)?;
+
+    println!(
+        r#"#[cfg(all(feature = "{}", not(feature = "numbered_imri_pri_rstri_ftsri")))]"#,
+        feature
+    );
+    let numbered_imri_pri_rstri_ftsri = false;
+    gen_gpio_macro_call(&ports, &feature, numbered_imri_pri_rstri_ftsri)?;
+
     Ok(())
 }
 
@@ -59,9 +71,16 @@ fn merge_pins_by_port(pins: &[gpio::Pin]) -> Result<Vec<Port>> {
     Ok(ports)
 }
 
-fn gen_gpio_macro_call(ports: &[Port], feature: &str) -> Result<()> {
-    dbg!(feature);
+fn gen_gpio_macro_call(
+    ports: &[Port],
+    feature: &str,
+    numbered_imri_pri_rstri_ftsri: bool,
+) -> Result<()> {
     println!("gpio!([");
+    println!(
+        "   numbered_imri_pri_rstri_ftsri: {}",
+        numbered_imri_pri_rstri_ftsri
+    );
     for port in ports {
         gen_port(port, feature)?;
     }
@@ -80,7 +99,7 @@ fn gen_port(port: &Port, feature: &str) -> Result<()> {
         'F' => 5,
         'G' => 6,
         'H' => 7,
-        _ => unreachable!(), 
+        _ => unreachable!(),
     };
 
     println!("    {{");
@@ -119,16 +138,14 @@ fn gen_pin(pin: &gpio::Pin) -> Result<()> {
     let afr = if nr < 8 { 'L' } else { 'H' };
     let af_numbers = get_pin_af_numbers(pin)?;
     let exticri = pin.number()? / 4 + 1;
-    let imri_pri_rstri_ftsri = pin.number()? / 32 + 1;
 
     println!(
-        "            {} => {{ reset: {}, afr: {}/{}, exticri: {}, imri_pri_rstri_ftsri: {}, af: {:?} }},",
+        "            {} => {{ reset: {}, afr: {}/{}, exticri: {}, af: {:?} }},",
         nr,
         reset_mode,
         afr,
         afr.to_lowercase(),
         exticri,
-        imri_pri_rstri_ftsri,
         af_numbers,
     );
 

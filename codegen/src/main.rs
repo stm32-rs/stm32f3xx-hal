@@ -28,6 +28,7 @@ fn handle_gpio(db_path: PathBuf) -> Result<()> {
     emit_autogen_comment(&db)?;
 
     let gpio_ips = cubemx::load_f3_gpio_ips(&db)?;
+
     codegen::gpio::gen_mappings(&gpio_ips)?;
 
     Ok(())
