@@ -6,13 +6,13 @@ use panic_semihosting as _;
 use stm32f3xx_hal as hal;
 
 use core::cell::RefCell;
-use cortex_m::interrupt::Mutex;
 use cortex_m::asm;
+use cortex_m::interrupt::Mutex;
 use cortex_m_rt::entry;
-use hal::gpio::{gpioe, Edge, ExtiPin, Output, PushPull, PullDown, gpioa, Input};
+use hal::gpio::{gpioa, gpioe, Edge, ExtiPin, Input, Output, PullDown, PushPull};
 use hal::interrupt;
 use hal::pac;
-use hal::pac::{NVIC, Interrupt};
+use hal::pac::{Interrupt, NVIC};
 use hal::prelude::*;
 
 type LedPin = gpioe::PE9<Output<PushPull>>;
@@ -37,7 +37,7 @@ fn main() -> ! {
         .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
     // Turn the led on so we know the configuration step occurred.
     led.toggle().expect("unable to toggle led in configuration");
-    
+
     // Move the ownership of the led to the global LED
     cortex_m::interrupt::free(|cs| *LED.borrow(cs).borrow_mut() = Some(led));
 
@@ -51,9 +51,7 @@ fn main() -> ! {
     // Moving ownership to the global BUTTON so we can clear the interrupt pending bit.
     cortex_m::interrupt::free(|cs| *BUTTON.borrow(cs).borrow_mut() = Some(user_button));
 
-    unsafe {
-        NVIC::unmask(Interrupt::EXTI0)
-    }
+    unsafe { NVIC::unmask(Interrupt::EXTI0) }
 
     loop {
         asm::wfi();
@@ -78,7 +76,8 @@ fn EXTI0() {
             .unwrap();
 
         // Clear the interrupt pending bit so we don't infinitely call this routine
-        BUTTON.borrow(cs)
+        BUTTON
+            .borrow(cs)
             .borrow_mut()
             .as_mut()
             .unwrap()
