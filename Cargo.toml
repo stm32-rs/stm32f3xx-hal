@@ -155,6 +155,10 @@ required-features = ["stm32f303xc"]
 name = "gpio_erased"
 required-features = ["rt", "stm32f303xc"]
 
+[[example]]
+name = "gpio_interrupts"
+required-features = ["rt", "stm32f303xc"]
+
 [[test]]
 name = "rcc"
 required-features = ["rt", "defmt"]
