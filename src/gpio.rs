@@ -128,11 +128,11 @@ pub struct AF15;
 /// An enum used for identifying when an interrupt should trigger
 pub enum Edge {
     /// Rising edge of voltage
-    RISING,
+    Rising,
     /// Falling edge of voltage
-    FALLING,
+    Falling,
     /// Rising and falling edge of voltage
-    RISING_FALLING,
+    RisingFalling,
 }
 /// Trait allowing pins to be configured for external interrupts
 pub trait ExtiPin {
@@ -224,19 +224,19 @@ macro_rules! gpio {
         /// edge source
         fn trigger_on_edge_helper(pin_num: u8, exti: &mut EXTI, edge: Edge) {
             match edge {
-                Edge::RISING => {
+                Edge::Rising => {
                     exti.$rtsri
                         .modify(|r, w| unsafe { w.bits(r.bits() | (1 << pin_num)) });
                     exti.$ftsri
                         .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << pin_num)) });
                 }
-                Edge::FALLING => {
+                Edge::Falling => {
                     exti.$ftsri
                         .modify(|r, w| unsafe { w.bits(r.bits() | (1 << pin_num)) });
                     exti.$rtsri
                         .modify(|r, w| unsafe { w.bits(r.bits() & !(1 << pin_num)) });
                 }
-                Edge::RISING_FALLING => {
+                Edge::RisingFalling => {
                     exti.$rtsri
                         .modify(|r, w| unsafe { w.bits(r.bits() | (1 << pin_num)) });
                     exti.$ftsri
@@ -880,7 +880,10 @@ macro_rules! gpio {
     };
 
     ([
-        numbered_imri_pri_rstri_ftsri: true,
+        imri: $imri:ident,
+        pri: $pri:ident,
+        rtsri: $rtsri:ident,
+        ftsri: $ftsri:ident,
         $({
             port: ($X:ident/$x:ident, pac: $gpioy:ident, extigpionr: $extigpionr:literal),
             pins: [
@@ -895,50 +898,10 @@ macro_rules! gpio {
     ]) => {
         paste::item! {
             gpio!([
-                imri: imr1,
-                pri: pr1,
-                rtsri: rtsr1,
-                ftsri: ftsr1,
-                $({
-                    GPIO: [<GPIO $X>],
-                    gpio: [<gpio $x>],
-                    gpio_mapped: $gpioy,
-                    gpio_mapped_ioenr: [<iop $x en>],
-                    gpio_mapped_iorst: [<iop $x rst>],
-                    extigpionr: $extigpionr,
-                    partially_erased_pin: [<P $X x>],
-                    pins: [
-                        $([<P $X $i>]: (
-                            [<p $x $i>], $i, $mode, [<moder $i>], [<AFR $LH>], [<afr $lh $i>],
-                            [<bs $i>], [<br $i>], [<odr $i>], [<idr $i>], [<pupdr $i>], [<ot $i>], [<exticr $exticri>],
-                            { $( [<AF $af>]: ([<into_af $af>], [<af $af>]), )* },
-                        ),)+
-                    ],
-                },)+
-            ]);
-        }
-    };
-
-    ([
-        numbered_imri_pri_rstri_ftsri: false,
-        $({
-            port: ($X:ident/$x:ident, pac: $gpioy:ident, extigpionr: $extigpionr:literal),
-            pins: [
-                $( $i:expr => {
-                    reset: $mode:ty,
-                    afr: $LH:ident/$lh:ident,
-                    exticri: $exticri:literal,
-                    af: [$( $af:expr ),*]
-                }, )+
-            ],
-        },)+
-    ]) => {
-        paste::item! {
-            gpio!([
-                imri: imr,
-                pri: pr,
-                rtsri: rtsr,
-                ftsri: ftsr,
+                imri: $imri,
+                pri: $pri,
+                rtsri: $rtsri,
+                ftsri: $ftsri,
                 $({
                     GPIO: [<GPIO $X>],
                     gpio: [<gpio $x>],
@@ -965,7 +928,11 @@ macro_rules! gpio {
 
 #[cfg(all(feature = "gpio-f302", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: true,
+    imri: imr1,
+    pri: pr1,
+    rtsri: rtsr1,
+    ftsri: ftsr1,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1045,7 +1012,11 @@ gpio!([
 ]);
 #[cfg(all(feature = "gpio-f302", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: false,
+    imri: imr,
+    pri: pr,
+    rtsri: rtsr,
+    ftsri: ftsr,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1126,7 +1097,11 @@ gpio!([
 
 #[cfg(all(feature = "gpio-f303e", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: true,
+    imri: imr1,
+    pri: pr1,
+    rtsri: rtsr1,
+    ftsri: ftsr1,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1285,7 +1260,11 @@ gpio!([
 ]);
 #[cfg(all(feature = "gpio-f303e", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: false,
+    imri: imr,
+    pri: pr,
+    rtsri: rtsr,
+    ftsri: ftsr,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1445,7 +1424,11 @@ gpio!([
 
 #[cfg(all(feature = "gpio-f303", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: true,
+    imri: imr1,
+    pri: pr1,
+    rtsri: rtsr1,
+    ftsri: ftsr1,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1566,7 +1549,11 @@ gpio!([
 ]);
 #[cfg(all(feature = "gpio-f303", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: false,
+    imri: imr,
+    pri: pr,
+    rtsri: rtsr,
+    ftsri: ftsr,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1688,7 +1675,11 @@ gpio!([
 
 #[cfg(all(feature = "gpio-f333", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: true,
+    imri: imr1,
+    pri: pr1,
+    rtsri: rtsr1,
+    ftsri: ftsr1,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1768,7 +1759,11 @@ gpio!([
 ]);
 #[cfg(all(feature = "gpio-f333", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: false,
+    imri: imr,
+    pri: pr,
+    rtsri: rtsr,
+    ftsri: ftsr,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1849,7 +1844,11 @@ gpio!([
 
 #[cfg(all(feature = "gpio-f373", feature = "numbered_imri_pri_rstri_ftsri"))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: true,
+    imri: imr1,
+    pri: pr1,
+    rtsri: rtsr1,
+    ftsri: ftsr1,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [
@@ -1968,7 +1967,11 @@ gpio!([
 ]);
 #[cfg(all(feature = "gpio-f373", not(feature = "numbered_imri_pri_rstri_ftsri")))]
 gpio!([
-    numbered_imri_pri_rstri_ftsri: false,
+    imri: imr,
+    pri: pr,
+    rtsri: rtsr,
+    ftsri: ftsr,
+
     {
         port: (A/a, pac: gpioa, extigpionr: 0),
         pins: [

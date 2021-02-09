@@ -77,10 +77,20 @@ fn gen_gpio_macro_call(
     numbered_imri_pri_rstri_ftsri: bool,
 ) -> Result<()> {
     println!("gpio!([");
-    println!(
-        "    numbered_imri_pri_rstri_ftsri: {},",
-        numbered_imri_pri_rstri_ftsri
-    );
+    print!("    ");
+    match numbered_imri_pri_rstri_ftsri {
+        false => println!(r#"imri: imr,
+    pri: pr,
+    rtsri: rtsr,
+    ftsri: ftsr,
+    "#),
+        true => println!(r#"imri: imr1,
+    pri: pr1,
+    rtsri: rtsr1,
+    ftsri: ftsr1,
+    "#)
+    }
+    
     for port in ports {
         gen_port(port, feature)?;
     }
