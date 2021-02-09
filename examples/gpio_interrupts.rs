@@ -46,7 +46,7 @@ fn main() -> ! {
         .pa0
         .into_pull_down_input(&mut gpioa.moder, &mut gpioa.pupdr);
     user_button.make_interrupt_source(&mut syscfg);
-    user_button.trigger_on_edge(&mut exti, Edge::RISING);
+    user_button.trigger_on_edge(&mut exti, Edge::Rising);
     user_button.enable_interrupt(&mut exti);
     // Moving ownership to the global BUTTON so we can clear the interrupt pending bit.
     cortex_m::interrupt::free(|cs| *BUTTON.borrow(cs).borrow_mut() = Some(user_button));
