@@ -6,6 +6,7 @@ pub use crate::flash::FlashExt as _stm32f3xx_hal_flash_FlashExt;
 pub use crate::gpio::GpioExt as _stm32f3xx_hal_gpio_GpioExt;
 pub use crate::hal::prelude::*;
 pub use crate::rcc::RccExt as _stm32f3xx_hal_rcc_RccExt;
+pub use crate::syscfg::SysCfgExt as _stm32f3xx_hal_syscfg_SysCfgExt;
 pub use crate::time::duration::Extensions as _stm32f3xx_hal_time_time_Extensions;
 pub use crate::time::rate::Extensions as _stm32f3xx_hal_time_rate_Extensions;
 #[cfg(feature = "unproven")]
