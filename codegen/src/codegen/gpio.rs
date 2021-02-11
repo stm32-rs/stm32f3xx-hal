@@ -132,10 +132,10 @@ fn gen_pin(pin: &gpio::Pin) -> Result<()> {
 
 fn get_pin_reset_mode(pin: &gpio::Pin) -> Result<&'static str> {
     // Debug pins default to their debug function (AF0), everything else
-    // defaults to floating input.
+    // defaults to input.
     let mode = match (pin.port()?, pin.number()?) {
         ('A', 13) | ('A', 14) | ('A', 15) | ('B', 3) | ('B', 4) => "AF0<PushPull>",
-        _ => "Input<Floating>",
+        _ => "Input",
     };
     Ok(mode)
 }

@@ -9,7 +9,7 @@ use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::hprintln;
 
-use hal::gpio::{self, Floating, Input};
+use hal::gpio::{self, Input};
 use hal::pac;
 use hal::prelude::*;
 use stm32f3xx_hal as hal;
@@ -23,7 +23,7 @@ fn main() -> ! {
     let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
     let mut gpiod = dp.GPIOD.split(&mut rcc.ahb);
 
-    let mut pin_array: [gpio::PXx<Input<Floating>>; 4] = [
+    let mut pin_array: [gpio::PXx<Input>; 4] = [
         gpiob
             .pb11
             .into_floating_input(&mut gpiob.moder, &mut gpiob.pupdr)
