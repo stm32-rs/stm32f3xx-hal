@@ -7,15 +7,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-## [v0.7.0] - 2021-03-10
-
 ### Added
 
-- Replace custom time based units with types defined in the [embedded-time][] crate ([#192])
+- Replace custom time based units with types defined in the [embedded-time][]
+  crate ([#192])
 - Make `Clocks` `ppre1()` and `ppre2()` methods public, to get the current
   Prescaler value. ([#210])
+- Implement `into_xxx` methods for partially erased pins ([#189])
+- Enable better GPIO internal resistor configuration ([#189])
+- Support for GPIO output slew rate configuration ([#189])
+- Support for GPIO interrupts ([#189])
 
-### Breaking changes
+[embedded-time]: https://github.com/FluenTech/embedded-time/
+
+### Changed
+
+- Added support for more CAN bit rates and modes. ([#186])
+- The structure of `gpio.rs` is greatly changed. Generic `Pin` struct is used
+  for every GPIO pin now ([#189])
+
+### Fixed
+
+- Delay based on systick no longer panics ([#203]) for to high values
+  and support longer delays ([#208])
+
+### Breaking Changes
 
 - The `rcc` public API now expects time based units in `Megahertz`.
   If the supplied frequency cannot be converted to `Hertz` the code
@@ -34,21 +50,16 @@ let clocks = rcc
 ```
 
 - Bump dependencies: ([#211])
-  - `stm32f3` dependency to 0.13.0
-  - `nb` to 1.0
+  - `stm32f3` dependency to 0.13
+  - `nb` to 1
   - `cortex-m` to 0.7
   - `stm32-usbd` to 0.6
   - `defmt` to 0.2
 
-[embedded-time]: https://github.com/FluenTech/embedded-time/
-### Changed
-
-- Added support for more CAN bit rates and modes. ([#186])
-
-### Fixed
-
-- Delay based on systick no longer panics ([#203]) for to high values
-  and support longer delays ([#208])
+- `into_afx` methods are splitted into `into_afx_push_pull` and
+  `into_afx_open_drain` ([#189])
+- GPIO internal resistor configuration is no longer encoded into pin typestate
+  in input mode ([#189])
 
 ## [v0.6.1] - 2020-12-10
 
@@ -69,8 +80,7 @@ let clocks = rcc
 - Impls for all SPI pins for all `stm32f302` sub-targets, `stm32f303`
   subtargets, `stm32f3x8` targets, `stm32f334`, and `stm32f373`
   ([#99])
-- SPI4 peripheral for supported
-  devices. ([#99])
+- SPI4 peripheral for supported devices. ([#99])
 - Support for I2C transfer of more than 255 bytes, and 0 byte write ([#154])
 - Support for HSE bypass and CSS ([#156])
 - Impls for missing I2C pin definitions ([#164])
@@ -310,14 +320,11 @@ let clocks = rcc
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
 [#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203
 [#192]: https://github.com/stm32-rs/stm32f3xx-hal/pull/192
+[#189]: https://github.com/stm32-rs/stm32f3xx-hal/pull/189
 [#186]: https://github.com/stm32-rs/stm32f3xx-hal/pull/186
 [#184]: https://github.com/stm32-rs/stm32f3xx-hal/pull/184
 [#172]: https://github.com/stm32-rs/stm32f3xx-hal/pull/172
 [#170]: https://github.com/stm32-rs/stm32f3xx-hal/pull/170
-[#164]: https://github.com/stm32-rs/stm32f3xx-hal/pull/164
-[#164]: https://github.com/stm32-rs/stm32f3xx-hal/pull/164
-[#164]: https://github.com/stm32-rs/stm32f3xx-hal/pull/164
-[#164]: https://github.com/stm32-rs/stm32f3xx-hal/pull/164
 [#164]: https://github.com/stm32-rs/stm32f3xx-hal/pull/164
 [#156]: https://github.com/stm32-rs/stm32f3xx-hal/pull/156
 [#154]: https://github.com/stm32-rs/stm32f3xx-hal/pull/154
@@ -333,30 +340,24 @@ let clocks = rcc
 [#101]: https://github.com/stm32-rs/stm32f3xx-hal/pull/101
 [#100]: https://github.com/stm32-rs/stm32f3xx-hal/pull/100
 [#99]: https://github.com/stm32-rs/stm32f3xx-hal/pull/99
-[#99]: https://github.com/stm32-rs/stm32f3xx-hal/pull/99
-[#99]: https://github.com/stm32-rs/stm32f3xx-hal/pull/99
 [#98]: https://github.com/stm32-rs/stm32f3xx-hal/pull/98
 [#97]: https://github.com/stm32-rs/stm32f3xx-hal/pull/97
 [#91]: https://github.com/stm32-rs/stm32f3xx-hal/pull/91
-[#86]: https://github.com/stm32-rs/stm32f3xx-hal/pull/86
 [#86]: https://github.com/stm32-rs/stm32f3xx-hal/pull/86
 [#82]: https://github.com/stm32-rs/stm32f3xx-hal/pull/82
 [#75]: https://github.com/stm32-rs/stm32f3xx-hal/pull/75
 [#72]: https://github.com/stm32-rs/stm32f3xx-hal/pull/72
 [#70]: https://github.com/stm32-rs/stm32f3xx-hal/pull/70
 [#67]: https://github.com/stm32-rs/stm32f3xx-hal/pull/67
-[#67]: https://github.com/stm32-rs/stm32f3xx-hal/pull/67
 [#60]: https://github.com/stm32-rs/stm32f3xx-hal/pull/60
 [#58]: https://github.com/stm32-rs/stm32f3xx-hal/pull/58
 [#56]: https://github.com/stm32-rs/stm32f3xx-hal/pull/56
 [#52]: https://github.com/stm32-rs/stm32f3xx-hal/pull/52
 [#50]: https://github.com/stm32-rs/stm32f3xx-hal/pull/50
-[#50]: https://github.com/stm32-rs/stm32f3xx-hal/pull/50
 [#47]: https://github.com/stm32-rs/stm32f3xx-hal/pull/47
 [#42]: https://github.com/stm32-rs/stm32f3xx-hal/pull/42
 [#39]: https://github.com/stm32-rs/stm32f3xx-hal/pull/39
 [#35]: https://github.com/stm32-rs/stm32f3xx-hal/pull/18
-[#35]: https://github.com/stm32-rs/stm32f3xx-hal/pull/35
 [#34]: https://github.com/stm32-rs/stm32f3xx-hal/pull/34
 [#33]: https://github.com/stm32-rs/stm32f3xx-hal/pull/33
 [#31]: https://github.com/stm32-rs/stm32f3xx-hal/pull/33
@@ -368,7 +369,6 @@ let clocks = rcc
 [#17]: https://github.com/stm32-rs/stm32f3xx-hal/pull/17
 [#16]: https://github.com/stm32-rs/stm32f3xx-hal/pull/16
 [#14]: https://github.com/stm32-rs/stm32f3xx-hal/pull/14
-[#12]: https://github.com/stm32-rs/stm32f3xx-hal/pull/12
 [#12]: https://github.com/stm32-rs/stm32f3xx-hal/pull/12
 [#11]: https://github.com/stm32-rs/stm32f3xx-hal/pull/11
 [#6]: https://github.com/stm32-rs/stm32f3xx-hal/pull/6
