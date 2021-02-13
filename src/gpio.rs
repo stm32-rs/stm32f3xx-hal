@@ -30,7 +30,7 @@
 
 use core::{convert::Infallible, marker::PhantomData};
 
-use crate::{hal::digital::v2::OutputPin, rcc::AHB};
+use crate::{hal::digital::v2::OutputPin, pac::EXTI, rcc::AHB, syscfg::SysCfg};
 
 #[cfg(feature = "unproven")]
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
@@ -87,6 +87,7 @@ mod private {
         type Reg: GpioRegExt + ?Sized;
 
         fn ptr(&self) -> *const Self::Reg;
+        fn port_index(&self) -> u8;
     }
 }
 
@@ -129,12 +130,13 @@ pub trait Readable {}
 /// Marker trait for slew rate configurable pin modes
 pub trait OutputSpeed {}
 
-/// Marker trait for internal resistor enabled pin modes
-pub trait InternalResistor {}
+/// Marker trait for active pin modes
+pub trait Active {}
 
 /// Runtime defined GPIO port (type state)
 pub struct Gpiox {
     ptr: *const dyn GpioRegExt,
+    index: u8,
 }
 
 impl private::Gpio for Gpiox {
@@ -142,6 +144,10 @@ impl private::Gpio for Gpiox {
 
     fn ptr(&self) -> *const Self::Reg {
         self.ptr
+    }
+
+    fn port_index(&self) -> u8 {
+        self.index
     }
 }
 
@@ -174,9 +180,9 @@ impl Readable for Input {}
 impl Readable for Output<OpenDrain> {}
 impl<OTYPE> OutputSpeed for Output<OTYPE> {}
 impl<AF, OTYPE> OutputSpeed for Alternate<AF, OTYPE> {}
-impl InternalResistor for Input {}
-impl<OTYPE> InternalResistor for Output<OTYPE> {}
-impl<AF, OTYPE> InternalResistor for Alternate<AF, OTYPE> {}
+impl Active for Input {}
+impl<OTYPE> Active for Output<OTYPE> {}
+impl<AF, OTYPE> Active for Alternate<AF, OTYPE> {}
 
 /// Slew rate configuration
 pub enum Speed {
@@ -226,6 +232,14 @@ pub struct Pin<GPIO, INDEX, MODE> {
 /// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/gpio_erased.rs
 pub type PXx<MODE> = Pin<Gpiox, Ux, MODE>;
 
+macro_rules! modify_at {
+    ($xr:expr, $bits:expr, $i:expr, $val:expr) => {
+        $xr.modify(|r, w| {
+            w.bits(r.bits() & !(u32::MAX >> 32 - $bits << $bits * $i) | $val << $bits * $i)
+        });
+    };
+}
+
 impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
 where
     INDEX: Unsigned,
@@ -256,6 +270,7 @@ where
         PXx {
             gpio: Gpiox {
                 ptr: self.gpio.ptr(),
+                index: self.gpio.port_index(),
             },
             index: self.index,
             _mode: self._mode,
@@ -374,7 +389,7 @@ impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
 where
     GPIO: GpioStatic,
     INDEX: Index,
-    MODE: InternalResistor,
+    MODE: Active,
 {
     /// Set the internal pull-up and pull-down resistor
     pub fn set_internal_resistor(&mut self, pupdr: &mut GPIO::PUPDR, resistor: Resistor) {
@@ -456,6 +471,77 @@ where
     GPIO: Gpio,
     INDEX: Index,
 {
+}
+
+/// Return an EXTI register for the current CPU
+#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+macro_rules! reg_for_cpu {
+    ($exti:expr, $xr:ident) => {
+        $exti.$xr
+    };
+}
+
+/// Return an EXTI register for the current CPU
+#[cfg(not(any(feature = "stm32f373", feature = "stm32f378")))]
+macro_rules! reg_for_cpu {
+    ($exti:expr, $xr:ident) => {
+        paste::paste! {
+            $exti.[<$xr 1>]
+        }
+    };
+}
+
+impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
+where
+    GPIO: Gpio,
+    INDEX: Index,
+    MODE: Active,
+{
+    /// Make corresponding EXTI line sensitive to this pin
+    pub fn make_interrupt_source(&mut self, syscfg: &mut SysCfg) {
+        let i = self.index.index() % 4;
+        let extigpionr = self.gpio.port_index() as u32;
+        match self.index.index() {
+            0..=3 => unsafe { modify_at!(syscfg.exticr1, 4, i, extigpionr) },
+            4..=7 => unsafe { modify_at!(syscfg.exticr2, 4, i, extigpionr) },
+            8..=11 => unsafe { modify_at!(syscfg.exticr3, 4, i, extigpionr) },
+            12..=15 => unsafe { modify_at!(syscfg.exticr4, 4, i, extigpionr) },
+            _ => unreachable!(),
+        }
+    }
+
+    /// Generate interrupt on rising edge, falling edge, or both
+    pub fn trigger_on_edge(&mut self, exti: &mut EXTI, edge: Edge) {
+        let (rise, fall) = match edge {
+            Edge::Rising => (true, false),
+            Edge::Falling => (false, true),
+            Edge::RisingFalling => (true, true),
+        };
+        unsafe {
+            modify_at!(reg_for_cpu!(exti, rtsr), 1, self.index.index(), rise as u32);
+            modify_at!(reg_for_cpu!(exti, ftsr), 1, self.index.index(), fall as u32);
+        }
+    }
+
+    /// Enable external interrupts from this pin.
+    pub fn enable_interrupt(&mut self, exti: &mut EXTI) {
+        unsafe { modify_at!(reg_for_cpu!(exti, imr), 1, self.index.index(), 1) };
+    }
+
+    /// Disable external interrupts from this pin
+    pub fn disable_interrupt(&mut self, exti: &mut EXTI) {
+        unsafe { modify_at!(reg_for_cpu!(exti, imr), 1, self.index.index(), 0) };
+    }
+
+    /// Clear the interrupt pending bit for this pin
+    pub fn clear_interrupt_pending_bit(&mut self) {
+        unsafe { reg_for_cpu!((*EXTI::ptr()), pr).write(|w| w.bits(1 << self.index.index())) };
+    }
+
+    /// Reads the interrupt pending bit for this pin
+    pub fn check_interrupt(&self) -> bool {
+        unsafe { reg_for_cpu!((*EXTI::ptr()), pr).read().bits() & (1 << self.index.index()) != 0 }
+    }
 }
 
 macro_rules! af {
@@ -545,22 +631,6 @@ macro_rules! gpio_trait {
                 }
             }
         )+
-    }
-}
-
-macro_rules! afr_trait {
-    ($GPIOX:ident, $AFR:ty, $afr:ident, $offset:expr) => {
-        impl Afr for $AFR {
-            #[inline]
-            fn afx(&mut self, i: u8, x: u8) {
-                let i = i - $offset;
-                unsafe {
-                    (*$GPIOX::ptr()).$afr.modify(|r, w| {
-                        w.bits(r.bits() & !(u32::MAX >> 32 - 4 << 4 * i) | (x as u32) << 4 * i)
-                    });
-                }
-            }
-        }
     };
 }
 
@@ -578,12 +648,7 @@ macro_rules! r_trait {
                 #[inline]
                 fn $fn(&mut self, i: u8) {
                     unsafe {
-                        (*$GPIOX::ptr()).$xr.modify(|r, w| {
-                            w.bits(
-                                r.bits() & !(u32::MAX >> 32 - $bits << $bits * i)
-                                    | ($gpioy::$xr::$enum::$VARIANT as u32) << $bits * i
-                            )
-                        });
+                        modify_at!((*$GPIOX::ptr()).$xr, $bits, i, $gpioy::$xr::$enum::$VARIANT as u32);
                     }
                 }
             )+
@@ -598,8 +663,8 @@ macro_rules! gpio {
         Gpio: $Gpiox:ty,
         port_index: $port_index:literal,
         gpio_mapped: $gpioy:ident,
-        gpio_mapped_ioen: $iopxen:ident,
-        gpio_mapped_iorst: $iopxrst:ident,
+        iopen: $iopxen:ident,
+        ioprst: $iopxrst:ident,
         partially_erased_pin: $PXx:ty,
         pins: {$(
             $PXi:ty: (
@@ -618,6 +683,11 @@ macro_rules! gpio {
             #[inline(always)]
             fn ptr(&self) -> *const Self::Reg {
                 crate::pac::$GPIOX::ptr()
+            }
+
+            #[inline(always)]
+            fn port_index(&self) -> u8 {
+                $port_index
             }
         }
 
@@ -704,12 +774,22 @@ macro_rules! gpio {
                 /// Opaque AFRH register
                 pub struct AFRH(());
 
-                afr_trait!($GPIOX, AFRH, afrh, 8);
+                impl Afr for AFRH {
+                    #[inline]
+                    fn afx(&mut self, i: u8, x: u8) {
+                        unsafe { modify_at!((*$GPIOX::ptr()).afrh, 4, i - 8, x as u32); }
+                    }
+                }
 
                 /// Opaque AFRL register
                 pub struct AFRL(());
 
-                afr_trait!($GPIOX, AFRL, afrl, 0);
+                impl Afr for AFRL {
+                    #[inline]
+                    fn afx(&mut self, i: u8, x: u8) {
+                        unsafe { modify_at!((*$GPIOX::ptr()).afrl, 4, i, x as u32); }
+                    }
+                }
 
                 /// Opaque MODER register
                 pub struct MODER(());
@@ -785,7 +865,7 @@ macro_rules! gpio {
                     $i:literal => {
                         reset: $MODE:ty,
                         afr: $LH:ident,
-                        af: [$( $af:literal ),*]
+                        af: [$($af:literal),*]
                     },
                 )+],
             },
@@ -800,8 +880,8 @@ macro_rules! gpio {
                     Gpio: [<Gpio $x>],
                     port_index: $port_index,
                     gpio_mapped: $gpioy,
-                    gpio_mapped_ioen: [<iop $x en>],
-                    gpio_mapped_iorst: [<iop $x rst>],
+                    iopen: [<iop $x en>],
+                    ioprst: [<iop $x rst>],
                     partially_erased_pin: [<P $X x>],
                     pins: {$(
                         [<P $X $i>]: (
