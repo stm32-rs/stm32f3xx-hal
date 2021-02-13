@@ -10,8 +10,8 @@
 //! let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
 //! ```
 //!
-//! The resulting [Parts](gpioa::Parts) struct contains one field for each
-//! pin, as well as some shared registers.
+//! The resulting [Parts](gpioa::Parts) struct contains one field for each pin, as well as some
+//! shared registers. Every pin type is a specialized version of generic [pin](Pin) struct.
 //!
 //! To use a pin, first use the relevant `into_...` method of the [pin](Pin).
 //!
@@ -23,6 +23,32 @@
 //! `embedded_hal`
 //!
 //! For a complete example, see [examples/toggle.rs]
+//!
+//! ## Pin Configuration
+//!
+//! ### Mode
+//!
+//! Each GPIO pin can be set to various modes by corresponding `into_...` method:
+//!
+//! - **Input**: The output buffer is disabled and the schmitt trigger input is activated
+//! - **Output**: Both the output buffer and the schmitt trigger input is enabled
+//!     - **PushPull**: Output which either drives the pin high or low
+//!     - **OpenDrain**: Output which leaves the gate floating, or pulls it to ground in drain
+//!     mode. Can be used as an input in the `open` configuration
+//! - **Alternate**: Pin mode required when the pin is driven by other peripherals. The schmitt
+//! trigger input is activated. The Output buffer is automatically enabled and disabled by
+//! peripherals. Output behavior is same as the output mode
+//!     - **PushPull**: Output which either drives the pin high or low
+//!     - **OpenDrain**: Output which leaves the gate floating, or pulls it to ground in drain
+//!     mode
+//! - **Analog**: Pin mode required for ADC, DAC, OPAMP, and COMP peripherals. It is also suitable
+//! for minimize energy consumption as the output buffer and the schmitt trigger input is disabled
+//!
+//! ### Internal Resistor
+//!
+//! Weak internal pull-up and pull-down resistors are configurable by calling
+//! [`set_internal_resistor`](Pin::set_internal_resistor) method. `into_..._input` methods are also
+//! available for convenience.
 //!
 //! [InputPin]: embedded_hal::digital::v2::InputPin
 //! [OutputPin]: embedded_hal::digital::v2::OutputPin

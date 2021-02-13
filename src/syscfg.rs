@@ -26,7 +26,8 @@ impl SysCfgExt for SYSCFG {
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
-/// let syscfg = dp.SYSCFG.constrain();
+/// let mut rcc = dp.RCC.constrain();
+/// let syscfg = dp.SYSCFG.constrain(&mut rcc.apb2);
 /// ```
 pub struct SysCfg(SYSCFG);
 
