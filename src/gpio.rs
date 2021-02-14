@@ -436,7 +436,7 @@ where
     }
 }
 
-impl<GPIO, INDEX, MODE> OutputPin for Pin<GPIO, INDEX, Output<MODE>>
+impl<GPIO, INDEX, OTYPE> OutputPin for Pin<GPIO, INDEX, Output<OTYPE>>
 where
     GPIO: Gpio,
     INDEX: Index,
@@ -476,7 +476,7 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<GPIO, INDEX, MODE> StatefulOutputPin for Pin<GPIO, INDEX, Output<MODE>>
+impl<GPIO, INDEX, OTYPE> StatefulOutputPin for Pin<GPIO, INDEX, Output<OTYPE>>
 where
     GPIO: Gpio,
     INDEX: Index,
@@ -492,7 +492,7 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<GPIO, INDEX, MODE> toggleable::Default for Pin<GPIO, INDEX, Output<MODE>>
+impl<GPIO, INDEX, OTYPE> toggleable::Default for Pin<GPIO, INDEX, Output<OTYPE>>
 where
     GPIO: Gpio,
     INDEX: Index,
@@ -582,7 +582,7 @@ macro_rules! af {
 
         paste::paste! {
             #[doc = "Alternate function " $i " (type state)"]
-            pub type $AFi<MODE> = Alternate<$Ui, MODE>;
+            pub type $AFi<OTYPE> = Alternate<$Ui, OTYPE>;
         }
 
         impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
