@@ -61,10 +61,10 @@ pub fn sleep_now(scb: &mut SCB) {
 pub fn sleep_on_exit(scb: &mut SCB) {
     // WFI (Wait for Interrupt) (eg `cortext_m::asm::wfi()) or WFE (Wait for Event) while:
 
-    // SLEEPDEEP = 0 and SLEEPONEXIT = 0
+    // SLEEPDEEP = 0 and SLEEPONEXIT = 1
     scb.clear_sleepdeep();
-    // Sleep-now: if the SLEEPONEXIT bit is cleared, the MCU enters Sleep mode as soon
-    // as WFI or WFE instruction is executed.
+    // Sleep-on-exit: if the SLEEPONEXIT bit is set, the MCU enters Sleep mode as soon
+    // as it exits the lowest priority ISR. 
     scb.set_sleeponexit();
 
     wfi();
