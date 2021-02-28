@@ -147,3 +147,14 @@ jobs:
         with:
           files: .
           ignore_files: "target/"
+
+  link-checker:
+    name: Link Checker
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Check URLs in documentation
+      uses: lycheeverse/lychee-action@v1.0.4
+      with:
+        args: --verbose --no-progress "*.md" "**/*.md" "**/*.rs" "*.toml" "**/*.toml" -h accept=text/html
