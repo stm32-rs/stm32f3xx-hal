@@ -152,7 +152,7 @@
 
   A usage example can be found at [examples/pwm.rs]
 
-  [examples/pwm.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/pwm.rs
+  [examples/pwm.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/pwm.rs
 */
 
 use crate::{
