@@ -425,12 +425,32 @@ impl Rtc {
 
         // Enable the wakeup timer interrupt.
         self.regs.cr.modify(|_, w| w.wutie().set_bit());
-        self.regs.cr.modify(|_, w| w.wutie().set_bit());
 
         // Clear the  wakeup flag.
         self.regs.isr.modify(|_, w| w.wutf().clear_bit());
 
         self.regs.wpr.write(|w| unsafe { w.bits(0xFF) });
+    }
+
+    /// Enable the wakeup timer.
+    pub fn enable_wakeup(&mut self) {
+        unsafe {
+            self.regs.wpr.write(|w| w.bits(0xCA));
+            self.regs.wpr.write(|w| w.bits(0x53));
+            self.regs.cr.modify(|_, w| w.wute().set_bit());
+            self.regs.wpr.write(|w| w.bits(0xFF));
+        }
+    }
+
+    /// Disable the wakeup timer.
+    /// // todo dry with enable.
+    pub fn disable_wakeup(&mut self) {
+        unsafe {
+            self.regs.wpr.write(|w| w.bits(0xCA));
+            self.regs.wpr.write(|w| w.bits(0x53));
+            self.regs.cr.modify(|_, w| w.wute().clear_bit());
+            self.regs.wpr.write(|w| w.bits(0xFF));
+        }
     }
 
     #[cfg(any(feature = "rt"))]

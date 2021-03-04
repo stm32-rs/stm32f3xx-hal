@@ -329,7 +329,7 @@ macro_rules! adc_hal {
                         crate::panic!("Clock already enabled with a different setting");
                     }
                     this_adc.set_align(Align::default());
-                    this_adc.calibrate();
+                    this_adc.calibrate();   // todo: Cal causes freeze! TS commented out.
                     // ADEN bit cannot be set during ADCAL=1
                     // and 4 ADC clock cycle after the ADCAL
                     // bit is cleared by hardware
@@ -413,7 +413,13 @@ macro_rules! adc_hal {
                 ///
                 /// This is based on the MAX_ADVREGEN_STARTUP_US of the device.
                 fn wait_advregen_startup(&self) {
-                    asm::delay((MAX_ADVREGEN_STARTUP_US * 1_000_000) / self.clocks.sysclk().0);
+                    // Prevents crashes. Not sure why / when it started showing up.
+                    // https://github.com/rust-embedded/cortex-m/pull/328
+                    let mut delay = (MAX_ADVREGEN_STARTUP_US * 1_000_000) / self.clocks.sysclk().0;
+                    if delay < 2 {
+                        delay = 2;
+                    }
+                    asm::delay(delay);
                 }
 
                 /// busy ADC read

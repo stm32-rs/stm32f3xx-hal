@@ -192,7 +192,7 @@ cfg_if::cfg_if! {
 }
 
 cfg_if::cfg_if! {
-    if #[cfg(feature = "stm32f303")] {
+    if #[cfg(any(feature = "stm32f302", feature = "stm32f303"))] {
         pub mod adc;
         pub mod dac;
         pub mod clocks;
@@ -200,7 +200,8 @@ cfg_if::cfg_if! {
     }
 }
 
-#[cfg(all(feature = "stm32f303", feature = "rt"))]
+// #[cfg(all(feature = "stm32f303", feature = "rt"))]
+#[cfg(feature = "rt")]
 pub mod exti;
 
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]

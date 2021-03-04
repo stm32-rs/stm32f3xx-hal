@@ -508,6 +508,11 @@ macro_rules! pwm_features {
                     }
                 }
 
+                /// Set auto reload preloader; useful when changing period and duty mid-run.
+                pub fn set_auto_reload_preload(&mut self, mode: bool) {
+                    self.tim.cr1.modify(|_, w| w.arpe().bit(mode));
+                }
+
                 /// Set preload mode.
                 /// OC1PE: Output Compare 1 preload enable
                 /// 0: Preload register on TIMx_CCR1 disabled. TIMx_CCR1 can be written at anytime, the
