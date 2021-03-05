@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Added support for more CAN bit rates and modes. ([#186](https://github.com/stm32-rs/stm32f3xx-hal/pull/186)
+
 ## [v0.6.1] - 2020-12-10
 
 ### Changed

@@ -20,7 +20,7 @@ use crate::stm32;
 use nb::{self, Error};
 
 use core::sync::atomic::{AtomicU8, Ordering};
-use stm32::can::btr::LBKM_A;
+pub use stm32::can::btr::LBKM_A;
 
 const EXID_MASK: u32 = 0b1_1111_1111_1100_0000_0000_0000_0000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
@@ -360,7 +360,7 @@ impl Can {
             _tx: tx,
         }
     }
-    /// Initialize the CAN Peripheral
+    /// Initialize the CAN Peripheral using default options from `CanOpts::default()`
     pub fn new(
         can: stm32::CAN,
         rx: gpioa::PA11<AF9>,
