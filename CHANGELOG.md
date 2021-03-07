@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Basic serial implementation also available for UART4 and UART5 [#246]
 - Implement serial DMA also for Serial [#246]
 
+## Breaking Changes
+
+- Refactor CAN to use the [`bxCan`](https://github.com/stm32-rs/bxcan) crate. ([#207])
+
 ## [v0.7.0] - 2021-06-18
 
 ### Added
