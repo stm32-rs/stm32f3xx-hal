@@ -163,6 +163,7 @@ use crate::{
     time::Hertz,
 };
 use core::marker::PhantomData;
+use core::u16;
 
 #[cfg(any(
     feature = "stm32f302xb",
@@ -241,6 +242,278 @@ pub struct PwmChannel<X, T> {
     pin_status: PhantomData<T>,
 }
 
+pub struct ExactArrAndPsc<r> {
+    pub arr: r,
+    pub psc: u16,
+}
+
+pub trait ClocksToArrAndPsc {
+    type Arr;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr>;
+}
+
+impl<arr> ClocksToArrAndPsc for ExactArrAndPsc<arr> {
+    type Arr = arr;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        self
+    }
+}
+
+pub struct ResAndFreq<r> {
+    resolution: r,
+    frequency: Hertz,
+}
+
+impl<arr: Into<u32>> ClocksToArrAndPsc for ResAndFreq<arr> {
+    type Arr = arr;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // calculate the pre-scaler
+        let prescale_factor = timer_freq / self.resolution.into() / self.frequency.0;
+        ExactArrAndPsc {
+            arr: self.resolution,
+            psc: prescale_factor as u16 - 1,
+        }
+    }
+}
+
+// Picks the greatest resolution that yields a reasonably approximate frequency.
+// In many cases (the higher the frequency), the frequency will be exact or have
+// maximum possible accuracy regardless (as not all frequencies _can_ be
+// perfectly expressed).
+// Error is bounded by: `(Fi + m * Fo + 2 Fo) / ((m - 2) * (Fi + Fo))` where
+// Fi is the input clock frequency
+// Fo is the output clock frequency
+// m is the maximum resolution
+//
+// Example:
+//   - Fi = 72MHz
+//   - Fo = 50Hz
+//   - Max Resolution = 2^16 (standard timer)
+//
+// Then:
+//   - Worst Case Error ~= 0.00146%
+//   - Worst Case Frequency ~= 50.000728Hz
+//   - Actual Error ~= 0.000833%
+//   - Actual Frequency ~= 50.0004167Hz
+//
+// From:
+// `Fi / Fo = (a - 1) * m + Rm` such that `Rm >= 0`, and `Rm < m`
+// `Fi / Fo = b * a + Ra` such that `Ra >= 0`, and `Ra < a`
+// `b <= m`
+//
+// `Fi / Fo = b * a + Ra`
+// Worst case Ra = (a - 1)
+//
+// `Fi / Fo = b * a + (a - 1)`
+// `Fi / Fo - (a - 1) = b * a`
+// `Fi / Fo - a + 1 = b * a`
+// `(Fi / Fo - a + 1) / a = b`
+// `(Fi / Fo - a + 1) / a <= m`
+// `Fi / Fo - a + 1 <= m * a`
+// `Fi / Fo + 1 <= m * a - a`
+// `Fi / Fo + 1 <= a * (m - 1)`
+// `(Fi / Fo + 1) / (m - 1) <= a`
+//
+// error:
+// (Fo - (Fi / (b * a))) / Fo
+// (Fo - (Fi / (Fi / Fo - Ra))) / Fo
+//
+// Worst case Ra = (a - 1)
+// (Fo - (Fi / (Fi / Fo - (a - 1)))) / Fo
+//
+// worst case a = (Fi / Fo + 1) / (m - 1)
+// (Fo - (Fi / (Fi / Fo - ((Fi / Fo + 1) / (m - 1) - 1)))) / Fo
+//
+// simplified:
+// (Fi + m * Fo + 2 Fo) / ((m - 2) * (Fi + Fo))
+pub struct PrioritizeResolution<r> {
+    resolution: PhantomData<r>,
+    frequency: Hertz,
+}
+
+impl ClocksToArrAndPsc for PrioritizeResolution<u16> {
+    type Arr = u16;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // calculate the pre-scaler
+        // We need the resolution * prescale factor to equal the total_scaling
+        let total_scaling = timer_freq / self.frequency.0;
+        // We find the smallest factor that will result in the other factor
+        // being less than 2^16.
+        let prescale_factor =
+            total_scaling / 2 ^ 16 + if total_scaling % 2 ^ 16 == 0 { 1 } else { 0 };
+        // Given the smallest factor, we can now find its complement
+        // Together, the two give an error bounded approximate of the total
+        // scaling target.
+        let resolution = total_scaling / prescale_factor;
+        ExactArrAndPsc {
+            arr: (resolution - 1) as u16,
+            psc: (prescale_factor - 1) as u16,
+        }
+    }
+}
+
+impl ClocksToArrAndPsc for PrioritizeResolution<u32> {
+    type Arr = u32;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // A high-resolution timer will always have enough bits to divide out even to the lowest
+        // frequency for the Hertz type (1hz).
+        ExactArrAndPsc {
+            arr: (timer_freq / self.frequency.0) - 1,
+            psc: 1,
+        }
+    }
+}
+
+struct Wheel {
+    n: u32,
+    pre_division: Option<u32>,
+    k: u32,
+    i: usize,
+}
+
+// Gaps between the primes <= 31 excluding 2 and 3
+// AKA: the wheel in our wheel.
+const inc: [u32; 9] = [2, 4, 2, 4, 2, 4, 4, 2, 2];
+
+impl Iterator for Wheel {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.pre_division {
+            Some(i) => {
+                if self.n % i == 0 {
+                    self.n = self.n / i;
+                    Some(i)
+                } else {
+                    self.pre_division = match i {
+                        2 => Some(3),
+                        2 => Some(5),
+                        5 => None,
+                    };
+                    self.next()
+                }
+            }
+            None => {
+                if self.k * self.k > self.n {
+                    None
+                } else if self.n % self.k == 0 {
+                    self.n = self.n / self.k;
+                    Some(self.k)
+                } else {
+                    self.k += inc[self.i];
+                    self.i = if self.i == 7 { 0 } else { self.i + 1 };
+                    self.next()
+                }
+            }
+        }
+    }
+}
+
+fn factor(n: u32) -> Wheel {
+    Wheel {
+        n: n,
+        pre_division: Some(2),
+        k: 7,
+        i: 0,
+    }
+}
+
+// PrioritizeFreq will give the most accurate frequency possible, while
+// attempting to give a reasonably large resolution (but not necessarily
+// optimal).
+//
+// While it is theoretically possible that frequency will not be optimal if a
+// specific combination of factors must be used (rather than simply the product
+// of the smallest) to fit the values into the dividing registers, these are
+// exceedingly rare and strange cases that require ratios (such as a period of
+// 3284894596/72000000s).
+//
+// Some inputs are pathalogical in time when the total clock division must be
+// factored, but it and its neighbors do not have factors that fit into the
+// dividing registers.
+pub struct PrioritizeFreq<r> {
+    resolution: PhantomData<r>,
+    frequency: Hertz,
+}
+
+impl ClocksToArrAndPsc for PrioritizeFreq<u16> {
+    type Arr = u16;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // Our target is the total clock division.  We now must find the closest
+        // value that factors nicely into our two registers.
+        let target = timer_freq / self.frequency.0;
+
+        // If our target fails to factor, we're start alternating incrementing
+        // up and down from our target.  This tells us which way we're hunting
+        // currently.
+        let mut searchUp = true;
+
+        // Our search offset tells us how far we've strayed from our target
+        let mut searchOffset = 1;
+
+        let mut resolution = target;
+        let mut prescale_factor;
+
+        loop {
+            prescale_factor = 1;
+            // If needed, start shifting factors from our resolution to our
+            // prescaler
+            if resolution > u16::MAX as u32 {
+                for x in factor(resolution) {
+                    prescale_factor *= x;
+                    resolution = resolution / x;
+                    if resolution <= u16::MAX as u32 {
+                        break;
+                    }
+                }
+            }
+
+            // We've completed shifting factors, but there's a few possibilies:
+            //   1. We now have an acceptable divide and we're done
+            //   2. Our factors didn't shrink the resolution enough so we
+            //      continue
+            //   3. Our factors shrank the resolution, but then blew out the
+            //      prescaler so we continue (very unlikely, but possible)
+            if resolution <= u16::MAX as u32 && prescale_factor <= u16::MAX as u32 {
+                break;
+            }
+
+            // Since our current target failed to factor, we try the next
+            // closest value to our target.
+            if searchUp {
+                resolution = target + searchOffset;
+            } else {
+                resolution = target - searchOffset;
+                searchOffset += 1
+            }
+            searchUp = !searchUp;
+        }
+        ExactArrAndPsc {
+            arr: (resolution as u16) - 1,
+            psc: (prescale_factor as u16) - 1,
+        }
+    }
+}
+
+impl ClocksToArrAndPsc for PrioritizeFreq<u32> {
+    type Arr = u32;
+
+    fn timer_freq_to_arr_and_psc(self, timer_freq: u32) -> ExactArrAndPsc<Self::Arr> {
+        // A high-resolution timer will always have enough bits to divide out even to the lowest
+        // frequency for the Hertz type (1hz).
+        ExactArrAndPsc {
+            arr: (timer_freq / self.frequency.0) - 1,
+            psc: 1,
+        }
+    }
+}
+
 macro_rules! pwm_timer_private {
     ($timx:ident, $TIMx:ty, $res:ty, $apbxenr:ident, $apbxrstr:ident, $pclkz:ident, $timxrst:ident, $timxen:ident, $enable_break_timer:expr, [$($TIMx_CHy:ident),+], [$($x:ident),+]) => {
         /// Create one or more output channels from a TIM Peripheral
@@ -253,7 +526,7 @@ macro_rules! pwm_timer_private {
         /// a resolution of 9000.  This allows the servo to be set in increments
         /// of exactly one degree.
         #[allow(unused_parens)]
-        pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
+        pub fn $timx<cc: ClocksToArrAndPsc<Arr = $res>>(tim: $TIMx, clock_config: cc, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer and reset it to ensure a clean state
             // We use unsafe here to abstract away this implementation detail
             // Justification: It is safe because only scopes with mutable references
@@ -267,6 +540,12 @@ macro_rules! pwm_timer_private {
             // enable auto reload preloader
             tim.cr1.modify(|_, w| w.arpe().set_bit());
 
+            // TODO: This is repeated in the timer/pwm module.
+            // It might make sense to move into the clocks as a crate-only property.
+            // TODO: ppre1 is used in timer.rs (never ppre2), should this be dynamic?
+            let clock_freq = clocks.$pclkz().0 * if clocks.ppre1() == 1 { 1 } else { 2 };
+            let ExactArrAndPsc { arr, psc } : ExactArrAndPsc<$res> = clock_config.timer_freq_to_arr_and_psc(clock_freq);
+
             // Set the "resolution" of the duty cycle (ticks before restarting at 0)
             // Oddly this is unsafe for some timers and not others
             //
@@ -274,17 +553,12 @@ macro_rules! pwm_timer_private {
             // This write uses all bits of this register so there are no unknown side effects.
             #[allow(unused_unsafe)]
             tim.arr.write(|w| unsafe {
-                w.arr().bits(res)
+                w.arr().bits(arr)
             });
 
             // Set the pre-scaler
-            // TODO: This is repeated in the timer/pwm module.
-            // It might make sense to move into the clocks as a crate-only property.
-            // TODO: ppre1 is used in timer.rs (never ppre2), should this be dynamic?
-            let clock_freq = clocks.$pclkz().0 * if clocks.ppre1() == 1 { 1 } else { 2 };
-            let prescale_factor = clock_freq / res as u32 / freq.0;
             // NOTE(write): uses all bits of this register.
-            tim.psc.write(|w| w.psc().bits(prescale_factor as u16 - 1));
+            tim.psc.write(|w| w.psc().bits(psc));
 
             // Make the settings reload immediately
             // NOTE(write): write to a state-less register.
