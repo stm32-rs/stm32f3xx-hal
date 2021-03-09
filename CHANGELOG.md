@@ -9,7 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Added support for more CAN bit rates and modes. ([#186](https://github.com/stm32-rs/stm32f3xx-hal/pull/186)
+- Added support for more CAN bit rates and modes. ([#186])
+
+### Fixed
+
+- Delay based on systick no longer panics ([#203]) for to high values
+  and support longer delays ([#208])
 
 ## [v0.6.1] - 2020-12-10
 
@@ -266,6 +271,9 @@ let clocks = rcc
 
 - Support `stm32f303` device
 
+[#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
+[#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203
+[#186]: https://github.com/stm32-rs/stm32f3xx-hal/pull/186
 [#184]: https://github.com/stm32-rs/stm32f3xx-hal/pull/184
 [#172]: https://github.com/stm32-rs/stm32f3xx-hal/pull/172
 [#170]: https://github.com/stm32-rs/stm32f3xx-hal/pull/170
