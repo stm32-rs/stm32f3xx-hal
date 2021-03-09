@@ -54,15 +54,13 @@
 //! For more details read the documentation of the [`CFGR`] methods to
 //! find out how to setup the clock.
 
-use core::convert::TryInto;
-
 use crate::pac::{
     rcc::{self, cfgr, cfgr2},
     RCC,
 };
 
 use crate::flash::ACR;
-use crate::time::rate::{Hertz, Rate};
+use crate::time::rate::Hertz;
 
 /// Extension trait that constrains the `RCC` peripheral
 pub trait RccExt {
@@ -335,12 +333,9 @@ impl CFGR {
     ///
     /// Will result in a hang if an external oscillator is not connected or it fails to start,
     /// unless [css](CFGR::enable_css) is enabled.
-    pub fn use_hse<F>(mut self, freq: F) -> Result<Self, <F as TryInto<Hertz<u32>>>::Error>
-    where
-        F: Rate + TryInto<Hertz<u32>>,
-    {
-        self.hse = Some((freq.try_into()? as Hertz).0);
-        Ok(self)
+    pub fn use_hse(mut self, freq: Hertz) -> Self {
+        self.hse = Some(freq.0);
+        self
     }
 
     /// Enable `HSE` bypass.
@@ -366,12 +361,9 @@ impl CFGR {
     }
 
     /// Sets a frequency for the AHB bus
-    pub fn hclk<F>(mut self, freq: F) -> Result<Self, <F as TryInto<Hertz<u32>>>::Error>
-    where
-        F: Rate + TryInto<Hertz<u32>>,
-    {
-        self.hclk = Some((freq.try_into()? as Hertz).0);
-        Ok(self)
+    pub fn hclk(mut self, freq: Hertz) -> Self {
+        self.hclk = Some(freq.0);
+        self
     }
 
     /// Sets a frequency for the `APB1` bus
@@ -380,12 +372,9 @@ impl CFGR {
     ///
     /// If not manually set, it will be set to [`CFGR::sysclk`] frequency
     /// or [`CFGR::sysclk`] frequency / 2, if [`CFGR::sysclk`] > 36 Mhz
-    pub fn pclk1<F>(mut self, freq: F) -> Result<Self, <F as TryInto<Hertz<u32>>>::Error>
-    where
-        F: Rate + TryInto<Hertz<u32>>,
-    {
-        self.pclk1 = Some((freq.try_into()? as Hertz).0);
-        Ok(self)
+    pub fn pclk1(mut self, freq: Hertz) -> Self {
+        self.pclk1 = Some(freq.0);
+        self
     }
 
     /// Sets a frequency for the `APB2` bus
@@ -401,12 +390,9 @@ impl CFGR {
     ///
     ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
     ///
-    pub fn pclk2<F>(mut self, freq: F) -> Result<Self, <F as TryInto<Hertz<u32>>>::Error>
-    where
-        F: Rate + TryInto<Hertz<u32>>,
-    {
-        self.pclk2 = Some((freq.try_into()? as Hertz).0);
-        Ok(self)
+    pub fn pclk2(mut self, freq: Hertz) -> Self {
+        self.pclk2 = Some(freq.0);
+        self
     }
 
     /// Sets the system (core) frequency
@@ -424,12 +410,9 @@ impl CFGR {
     /// even when using the internal oscillator:
     ///
     ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
-    pub fn sysclk<F>(mut self, freq: F) -> Result<Self, <F as TryInto<Hertz<u32>>>::Error>
-    where
-        F: Rate + TryInto<Hertz<u32>>,
-    {
-        self.sysclk = Some((freq.try_into()? as Hertz).0);
-        Ok(self)
+    pub fn sysclk(mut self, freq: Hertz) -> Self {
+        self.sysclk = Some(freq.0);
+        self
     }
 
     /// Calculate the values for the pll multiplier (`PLLMUL`) and the pll divisior (`PLLDIV`).

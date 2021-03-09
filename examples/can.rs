@@ -32,14 +32,10 @@ fn main() -> ! {
 
     let _clocks = rcc
         .cfgr
-        .use_hse(32u32.MHz())
-        .unwrap()
-        .sysclk(32u32.MHz())
-        .unwrap()
-        .pclk1(16u32.MHz())
-        .unwrap()
-        .pclk2(16u32.MHz())
-        .unwrap()
+        .use_hse(Hertz(32_000_000))
+        .sysclk(Hertz(32_000_000))
+        .pclk1(Hertz(16_000_000))
+        .pclk2(Hertz(16_000_000))
         .freeze(&mut flash.acr);
 
     // Configure CAN RX and TX pins (AF9)

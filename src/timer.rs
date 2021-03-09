@@ -91,7 +91,7 @@ macro_rules! hal {
 
                 fn start<T>(&mut self, timeout: T)
                 where
-                    T: Into<Hertz>,
+                    T: Into<Self::Time>,
                 {
                     self.stop();
 

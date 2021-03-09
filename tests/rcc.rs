@@ -37,10 +37,8 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8u32.MHz())
-            .unwrap()
-            .sysclk(15u32.MHz())
-            .unwrap()
+            .use_hse(Hertz(8_000_000))
+            .sysclk(Hertz(15_000_000))
             .freeze(&mut flash.acr);
 
         defmt::assert!(clock.sysclk() == 15u32.MHz());
@@ -66,7 +64,7 @@ mod tests {
                     feature = "stm32f303xe",
                     feature = "stm32f398",
             ))] {
-                let clock = rcc.cfgr.sysclk(72u32.MHz()).unwrap().freeze(&mut flash.acr);
+                let clock = rcc.cfgr.sysclk(Hertz(72_000_000)).freeze(&mut flash.acr);
 
                 defmt::assert!(clock.sysclk() == 72u32.MHz());
                 defmt::assert!(clock.hclk() == 72u32.MHz());
@@ -80,7 +78,7 @@ mod tests {
                 // and the resolution is therefor lower.
                 // Because of the implementation the clock is then approximated to
                 // the highest possible value (64 Mhz).
-                let clock = rcc.cfgr.sysclk(67u32.MHz()).unwrap().freeze(&mut flash.acr);
+                let clock = rcc.cfgr.sysclk(Hertz(67_000_000)).freeze(&mut flash.acr);
 
                 defmt::assert!(clock.sysclk() == 64u32.MHz());
                 defmt::assert!(clock.hclk() == 64u32.MHz());
@@ -102,10 +100,8 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8u32.MHz())
-            .unwrap()
-            .sysclk(32u32.MHz())
-            .unwrap()
+            .use_hse(Hertz(8_000_000))
+            .sysclk(Hertz(32_000_000))
             .freeze(&mut flash.acr);
 
         defmt::assert!(clock.sysclk() == 32u32.MHz());
@@ -126,10 +122,8 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8u32.MHz())
-            .unwrap()
-            .sysclk(48u32.MHz())
-            .unwrap()
+            .use_hse(Hertz(8_000_000))
+            .sysclk(Hertz(48_000_000))
             .freeze(&mut flash.acr); // works
 
         defmt::assert!(clock.sysclk() == 48u32.MHz());
@@ -148,16 +142,11 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8u32.MHz())
-            .unwrap()
-            .hclk(48u32.MHz())
-            .unwrap()
-            .sysclk(48u32.MHz())
-            .unwrap()
-            .pclk1(12u32.MHz())
-            .unwrap()
-            .pclk2(12u32.MHz())
-            .unwrap()
+            .use_hse(Hertz(8_000_000))
+            .hclk(Hertz(48_000_000))
+            .sysclk(Hertz(48_000_000))
+            .pclk1(Hertz(12_000_000))
+            .pclk2(Hertz(12_000_000))
             .freeze(&mut flash.acr);
 
         defmt::assert!(clock.sysclk() == 48u32.MHz());
@@ -177,12 +166,9 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8u32.MHz())
-            .unwrap()
-            .pclk1(16u32.MHz())
-            .unwrap()
-            .sysclk(64u32.MHz())
-            .unwrap()
+            .use_hse(Hertz(8_000_000))
+            .pclk1(Hertz(16_000_000))
+            .sysclk(Hertz(64_000_000))
             .freeze(&mut flash.acr);
 
         defmt::assert!(clock.sysclk() == 64u32.MHz());
@@ -203,10 +189,8 @@ mod tests {
 
         let clock = rcc
             .cfgr
-            .use_hse(8u32.MHz())
-            .unwrap()
-            .sysclk(72u32.MHz())
-            .unwrap()
+            .use_hse(Hertz(8_000_000))
+            .sysclk(Hertz(72_000_000))
             .freeze(&mut flash.acr);
 
         defmt::assert!(clock.sysclk() == 72u32.MHz());
