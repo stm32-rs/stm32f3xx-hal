@@ -4,7 +4,7 @@
 //!
 //! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/spi.rs
 
-use core::{convert::TryInto, ptr};
+use core::ptr;
 
 use crate::hal::spi::FullDuplex;
 pub use crate::hal::spi::{Mode, Phase, Polarity};
@@ -131,7 +131,7 @@ use crate::rcc::APB1;
     feature = "stm32f398"
 ))]
 use crate::rcc::APB2;
-use crate::time::rate::{Hertz, Rate};
+use crate::time::rate::Hertz;
 use core::marker::PhantomData;
 
 /// SPI error
@@ -417,16 +417,15 @@ macro_rules! hal {
         $(
             impl<SCK, MISO, MOSI, WORD> Spi<$SPIX, (SCK, MISO, MOSI), WORD> {
                 /// Configures the SPI peripheral to operate in full duplex master mode
-                pub fn $spiX<F>(
+                pub fn $spiX(
                     spi: $SPIX,
                     pins: (SCK, MISO, MOSI),
                     mode: Mode,
-                    freq: F,
+                    freq: Hertz,
                     clocks: Clocks,
                     apb2: &mut $APBX,
-                ) -> Result<Self, <F as TryInto<Hertz<u32>>>::Error>
+                ) -> Self
                 where
-                    F: Rate + TryInto<Hertz<u32>>,
                     SCK: SckPin<$SPIX>,
                     MISO: MisoPin<$SPIX>,
                     MOSI: MosiPin<$SPIX>,
@@ -445,7 +444,6 @@ macro_rules! hal {
                         w.ssoe().disabled()
                     });
 
-                    let freq: Hertz = freq.try_into()?;
                     // CPHA: phase
                     // CPOL: polarity
                     // MSTR: master mode
@@ -485,7 +483,7 @@ macro_rules! hal {
                             .unidirectional()
                     });
 
-                    Ok(Spi { spi, pins, _word: PhantomData })
+                    Spi { spi, pins, _word: PhantomData }
                 }
 
                 /// Releases the SPI peripheral and associated pins
@@ -494,19 +492,13 @@ macro_rules! hal {
                 }
 
                 /// Change the baud rate of the SPI
-                pub fn reclock<F>(&mut self, freq: F, clocks: Clocks)
-                -> Result<(), <F as TryInto<Hertz<u32>>>::Error>
-                where
-                    F: Rate + TryInto<Hertz<u32>>,
-                {
+                pub fn reclock(&mut self, freq: Hertz, clocks: Clocks) {
                     self.spi.cr1.modify(|_, w| w.spe().disabled());
 
-                    let freq: Hertz = freq.try_into()?;
                     self.spi.cr1.modify(|_, w| {
                         w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq));
                         w.spe().enabled()
                     });
-                    Ok(())
                 }
 
                 fn compute_baud_rate(clocks: Hertz, freq: Hertz) -> spi1::cr1::BR_A {

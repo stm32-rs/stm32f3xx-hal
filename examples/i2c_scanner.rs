@@ -6,7 +6,7 @@
 #![no_std]
 #![no_main]
 
-use core::ops::Range;
+use core::{convert::TryInto, ops::Range};
 
 use panic_semihosting as _;
 
@@ -35,7 +35,13 @@ fn main() -> ! {
         gpiob.pb7.into_af4(&mut gpiob.moder, &mut gpiob.afrl), // SDA
     );
 
-    let mut i2c = hal::i2c::I2c::new(dp.I2C1, pins, 100u32.kHz(), clocks, &mut rcc.apb1).unwrap();
+    let mut i2c = hal::i2c::I2c::new(
+        dp.I2C1,
+        pins,
+        100_000u32.kHz().try_into().unwrap(),
+        clocks,
+        &mut rcc.apb1,
+    );
 
     hprintln!("Start i2c scanning...").expect("Error using hprintln.");
     hprintln!().unwrap();

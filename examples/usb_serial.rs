@@ -27,10 +27,10 @@ fn main() -> ! {
 
     let clocks = rcc
         .cfgr
-        .use_hse(Hertz(8_000_000))
-        .sysclk(Hertz(48_000_000))
-        .pclk1(Hertz(24_000_000))
-        .pclk2(Hertz(24_000_000))
+        .use_hse(8u32.MHz())
+        .sysclk(48u32.MHz())
+        .pclk1(24u32.MHz())
+        .pclk2(24u32.MHz())
         .freeze(&mut flash.acr);
 
     assert!(clocks.usbclk_valid());

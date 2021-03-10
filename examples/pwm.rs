@@ -28,7 +28,7 @@ fn main() -> ! {
     // Configure our clocks
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.sysclk(Hertz(16_000_000)).freeze(&mut flash.acr);
+    let clocks = rcc.cfgr.sysclk(16u32.MHz()).freeze(&mut flash.acr);
 
     // Prep the pins we need in their correct alternate function
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);

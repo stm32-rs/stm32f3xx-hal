@@ -9,6 +9,8 @@
 //! ```
 //! # use cortex_m_rt::entry;
 //! # use stm32f3xx_hal::prelude::*;
+//! #use hal::time::rate::*;
+//!
 //! # #[entry]
 //! # fn main() -> ! {
 //! // Get our peripherals
@@ -33,18 +35,18 @@
 //! let clocks = rcc.cfgr
 //!     // Using the external oscillator
 //!     // Set the frequency to that of the external oscillator
-//!     .use_hse(8.mhz())
+//!     .use_hse(8.MHz())
 //!     // Set the frequency for the AHB bus,
 //!     // which the root of every following clock peripheral
-//!     .hclk(48.mhz())
+//!     .hclk(48.MHz())
 //!     // The sysclk is equivalent to the core clock
-//!     .sysclk(48.mhz())
+//!     .sysclk(48.MHz())
 //!     // The following are peripheral clocks, which are both
 //!     // needed to configure specific peripherals.
 //!     // Looking at the peripheral function parameters
 //!     // should give more insight, which peripheral clock is needed.
-//!     .pclk1(12.mhz())
-//!     .pclk2(12.mhz())
+//!     .pclk1(12.MHz())
+//!     .pclk2(12.MHz())
 //!     // Freeze / apply the configuration and setup all clocks
 //!     .freeze(&mut flash.acr);
 //! # }
@@ -59,8 +61,10 @@ use crate::pac::{
     RCC,
 };
 
+use core::convert::TryInto;
+
 use crate::flash::ACR;
-use crate::time::rate::Hertz;
+use crate::time::rate::*;
 
 /// Extension trait that constrains the `RCC` peripheral
 pub trait RccExt {
@@ -333,7 +337,12 @@ impl CFGR {
     ///
     /// Will result in a hang if an external oscillator is not connected or it fails to start,
     /// unless [css](CFGR::enable_css) is enabled.
-    pub fn use_hse(mut self, freq: Hertz) -> Self {
+    ///
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn use_hse(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.hse = Some(freq.0);
         self
     }
@@ -360,8 +369,13 @@ impl CFGR {
         self
     }
 
-    /// Sets a frequency for the AHB bus
-    pub fn hclk(mut self, freq: Hertz) -> Self {
+    /// Sets a frequency for the AHB bus.
+    ///
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn hclk(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.hclk = Some(freq.0);
         self
     }
@@ -372,7 +386,12 @@ impl CFGR {
     ///
     /// If not manually set, it will be set to [`CFGR::sysclk`] frequency
     /// or [`CFGR::sysclk`] frequency / 2, if [`CFGR::sysclk`] > 36 Mhz
-    pub fn pclk1(mut self, freq: Hertz) -> Self {
+    ///
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn pclk1(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.pclk1 = Some(freq.0);
         self
     }
@@ -390,7 +409,11 @@ impl CFGR {
     ///
     ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
     ///
-    pub fn pclk2(mut self, freq: Hertz) -> Self {
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn pclk2(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.pclk2 = Some(freq.0);
         self
     }
@@ -410,7 +433,12 @@ impl CFGR {
     /// even when using the internal oscillator:
     ///
     ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
-    pub fn sysclk(mut self, freq: Hertz) -> Self {
+    ///
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn sysclk(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.sysclk = Some(freq.0);
         self
     }
@@ -645,7 +673,7 @@ impl CFGR {
 
         // This ensures, that no panic happens, when
         // pclk1 is not manually set.
-        // As hclk highest value is 72.mhz()
+        // As hclk highest value is 72.MHz()
         // dividing by 2 should always be sufficient
         if self.pclk1.is_none() && pclk1 > 36_000_000 {
             ppre1_bits = cfgr::PPRE1_A::DIV2;

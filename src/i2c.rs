@@ -4,7 +4,7 @@
 //!
 //! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/i2c_scanner.rs
 
-use core::convert::{TryFrom, TryInto};
+use core::convert::TryFrom;
 use core::ops::Deref;
 
 use crate::{
@@ -12,7 +12,7 @@ use crate::{
     hal::blocking::i2c::{Read, Write, WriteRead},
     pac::{i2c1::RegisterBlock, rcc::cfgr3::I2C1SW_A, I2C1, RCC},
     rcc::{Clocks, APB1},
-    time::rate::{Hertz, Rate},
+    time::rate::Hertz,
 };
 
 #[cfg(not(feature = "gpio-f333"))]
@@ -111,22 +111,13 @@ macro_rules! busy_wait {
 
 impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
     /// Configures the I2C peripheral to work in master mode
-    pub fn new<F>(
-        i2c: I2C,
-        pins: (SCL, SDA),
-        freq: F,
-        clocks: Clocks,
-        apb1: &mut APB1,
-    ) -> Result<Self, <F as TryInto<Hertz<u32>>>::Error>
+    pub fn new(i2c: I2C, pins: (SCL, SDA), freq: Hertz, clocks: Clocks, apb1: &mut APB1) -> Self
     where
         I2C: Instance,
         SCL: SclPin<I2C>,
         SDA: SdaPin<I2C>,
-        F: Rate + TryInto<Hertz<u32>>,
     {
-        let freq = (freq.try_into()? as Hertz).0;
-
-        crate::assert!(freq <= 1_000_000);
+        crate::assert!(freq.0 <= 1_000_000);
 
         I2C::enable_clock(apb1);
 
@@ -139,8 +130,8 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         // t_SYNC1 + t_SYNC2 > 4 * t_I2CCLK
         // t_SCL ~= t_SYNC1 + t_SYNC2 + t_SCLL + t_SCLH
         let i2cclk = I2C::clock(&clocks).0;
-        let ratio = i2cclk / freq - 4;
-        let (presc, scll, sclh, sdadel, scldel) = if freq >= 100_000 {
+        let ratio = i2cclk / freq.0 - 4;
+        let (presc, scll, sclh, sdadel, scldel) = if freq.0 >= 100_000 {
             // fast-mode or fast-mode plus
             // here we pick SCLL + 1 = 2 * (SCLH + 1)
             let presc = ratio / 387;
@@ -148,7 +139,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
             let sclh = ((ratio / (presc + 1)) - 3) / 3;
             let scll = 2 * (sclh + 1) - 1;
 
-            let (sdadel, scldel) = if freq > 400_000 {
+            let (sdadel, scldel) = if freq.0 > 400_000 {
                 // fast-mode plus
                 let sdadel = 0;
                 let scldel = i2cclk / 4_000_000 / (presc + 1) - 1;
@@ -201,7 +192,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         // Enable the peripheral
         i2c.cr1.modify(|_, w| w.pe().set_bit());
 
-        Ok(Self { i2c, pins })
+        Self { i2c, pins }
     }
 
     /// Releases the I2C peripheral and associated pins
