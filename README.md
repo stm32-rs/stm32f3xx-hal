@@ -126,3 +126,21 @@ expect it to do so.*
 ## License
 
 [0-clause BSD license](LICENSE-0BSD.txt).
+
+## Contributing
+
+### Running Tests
+
+Tests are run via the integration test pattern and are executed on a target chip, rather than on a host system.
+First, install [probe-run](https://crates.io/crates/probe-run) via `cargo install probe-run`.
+Next, you'll need to modify `.cargo/config` to link defmt and use `probe-run` configured for your chip.
+See details within the comments in that file.
+
+Now, you can execute a test by setting your device, defmt, and any test specific features:
+
+```
+cargo test --test rcc --features=stm32f303xc,defmt,rt
+```
+
+The result _always_ shows a backtrace, even in the case of success.
+Exit code of 0 means that the run was successful.

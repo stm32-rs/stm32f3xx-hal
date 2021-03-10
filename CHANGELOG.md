@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Added support for more CAN bit rates and modes. ([#186])
+
+### Fixed
+
+- Delay based on systick no longer panics ([#203]) for to high values
+  and support longer delays ([#208])
+
 ## [v0.6.1] - 2020-12-10
 
 ### Changed
@@ -262,6 +271,9 @@ let clocks = rcc
 
 - Support `stm32f303` device
 
+[#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
+[#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203
+[#186]: https://github.com/stm32-rs/stm32f3xx-hal/pull/186
 [#184]: https://github.com/stm32-rs/stm32f3xx-hal/pull/184
 [#172]: https://github.com/stm32-rs/stm32f3xx-hal/pull/172
 [#170]: https://github.com/stm32-rs/stm32f3xx-hal/pull/170
@@ -327,7 +339,7 @@ let clocks = rcc
 [#2]: https://github.com/stm32-rs/stm32f3xx-hal/pull/2
 
 [Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.1...HEAD
-[v0.6.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.0...v0.6.1
+[v0.6.1]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.0...v0.6.1
 [v0.6.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.3...v0.5.0
 [v0.4.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.2...v0.4.3

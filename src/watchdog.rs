@@ -2,7 +2,7 @@
 //!
 //! A usage example of the watchdog can be found at [examples/can.rs]
 //!
-//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/can.rs
+//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/can.rs
 
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 

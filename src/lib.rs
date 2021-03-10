@@ -43,6 +43,7 @@
 */
 #![no_std]
 #![allow(non_camel_case_types)]
+#![allow(clippy::upper_case_acronyms)]
 #![warn(missing_docs)]
 #![deny(macro_use_extern_crate)]
 
