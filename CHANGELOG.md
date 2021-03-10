@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Replace custom time based units with types defined in the [embedded-time][] crate ([#191])
+- Replace custom time based units with types defined in the [embedded-time][] crate ([#192])
 
 ### Breaking changes
 

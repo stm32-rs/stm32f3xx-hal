@@ -8,8 +8,7 @@
 //!
 //! ```
 //! # use cortex_m_rt::entry;
-//! # use stm32f3xx_hal::prelude::*;
-//! #use hal::time::rate::*;
+//! # use stm32f3xx-hal::{prelude::*, time::rate::*};
 //!
 //! # #[entry]
 //! # fn main() -> ! {
@@ -25,7 +24,8 @@
 //!
 //! ```
 //! # use cortex_m_rt::entry;
-//! # use stm32f3xx_hal::prelude::*;
+//! # use stm32f3xx-hal::{prelude::*, time::rate::*};
+//! #
 //! # #[entry]
 //! # fn main() -> ! {
 //! # let dp = pac::Peripherals::take().unwrap();
@@ -343,7 +343,7 @@ impl CFGR {
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
     pub fn use_hse(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
-        self.hse = Some(freq.0);
+        self.hse = Some(*freq.integer());
         self
     }
 
@@ -376,7 +376,7 @@ impl CFGR {
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
     pub fn hclk(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
-        self.hclk = Some(freq.0);
+        self.hclk = Some(*freq.integer());
         self
     }
 
@@ -392,7 +392,7 @@ impl CFGR {
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
     pub fn pclk1(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
-        self.pclk1 = Some(freq.0);
+        self.pclk1 = Some(*freq.integer());
         self
     }
 
@@ -414,7 +414,7 @@ impl CFGR {
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
     pub fn pclk2(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
-        self.pclk2 = Some(freq.0);
+        self.pclk2 = Some(*freq.integer());
         self
     }
 
@@ -439,7 +439,7 @@ impl CFGR {
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
     pub fn sysclk(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
-        self.sysclk = Some(freq.0);
+        self.sysclk = Some(*freq.integer());
         self
     }
 

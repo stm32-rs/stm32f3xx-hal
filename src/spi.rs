@@ -131,7 +131,7 @@ use crate::rcc::APB1;
     feature = "stm32f398"
 ))]
 use crate::rcc::APB2;
-use crate::time::rate::Hertz;
+use crate::time::rate::*;
 use core::marker::PhantomData;
 
 /// SPI error
@@ -503,7 +503,7 @@ macro_rules! hal {
 
                 fn compute_baud_rate(clocks: Hertz, freq: Hertz) -> spi1::cr1::BR_A {
                     use spi1::cr1::BR_A;
-                    match clocks.0 / freq.0 {
+                    match clocks.0 / *freq.integer() {
                         0 => crate::unreachable!(),
                         1..=2 => BR_A::DIV2,
                         3..=5 => BR_A::DIV4,

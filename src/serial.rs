@@ -5,7 +5,7 @@ use crate::{
     hal::{blocking, serial},
     pac::{USART1, USART2, USART3},
     rcc::{Clocks, APB1, APB2},
-    time::rate::Baud,
+    time::rate::*,
 };
 
 use cfg_if::cfg_if;
@@ -125,7 +125,7 @@ macro_rules! hal {
                     apb.rstr().modify(|_, w| w.$usartXrst().set_bit());
                     apb.rstr().modify(|_, w| w.$usartXrst().clear_bit());
 
-                    let brr = clocks.$pclkX().0 / baud_rate.0;
+                    let brr = clocks.$pclkX().0 / *baud_rate.integer();
                     crate::assert!(brr >= 16, "impossible baud rate");
                     // NOTE(write): uses all bits of this register.
                     usart.brr.write(|w| unsafe { w.bits(brr) });

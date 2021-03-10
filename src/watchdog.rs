@@ -7,7 +7,7 @@
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 
 use crate::pac::{DBGMCU, IWDG};
-use crate::time::duration::Milliseconds;
+use crate::time::duration::*;
 
 const LSI_KHZ: u32 = 40;
 const MAX_PR: u8 = 8;
@@ -96,7 +96,7 @@ impl WatchdogEnable for IndependentWatchDog {
     type Time = Milliseconds;
 
     fn start<T: Into<Self::Time>>(&mut self, period: T) {
-        self.setup(period.into().0);
+        self.setup(*period.into().integer());
 
         self.iwdg.kr.write(|w| w.key().start());
     }
