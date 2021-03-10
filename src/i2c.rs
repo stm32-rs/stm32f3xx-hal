@@ -2,7 +2,7 @@
 //!
 //! A usage example of the i2c peripheral can be found at [examples/i2c_scanner.rs]
 //!
-//! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/i2c_scanner.rs
+//! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/i2c_scanner.rs
 
 use core::convert::TryFrom;
 use core::ops::Deref;

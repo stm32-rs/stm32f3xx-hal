@@ -26,7 +26,7 @@
 //!
 //! [InputPin]: embedded_hal::digital::v2::InputPin
 //! [OutputPin]: embedded_hal::digital::v2::OutputPin
-//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/toggle.rs
+//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/toggle.rs
 
 use core::convert::Infallible;
 use core::marker::PhantomData;
@@ -163,7 +163,7 @@ macro_rules! gpio {
         ///
         /// See [examples/gpio_erased.rs] as an example.
         ///
-        /// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/gpio_erased.rs
+        /// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/gpio_erased.rs
         pub struct PXx<MODE> {
             i: u8,
             gpio: Gpio,
