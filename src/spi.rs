@@ -131,7 +131,7 @@ use crate::rcc::APB1;
     feature = "stm32f398"
 ))]
 use crate::rcc::APB2;
-use crate::time::Hertz;
+use crate::time::rate::*;
 use core::marker::PhantomData;
 
 /// SPI error
@@ -417,16 +417,15 @@ macro_rules! hal {
         $(
             impl<SCK, MISO, MOSI, WORD> Spi<$SPIX, (SCK, MISO, MOSI), WORD> {
                 /// Configures the SPI peripheral to operate in full duplex master mode
-                pub fn $spiX<F>(
+                pub fn $spiX(
                     spi: $SPIX,
                     pins: (SCK, MISO, MOSI),
                     mode: Mode,
-                    freq: F,
+                    freq: Hertz,
                     clocks: Clocks,
                     apb2: &mut $APBX,
                 ) -> Self
                 where
-                    F: Into<Hertz>,
                     SCK: SckPin<$SPIX>,
                     MISO: MisoPin<$SPIX>,
                     MOSI: MosiPin<$SPIX>,
@@ -468,7 +467,7 @@ macro_rules! hal {
                             Polarity::IdleHigh => w.cpol().idle_high(),
                         };
 
-                        w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq.into()));
+                        w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq));
 
                         w.spe()
                             .enabled()
@@ -493,19 +492,18 @@ macro_rules! hal {
                 }
 
                 /// Change the baud rate of the SPI
-                pub fn reclock<F>(&mut self, freq: F, clocks: Clocks)
-                    where F: Into<Hertz>
-                {
+                pub fn reclock(&mut self, freq: Hertz, clocks: Clocks) {
                     self.spi.cr1.modify(|_, w| w.spe().disabled());
+
                     self.spi.cr1.modify(|_, w| {
-                        w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq.into()));
+                        w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq));
                         w.spe().enabled()
                     });
                 }
 
                 fn compute_baud_rate(clocks: Hertz, freq: Hertz) -> spi1::cr1::BR_A {
                     use spi1::cr1::BR_A;
-                    match clocks.0 / freq.0 {
+                    match clocks.0 / *freq.integer() {
                         0 => crate::unreachable!(),
                         1..=2 => BR_A::DIV2,
                         3..=5 => BR_A::DIV4,

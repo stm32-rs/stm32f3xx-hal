@@ -12,7 +12,7 @@ use crate::{
     hal::blocking::i2c::{Read, Write, WriteRead},
     pac::{i2c1::RegisterBlock, rcc::cfgr3::I2C1SW_A, I2C1, RCC},
     rcc::{Clocks, APB1},
-    time::{Hertz, U32Ext},
+    time::rate::*,
 };
 
 #[cfg(not(feature = "gpio-f333"))]
@@ -111,16 +111,13 @@ macro_rules! busy_wait {
 
 impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
     /// Configures the I2C peripheral to work in master mode
-    pub fn new<F>(i2c: I2C, pins: (SCL, SDA), freq: F, clocks: Clocks, apb1: &mut APB1) -> Self
+    pub fn new(i2c: I2C, pins: (SCL, SDA), freq: Hertz, clocks: Clocks, apb1: &mut APB1) -> Self
     where
         I2C: Instance,
         SCL: SclPin<I2C>,
         SDA: SdaPin<I2C>,
-        F: Into<Hertz>,
     {
-        let freq = freq.into().0;
-
-        crate::assert!(freq <= 1_000_000);
+        crate::assert!(*freq.integer() <= 1_000_000);
 
         I2C::enable_clock(apb1);
 
@@ -133,8 +130,8 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         // t_SYNC1 + t_SYNC2 > 4 * t_I2CCLK
         // t_SCL ~= t_SYNC1 + t_SYNC2 + t_SCLL + t_SCLH
         let i2cclk = I2C::clock(&clocks).0;
-        let ratio = i2cclk / freq - 4;
-        let (presc, scll, sclh, sdadel, scldel) = if freq >= 100_000 {
+        let ratio = i2cclk / *freq.integer() - 4;
+        let (presc, scll, sclh, sdadel, scldel) = if *freq.integer() >= 100_000 {
             // fast-mode or fast-mode plus
             // here we pick SCLL + 1 = 2 * (SCLH + 1)
             let presc = ratio / 387;
@@ -142,7 +139,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
             let sclh = ((ratio / (presc + 1)) - 3) / 3;
             let scll = 2 * (sclh + 1) - 1;
 
-            let (sdadel, scldel) = if freq > 400_000 {
+            let (sdadel, scldel) = if *freq.integer() > 400_000 {
                 // fast-mode plus
                 let sdadel = 0;
                 let scldel = i2cclk / 4_000_000 / (presc + 1) - 1;
@@ -451,7 +448,7 @@ macro_rules! i2c {
                 fn clock(clocks: &Clocks) -> Hertz {
                     // NOTE(unsafe) atomic read with no side effects
                     match unsafe { (*RCC::ptr()).cfgr3.read().$i2cXsw().variant() } {
-                        I2C1SW_A::HSI => 8.mhz().into(),
+                        I2C1SW_A::HSI => Hertz(8_000_000),
                         I2C1SW_A::SYSCLK => clocks.sysclk(),
                     }
                 }

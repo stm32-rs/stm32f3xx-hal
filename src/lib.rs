@@ -102,6 +102,8 @@ pub use embedded_hal as hal;
 pub use nb;
 pub use nb::block;
 
+pub use embedded_time as time;
+
 #[cfg(feature = "defmt")]
 pub(crate) use defmt::{assert, panic, unreachable, unwrap};
 #[cfg(feature = "defmt")]
@@ -188,7 +190,6 @@ cfg_if::cfg_if! {
         pub mod rtc;
         pub mod serial;
         pub mod spi;
-        pub mod time;
         pub mod timer;
     }
 }

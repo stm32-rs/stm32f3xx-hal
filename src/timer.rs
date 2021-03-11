@@ -50,11 +50,9 @@ use crate::pac::{TIM15, TIM16, TIM17, TIM2, TIM6};
     feature = "stm32f398"
 ))]
 use crate::pac::{TIM3, TIM7};
-
-use void::Void;
-
 use crate::rcc::{Clocks, APB1, APB2};
-use crate::time::Hertz;
+use crate::time::rate::*;
+use void::Void;
 
 /// Associated clocks with timers
 pub trait PclkSrc {
@@ -93,11 +91,11 @@ macro_rules! hal {
 
                 fn start<T>(&mut self, timeout: T)
                 where
-                    T: Into<Hertz>,
+                    T: Into<Self::Time>,
                 {
                     self.stop();
 
-                    let frequency = timeout.into().0;
+                    let frequency = *timeout.into().integer();
                     let timer_clock = $TIMX::get_clk(&self.clocks);
                     let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
                         / frequency;

@@ -18,7 +18,7 @@ use hal::gpio::GpioExt;
 use hal::pac;
 use hal::pwm::{tim16, tim2, tim3, tim8};
 use hal::rcc::RccExt;
-use hal::time::U32Ext;
+use hal::time::rate::*;
 
 #[entry]
 fn main() -> ! {
@@ -28,7 +28,7 @@ fn main() -> ! {
     // Configure our clocks
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.sysclk(16.mhz()).freeze(&mut flash.acr);
+    let clocks = rcc.cfgr.sysclk(16u32.MHz()).freeze(&mut flash.acr);
 
     // Prep the pins we need in their correct alternate function
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
@@ -52,9 +52,9 @@ fn main() -> ! {
     // A four channel general purpose timer that's broadly available
     let tim3_channels = tim3(
         dp.TIM3,
-        1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
-        &clocks, // To get the timer's clock speed
+        1280,       // resolution of duty cycle
+        50u32.Hz(), // frequency of period
+        &clocks,    // To get the timer's clock speed
     );
 
     // Channels without pins cannot be enabled, so we can't forget to
@@ -101,9 +101,9 @@ fn main() -> ! {
     // A 32-bit timer, so we can set a larger resolution
     let tim2_channels = tim2(
         dp.TIM2,
-        160000,  // resolution of duty cycle
-        50.hz(), // frequency of period
-        &clocks, // To get the timer's clock speed
+        160000,     // resolution of duty cycle
+        50u32.Hz(), // frequency of period
+        &clocks,    // To get the timer's clock speed
     );
 
     let mut tim2_ch3 = tim2_channels.2.output_to_pb10(pb10);
@@ -116,9 +116,9 @@ fn main() -> ! {
     // just use it directly
     let mut tim16_ch1 = tim16(
         dp.TIM16,
-        1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
-        &clocks, // To get the timer's clock speed
+        1280,       // resolution of duty cycle
+        50u32.Hz(), // frequency of period
+        &clocks,    // To get the timer's clock speed
     )
     .output_to_pb8(pb8);
     tim16_ch1.set_duty(tim16_ch1.get_max_duty() / 20); // 5% duty cyle
@@ -130,9 +130,9 @@ fn main() -> ! {
     // to complementary pins (works just like standard pins)
     let tim8_channels = tim8(
         dp.TIM8,
-        1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
-        &clocks, // To get the timer's clock speed
+        1280,       // resolution of duty cycle
+        50u32.Hz(), // frequency of period
+        &clocks,    // To get the timer's clock speed
     );
 
     let mut tim8_ch1 = tim8_channels.0.output_to_pc10(pc10);

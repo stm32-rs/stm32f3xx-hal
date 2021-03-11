@@ -3,6 +3,8 @@
 #![no_std]
 #![no_main]
 
+use core::convert::TryInto;
+
 use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
@@ -13,6 +15,7 @@ use cortex_m_rt::entry;
 use hal::pac;
 use hal::prelude::*;
 use hal::spi::{Mode, Phase, Polarity, Spi};
+use hal::time::rate::*;
 
 #[entry]
 fn main() -> ! {
@@ -24,9 +27,9 @@ fn main() -> ! {
 
     let clocks = rcc
         .cfgr
-        .use_hse(8.mhz())
-        .sysclk(48.mhz())
-        .pclk1(24.mhz())
+        .use_hse(8u32.MHz())
+        .sysclk(48u32.MHz())
+        .pclk1(24u32.MHz())
         .freeze(&mut flash.acr);
 
     // Configure pins for SPI
@@ -43,7 +46,7 @@ fn main() -> ! {
         dp.SPI1,
         (sck, miso, mosi),
         spi_mode,
-        3.mhz(),
+        3u32.MHz().try_into().unwrap(),
         clocks,
         &mut rcc.apb2,
     );

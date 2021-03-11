@@ -7,7 +7,7 @@
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 
 use crate::pac::{DBGMCU, IWDG};
-use crate::time::MilliSeconds;
+use crate::time::duration::*;
 
 const LSI_KHZ: u32 = 40;
 const MAX_PR: u8 = 8;
@@ -54,13 +54,13 @@ impl IndependentWatchDog {
     }
 
     /// Returns the interval in ms
-    pub fn interval(&self) -> MilliSeconds {
+    pub fn interval(&self) -> Milliseconds {
         while self.is_pr_updating() {}
 
         let pr = self.iwdg.pr.read().pr().bits();
         let rl = self.iwdg.rlr.read().rl().bits();
         let ms = Self::timeout_period(pr, rl);
-        MilliSeconds(ms)
+        Milliseconds(ms)
     }
 
     /// pr: Prescaler divider bits, rl: reload value
@@ -93,10 +93,10 @@ impl IndependentWatchDog {
 }
 
 impl WatchdogEnable for IndependentWatchDog {
-    type Time = MilliSeconds;
+    type Time = Milliseconds;
 
     fn start<T: Into<Self::Time>>(&mut self, period: T) {
-        self.setup(period.into().0);
+        self.setup(*period.into().integer());
 
         self.iwdg.kr.write(|w| w.key().start());
     }

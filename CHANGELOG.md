@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.7.0] - 2021-03-10
+
+### Added
+
+- Replace custom time based units with types defined in the [embedded-time][] crate ([#192])
+
+### Breaking changes
+
+- The `rcc` public API now expects time based units in `Megahertz`.
+  If the supplied frequency cannot be converted to `Hertz` the code
+  will `panic`. This will occur if the supplied `Megahertz` frequency
+  cannot fit into `u32::MAX` when converting to `Hertz`
+
+```rust
+// The supplied frequencies must be in `MHz`.
+let clocks = rcc
+    .cfgr
+    .use_hse(8u32.MHz())
+    .hclk(48u32.MHz())
+    .sysclk(48u32.MHz())
+    .pclk1(12u32.MHz())
+    .pclk2(12u32.MHz())
+```
+
+[embedded-time]: https://github.com/FluenTech/embedded-time/
 ### Changed
 
 - Added support for more CAN bit rates and modes. ([#186])
@@ -273,6 +298,7 @@ let clocks = rcc
 
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
 [#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203
+[#192]: https://github.com/stm32-rs/stm32f3xx-hal/pull/192
 [#186]: https://github.com/stm32-rs/stm32f3xx-hal/pull/186
 [#184]: https://github.com/stm32-rs/stm32f3xx-hal/pull/184
 [#172]: https://github.com/stm32-rs/stm32f3xx-hal/pull/172
