@@ -16,9 +16,9 @@ use hal::hal::PwmPin;
 use hal::flash::FlashExt;
 use hal::gpio::GpioExt;
 use hal::pac;
+use hal::prelude::*;
 use hal::pwm::{tim16, tim2, tim3, tim8};
 use hal::rcc::RccExt;
-use hal::time::rate::*;
 
 #[entry]
 fn main() -> ! {

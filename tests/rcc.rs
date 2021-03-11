@@ -6,7 +6,7 @@ use panic_probe as _;
 
 #[defmt_test::tests]
 mod tests {
-    use stm32f3xx_hal::{pac, prelude::*, time::rate::*};
+    use stm32f3xx_hal::{pac, prelude::*};
 
     // Test the defaults with no configuration
     #[test]

@@ -11,7 +11,6 @@ use cortex_m_rt::entry;
 
 use hal::prelude::*;
 use hal::stm32;
-use hal::time::{duration::*, rate::*};
 use hal::watchdog::IndependentWatchDog;
 
 use hal::can::{Can, CanFilter, CanFrame, CanId, Filter, Frame, Receiver, Transmitter};
