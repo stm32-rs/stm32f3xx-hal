@@ -12,7 +12,6 @@ use cortex_m_rt::entry;
 
 use hal::pac;
 use hal::prelude::*;
-use hal::time::rate::*;
 use hal::usb::{Peripheral, UsbBus};
 
 use usb_device::prelude::*;

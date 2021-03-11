@@ -15,7 +15,6 @@ use cortex_m_rt::entry;
 use hal::pac;
 use hal::prelude::*;
 use hal::spi::{Mode, Phase, Polarity, Spi};
-use hal::time::rate::*;
 
 #[entry]
 fn main() -> ! {

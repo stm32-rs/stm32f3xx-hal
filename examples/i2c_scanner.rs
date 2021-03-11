@@ -14,7 +14,6 @@ use cortex_m::asm;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::{hprint, hprintln};
 
-use hal::time::rate::*;
 use stm32f3xx_hal::{self as hal, pac, prelude::*};
 
 const VALID_ADDR_RANGE: Range<u8> = 0x08..0x78;
