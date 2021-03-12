@@ -800,13 +800,13 @@ impl Clocks {
         self.pclk2
     }
 
-    pub(crate) fn ppre1(&self) -> u8 {
+    /// Returns the prescaler of the APB1
+    pub fn ppre1(&self) -> u8 {
         self.ppre1
     }
 
-    // TODO remove `allow`
-    #[allow(dead_code)]
-    pub(crate) fn ppre2(&self) -> u8 {
+    /// Returns the prescaler of the APB2
+    pub fn ppre2(&self) -> u8 {
         self.ppre2
     }
 

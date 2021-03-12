@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Replace custom time based units with types defined in the [embedded-time][] crate ([#192])
+- Make `Clocks` `ppre1()` and `ppre2()` methods public, to get the current
+  Prescaler value. ([#210])
 
 ### Breaking changes
 
@@ -296,6 +298,7 @@ let clocks = rcc
 
 - Support `stm32f303` device
 
+[#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
 [#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203
 [#192]: https://github.com/stm32-rs/stm32f3xx-hal/pull/192
