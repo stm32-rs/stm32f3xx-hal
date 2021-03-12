@@ -33,6 +33,13 @@ let clocks = rcc
     .pclk2(12u32.MHz())
 ```
 
+- Bump dependencies: ([#211])
+  - `stm32f3` dependency to 0.13.0
+  - `nb` to 1.0
+  - `cortex-m` to 0.7
+  - `stm32-usbd` to 0.6
+  - `defmt` to 0.2
+
 [embedded-time]: https://github.com/FluenTech/embedded-time/
 ### Changed
 
@@ -298,6 +305,7 @@ let clocks = rcc
 
 - Support `stm32f303` device
 
+[#211]: https://github.com/stm32-rs/stm32f3xx-hal/pull/211
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
 [#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203

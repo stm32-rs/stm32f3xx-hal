@@ -153,7 +153,12 @@ pub use stm32f3::stm32f301 as pac;
 /// Peripheral access
 pub use stm32f3::stm32f302 as pac;
 
-#[cfg(feature = "stm32f303")]
+#[cfg(any(
+    feature = "stm32f303",
+    feature = "stm32f328",
+    feature = "stm32f358",
+    feature = "stm32f398"
+))]
 /// Peripheral access
 pub use stm32f3::stm32f303 as pac;
 
@@ -164,10 +169,6 @@ pub use stm32f3::stm32f373 as pac;
 #[cfg(feature = "stm32f334")]
 /// Peripheral access
 pub use stm32f3::stm32f3x4 as pac;
-
-#[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
-/// Peripheral access
-pub use stm32f3::stm32f3x8 as pac;
 
 #[cfg(feature = "device-selected")]
 #[deprecated(since = "0.5.0", note = "please use `pac` instead")]
