@@ -1531,7 +1531,7 @@ macro_rules! tim20 {
 
         // Channels
         // TODO: stm32f3 doesn't suppport registers for all 4 channels
-        pwm_pin_for_pwm_n_channel!(TIM20, TIM20_CH1, u16, cc1e, cc1ne, ccr1, ccr1);
+        pwm_pin_for_pwm_n_channel!(TIM20, TIM20_CH1, u16, cc1e, cc1ne, ccr1, ccr);
 
         //Pins
         pwm_channel1_pin!(TIM20, TIM20_CH1, output_to_pe2, gpioe::PE2<gpio::AF6>);

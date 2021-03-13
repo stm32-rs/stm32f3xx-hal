@@ -36,6 +36,10 @@ unsafe impl UsbPeripheral for Peripheral {
     const EP_MEMORY_SIZE: usize = 512;
     #[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
     const EP_MEMORY_SIZE: usize = 1024;
+    #[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
+    const EP_MEMORY_ACCESS_2X16: bool = false;
+    #[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
+    const EP_MEMORY_ACCESS_2X16: bool = true;
 
     fn enable() {
         let rcc = unsafe { &*RCC::ptr() };
