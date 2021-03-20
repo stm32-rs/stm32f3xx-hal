@@ -351,9 +351,9 @@ macro_rules! pwm_channel_pin {
             /// is called.
             ///
             /// The pin is consumed and cannot be returned.
-            pub fn $output_to_pzv<OTYPE>(
+            pub fn $output_to_pzv<Otype>(
                 self,
-                _p: $gpioz::$PZv<gpio::$AFw<OTYPE>>,
+                _p: $gpioz::$PZv<gpio::$AFw<Otype>>,
             ) -> PwmChannel<$TIMx_CHy, $resulting_state> {
                 unsafe {
                     (*$TIMx::ptr()).$ccmrz_output().modify(|_, w| {
@@ -380,9 +380,9 @@ macro_rules! pwm_channel_pin {
             /// can be used (as long as they are compatible).
             ///
             /// The pin is consumed and cannot be returned.
-            pub fn $output_to_pzv<OTYPE>(
+            pub fn $output_to_pzv<Otype>(
                 self,
-                _p: $gpioz::$PZv<gpio::$AFw<OTYPE>>,
+                _p: $gpioz::$PZv<gpio::$AFw<Otype>>,
             ) -> PwmChannel<$TIMx_CHy, $resulting_state> {
                 self
             }

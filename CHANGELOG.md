@@ -9,16 +9,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Replace custom time based units with types defined in the [embedded-time][]
-  crate ([#192])
 - Make `Clocks` `ppre1()` and `ppre2()` methods public, to get the current
   Prescaler value. ([#210])
 - Implement `into_xxx` methods for partially erased pins ([#189])
 - Enable better GPIO internal resistor configuration ([#189])
 - Support for GPIO output slew rate configuration ([#189])
 - Support for GPIO interrupts ([#189])
-
-[embedded-time]: https://github.com/FluenTech/embedded-time/
 
 ### Changed
 
@@ -33,10 +29,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking Changes
 
+- Replace custom time based units with types defined in the [embedded-time][]
+  crate ([#192])
 - The `rcc` public API now expects time based units in `Megahertz`.
   If the supplied frequency cannot be converted to `Hertz` the code
   will `panic`. This will occur if the supplied `Megahertz` frequency
-  cannot fit into `u32::MAX` when converting to `Hertz`
+  cannot fit into `u32::MAX` when converting to `Hertz` ([#192])
 
 ```rust
 // The supplied frequencies must be in `MHz`.
@@ -55,9 +53,10 @@ let clocks = rcc
   - `cortex-m` to 0.7
   - `stm32-usbd` to 0.6
   - `defmt` to 0.2
-
 - `into_afx` methods are splitted into `into_afx_push_pull` and
   `into_afx_open_drain` ([#189])
+- GPIO output mode (`PushPull` or `OpenDrain`) is encoded into pin typestate
+  in alternate function mode ([#189])
 - GPIO internal resistor configuration is no longer encoded into pin typestate
   in input mode ([#189])
 
@@ -95,9 +94,6 @@ let clocks = rcc
     The support of this feature is subject to change as the development
     of [defmt][] is advancing.
 
-[defmt]: https://github.com/knurling-rs/defmt
-[filter]: https://defmt.ferrous-systems.com/filtering.html
-
 ### Changed
 
 - Introduced auto-generated GPIO mappings based on the STM32CubeMX database
@@ -108,8 +104,6 @@ let clocks = rcc
 - Fixed [#151] not being able to generate 72 MHz HCLK for stm32f303xc devices
   ([#152])
 - Wrong I2C clock source ([#164])
-
-[#151]: https://github.com/stm32-rs/stm32f3xx-hal/issues/151
 
 ### Breaking Changes
 
@@ -314,6 +308,10 @@ let clocks = rcc
 ## [v0.1.0] - 2019-03-31
 
 - Support `stm32f303` device
+
+[embedded-time]: https://github.com/FluenTech/embedded-time/
+[defmt]: https://github.com/knurling-rs/defmt
+[filter]: https://defmt.ferrous-systems.com/filtering.html
 
 [#211]: https://github.com/stm32-rs/stm32f3xx-hal/pull/211
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210

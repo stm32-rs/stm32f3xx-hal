@@ -44,9 +44,15 @@
 //! - **Analog**: Pin mode required for ADC, DAC, OPAMP, and COMP peripherals. It is also suitable
 //! for minimize energy consumption as the output buffer and the schmitt trigger input is disabled
 //!
+//! ### Output Speed
+//!
+//! Output speed (slew rate) for each pin is selectable from low, medium, and high by calling
+//! [`set_speed`](Pin::set_speed) method. Refer to the device datasheet for specifications for each
+//!  speed.
+//!
 //! ### Internal Resistor
 //!
-//! Weak internal pull-up and pull-down resistors are configurable by calling
+//! Weak internal pull-up and pull-down resistors for each pin is configurable by calling
 //! [`set_internal_resistor`](Pin::set_internal_resistor) method. `into_..._input` methods are also
 //! available for convenience.
 //!
@@ -56,7 +62,12 @@
 
 use core::{convert::Infallible, marker::PhantomData};
 
-use crate::{hal::digital::v2::OutputPin, pac::EXTI, rcc::AHB, syscfg::SysCfg};
+use crate::{
+    hal::digital::v2::OutputPin,
+    pac::{Interrupt, EXTI},
+    rcc::AHB,
+    syscfg::SysCfg,
+};
 
 #[cfg(feature = "unproven")]
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
@@ -119,45 +130,38 @@ mod private {
 
 use private::{Afr, GpioRegExt, Moder, Ospeedr, Otyper, Pupdr};
 
-/// Marker trait for GPIO ports
-pub trait Gpio: private::Gpio {}
+/// Marker traits used in this module
+pub mod marker {
+    /// Marker trait for GPIO ports
+    pub trait Gpio: super::private::Gpio {}
 
-/// Marker trait for compile time defined GPIO ports
-pub trait GpioStatic: Gpio {
-    /// Associated MODER register
-    type MODER: Moder;
-    /// Associated OTYPER register
-    type OTYPER: Otyper;
-    /// Associated OSPEEDR register
-    type OSPEEDR: Ospeedr;
-    /// Associated PUPDR register
-    type PUPDR: Pupdr;
-}
-
-/// Marker trait for pin number
-pub trait Index {
-    #[doc(hidden)]
-    fn index(&self) -> u8;
-}
-
-impl<U> Index for U
-where
-    U: Unsigned,
-{
-    #[inline(always)]
-    fn index(&self) -> u8 {
-        Self::U8
+    /// Marker trait for compile time defined GPIO ports
+    pub trait GpioStatic: Gpio {
+        /// Associated MODER register
+        type MODER: super::Moder;
+        /// Associated OTYPER register
+        type OTYPER: super::Otyper;
+        /// Associated OSPEEDR register
+        type OSPEEDR: super::Ospeedr;
+        /// Associated PUPDR register
+        type PUPDR: super::Pupdr;
     }
+
+    /// Marker trait for pin number
+    pub trait Index {
+        #[doc(hidden)]
+        fn index(&self) -> u8;
+    }
+
+    /// Marker trait for readable pin modes
+    pub trait Readable {}
+
+    /// Marker trait for slew rate configurable pin modes
+    pub trait OutputSpeed {}
+
+    /// Marker trait for active pin modes
+    pub trait Active {}
 }
-
-/// Marker trait for readable pin modes
-pub trait Readable {}
-
-/// Marker trait for slew rate configurable pin modes
-pub trait OutputSpeed {}
-
-/// Marker trait for active pin modes
-pub trait Active {}
 
 /// Runtime defined GPIO port (type state)
 pub struct Gpiox {
@@ -177,23 +181,33 @@ impl private::Gpio for Gpiox {
     }
 }
 
-impl Gpio for Gpiox {}
+impl marker::Gpio for Gpiox {}
 
 /// Runtime defined pin number (type state)
 pub struct Ux(u8);
 
-impl Index for Ux {
+impl marker::Index for Ux {
     fn index(&self) -> u8 {
         self.0
+    }
+}
+
+impl<U> marker::Index for U
+where
+    U: Unsigned,
+{
+    #[inline(always)]
+    fn index(&self) -> u8 {
+        Self::U8
     }
 }
 
 /// Input mode (type state)
 pub struct Input;
 /// Output mode (type state)
-pub struct Output<OTYPE>(PhantomData<OTYPE>);
+pub struct Output<Otype>(PhantomData<Otype>);
 /// Alternate function (type state)
-pub struct Alternate<AF, OTYPE>(PhantomData<AF>, PhantomData<OTYPE>);
+pub struct Alternate<Af, Otype>(PhantomData<Af>, PhantomData<Otype>);
 /// Analog mode (type state)
 pub struct Analog;
 
@@ -202,13 +216,13 @@ pub struct PushPull;
 /// Open-drain output (type state)
 pub struct OpenDrain;
 
-impl Readable for Input {}
-impl Readable for Output<OpenDrain> {}
-impl<OTYPE> OutputSpeed for Output<OTYPE> {}
-impl<AF, OTYPE> OutputSpeed for Alternate<AF, OTYPE> {}
-impl Active for Input {}
-impl<OTYPE> Active for Output<OTYPE> {}
-impl<AF, OTYPE> Active for Alternate<AF, OTYPE> {}
+impl marker::Readable for Input {}
+impl marker::Readable for Output<OpenDrain> {}
+impl<Otype> marker::OutputSpeed for Output<Otype> {}
+impl<Af, Otype> marker::OutputSpeed for Alternate<Af, Otype> {}
+impl marker::Active for Input {}
+impl<Otype> marker::Active for Output<Otype> {}
+impl<Af, Otype> marker::Active for Alternate<Af, Otype> {}
 
 /// Slew rate configuration
 pub enum Speed {
@@ -241,58 +255,61 @@ pub enum Edge {
 }
 
 /// Generic pin
-pub struct Pin<GPIO, INDEX, MODE> {
-    gpio: GPIO,
-    index: INDEX,
-    _mode: PhantomData<MODE>,
+pub struct Pin<Gpio, Index, Mode> {
+    gpio: Gpio,
+    index: Index,
+    _mode: PhantomData<Mode>,
 }
 
 /// Fully erased pin
 ///
 /// This moves the pin type information to be known
 /// at runtime, and erases the specific compile time type of the GPIO.
-/// It does only matter, that it is a GPIO pin with a specific MODE.
+/// The only compile time information of the GPIO pin is it's Mode.
 ///
 /// See [examples/gpio_erased.rs] as an example.
 ///
 /// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/gpio_erased.rs
-pub type PXx<MODE> = Pin<Gpiox, Ux, MODE>;
+pub type PXx<Mode> = Pin<Gpiox, Ux, Mode>;
 
+/// Modify specific index of array-like register
 macro_rules! modify_at {
-    ($xr:expr, $bits:expr, $i:expr, $val:expr) => {
-        $xr.modify(|r, w| {
-            w.bits(r.bits() & !(u32::MAX >> 32 - $bits << $bits * $i) | $val << $bits * $i)
+    ($reg:expr, $bitwidth:expr, $index:expr, $value:expr) => {
+        $reg.modify(|r, w| {
+            let mask = !(u32::MAX >> (32 - $bitwidth) << ($bitwidth * $index));
+            let value = $value << ($bitwidth * $index);
+            w.bits(r.bits() & mask | value)
         });
     };
 }
 
-impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
+impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
 where
-    INDEX: Unsigned,
+    Index: Unsigned,
 {
     /// Erases the pin number from the type
     ///
     /// This is useful when you want to collect the pins into an array where you
     /// need all the elements to have the same type
-    pub fn downgrade(self) -> Pin<GPIO, Ux, MODE> {
+    pub fn downgrade(self) -> Pin<Gpio, Ux, Mode> {
         Pin {
             gpio: self.gpio,
-            index: Ux(INDEX::U8),
+            index: Ux(Index::U8),
             _mode: self._mode,
         }
     }
 }
 
-impl<GPIO, MODE> Pin<GPIO, Ux, MODE>
+impl<Gpio, Mode> Pin<Gpio, Ux, Mode>
 where
-    GPIO: GpioStatic,
-    GPIO::Reg: 'static + Sized,
+    Gpio: marker::GpioStatic,
+    Gpio::Reg: 'static + Sized,
 {
     /// Erases the port letter from the type
     ///
     /// This is useful when you want to collect the pins into an array where you
     /// need all the elements to have the same type
-    pub fn downgrade(self) -> PXx<MODE> {
+    pub fn downgrade(self) -> PXx<Mode> {
         PXx {
             gpio: Gpiox {
                 ptr: self.gpio.ptr(),
@@ -304,8 +321,8 @@ where
     }
 }
 
-impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE> {
-    fn into_mode<NEW_MODE>(self) -> Pin<GPIO, INDEX, NEW_MODE> {
+impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode> {
+    fn into_mode<NewMode>(self) -> Pin<Gpio, Index, NewMode> {
         Pin {
             gpio: self.gpio,
             index: self.index,
@@ -314,13 +331,13 @@ impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE> {
     }
 }
 
-impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
+impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
 where
-    GPIO: GpioStatic,
-    INDEX: Index,
+    Gpio: marker::GpioStatic,
+    Index: marker::Index,
 {
     /// Configures the pin to operate as an input pin
-    pub fn into_input(self, moder: &mut GPIO::MODER) -> Pin<GPIO, INDEX, Input> {
+    pub fn into_input(self, moder: &mut Gpio::MODER) -> Pin<Gpio, Index, Input> {
         moder.input(self.index.index());
         self.into_mode()
     }
@@ -329,9 +346,9 @@ where
     /// and set the internal resistor floating
     pub fn into_floating_input(
         self,
-        moder: &mut GPIO::MODER,
-        pupdr: &mut GPIO::PUPDR,
-    ) -> Pin<GPIO, INDEX, Input> {
+        moder: &mut Gpio::MODER,
+        pupdr: &mut Gpio::PUPDR,
+    ) -> Pin<Gpio, Index, Input> {
         moder.input(self.index.index());
         pupdr.floating(self.index.index());
         self.into_mode()
@@ -341,9 +358,9 @@ where
     /// and set the internal resistor pull-up
     pub fn into_pull_up_input(
         self,
-        moder: &mut GPIO::MODER,
-        pupdr: &mut GPIO::PUPDR,
-    ) -> Pin<GPIO, INDEX, Input> {
+        moder: &mut Gpio::MODER,
+        pupdr: &mut Gpio::PUPDR,
+    ) -> Pin<Gpio, Index, Input> {
         moder.input(self.index.index());
         pupdr.pull_up(self.index.index());
         self.into_mode()
@@ -353,9 +370,9 @@ where
     /// and set the internal resistor pull-down
     pub fn into_pull_down_input(
         self,
-        moder: &mut GPIO::MODER,
-        pupdr: &mut GPIO::PUPDR,
-    ) -> Pin<GPIO, INDEX, Input> {
+        moder: &mut Gpio::MODER,
+        pupdr: &mut Gpio::PUPDR,
+    ) -> Pin<Gpio, Index, Input> {
         moder.input(self.index.index());
         pupdr.pull_down(self.index.index());
         self.into_mode()
@@ -364,9 +381,9 @@ where
     /// Configures the pin to operate as a push-pull output pin
     pub fn into_push_pull_output(
         self,
-        moder: &mut GPIO::MODER,
-        otyper: &mut GPIO::OTYPER,
-    ) -> Pin<GPIO, INDEX, Output<PushPull>> {
+        moder: &mut Gpio::MODER,
+        otyper: &mut Gpio::OTYPER,
+    ) -> Pin<Gpio, Index, Output<PushPull>> {
         moder.output(self.index.index());
         otyper.push_pull(self.index.index());
         self.into_mode()
@@ -375,9 +392,9 @@ where
     /// Configures the pin to operate as an open-drain output pin
     pub fn into_open_drain_output(
         self,
-        moder: &mut GPIO::MODER,
-        otyper: &mut GPIO::OTYPER,
-    ) -> Pin<GPIO, INDEX, Output<OpenDrain>> {
+        moder: &mut Gpio::MODER,
+        otyper: &mut Gpio::OTYPER,
+    ) -> Pin<Gpio, Index, Output<OpenDrain>> {
         moder.output(self.index.index());
         otyper.open_drain(self.index.index());
         self.into_mode()
@@ -386,23 +403,23 @@ where
     /// Configures the pin to operate as an analog pin, with disabled schmitt trigger.
     pub fn into_analog(
         self,
-        moder: &mut GPIO::MODER,
-        pupdr: &mut GPIO::PUPDR,
-    ) -> Pin<GPIO, INDEX, Analog> {
+        moder: &mut Gpio::MODER,
+        pupdr: &mut Gpio::PUPDR,
+    ) -> Pin<Gpio, Index, Analog> {
         moder.analog(self.index.index());
         pupdr.floating(self.index.index());
         self.into_mode()
     }
 }
 
-impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
+impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
 where
-    GPIO: GpioStatic,
-    INDEX: Index,
-    MODE: OutputSpeed,
+    Gpio: marker::GpioStatic,
+    Index: marker::Index,
+    Mode: marker::OutputSpeed,
 {
     /// Set pin output slew rate
-    pub fn set_speed(&mut self, ospeedr: &mut GPIO::OSPEEDR, speed: Speed) {
+    pub fn set_speed(&mut self, ospeedr: &mut Gpio::OSPEEDR, speed: Speed) {
         match speed {
             Speed::Low => ospeedr.low(self.index.index()),
             Speed::Medium => ospeedr.medium(self.index.index()),
@@ -411,14 +428,14 @@ where
     }
 }
 
-impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
+impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
 where
-    GPIO: GpioStatic,
-    INDEX: Index,
-    MODE: Active,
+    Gpio: marker::GpioStatic,
+    Index: marker::Index,
+    Mode: marker::Active,
 {
     /// Set the internal pull-up and pull-down resistor
-    pub fn set_internal_resistor(&mut self, pupdr: &mut GPIO::PUPDR, resistor: Resistor) {
+    pub fn set_internal_resistor(&mut self, pupdr: &mut Gpio::PUPDR, resistor: Resistor) {
         match resistor {
             Resistor::Floating => pupdr.floating(self.index.index()),
             Resistor::PullUp => pupdr.pull_up(self.index.index()),
@@ -427,7 +444,7 @@ where
     }
 
     /// Enables / disables the internal pull up (Provided for compatibility with other stm32 HALs)
-    pub fn internal_pull_up(&mut self, pupdr: &mut GPIO::PUPDR, on: bool) {
+    pub fn internal_pull_up(&mut self, pupdr: &mut Gpio::PUPDR, on: bool) {
         if on {
             pupdr.pull_up(self.index.index());
         } else {
@@ -436,10 +453,10 @@ where
     }
 }
 
-impl<GPIO, INDEX, OTYPE> OutputPin for Pin<GPIO, INDEX, Output<OTYPE>>
+impl<Gpio, Index, Otype> OutputPin for Pin<Gpio, Index, Output<Otype>>
 where
-    GPIO: Gpio,
-    INDEX: Index,
+    Gpio: marker::Gpio,
+    Index: marker::Index,
 {
     type Error = Infallible;
 
@@ -457,11 +474,11 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<GPIO, INDEX, MODE> InputPin for Pin<GPIO, INDEX, MODE>
+impl<Gpio, Index, Mode> InputPin for Pin<Gpio, Index, Mode>
 where
-    GPIO: Gpio,
-    INDEX: Index,
-    MODE: Readable,
+    Gpio: marker::Gpio,
+    Index: marker::Index,
+    Mode: marker::Readable,
 {
     type Error = Infallible;
 
@@ -476,10 +493,10 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<GPIO, INDEX, OTYPE> StatefulOutputPin for Pin<GPIO, INDEX, Output<OTYPE>>
+impl<Gpio, Index, Otype> StatefulOutputPin for Pin<Gpio, Index, Output<Otype>>
 where
-    GPIO: Gpio,
-    INDEX: Index,
+    Gpio: marker::Gpio,
+    Index: marker::Index,
 {
     fn is_set_high(&self) -> Result<bool, Self::Error> {
         Ok(!self.is_set_low()?)
@@ -492,10 +509,10 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<GPIO, INDEX, OTYPE> toggleable::Default for Pin<GPIO, INDEX, Output<OTYPE>>
+impl<Gpio, Index, Otype> toggleable::Default for Pin<Gpio, Index, Output<Otype>>
 where
-    GPIO: Gpio,
-    INDEX: Index,
+    Gpio: marker::Gpio,
+    Index: marker::Index,
 {
 }
 
@@ -517,46 +534,75 @@ macro_rules! reg_for_cpu {
     };
 }
 
-impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
+impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
 where
-    GPIO: Gpio,
-    INDEX: Index,
-    MODE: Active,
+    Gpio: marker::Gpio,
+    Index: marker::Index,
+    Mode: marker::Active,
 {
-    /// Make corresponding EXTI line sensitive to this pin
-    pub fn make_interrupt_source(&mut self, syscfg: &mut SysCfg) {
-        let i = self.index.index() % 4;
-        let extigpionr = self.gpio.port_index() as u32;
+    /// NVIC interrupt number of interrupt from this pin
+    pub fn nvic(&self) -> Interrupt {
         match self.index.index() {
-            0..=3 => unsafe { modify_at!(syscfg.exticr1, 4, i, extigpionr) },
-            4..=7 => unsafe { modify_at!(syscfg.exticr2, 4, i, extigpionr) },
-            8..=11 => unsafe { modify_at!(syscfg.exticr3, 4, i, extigpionr) },
-            12..=15 => unsafe { modify_at!(syscfg.exticr4, 4, i, extigpionr) },
+            0 => Interrupt::EXTI0,
+            1 => Interrupt::EXTI1,
+            #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+            2 => Interrupt::EXTI2_TS,
+            #[cfg(not(any(feature = "stm32f373", feature = "stm32f378")))]
+            2 => Interrupt::EXTI2_TSC,
+            3 => Interrupt::EXTI3,
+            4 => Interrupt::EXTI4,
+            #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+            5..=9 => Interrupt::EXTI5_9,
+            #[cfg(not(any(feature = "stm32f373", feature = "stm32f378")))]
+            5..=9 => Interrupt::EXTI9_5,
+            10..=15 => Interrupt::EXTI15_10,
             _ => unreachable!(),
         }
     }
 
+    /// Make corresponding EXTI line sensitive to this pin
+    pub fn make_interrupt_source(&mut self, syscfg: &mut SysCfg) {
+        let bitwidth = 4;
+        let index = self.index.index() % 4;
+        let extigpionr = self.gpio.port_index() as u32;
+        match self.index.index() {
+            0..=3 => unsafe { modify_at!(syscfg.exticr1, bitwidth, index, extigpionr) },
+            4..=7 => unsafe { modify_at!(syscfg.exticr2, bitwidth, index, extigpionr) },
+            8..=11 => unsafe { modify_at!(syscfg.exticr3, bitwidth, index, extigpionr) },
+            12..=15 => unsafe { modify_at!(syscfg.exticr4, bitwidth, index, extigpionr) },
+            _ => unreachable!(),
+        };
+    }
+
     /// Generate interrupt on rising edge, falling edge, or both
     pub fn trigger_on_edge(&mut self, exti: &mut EXTI, edge: Edge) {
+        let bitwidth = 1;
+        let index = self.index.index();
         let (rise, fall) = match edge {
-            Edge::Rising => (true, false),
-            Edge::Falling => (false, true),
-            Edge::RisingFalling => (true, true),
+            Edge::Rising => (true as u32, false as u32),
+            Edge::Falling => (false as u32, true as u32),
+            Edge::RisingFalling => (true as u32, true as u32),
         };
         unsafe {
-            modify_at!(reg_for_cpu!(exti, rtsr), 1, self.index.index(), rise as u32);
-            modify_at!(reg_for_cpu!(exti, ftsr), 1, self.index.index(), fall as u32);
+            modify_at!(reg_for_cpu!(exti, rtsr), bitwidth, index, rise);
+            modify_at!(reg_for_cpu!(exti, ftsr), bitwidth, index, fall);
         }
     }
 
-    /// Enable external interrupts from this pin.
+    /// Enable external interrupts from this pin
     pub fn enable_interrupt(&mut self, exti: &mut EXTI) {
-        unsafe { modify_at!(reg_for_cpu!(exti, imr), 1, self.index.index(), 1) };
+        let bitwidth = 1;
+        let index = self.index.index();
+        let value = 1;
+        unsafe { modify_at!(reg_for_cpu!(exti, imr), bitwidth, index, value) };
     }
 
     /// Disable external interrupts from this pin
     pub fn disable_interrupt(&mut self, exti: &mut EXTI) {
-        unsafe { modify_at!(reg_for_cpu!(exti, imr), 1, self.index.index(), 0) };
+        let bitwidth = 1;
+        let index = self.index.index();
+        let value = 0;
+        unsafe { modify_at!(reg_for_cpu!(exti, imr), bitwidth, index, value) };
     }
 
     /// Clear the interrupt pending bit for this pin
@@ -582,22 +628,22 @@ macro_rules! af {
 
         paste::paste! {
             #[doc = "Alternate function " $i " (type state)"]
-            pub type $AFi<OTYPE> = Alternate<$Ui, OTYPE>;
+            pub type $AFi<Otype> = Alternate<$Ui, Otype>;
         }
 
-        impl<GPIO, INDEX, MODE> Pin<GPIO, INDEX, MODE>
+        impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
         where
             Self: $IntoAfi,
-            GPIO: GpioStatic,
-            INDEX: Index,
+            Gpio: marker::GpioStatic,
+            Index: marker::Index,
         {
             /// Configures the pin to operate as an alternate function push-pull output pin
             pub fn $into_afi_push_pull(
                 self,
-                moder: &mut GPIO::MODER,
-                otyper: &mut GPIO::OTYPER,
+                moder: &mut Gpio::MODER,
+                otyper: &mut Gpio::OTYPER,
                 afr: &mut <Self as $IntoAfi>::AFR,
-            ) -> Pin<GPIO, INDEX, $AFi<PushPull>> {
+            ) -> Pin<Gpio, Index, $AFi<PushPull>> {
                 moder.alternate(self.index.index());
                 otyper.push_pull(self.index.index());
                 afr.afx(self.index.index(), $i);
@@ -607,10 +653,10 @@ macro_rules! af {
             /// Configures the pin to operate as an alternate function open-drain output pin
             pub fn $into_afi_open_drain(
                 self,
-                moder: &mut GPIO::MODER,
-                otyper: &mut GPIO::OTYPER,
+                moder: &mut Gpio::MODER,
+                otyper: &mut Gpio::OTYPER,
                 afr: &mut <Self as $IntoAfi>::AFR,
-            ) -> Pin<GPIO, INDEX, $AFi<OpenDrain>> {
+            ) -> Pin<Gpio, Index, $AFi<OpenDrain>> {
                 moder.alternate(self.index.index());
                 otyper.open_drain(self.index.index());
                 afr.afx(self.index.index(), $i);
@@ -647,13 +693,13 @@ macro_rules! gpio_trait {
                 #[inline(always)]
                 fn set_high(&self, i: u8) {
                     // NOTE(unsafe, write) atomic write to a stateless register
-                    unsafe { self.bsrr.write(|w| w.bits(1 << i)); }
+                    unsafe { self.bsrr.write(|w| w.bits(1 << i)) };
                 }
 
                 #[inline(always)]
                 fn set_low(&self, i: u8) {
                     // NOTE(unsafe, write) atomic write to a stateless register
-                    unsafe { self.bsrr.write(|w| w.bits(1 << (16 + i))); }
+                    unsafe { self.bsrr.write(|w| w.bits(1 << (16 + i))) };
                 }
             }
         )+
@@ -662,7 +708,7 @@ macro_rules! gpio_trait {
 
 macro_rules! r_trait {
     (
-        ($GPIOX:ident, $gpioy:ident::$xr:ident::$enum:ident, $bits:expr);
+        ($GPIOX:ident, $gpioy:ident::$xr:ident::$enum:ident, $bitwidth:expr);
         impl $Xr:ident for $XR:ty {
             $(
                 fn $fn:ident { $VARIANT:ident }
@@ -673,9 +719,8 @@ macro_rules! r_trait {
             $(
                 #[inline]
                 fn $fn(&mut self, i: u8) {
-                    unsafe {
-                        modify_at!((*$GPIOX::ptr()).$xr, $bits, i, $gpioy::$xr::$enum::$VARIANT as u32);
-                    }
+                    let value = $gpioy::$xr::$enum::$VARIANT as u32;
+                    unsafe { modify_at!((*$GPIOX::ptr()).$xr, $bitwidth, i, value) };
                 }
             )+
         }
@@ -717,9 +762,9 @@ macro_rules! gpio {
             }
         }
 
-        impl Gpio for $Gpiox {}
+        impl marker::Gpio for $Gpiox {}
 
-        impl GpioStatic for $Gpiox {
+        impl marker::GpioStatic for $Gpiox {
             type MODER = $gpiox::MODER;
             type OTYPER = $gpiox::OTYPER;
             type OSPEEDR = $gpiox::OSPEEDR;
@@ -803,7 +848,8 @@ macro_rules! gpio {
                 impl Afr for AFRH {
                     #[inline]
                     fn afx(&mut self, i: u8, x: u8) {
-                        unsafe { modify_at!((*$GPIOX::ptr()).afrh, 4, i - 8, x as u32); }
+                        let bitwidth = 4;
+                        unsafe { modify_at!((*$GPIOX::ptr()).afrh, bitwidth, i - 8, x as u32) };
                     }
                 }
 
@@ -813,7 +859,8 @@ macro_rules! gpio {
                 impl Afr for AFRL {
                     #[inline]
                     fn afx(&mut self, i: u8, x: u8) {
-                        unsafe { modify_at!((*$GPIOX::ptr()).afrl, 4, i, x as u32); }
+                        let bitwidth = 4;
+                        unsafe { modify_at!((*$GPIOX::ptr()).afrl, bitwidth, i, x as u32) };
                     }
                 }
 
@@ -866,14 +913,14 @@ macro_rules! gpio {
                 }
 
                 /// Partially erased pin
-                pub type $PXx<MODE> = Pin<$Gpiox, Ux, MODE>;
+                pub type $PXx<Mode> = Pin<$Gpiox, Ux, Mode>;
 
                 $(
                     #[doc = "Pin " $PXi]
-                    pub type $PXi<MODE> = Pin<$Gpiox, $Ui, MODE>;
+                    pub type $PXi<Mode> = Pin<$Gpiox, $Ui, Mode>;
 
                     $(
-                        impl<MODE> $IntoAfi for $PXi<MODE> {
+                        impl<Mode> $IntoAfi for $PXi<Mode> {
                             type AFR = $AFR;
                         }
                     )*

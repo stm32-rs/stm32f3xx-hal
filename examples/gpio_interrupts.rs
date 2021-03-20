@@ -12,7 +12,7 @@ use cortex_m_rt::entry;
 use hal::gpio::{gpioa, gpioe, Edge, Input, Output, PushPull};
 use hal::interrupt;
 use hal::pac;
-use hal::pac::{Interrupt, NVIC};
+use hal::pac::NVIC;
 use hal::prelude::*;
 
 type LedPin = gpioe::PE9<Output<PushPull>>;
@@ -21,7 +21,7 @@ static LED: Mutex<RefCell<Option<LedPin>>> = Mutex::new(RefCell::new(None));
 type ButtonPin = gpioa::PA0<Input>;
 static BUTTON: Mutex<RefCell<Option<ButtonPin>>> = Mutex::new(RefCell::new(None));
 
-// When the user button is pressed. The north LED with toggle.
+// When the user button is pressed. The north LED will toggle.
 #[entry]
 fn main() -> ! {
     // Getting access to registers we will need for configuration.
@@ -48,10 +48,12 @@ fn main() -> ! {
     user_button.make_interrupt_source(&mut syscfg);
     user_button.trigger_on_edge(&mut exti, Edge::Rising);
     user_button.enable_interrupt(&mut exti);
+    let interrupt_num = user_button.nvic(); // hal::pac::Interrupt::EXTI0
+
     // Moving ownership to the global BUTTON so we can clear the interrupt pending bit.
     cortex_m::interrupt::free(|cs| *BUTTON.borrow(cs).borrow_mut() = Some(user_button));
 
-    unsafe { NVIC::unmask(Interrupt::EXTI0) };
+    unsafe { NVIC::unmask(interrupt_num) };
 
     loop {
         asm::wfi();
