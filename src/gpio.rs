@@ -161,6 +161,22 @@ pub mod marker {
 
     /// Marker trait for active pin modes
     pub trait Active {}
+
+    macro_rules! af_marker_trait {
+        ([$($i:literal),+ $(,)?]) => {
+            paste::paste! {
+                $(
+                    #[doc = "Marker trait for pins with alternate function " $i " mapping"]
+                    pub trait [<IntoAf $i>] {
+                        /// Associated AFR register
+                        type AFR: super::Afr;
+                    }
+                )+
+            }
+        };
+    }
+
+    af_marker_trait!([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 }
 
 /// Runtime defined GPIO port (type state)
@@ -619,21 +635,13 @@ where
 macro_rules! af {
     ($i:literal, $Ui:ty, $AFi:ident, $IntoAfi:ident, $into_afi_push_pull:ident, $into_afi_open_drain:ident) => {
         paste::paste! {
-            #[doc = "Marker trait for pins with alternate function " $i " mapping"]
-            pub trait $IntoAfi {
-                /// Associated AFR register
-                type AFR: Afr;
-            }
-        }
-
-        paste::paste! {
             #[doc = "Alternate function " $i " (type state)"]
             pub type $AFi<Otype> = Alternate<$Ui, Otype>;
         }
 
         impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
         where
-            Self: $IntoAfi,
+            Self: marker::$IntoAfi,
             Gpio: marker::GpioStatic,
             Index: marker::Index,
         {
@@ -642,7 +650,7 @@ macro_rules! af {
                 self,
                 moder: &mut Gpio::MODER,
                 otyper: &mut Gpio::OTYPER,
-                afr: &mut <Self as $IntoAfi>::AFR,
+                afr: &mut <Self as marker::$IntoAfi>::AFR,
             ) -> Pin<Gpio, Index, $AFi<PushPull>> {
                 moder.alternate(self.index.index());
                 otyper.push_pull(self.index.index());
@@ -655,7 +663,7 @@ macro_rules! af {
                 self,
                 moder: &mut Gpio::MODER,
                 otyper: &mut Gpio::OTYPER,
-                afr: &mut <Self as $IntoAfi>::AFR,
+                afr: &mut <Self as marker::$IntoAfi>::AFR,
             ) -> Pin<Gpio, Index, $AFi<OpenDrain>> {
                 moder.alternate(self.index.index());
                 otyper.open_drain(self.index.index());
@@ -706,6 +714,7 @@ macro_rules! gpio_trait {
     };
 }
 
+/// Implement private::{Moder, Ospeedr, Otyper, Pupdr} traits for each opaque register structs
 macro_rules! r_trait {
     (
         ($GPIOX:ident, $gpioy:ident::$xr:ident::$enum:ident, $bitwidth:expr);
@@ -781,13 +790,11 @@ macro_rules! gpio {
                     rcc::AHB,
                 };
 
-                use super::{Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pin, Pupdr, Ux};
+                use super::{marker, Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pin, Pupdr, Ux};
 
                 #[allow(unused_imports)]
                 use super::{
                     Input, Output, Analog, PushPull, OpenDrain,
-                    IntoAf0, IntoAf1, IntoAf2, IntoAf3, IntoAf4, IntoAf5, IntoAf6, IntoAf7,
-                    IntoAf8, IntoAf9, IntoAf10, IntoAf11, IntoAf12, IntoAf13, IntoAf14, IntoAf15,
                     AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF13, AF14, AF15,
                 };
 
@@ -920,7 +927,7 @@ macro_rules! gpio {
                     pub type $PXi<Mode> = Pin<$Gpiox, $Ui, Mode>;
 
                     $(
-                        impl<Mode> $IntoAfi for $PXi<Mode> {
+                        impl<Mode> marker::$IntoAfi for $PXi<Mode> {
                             type AFR = $AFR;
                         }
                     )*
