@@ -173,14 +173,20 @@ compile with older versions but that may change in any new patch release.
 Tests are run via the integration test pattern and are executed on a target
 chip, rather than on a host system. First, install
 [probe-run](https://crates.io/crates/probe-run) via `cargo install probe-run`.
-Next, you'll need to modify `.cargo/config` to link defmt and use `probe-run`
-configured for your chip. See details within the comments in that file.
 
-Now, you can execute a test by setting your device, defmt, and any test specific
-features:
+Now, you can execute the tests via:
 
 ```bash
-cargo test --test rcc --features=stm32f303xc,defmt,rt
+cargo test -p testsuite
+```
+
+This will execute all tests sequentially on the target device.
+
+Currently the tests are written for the `stm32f303xc` with the STM32F3Discovery
+Board in mind. To change that, specify a target as a feature:
+
+```bash
+cargo test -p testsuite --feature stm32f301xb
 ```
 
 The result _always_ shows a backtrace, even in the case of success.
