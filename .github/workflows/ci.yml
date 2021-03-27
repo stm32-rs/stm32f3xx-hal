@@ -177,7 +177,7 @@ jobs:
           override: true
           profile: minimal
           components: rustfmt
-      - run: cd codegen && cargo check
+      - run: cargo check --target "x86_64-unknown-linux-gnu" -p codegen
 
   markdown-lint:
     name: Markdown Lint
