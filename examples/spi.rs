@@ -32,9 +32,15 @@ fn main() -> ! {
         .freeze(&mut flash.acr);
 
     // Configure pins for SPI
-    let sck = gpioa.pa5.into_af5(&mut gpioa.moder, &mut gpioa.afrl);
-    let miso = gpioa.pa6.into_af5(&mut gpioa.moder, &mut gpioa.afrl);
-    let mosi = gpioa.pa7.into_af5(&mut gpioa.moder, &mut gpioa.afrl);
+    let sck = gpioa
+        .pa5
+        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let miso = gpioa
+        .pa6
+        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let mosi = gpioa
+        .pa7
+        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
 
     let spi_mode = Mode {
         polarity: Polarity::IdleLow,

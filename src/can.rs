@@ -14,7 +14,7 @@
 pub use embedded_hal_can::{self, Filter, Frame, Id, Receiver, Transmitter};
 
 use crate::gpio::gpioa;
-use crate::gpio::AF9;
+use crate::gpio::{PushPull, AF9};
 use crate::rcc::APB1;
 use crate::stm32;
 use nb::{self, Error};
@@ -148,8 +148,8 @@ static FILTER_INDEX: AtomicU8 = AtomicU8::new(0);
 /// Controll Area Network (CAN) Peripheral
 pub struct Can {
     can: stm32::CAN,
-    _rx: gpioa::PA11<AF9>,
-    _tx: gpioa::PA12<AF9>,
+    _rx: gpioa::PA11<AF9<PushPull>>,
+    _tx: gpioa::PA12<AF9<PushPull>>,
 }
 
 /// A CAN FIFO which is used to receive and buffer messages from the CAN
@@ -161,8 +161,8 @@ pub struct CanFifo {
 /// A CAN transmitter which is used to send messages to the CAN network.
 pub struct CanTransmitter {
     _can: stm32::CAN,
-    _rx: gpioa::PA11<AF9>,
-    _tx: gpioa::PA12<AF9>,
+    _rx: gpioa::PA11<AF9<PushPull>>,
+    _tx: gpioa::PA12<AF9<PushPull>>,
 }
 
 // TODO Use wrapper type around interal pac definition
@@ -317,8 +317,8 @@ impl Can {
     /// Initialize the CAN peripheral using the options specified by `opts`.
     pub fn new_with_opts(
         can: stm32::CAN,
-        rx: gpioa::PA11<AF9>,
-        tx: gpioa::PA12<AF9>,
+        rx: gpioa::PA11<AF9<PushPull>>,
+        tx: gpioa::PA12<AF9<PushPull>>,
         apb1: &mut APB1,
         opts: CanOpts,
     ) -> Can {
@@ -363,8 +363,8 @@ impl Can {
     /// Initialize the CAN Peripheral using default options from `CanOpts::default()`
     pub fn new(
         can: stm32::CAN,
-        rx: gpioa::PA11<AF9>,
-        tx: gpioa::PA12<AF9>,
+        rx: gpioa::PA11<AF9<PushPull>>,
+        tx: gpioa::PA12<AF9<PushPull>>,
         apb1: &mut APB1,
     ) -> Self {
         Can::new_with_opts(can, rx, tx, apb1, CanOpts::default())
@@ -396,7 +396,13 @@ impl Can {
     }
 
     /// Release owned peripherals
-    pub fn free(self) -> (stm32::CAN, gpioa::PA11<AF9>, gpioa::PA12<AF9>) {
+    pub fn free(
+        self,
+    ) -> (
+        stm32::CAN,
+        gpioa::PA11<AF9<PushPull>>,
+        gpioa::PA12<AF9<PushPull>>,
+    ) {
         (self.can, self._rx, self._tx)
     }
 }

@@ -32,20 +32,40 @@ fn main() -> ! {
 
     // Prep the pins we need in their correct alternate function
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    let pa4 = gpioa.pa4.into_af2(&mut gpioa.moder, &mut gpioa.afrl);
-    let pa6 = gpioa.pa6.into_af2(&mut gpioa.moder, &mut gpioa.afrl);
-    let pa7 = gpioa.pa7.into_af2(&mut gpioa.moder, &mut gpioa.afrl);
+    let pa4 = gpioa
+        .pa4
+        .into_af2_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let pa6 = gpioa
+        .pa6
+        .into_af2_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let pa7 = gpioa
+        .pa7
+        .into_af2_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
 
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
-    let pb0 = gpiob.pb0.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb1 = gpiob.pb1.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb4 = gpiob.pb4.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb5 = gpiob.pb5.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb8 = gpiob.pb8.into_af1(&mut gpiob.moder, &mut gpiob.afrh);
-    let pb10 = gpiob.pb10.into_af1(&mut gpiob.moder, &mut gpiob.afrh);
+    let pb0 = gpiob
+        .pb0
+        .into_af2_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let pb1 = gpiob
+        .pb1
+        .into_af2_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let pb4 = gpiob
+        .pb4
+        .into_af2_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let pb5 = gpiob
+        .pb5
+        .into_af2_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let pb8 = gpiob
+        .pb8
+        .into_af1_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh);
+    let pb10 = gpiob
+        .pb10
+        .into_af1_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh);
 
     let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
-    let pc10 = gpioc.pc10.into_af4(&mut gpioc.moder, &mut gpioc.afrh);
+    let pc10 = gpioc
+        .pc10
+        .into_af4_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
 
     // TIM3
     //

@@ -60,32 +60,60 @@ fn merge_pins_by_port(pins: &[gpio::Pin]) -> Result<Vec<Port>> {
 }
 
 fn gen_gpio_macro_call(ports: &[Port], feature: &str) -> Result<()> {
-    println!("gpio!([");
+    println!("gpio!({{");
+
+    gen_pac_list(ports, feature);
+
+    println!("    ports: [");
     for port in ports {
         gen_port(port, feature)?;
     }
-    println!("]);");
+    println!("    ],");
+
+    println!("}});");
     Ok(())
+}
+
+fn gen_pac_list(ports: &[Port], feature: &str) {
+    let mut pac_modules: Vec<_> = ports
+        .iter()
+        .map(|port| get_port_pac_module(port, feature))
+        .collect();
+    pac_modules.sort_unstable();
+    pac_modules.dedup();
+    println!("    pacs: [{}],", pac_modules.join(", "));
 }
 
 fn gen_port(port: &Port, feature: &str) -> Result<()> {
     let pac_module = get_port_pac_module(port, feature);
+    let port_index = match port.id {
+        'A' => 0,
+        'B' => 1,
+        'C' => 2,
+        'D' => 3,
+        'E' => 4,
+        'F' => 5,
+        'G' => 6,
+        'H' => 7,
+        _ => unreachable!(),
+    };
 
-    println!("    {{");
+    println!("        {{");
     println!(
-        "        port: ({}/{}, pac: {}),",
+        "            port: ({}/{}, {}, {}),",
         port.id,
         port.id.to_lowercase(),
+        port_index,
         pac_module,
     );
-    println!("        pins: [");
+    println!("            pins: [");
 
     for pin in &port.pins {
         gen_pin(pin)?;
     }
 
-    println!("        ],");
-    println!("    }},");
+    println!("            ],");
+    println!("        }},");
     Ok(())
 }
 
@@ -107,12 +135,8 @@ fn gen_pin(pin: &gpio::Pin) -> Result<()> {
     let af_numbers = get_pin_af_numbers(pin)?;
 
     println!(
-        "            {} => {{ reset: {}, afr: {}/{}, af: {:?} }},",
-        nr,
-        reset_mode,
-        afr,
-        afr.to_lowercase(),
-        af_numbers,
+        "                {} => {{ reset: {}, afr: {}, af: {:?} }},",
+        nr, reset_mode, afr, af_numbers,
     );
 
     Ok(())
@@ -120,10 +144,10 @@ fn gen_pin(pin: &gpio::Pin) -> Result<()> {
 
 fn get_pin_reset_mode(pin: &gpio::Pin) -> Result<&'static str> {
     // Debug pins default to their debug function (AF0), everything else
-    // defaults to floating input.
+    // defaults to input.
     let mode = match (pin.port()?, pin.number()?) {
-        ('A', 13) | ('A', 14) | ('A', 15) | ('B', 3) | ('B', 4) => "AF0",
-        _ => "Input<Floating>",
+        ('A', 13) | ('A', 14) | ('A', 15) | ('B', 3) | ('B', 4) => "AF0<PushPull>",
+        _ => "Input",
     };
     Ok(mode)
 }
@@ -134,7 +158,7 @@ fn get_pin_af_numbers(pin: &gpio::Pin) -> Result<Vec<u8>> {
         numbers.push(signal.af()?);
     }
 
-    numbers.sort();
+    numbers.sort_unstable();
     numbers.dedup();
 
     Ok(numbers)
