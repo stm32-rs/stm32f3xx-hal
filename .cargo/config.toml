@@ -1,19 +1,7 @@
-# Comment out probe-run runner and defmt link argument
-# to build and run tests based on probe-run and defmt
-#
-# TODO Support automatic link-arg switch based on features
-# [target.'cfg(feature = "..."'] are currently not supported.
-# Alternativly, we could create a build.rs and
-# at least set the link-arg. However this is unstabled
-# and only avaliable under the -Z extra-link-arg flag.
-# See https://github.com/rust-lang/cargo/pull/8441
 [target.thumbv7em-none-eabihf]
 runner = "arm-none-eabi-gdb"
-# Chip can be set via `--chip STM32F303VCTx` or `export PROBE_RUN_CHIP=STM32F303VCTx`
-# runner = "probe-run"
 rustflags = [
   "-C", "link-arg=-Tlink.x",
-  # "-C", "link-arg=-Tdefmt.x",
 ]
 
 [build]
