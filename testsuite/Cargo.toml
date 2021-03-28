@@ -9,7 +9,15 @@ name = "rcc"
 harness = false
 
 [[test]]
-name = "gpio"
+name = "gpio_input"
+harness = false
+
+[[test]]
+name = "gpio_output_push_pull"
+harness = false
+
+[[test]]
+name = "gpio_output_open_drain"
 harness = false
 
 [dev-dependencies]
@@ -18,6 +26,7 @@ cortex-m = "0.7.0"
 defmt = "0.2.0"
 defmt-rtt = "0.2.0"
 defmt-test = "0.2.0"
+# TODO: Set stm32f303xc as default, but make it overwritable
 stm32f3xx-hal = { path = "..", features = ["stm32f303xc","rt","defmt-trace","can"]}
 panic-probe = { version = "0.2.0", features = ["print-defmt"] }
 

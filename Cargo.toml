@@ -22,6 +22,7 @@ resolver = "2"
 
 [workspace]
 members = [
+    ".",
     "testsuite",
     "codegen"
 ]
