@@ -66,6 +66,7 @@ default = ["unproven"]
 unproven = ["embedded-hal/unproven"]
 device-selected = []
 direct-call-deprecated = []
+ld = []
 rt = ["stm32f3/rt"]
 can = ["embedded-hal-can"]
 
@@ -74,6 +75,14 @@ svd-f302 = ["stm32f3/stm32f302"]
 svd-f303 = ["stm32f3/stm32f303"]
 svd-f373 = ["stm32f3/stm32f373"]
 svd-f3x4 = ["stm32f3/stm32f3x4"]
+
+mem-4 = []
+mem-6 = []
+mem-8 = []
+mem-b = []
+mem-c = []
+mem-d = []
+mem-e = []
 
 gpio-f302 = []
 gpio-f303 = []
@@ -84,40 +93,40 @@ gpio-f373 = []
 # Any changes here should be mirrored in README.md, src/lib.rs, and
 # .github/workflows/ci.yml.
 stm32f301 = ["svd-f301", "direct-call-deprecated"]
-stm32f301x6 = ["stm32f301", "gpio-f302", "device-selected"]
-stm32f301x8 = ["stm32f301", "gpio-f302", "device-selected"]
+stm32f301x6 = ["stm32f301", "mem-6", "gpio-f302", "device-selected"]
+stm32f301x8 = ["stm32f301", "mem-8", "gpio-f302", "device-selected"]
 stm32f318 = ["svd-f301", "direct-call-deprecated"]
-stm32f318x8 = ["stm32f318", "gpio-f302", "device-selected"]
+stm32f318x8 = ["stm32f318", "mem-8", "gpio-f302", "device-selected"]
 stm32f302 = ["svd-f302", "direct-call-deprecated"]
-stm32f302x6 = ["stm32f302", "gpio-f302", "device-selected"]
-stm32f302x8 = ["stm32f302", "gpio-f302", "device-selected"]
-stm32f302xb = ["stm32f302", "gpio-f303", "device-selected"]
-stm32f302xc = ["stm32f302", "gpio-f303", "device-selected"]
-stm32f302xd = ["stm32f302", "gpio-f303e", "device-selected"]
-stm32f302xe = ["stm32f302", "gpio-f303e", "device-selected"]
+stm32f302x6 = ["stm32f302", "mem-6", "gpio-f302", "device-selected"]
+stm32f302x8 = ["stm32f302", "mem-8", "gpio-f302", "device-selected"]
+stm32f302xb = ["stm32f302", "mem-b", "gpio-f303", "device-selected"]
+stm32f302xc = ["stm32f302", "mem-c", "gpio-f303", "device-selected"]
+stm32f302xd = ["stm32f302", "mem-d", "gpio-f303e", "device-selected"]
+stm32f302xe = ["stm32f302", "mem-e", "gpio-f303e", "device-selected"]
 stm32f303 = ["svd-f303", "direct-call-deprecated"]
-stm32f303x6 = ["stm32f303", "gpio-f333", "device-selected"]
-stm32f303x8 = ["stm32f303", "gpio-f333", "device-selected"]
-stm32f303xb = ["stm32f303", "gpio-f303", "device-selected"]
-stm32f303xc = ["stm32f303", "gpio-f303", "device-selected"]
-stm32f303xd = ["stm32f303", "gpio-f303e", "device-selected"]
-stm32f303xe = ["stm32f303", "gpio-f303e", "device-selected"]
+stm32f303x6 = ["stm32f303", "mem-6", "gpio-f333", "device-selected"]
+stm32f303x8 = ["stm32f303", "mem-8", "gpio-f333", "device-selected"]
+stm32f303xb = ["stm32f303", "mem-b", "gpio-f303", "device-selected"]
+stm32f303xc = ["stm32f303", "mem-c", "gpio-f303", "device-selected"]
+stm32f303xd = ["stm32f303", "mem-d", "gpio-f303e", "device-selected"]
+stm32f303xe = ["stm32f303", "mem-e", "gpio-f303e", "device-selected"]
 stm32f328 = ["svd-f303", "direct-call-deprecated"]
-stm32f328x8 = ["stm32f328", "gpio-f333", "device-selected"]
+stm32f328x8 = ["stm32f328", "mem-8", "gpio-f333", "device-selected"]
 stm32f358 = ["svd-f303", "direct-call-deprecated"]
-stm32f358xc = ["stm32f358", "gpio-f303", "device-selected"]
+stm32f358xc = ["stm32f358", "mem-c", "gpio-f303", "device-selected"]
 stm32f398 = ["svd-f303", "direct-call-deprecated"]
-stm32f398xe = ["stm32f398", "gpio-f303e", "device-selected"]
+stm32f398xe = ["stm32f398", "mem-e", "gpio-f303e", "device-selected"]
 stm32f373 = ["svd-f373", "direct-call-deprecated"]
-stm32f373x8 = ["stm32f373", "gpio-f373", "device-selected"]
-stm32f373xb = ["stm32f373", "gpio-f373", "device-selected"]
-stm32f373xc = ["stm32f373", "gpio-f373", "device-selected"]
+stm32f373x8 = ["stm32f373", "mem-8", "gpio-f373", "device-selected"]
+stm32f373xb = ["stm32f373", "mem-b", "gpio-f373", "device-selected"]
+stm32f373xc = ["stm32f373", "mem-c", "gpio-f373", "device-selected"]
 stm32f378 = ["svd-f373", "direct-call-deprecated"]
-stm32f378xc = ["stm32f378", "gpio-f373", "device-selected"]
+stm32f378xc = ["stm32f378", "mem-c", "gpio-f373", "device-selected"]
 stm32f334 = ["svd-f3x4", "direct-call-deprecated"]
-stm32f334x4 = ["stm32f334", "gpio-f333", "device-selected"]
-stm32f334x6 = ["stm32f334", "gpio-f333", "device-selected"]
-stm32f334x8 = ["stm32f334", "gpio-f333", "device-selected"]
+stm32f334x4 = ["stm32f334", "mem-4", "gpio-f333", "device-selected"]
+stm32f334x6 = ["stm32f334", "mem-6", "gpio-f333", "device-selected"]
+stm32f334x8 = ["stm32f334", "mem-8", "gpio-f333", "device-selected"]
 
 defmt-default = ["defmt"]
 defmt-trace = ["defmt"]
@@ -137,45 +146,45 @@ opt-level = "s"
 
 [[example]]
 name = "pwm"
-required-features = ["stm32f303xc"]
+required-features = ["ld", "stm32f303xc"]
 
 [[example]]
 name = "toggle"
-required-features = ["rt", "stm32f303xc"]
+required-features = ["ld", "stm32f303xc"]
 
 [[example]]
 name = "usb_serial"
-required-features = ["rt", "stm32f303xc", "stm32-usbd"]
+required-features = ["ld", "stm32f303xc", "stm32-usbd"]
 
 [[example]]
 name = "spi"
-required-features = ["stm32f303"]
+required-features = ["ld", "stm32f303"]
 
 [[example]]
 name = "can"
-required-features = ["rt", "can", "stm32f303"]
+required-features = ["ld", "can", "stm32f303"]
 
 [[example]]
 name = "serial_dma"
-required-features = ["stm32f303"]
+required-features = ["ld", "stm32f303"]
 
 [[example]]
 name = "adc"
-required-features = ["stm32f303"]
+required-features = ["ld", "stm32f303"]
 
 [[example]]
 name = "i2c_scanner"
-required-features = ["stm32f303xc"]
+required-features = ["ld", "stm32f303xc"]
 
 [[example]]
 name = "gpio_erased"
-required-features = ["rt", "stm32f303xc"]
+required-features = ["ld", "stm32f303xc"]
 
 [[example]]
 name = "gpio_interrupts"
-required-features = ["rt", "stm32f303xc"]
+required-features = ["ld", "rt", "stm32f303xc"]
 
 [[test]]
 name = "rcc"
-required-features = ["rt", "defmt"]
+required-features = ["ld", "defmt"]
 harness = false

@@ -51,7 +51,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=${{ matrix.mcu }},${{ matrix.features }} --lib --examples
+          args: --features=${{ matrix.mcu }},ld,${{ matrix.features }} --lib --examples
 
   # This is our MSRV. However this is only for documentation
   # purposes and should be increased if newer features are used.
@@ -70,7 +70,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=stm32f303xc,stm32-usbd,rt,can --lib --examples
+          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
 
   check-tests:
     name: Check Tests
@@ -93,7 +93,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=rt,defmt,${{ matrix.mcu }} --test ${{ matrix.test }}
+          args: --features=ld,defmt,${{ matrix.mcu }} --test ${{ matrix.test }}
 
   clippy:
     name: Clippy
@@ -111,7 +111,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: >
-            --features=stm32f303xc,rt,stm32-usbd,can --lib --examples
+            --features=stm32f303xc,ld,rt,stm32-usbd,can --lib --examples
             -- -D warnings
 
   rustfmt:
