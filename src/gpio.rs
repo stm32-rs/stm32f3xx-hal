@@ -533,7 +533,7 @@ where
 }
 
 /// Return an EXTI register for the current CPU
-#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+#[cfg(feature = "svd-f373")]
 macro_rules! reg_for_cpu {
     ($exti:expr, $xr:ident) => {
         $exti.$xr
@@ -541,7 +541,7 @@ macro_rules! reg_for_cpu {
 }
 
 /// Return an EXTI register for the current CPU
-#[cfg(not(any(feature = "stm32f373", feature = "stm32f378")))]
+#[cfg(not(feature = "svd-f373"))]
 macro_rules! reg_for_cpu {
     ($exti:expr, $xr:ident) => {
         paste::paste! {
@@ -561,15 +561,15 @@ where
         match self.index.index() {
             0 => Interrupt::EXTI0,
             1 => Interrupt::EXTI1,
-            #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+            #[cfg(feature = "svd-f373")]
             2 => Interrupt::EXTI2_TS,
-            #[cfg(not(any(feature = "stm32f373", feature = "stm32f378")))]
+            #[cfg(not(feature = "svd-f373"))]
             2 => Interrupt::EXTI2_TSC,
             3 => Interrupt::EXTI3,
             4 => Interrupt::EXTI4,
-            #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
+            #[cfg(feature = "svd-f373")]
             5..=9 => Interrupt::EXTI5_9,
-            #[cfg(not(any(feature = "stm32f373", feature = "stm32f378")))]
+            #[cfg(not(feature = "svd-f373"))]
             5..=9 => Interrupt::EXTI9_5,
             10..=15 => Interrupt::EXTI15_10,
             _ => unreachable!(),

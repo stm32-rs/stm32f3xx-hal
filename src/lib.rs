@@ -15,26 +15,31 @@
    Please select one of the following
 
    (Note: `x` denotes any character in [a-z])
-   *   stm32f301
-   *   stm32f318
-   *   stm32f302xb
-   *   stm32f302xc
-   *   stm32f302xd
-   *   stm32f302xe
-   *   stm32f302x6
-   *   stm32f302x8
-   *   stm32f303xb
-   *   stm32f303xc
-   *   stm32f303xd
-   *   stm32f303xe
-   *   stm32f303x6
-   *   stm32f303x8
-   *   stm32f373
-   *   stm32f378
-   *   stm32f334
-   *   stm32f328
-   *   stm32f358
-   *   stm32f398
+   * stm32f301x6
+   * stm32f301x8
+   * stm32f318x8
+   * stm32f302x6
+   * stm32f302x8
+   * stm32f302xb
+   * stm32f302xc
+   * stm32f302xd
+   * stm32f302xe
+   * stm32f303x6
+   * stm32f303x8
+   * stm32f303xb
+   * stm32f303xc
+   * stm32f303xd
+   * stm32f303xe
+   * stm32f328x8
+   * stm32f358xc
+   * stm32f398xe
+   * stm32f373x8
+   * stm32f373xb
+   * stm32f373xc
+   * stm32f378xc
+   * stm32f334x4
+   * stm32f334x6
+   * stm32f334x8
 
    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
    So you want to expand your call to `cargo` with `--features stm32f303xc`.
@@ -69,26 +74,31 @@ compile_error!(
     Please select one of the following
 
     (Note: `x` denotes any character in [a-z])
-    *   stm32f301
-    *   stm32f318
-    *   stm32f302xb
-    *   stm32f302xc
-    *   stm32f302xd
-    *   stm32f302xe
-    *   stm32f302x6
-    *   stm32f302x8
-    *   stm32f303xb
-    *   stm32f303xc
-    *   stm32f303xd
-    *   stm32f303xe
-    *   stm32f303x6
-    *   stm32f303x8
-    *   stm32f373
-    *   stm32f378
-    *   stm32f334
-    *   stm32f328
-    *   stm32f358
-    *   stm32f398
+    * stm32f301x6
+    * stm32f301x8
+    * stm32f318x8
+    * stm32f302x6
+    * stm32f302x8
+    * stm32f302xb
+    * stm32f302xc
+    * stm32f302xd
+    * stm32f302xe
+    * stm32f303x6
+    * stm32f303x8
+    * stm32f303xb
+    * stm32f303xc
+    * stm32f303xd
+    * stm32f303xe
+    * stm32f328x8
+    * stm32f358xc
+    * stm32f398xe
+    * stm32f373x8
+    * stm32f373xb
+    * stm32f373xc
+    * stm32f378xc
+    * stm32f334x4
+    * stm32f334x6
+    * stm32f334x8
 
     Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
     So you want to expand your call to `cargo` with `--features stm32f303xc`.
@@ -97,91 +107,52 @@ compile_error!(
     "
 );
 
-pub use embedded_hal as hal;
+use cfg_if::cfg_if;
 
-pub use nb;
-pub use nb::block;
-
-pub use embedded_time as time;
-
-#[cfg(feature = "defmt")]
-pub(crate) use defmt::{assert, panic, unreachable, unwrap};
-#[cfg(feature = "defmt")]
-mod macros {
-    /// Wrapper function for `.exepct()`
-    ///
-    /// Uses [`defmt::unwrap!`] instead, because
-    /// it has the same functionality as `expect()`
-    #[macro_export]
-    macro_rules! expect {
-        ($l:expr, $s:tt) => {
-            defmt::unwrap!($l, $s)
-        };
-    }
-}
-
-#[cfg(not(feature = "defmt"))]
-pub(crate) use core::{assert, panic, unreachable};
-#[cfg(not(feature = "defmt"))]
-mod macros {
-    /// Wrapper macro for `.unwrap()`
-    ///
-    /// Uses core function, when defmt is not active
-    #[macro_export]
-    macro_rules! unwrap {
-        ($l:expr) => {
-            $l.unwrap()
-        };
-    }
-
-    /// Wrapper macro for `.expect()`
-    ///
-    /// Uses core function, when defmt is not active
-    #[macro_export]
-    macro_rules! expect {
-        ($l:expr, $s:tt) => {
-            $l.expect($s)
-        };
-    }
-}
-
-#[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
-/// Peripheral access
-pub use stm32f3::stm32f301 as pac;
-
-#[cfg(feature = "stm32f302")]
-/// Peripheral access
-pub use stm32f3::stm32f302 as pac;
-
-#[cfg(any(
-    feature = "stm32f303",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-/// Peripheral access
-pub use stm32f3::stm32f303 as pac;
-
-#[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-/// Peripheral access
-pub use stm32f3::stm32f373 as pac;
-
-#[cfg(feature = "stm32f334")]
-/// Peripheral access
-pub use stm32f3::stm32f3x4 as pac;
-
-#[cfg(feature = "device-selected")]
-#[deprecated(since = "0.5.0", note = "please use `pac` instead")]
-/// Peripheral access
-pub use crate::pac as stm32;
-
-// Enable use of interrupt macro
-#[cfg(feature = "rt")]
-pub use crate::pac::interrupt;
-
-cfg_if::cfg_if! {
+cfg_if! {
     if #[cfg(feature = "device-selected")] {
+        pub use embedded_hal as hal;
+
+        pub use nb;
+        pub use nb::block;
+
+        pub use embedded_time as time;
+
+        /// Peripheral access
+        #[cfg(feature = "svd-f301")]
+        pub use stm32f3::stm32f301 as pac;
+
+        /// Peripheral access
+        #[cfg(feature = "svd-f302")]
+        pub use stm32f3::stm32f302 as pac;
+
+        /// Peripheral access
+        #[cfg(feature = "svd-f303")]
+        pub use stm32f3::stm32f303 as pac;
+
+        /// Peripheral access
+        #[cfg(feature = "svd-f373")]
+        pub use stm32f3::stm32f373 as pac;
+
+        /// Peripheral access
+        #[cfg(feature = "svd-f3x4")]
+        pub use stm32f3::stm32f3x4 as pac;
+
+        /// Peripheral access
+        #[deprecated(since = "0.5.0", note = "please use `pac` instead")]
+        pub use crate::pac as stm32;
+
+        // Enable use of interrupt macro
+        #[cfg(feature = "rt")]
+        pub use crate::pac::interrupt;
+
+        #[cfg(feature = "stm32f303")]
+        pub mod adc;
+        #[cfg(feature = "can")]
+        pub mod can;
         pub mod delay;
+        #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+        pub mod dma;
         pub mod flash;
         pub mod gpio;
         pub mod i2c;
@@ -193,25 +164,65 @@ cfg_if::cfg_if! {
         pub mod spi;
         pub mod syscfg;
         pub mod timer;
+        #[cfg(all(
+            feature = "stm32-usbd",
+            any(
+                feature = "stm32f303xb",
+                feature = "stm32f303xc",
+                feature = "stm32f303xd",
+                feature = "stm32f303xe",
+            ),
+        ))]
+        pub mod usb;
+        pub mod watchdog;
+
+        cfg_if! {
+            if #[cfg(feature = "defmt")] {
+                pub(crate) use defmt::{assert, panic, unreachable, unwrap};
+                pub(crate) use macros::expect;
+
+                mod macros {
+                    #![allow(clippy::single_component_path_imports)]
+
+                    /// Wrapper function for `.expect()`
+                    ///
+                    /// Uses [`defmt::unwrap!`] instead, because
+                    /// it has the same functionality as `expect()`
+                    macro_rules! expect {
+                        ($l:expr, $s:tt) => {
+                            defmt::unwrap!($l, $s)
+                        };
+                    }
+                    pub(crate) use expect;
+                }
+            } else {
+                pub(crate) use core::{assert, panic, unreachable};
+                pub(crate) use macros::{unwrap, expect};
+
+                mod macros {
+                    #![allow(clippy::single_component_path_imports)]
+
+                    /// Wrapper macro for `.unwrap()`
+                    ///
+                    /// Uses core function, when defmt feature is not active
+                    macro_rules! unwrap {
+                        ($l:expr) => {
+                            $l.unwrap()
+                        };
+                    }
+                    pub(crate) use unwrap;
+
+                    /// Wrapper macro for `.expect()`
+                    ///
+                    /// Uses core function, when defmt feature is not active
+                    macro_rules! expect {
+                        ($l:expr, $s:tt) => {
+                            $l.expect($s)
+                        };
+                    }
+                    pub(crate) use expect;
+                }
+            }
+        }
     }
 }
-#[cfg(feature = "stm32f303")]
-pub mod adc;
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-pub mod dma;
-#[cfg(all(
-    feature = "stm32-usbd",
-    any(
-        feature = "stm32f303xb",
-        feature = "stm32f303xc",
-        feature = "stm32f303xd",
-        feature = "stm32f303xe",
-    )
-))]
-pub mod usb;
-
-#[cfg(feature = "device-selected")]
-pub mod watchdog;
-
-#[cfg(all(feature = "device-selected", feature = "can"))]
-pub mod can;

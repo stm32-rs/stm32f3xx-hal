@@ -53,29 +53,31 @@ So you want to expand your call to `cargo` with `--features stm32f303xc`.*
 
 Note: `x` denotes any character in [a-z]
 
-* stm32f301xb
-* stm32f301xc
-* stm32f301xd
-* stm32f301xe
-* stm32f318
+* stm32f301x6
+* stm32f301x8
+* stm32f318x8
+* stm32f302x6
+* stm32f302x8
 * stm32f302xb
 * stm32f302xc
 * stm32f302xd
 * stm32f302xe
-* stm32f302x6
-* stm32f302x8
+* stm32f303x6
+* stm32f303x8
 * stm32f303xb
 * stm32f303xc
 * stm32f303xd
 * stm32f303xe
-* stm32f303x6
-* stm32f303x8
-* stm32f373
-* stm32f378
-* stm32f334
-* stm32f328
-* stm32f358
-* stm32f398
+* stm32f328x8
+* stm32f358xc
+* stm32f398xe
+* stm32f373x8
+* stm32f373xb
+* stm32f373xc
+* stm32f378xc
+* stm32f334x4
+* stm32f334x6
+* stm32f334x8
 
 ### Background
 
