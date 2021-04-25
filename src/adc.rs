@@ -399,8 +399,15 @@ macro_rules! adc_hal {
                 }
 
                 fn wait_adc_clk_cycles(&self, cycles: u32) {
-                    let adc_clk_cycle = self.clocks.hclk().0 / (self.ckmode as u32);
-                    asm::delay(adc_clk_cycle * cycles);
+                    // using a match statement here so compilation will fail once asynchronous clk
+                    // mode is implemented (CKMODE[1:0] = 00b).  This will force whoever is working
+                    // on it to rethink what needs to be done here :)
+                    let adc_per_cpu_cycles = match self.ckmode {
+                        CkMode::SYNCDIV1 => 1,
+                        CkMode::SYNCDIV2 => 2,
+                        CkMode::SYNCDIV4 => 4,
+                    };
+                    asm::delay(adc_per_cpu_cycles * cycles);
                 }
 
                 fn advregen_enable(&mut self){
