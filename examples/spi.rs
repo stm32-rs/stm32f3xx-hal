@@ -22,7 +22,7 @@ fn main() -> ! {
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
     let clocks = rcc
         .cfgr
@@ -32,15 +32,9 @@ fn main() -> ! {
         .freeze(&mut flash.acr);
 
     // Configure pins for SPI
-    let sck = gpioa
-        .pa5
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let miso = gpioa
-        .pa6
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let mosi = gpioa
-        .pa7
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let sck = gpioa.pa5.into_af5_push_pull();
+    let miso = gpioa.pa6.into_af5_push_pull();
+    let mosi = gpioa.pa7.into_af5_push_pull();
 
     let spi_mode = Mode {
         polarity: Polarity::IdleLow,

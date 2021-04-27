@@ -26,8 +26,8 @@ fn main() -> ! {
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let gpiob = dp.GPIOB.split(&mut rcc.ahb);
+    let gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
     let _clocks = rcc
         .cfgr
@@ -38,12 +38,8 @@ fn main() -> ! {
         .freeze(&mut flash.acr);
 
     // Configure CAN RX and TX pins (AF9)
-    let rx = gpioa
-        .pa11
-        .into_af9_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let tx = gpioa
-        .pa12
-        .into_af9_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let rx = gpioa.pa11.into_af9_push_pull();
+    let tx = gpioa.pa12.into_af9_push_pull();
 
     // Initialize the CAN peripheral
     let can = Can::new(dp.CAN, rx, tx, &mut rcc.apb1);
@@ -53,9 +49,7 @@ fn main() -> ! {
 
     let (mut tx, mut rx0, _rx1) = can.split();
 
-    let mut led0 = gpiob
-        .pb15
-        .into_push_pull_output(&mut gpiob.moder, &mut gpiob.otyper);
+    let mut led0 = gpiob.pb15.into_push_pull_output();
     led0.set_high().unwrap();
 
     let filter = CanFilter::from_mask(0b100, ID as u32);

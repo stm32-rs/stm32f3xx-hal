@@ -11,10 +11,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Make `Clocks` `ppre1()` and `ppre2()` methods public, to get the current
   Prescaler value. ([#210])
-- Implement `into_xxx` methods for partially erased pins ([#189])
 - Enable better GPIO internal resistor configuration ([#189])
 - Support for GPIO output slew rate configuration ([#189])
 - Support for GPIO interrupts ([#189])
+- Implement `into_xxx` methods for erased pins ([#213])
 
 ### Changed
 
@@ -59,6 +59,7 @@ let clocks = rcc
   in alternate function mode ([#189])
 - GPIO internal resistor configuration is no longer encoded into pin typestate
   in input mode ([#189])
+- GPIO configuration functions no longer require registers as arguments ([#213])
 
 ## [v0.6.1] - 2020-12-10
 
@@ -313,6 +314,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#213]: https://github.com/stm32-rs/stm32f3xx-hal/pull/213
 [#211]: https://github.com/stm32-rs/stm32f3xx-hal/pull/211
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
