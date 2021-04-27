@@ -123,6 +123,16 @@ expect it to do so.*
 
 [Usermanual]: https://www.st.com/content/ccc/resource/technical/document/user_manual/8a/56/97/63/8d/56/41/73/DM00063382.pdf/files/DM00063382.pdf/jcr:content/translations/en.DM00063382.pdf
 
+## Minimum Supported Rust Version (MSRV)
+
+This crate is guaranteed to compile on stable Rust 1.48.0 and up. It *might*
+compile with older versions but that may change in any new patch release.
+
+<!-- This should not prevent anyone to use newer features. -->
+<!-- As soon as the MSVR does not compile anymore, just bump it. -->
+
+<!-- Don't forget to also adjust the MSVR version in `.github/workflows/ci.yml` -->
+
 ## License
 
 [0-clause BSD license](LICENSE-0BSD.txt).
