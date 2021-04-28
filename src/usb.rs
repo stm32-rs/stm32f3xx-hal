@@ -1,6 +1,4 @@
-//! USB peripheral
-//!
-//! Requires the `stm32-usbd` feature and one of the `stm32f303x*` features.
+//! USB peripheral. (Requires feature `stm32-usbd`)
 //!
 //! See [examples/usb_serial.rs] for a usage example.
 //!

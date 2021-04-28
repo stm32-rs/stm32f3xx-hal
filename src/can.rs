@@ -1,4 +1,4 @@
-//! Controller Area Network
+//! Controller Area Network (Requires feature `can`)
 //!
 //! CAN is currently not enabled by default, and
 //! can be enabled by the `can` feature.
@@ -25,8 +25,10 @@ pub use pac::can::btr::LBKM_A;
 const EXID_MASK: u32 = 0b1_1111_1111_1100_0000_0000_0000_0000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
-/// Options the CAN bus. This is primarily used to set bus timings, but also controls options like enabling loopback or silent mode for debugging.
-/// See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
+/// Options for the CAN bus.
+///
+/// This is primarily used to set bus timings, but also controls options like enabling loopback or silent mode for debugging.
+/// See  <http://www.bittiming.can-wiki.info/#bxCAN> for generating the timing parameters for different baud rates and clocks.
 ///
 /// Use `CanOpts::default()` to get 250kbps at 32mhz system clock
 pub struct CanOpts {
@@ -43,25 +45,25 @@ impl CanOpts {
         CanOpts::default()
     }
 
-    /// Set the Baud Rate Prescaler. See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
+    /// Set the Baud Rate Prescaler. See  <http://www.bittiming.can-wiki.info/#bxCAN> for generating the timing parameters for different baud rates and clocks.
     pub fn brp(mut self, brp: u16) -> Self {
         self.brp = brp;
         self
     }
 
-    /// Set the Resynchronisation Jump Width. See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
+    /// Set the Resynchronisation Jump Width. See  <http://www.bittiming.can-wiki.info/#bxCAN> for generating the timing parameters for different baud rates and clocks.
     pub fn sjw(mut self, sjw: u8) -> Self {
         self.sjw = sjw;
         self
     }
 
-    /// Set Time Segment One. See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
+    /// Set Time Segment One. See  <http://www.bittiming.can-wiki.info/#bxCAN> for generating the timing parameters for different baud rates and clocks.
     pub fn ts1(mut self, ts1: u8) -> Self {
         self.ts1 = ts1;
         self
     }
 
-    /// Set Time Segment Two. See  http://www.bittiming.can-wiki.info/#bxCAN for generating the timing parameters for different baud rates and clocks.
+    /// Set Time Segment Two. See  <http://www.bittiming.can-wiki.info/#bxCAN> for generating the timing parameters for different baud rates and clocks.
     pub fn ts2(mut self, ts2: u8) -> Self {
         self.ts2 = ts2;
         self

@@ -1,8 +1,8 @@
-//! API for the ADC (Analog to Digital Converter)
+//! Analog to Digital Converter. (Requires feature `stm32f303x[bcde]`)
 //!
 //! # Examples
 //!
-//! Check out [examles/adc.rs].
+//! Check out [examles/adc.rs][].
 //!
 //! It can be built for the STM32F3Discovery running
 //! `cargo build --example adc --features=stm32f303xc`

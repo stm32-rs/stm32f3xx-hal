@@ -47,25 +47,25 @@
 
  [README]: https://github.com/stm32-rs/stm32f3xx-hal/blob/master/README.md#selecting-the-right-chip
 
- ### ld
+ ### `ld`
 
  When this feature is enabled the `memory.x` linker script for target chip is automatically
  provided by this crate. See [`cortex-m-rt` document][memoryx] for more info.
 
  [memoryx]: https://docs.rs/cortex-m-rt/0.6.13/cortex_m_rt/#memoryx
 
- ### rt
+ ### `rt`
 
  This feature enables [`stm32f3`][]'s `rt` feature. See [`cortex-m-rt` document][device] for more info.
 
  [`stm32f3`]: https://crates.io/crates/stm32f3
  [device]: https://docs.rs/cortex-m-rt/0.6.13/cortex_m_rt/#device
 
- ### can
+ ### `can`
 
  Enable CAN peripherals on supported targets.
 
- ### stm32-usbd
+ ### `stm32-usbd`
 
  Enable USB peripherals on supported targets.
 
@@ -120,7 +120,7 @@ pub use stm32f3::stm32f373 as pac;
 #[cfg(feature = "svd-f3x4")]
 pub use stm32f3::stm32f3x4 as pac;
 
-/// Enable use of interrupt macro
+/// Enable use of interrupt macro. (Requires feature `rt`)
 #[cfg(feature = "rt")]
 pub use crate::pac::interrupt;
 
