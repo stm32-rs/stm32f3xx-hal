@@ -1,4 +1,14 @@
-use std::{env, fs::File, io::prelude::*, path::PathBuf};
+use std::collections::hash_set::HashSet;
+use std::env;
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::PathBuf;
+
+use cargo_metadata::MetadataCommand;
+// TODO(Sh3Rm4n - 2021-04-28):
+// Remove when [feature="slice_group_by"] is stable.
+// See with https://github.com/rust-lang/rust/issues/80552.
+use slice_group_by::GroupBy;
 
 fn main() {
     check_device_feature();
@@ -10,40 +20,75 @@ fn main() {
 
 /// Check device feature selection
 fn check_device_feature() {
-    if !cfg!(feature = "device-selected") {
-        if cfg!(feature = "direct-call-deprecated") {
-            eprintln!(
-                "The feature you selected is deprecated, because it was split up into sub-devices.
+    // Check if the device is deprecated
+    if !cfg!(feature = "device-selected") && cfg!(feature = "direct-call-deprecated") {
+        eprintln!(
+            "The (device-)feature you selected is deprecated, because it was split up into sub-devices.\n\
+            \n\
+            Example: The STM32F3Discovery board has a STM32F303VCT6 chip.\n\
+            You probably used to use `stm32f303` but now functionalities for the sub-device were added.\n\
+            In this case replace it with `stm32f303xc` to make your code build again.\n\
+            \n\
+            For more information, see \
+            \x1b]8;;https://github.com/stm32-rs/stm32f3xx-hal#selecting-the-right-chip\x1b\\README\
+            -> Selecting the right chip\x1b]8;;\x1b\\."
+        );
+        std::process::exit(1);
+    }
 
-Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-You probably used to use `stm32f303` but now functionalities for the sub-device were added.
-In this case replace it with `stm32f303xc` to make your code build again.
+    // get all device variants from the metadata
+    let metadata = MetadataCommand::new().exec().unwrap();
+    let device_variants: HashSet<String> = metadata
+        .root_package()
+        .unwrap()
+        .features
+        .iter()
+        .filter_map(|(feature, dependend_features)| {
+            dependend_features
+                .iter()
+                .any(|dependend_feature| dependend_feature == "device-selected")
+                .then(|| feature.clone())
+        })
+        .collect();
 
-For more information, see \x1b]8;;https://github.com/stm32-rs/stm32f3xx-hal#selecting-the-right-chip\x1b\\README -> Selecting the right chip\x1b]8;;\x1b\\."
-            );
-        } else {
-            eprintln!(
-                "This crate requires you to specify your target chip as a feature.
+    // get all selected features via env variables
+    let selected_features: HashSet<String> = env::vars()
+        .filter_map(|(key, _)| {
+            key.split("CARGO_FEATURE_")
+                .nth(1)
+                .map(|s| s.to_owned().to_ascii_lowercase())
+        })
+        .collect();
 
-Please select one of the following (`x` denotes any character in [a-z]):
+    // check if exactly one device was selected
+    if device_variants.intersection(&selected_features).count() != 1 {
+        eprintln!(
+            "This crate requires you to specify your target chip as a feature.\n\
+            \n\
+            Please select **one** of the following (`x` denotes any character in [a-z]):\n"
+        );
 
-    stm32f301x6 stm32f301x8
-    stm32f318x8
-    stm32f302x6 stm32f302x8 stm32f302xb stm32f302xc stm32f302xd stm32f302xe
-    stm32f303x6 stm32f303x8 stm32f303xb stm32f303xc stm32f303xd stm32f303xe
-    stm32f328x8
-    stm32f358xc
-    stm32f398xe
-    stm32f373x8 stm32f373xb stm32f373xc
-    stm32f378xc
-    stm32f334x4 stm32f334x6 stm32f334x8
+        // group device variants by type
+        let mut device_variants: Vec<String> = device_variants.into_iter().collect();
+        device_variants.sort_unstable();
+        let device_variants = device_variants.linear_group_by(|a, b| a[..9] == b[..9]);
 
-Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-So you need to specify stm32f303xc in your Cargo.toml (note that VC → xc).
-
-For more information, see \x1b]8;;https://github.com/stm32-rs/stm32f3xx-hal#selecting-the-right-chip\x1b\\README -> Selecting the right chip\x1b]8;;\x1b\\."
-            );
+        // pretty print all avaliable devices
+        for line in device_variants {
+            for device in line {
+                eprint!("{} ", device);
+            }
+            eprintln!();
         }
+
+        eprintln!(
+            "\nExample: The STM32F3Discovery board has a STM32F303VCT6 chip.\n\
+            So you need to specify stm32f303xc in your Cargo.toml (note that VC → xc).\n\
+            \n\
+            For more information, see \
+            \x1b]8;;https://github.com/stm32-rs/stm32f3xx-hal#selecting-the-right-chip\x1b\\README \
+            -> Selecting the right chip\x1b]8;;\x1b\\."
+        );
         std::process::exit(1);
     }
 }
