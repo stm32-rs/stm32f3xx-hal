@@ -15,12 +15,12 @@ pub use embedded_hal_can::{self, Filter, Frame, Id, Receiver, Transmitter};
 
 use crate::gpio::gpioa;
 use crate::gpio::{PushPull, AF9};
+use crate::pac;
 use crate::rcc::APB1;
-use crate::stm32;
 use nb::{self, Error};
 
 use core::sync::atomic::{AtomicU8, Ordering};
-pub use stm32::can::btr::LBKM_A;
+pub use pac::can::btr::LBKM_A;
 
 const EXID_MASK: u32 = 0b1_1111_1111_1100_0000_0000_0000_0000;
 const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
@@ -147,7 +147,7 @@ static FILTER_INDEX: AtomicU8 = AtomicU8::new(0);
 
 /// Controll Area Network (CAN) Peripheral
 pub struct Can {
-    can: stm32::CAN,
+    can: pac::CAN,
     _rx: gpioa::PA11<AF9<PushPull>>,
     _tx: gpioa::PA12<AF9<PushPull>>,
 }
@@ -160,7 +160,7 @@ pub struct CanFifo {
 
 /// A CAN transmitter which is used to send messages to the CAN network.
 pub struct CanTransmitter {
-    _can: stm32::CAN,
+    _can: pac::CAN,
     _rx: gpioa::PA11<AF9<PushPull>>,
     _tx: gpioa::PA12<AF9<PushPull>>,
 }
@@ -316,7 +316,7 @@ impl CanFilterData {
 impl Can {
     /// Initialize the CAN peripheral using the options specified by `opts`.
     pub fn new_with_opts(
-        can: stm32::CAN,
+        can: pac::CAN,
         rx: gpioa::PA11<AF9<PushPull>>,
         tx: gpioa::PA12<AF9<PushPull>>,
         apb1: &mut APB1,
@@ -362,7 +362,7 @@ impl Can {
     }
     /// Initialize the CAN Peripheral using default options from `CanOpts::default()`
     pub fn new(
-        can: stm32::CAN,
+        can: pac::CAN,
         rx: gpioa::PA11<AF9<PushPull>>,
         tx: gpioa::PA12<AF9<PushPull>>,
         apb1: &mut APB1,
@@ -399,7 +399,7 @@ impl Can {
     pub fn free(
         self,
     ) -> (
-        stm32::CAN,
+        pac::CAN,
         gpioa::PA11<AF9<PushPull>>,
         gpioa::PA12<AF9<PushPull>>,
     ) {
@@ -426,7 +426,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
         &mut self,
         frame: &Self::Frame,
     ) -> Result<Option<Self::Frame>, nb::Error<Self::Error>> {
-        let can = unsafe { &*stm32::CAN::ptr() };
+        let can = unsafe { &*pac::CAN::ptr() };
 
         for tx_idx in 0..3 {
             let free = match tx_idx {
@@ -489,7 +489,7 @@ impl embedded_hal_can::Transmitter for CanTransmitter {
 
 impl Receiver for CanFifo {
     fn receive(&mut self) -> Result<Self::Frame, Error<Self::Error>> {
-        let can = unsafe { &*stm32::CAN::ptr() };
+        let can = unsafe { &*pac::CAN::ptr() };
 
         let rx = &can.rx[self.idx];
         if can.rfr[self.idx].read().fmp().bits() > 0 {
@@ -541,7 +541,7 @@ impl Receiver for CanFifo {
     /// Sets a filter in the next open filter register.
     fn set_filter(&mut self, filter: Self::Filter) {
         cortex_m::interrupt::free(|_cs| {
-            let can = unsafe { &*stm32::CAN::ptr() };
+            let can = unsafe { &*pac::CAN::ptr() };
 
             // Filter init mode
             can.fmr.modify(|_, w| w.finit().set_bit());

@@ -21,7 +21,7 @@ use crate::stm32::spi1;
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-use crate::stm32::SPI4;
+use crate::pac::SPI4;
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 use crate::gpio::gpioa::{PA1, PA10, PA12, PA13, PA2, PA3, PA8, PA9};

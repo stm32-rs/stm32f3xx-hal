@@ -104,11 +104,7 @@ pub use stm32f3::stm32f373 as pac;
 #[cfg(feature = "svd-f3x4")]
 pub use stm32f3::stm32f3x4 as pac;
 
-/// Peripheral access
-#[deprecated(since = "0.5.0", note = "please use `pac` instead")]
-pub use crate::pac as stm32;
-
-// Enable use of interrupt macro
+/// Enable use of interrupt macro
 #[cfg(feature = "rt")]
 pub use crate::pac::interrupt;
 
