@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Enable better GPIO internal resistor configuration ([#189])
 - Support for GPIO output slew rate configuration ([#189])
 - Support for GPIO interrupts ([#189])
+- `ld` feature, which enables the memory.x generation ([#216])
 
 ### Changed
 
@@ -26,6 +27,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Delay based on systick no longer panics ([#203]) for to high values
   and support longer delays ([#208])
+- Long delay during ADC initialization ([#217])
 
 ### Breaking Changes
 
@@ -35,6 +37,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   If the supplied frequency cannot be converted to `Hertz` the code
   will `panic`. This will occur if the supplied `Megahertz` frequency
   cannot fit into `u32::MAX` when converting to `Hertz` ([#192])
+- You always required to select a sub-target for target chips ([#216])
 
 ```rust
 // The supplied frequencies must be in `MHz`.
@@ -313,6 +316,8 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#217]: https://github.com/stm32-rs/stm32f3xx-hal/pull/217
+[#216]: https://github.com/stm32-rs/stm32f3xx-hal/pull/216
 [#211]: https://github.com/stm32-rs/stm32f3xx-hal/pull/211
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208

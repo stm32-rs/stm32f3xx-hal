@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # Devices only differ in memory size are commented out
         mcu:
           - stm32f301x6
           - stm32f318x8

@@ -2,49 +2,72 @@
  # stm32f3xx-hal
 
  `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
- peripheral access API for the STMicro [STM32F3][stm] series microcontrollers. The
- selection of the MCU is done by [feature][f] gates
+ peripheral access API for the STMicro [STM32F3][stm] series microcontrollers.
 
- [f]: #selecting-the-right-chip
  [stm]: https://www.st.com/en/microcontrollers-microprocessors/stm32f3-series.html
 
- # Selecting the right chip
+ ## Cargo features
 
-   This crate requires you to specify your target chip as a feature.
+ ### Target chip selection
 
-   Please select one of the following
+ This crate requires you to specify your target chip as a feature.
 
-   (Note: `x` denotes any character in [a-z])
-   * stm32f301x6
-   * stm32f301x8
-   * stm32f318x8
-   * stm32f302x6
-   * stm32f302x8
-   * stm32f302xb
-   * stm32f302xc
-   * stm32f302xd
-   * stm32f302xe
-   * stm32f303x6
-   * stm32f303x8
-   * stm32f303xb
-   * stm32f303xc
-   * stm32f303xd
-   * stm32f303xe
-   * stm32f328x8
-   * stm32f358xc
-   * stm32f398xe
-   * stm32f373x8
-   * stm32f373xb
-   * stm32f373xc
-   * stm32f378xc
-   * stm32f334x4
-   * stm32f334x6
-   * stm32f334x8
+ Please select one of the following (`x` denotes any character in [a-z]):
 
-   Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-   So you want to expand your call to `cargo` with `--features stm32f303xc`.
+ * stm32f301x6
+ * stm32f301x8
+ * stm32f318x8
+ * stm32f302x6
+ * stm32f302x8
+ * stm32f302xb
+ * stm32f302xc
+ * stm32f302xd
+ * stm32f302xe
+ * stm32f303x6
+ * stm32f303x8
+ * stm32f303xb
+ * stm32f303xc
+ * stm32f303xd
+ * stm32f303xe
+ * stm32f328x8
+ * stm32f358xc
+ * stm32f398xe
+ * stm32f373x8
+ * stm32f373xb
+ * stm32f373xc
+ * stm32f378xc
+ * stm32f334x4
+ * stm32f334x6
+ * stm32f334x8
 
-   For more information, see the [README](https://github.com/stm32-rs/stm32f3xx-hal/blob/master/README.md#selecting-the-right-chip)
+ Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+ So you need to specify `stm32f303xc` in your `Cargo.toml` (note that VC → xc).
+
+ For more information, see the [README][].
+
+ [README]: https://github.com/stm32-rs/stm32f3xx-hal/blob/master/README.md#selecting-the-right-chip
+
+ ### ld
+
+ When this feature is enabled the `memory.x` linker script for target chip is automatically
+ provided by this crate. See [`cortex-m-rt` document][memoryx] for more info.
+
+ [memoryx]: https://docs.rs/cortex-m-rt/0.6.13/cortex_m_rt/#memoryx
+
+ ### rt
+
+ This feature enables [`stm32f3`][]'s `rt` feature. See [`cortex-m-rt` document][device] for more info.
+
+ [`stm32f3`]: https://crates.io/crates/stm32f3
+ [device]: https://docs.rs/cortex-m-rt/0.6.13/cortex_m_rt/#device
+
+ ### can
+
+ Enable CAN peripherals on supported targets.
+
+ ### stm32-usbd
+
+ Enable USB peripherals on supported targets.
 */
 #![no_std]
 #![allow(non_camel_case_types)]
@@ -52,177 +75,114 @@
 #![warn(missing_docs)]
 #![deny(macro_use_extern_crate)]
 
-#[cfg(all(feature = "direct-call-deprecated", not(feature = "device-selected")))]
-compile_error!(
-    "The feature you selected is deprecated, because it was split up into sub-devices.
-
-    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-    You probably used to use `--features stm32f303` but now functionalities for the sub-device were added.
-    In this case replace it with `--features stm32f303xc` to make your code build again.
-
-    Please select one of the chip features stated above."
-);
-
-// TODO Remove because, as of stm32f3 v0.12, this will be caught by it's build.rs?
-#[cfg(all(
-    not(feature = "direct-call-deprecated"),
-    not(feature = "device-selected")
-))]
-compile_error!(
-    "This crate requires you to specify your target chip as a feature.
-
-    Please select one of the following
-
-    (Note: `x` denotes any character in [a-z])
-    * stm32f301x6
-    * stm32f301x8
-    * stm32f318x8
-    * stm32f302x6
-    * stm32f302x8
-    * stm32f302xb
-    * stm32f302xc
-    * stm32f302xd
-    * stm32f302xe
-    * stm32f303x6
-    * stm32f303x8
-    * stm32f303xb
-    * stm32f303xc
-    * stm32f303xd
-    * stm32f303xe
-    * stm32f328x8
-    * stm32f358xc
-    * stm32f398xe
-    * stm32f373x8
-    * stm32f373xb
-    * stm32f373xc
-    * stm32f378xc
-    * stm32f334x4
-    * stm32f334x6
-    * stm32f334x8
-
-    Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
-    So you want to expand your call to `cargo` with `--features stm32f303xc`.
-
-    For more information, see README -> Selecting the right chip.
-    "
-);
-
 use cfg_if::cfg_if;
 
+pub use embedded_hal as hal;
+
+pub use nb;
+pub use nb::block;
+
+pub use embedded_time as time;
+
+/// Peripheral access
+#[cfg(feature = "svd-f301")]
+pub use stm32f3::stm32f301 as pac;
+
+/// Peripheral access
+#[cfg(feature = "svd-f302")]
+pub use stm32f3::stm32f302 as pac;
+
+/// Peripheral access
+#[cfg(feature = "svd-f303")]
+pub use stm32f3::stm32f303 as pac;
+
+/// Peripheral access
+#[cfg(feature = "svd-f373")]
+pub use stm32f3::stm32f373 as pac;
+
+/// Peripheral access
+#[cfg(feature = "svd-f3x4")]
+pub use stm32f3::stm32f3x4 as pac;
+
+/// Peripheral access
+#[deprecated(since = "0.5.0", note = "please use `pac` instead")]
+pub use crate::pac as stm32;
+
+// Enable use of interrupt macro
+#[cfg(feature = "rt")]
+pub use crate::pac::interrupt;
+
+#[cfg(feature = "stm32f303")]
+pub mod adc;
+#[cfg(feature = "can")]
+pub mod can;
+pub mod delay;
+#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+pub mod dma;
+pub mod flash;
+pub mod gpio;
+pub mod i2c;
+pub mod prelude;
+pub mod pwm;
+pub mod rcc;
+pub mod rtc;
+pub mod serial;
+pub mod spi;
+pub mod syscfg;
+pub mod timer;
+#[cfg(all(
+    feature = "stm32-usbd",
+    any(
+        feature = "stm32f303xb",
+        feature = "stm32f303xc",
+        feature = "stm32f303xd",
+        feature = "stm32f303xe",
+    ),
+))]
+pub mod usb;
+pub mod watchdog;
+
 cfg_if! {
-    if #[cfg(feature = "device-selected")] {
-        pub use embedded_hal as hal;
+    if #[cfg(feature = "defmt")] {
+        pub(crate) use defmt::{assert, panic, unreachable, unwrap};
+        pub(crate) use macros::expect;
 
-        pub use nb;
-        pub use nb::block;
-
-        pub use embedded_time as time;
-
-        /// Peripheral access
-        #[cfg(feature = "svd-f301")]
-        pub use stm32f3::stm32f301 as pac;
-
-        /// Peripheral access
-        #[cfg(feature = "svd-f302")]
-        pub use stm32f3::stm32f302 as pac;
-
-        /// Peripheral access
-        #[cfg(feature = "svd-f303")]
-        pub use stm32f3::stm32f303 as pac;
-
-        /// Peripheral access
-        #[cfg(feature = "svd-f373")]
-        pub use stm32f3::stm32f373 as pac;
-
-        /// Peripheral access
-        #[cfg(feature = "svd-f3x4")]
-        pub use stm32f3::stm32f3x4 as pac;
-
-        /// Peripheral access
-        #[deprecated(since = "0.5.0", note = "please use `pac` instead")]
-        pub use crate::pac as stm32;
-
-        // Enable use of interrupt macro
-        #[cfg(feature = "rt")]
-        pub use crate::pac::interrupt;
-
-        #[cfg(feature = "stm32f303")]
-        pub mod adc;
-        #[cfg(feature = "can")]
-        pub mod can;
-        pub mod delay;
-        #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-        pub mod dma;
-        pub mod flash;
-        pub mod gpio;
-        pub mod i2c;
-        pub mod prelude;
-        pub mod pwm;
-        pub mod rcc;
-        pub mod rtc;
-        pub mod serial;
-        pub mod spi;
-        pub mod syscfg;
-        pub mod timer;
-        #[cfg(all(
-            feature = "stm32-usbd",
-            any(
-                feature = "stm32f303xb",
-                feature = "stm32f303xc",
-                feature = "stm32f303xd",
-                feature = "stm32f303xe",
-            ),
-        ))]
-        pub mod usb;
-        pub mod watchdog;
-
-        cfg_if! {
-            if #[cfg(feature = "defmt")] {
-                pub(crate) use defmt::{assert, panic, unreachable, unwrap};
-                pub(crate) use macros::expect;
-
-                mod macros {
-                    #![allow(clippy::single_component_path_imports)]
-
-                    /// Wrapper function for `.expect()`
-                    ///
-                    /// Uses [`defmt::unwrap!`] instead, because
-                    /// it has the same functionality as `expect()`
-                    macro_rules! expect {
-                        ($l:expr, $s:tt) => {
-                            defmt::unwrap!($l, $s)
-                        };
-                    }
-                    pub(crate) use expect;
-                }
-            } else {
-                pub(crate) use core::{assert, panic, unreachable};
-                pub(crate) use macros::{unwrap, expect};
-
-                mod macros {
-                    #![allow(clippy::single_component_path_imports)]
-
-                    /// Wrapper macro for `.unwrap()`
-                    ///
-                    /// Uses core function, when defmt feature is not active
-                    macro_rules! unwrap {
-                        ($l:expr) => {
-                            $l.unwrap()
-                        };
-                    }
-                    pub(crate) use unwrap;
-
-                    /// Wrapper macro for `.expect()`
-                    ///
-                    /// Uses core function, when defmt feature is not active
-                    macro_rules! expect {
-                        ($l:expr, $s:tt) => {
-                            $l.expect($s)
-                        };
-                    }
-                    pub(crate) use expect;
-                }
+        mod macros {
+            /// Wrapper function for `.expect()`
+            ///
+            /// Uses [`defmt::unwrap!`] instead, because
+            /// it has the same functionality as `expect()`
+            macro_rules! expect_wrapper {
+                ($l:expr, $s:tt) => {
+                    defmt::unwrap!($l, $s)
+                };
             }
+            pub(crate) use expect_wrapper as expect;
+        }
+    } else {
+        pub(crate) use core::{assert, panic, unreachable};
+        pub(crate) use macros::{unwrap, expect};
+
+        mod macros {
+            /// Wrapper macro for `.unwrap()`
+            ///
+            /// Uses core function, when defmt feature is not active
+            macro_rules! unwrap_wrapper {
+                ($l:expr) => {
+                    $l.unwrap()
+                };
+            }
+            pub(crate) use unwrap_wrapper as unwrap;
+
+            /// Wrapper macro for `.expect()`
+            ///
+            /// Uses core function, when defmt feature is not active
+            macro_rules! expect_wrapper {
+                ($l:expr, $s:tt) => {
+                    $l.expect($s)
+                };
+            }
+            pub(crate) use expect_wrapper as expect;
         }
     }
 }

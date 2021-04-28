@@ -90,7 +90,7 @@ gpio-f303e = []
 gpio-f333 = []
 gpio-f373 = []
 
-# Any changes here should be mirrored in README.md, src/lib.rs, and
+# Any changes here should be mirrored in README.md, build.rs, src/lib.rs, and
 # .github/workflows/ci.yml.
 stm32f301 = ["svd-f301", "direct-call-deprecated"]
 stm32f301x6 = ["stm32f301", "mem-6", "gpio-f302", "device-selected"]
