@@ -68,6 +68,22 @@
  ### stm32-usbd
 
  Enable USB peripherals on supported targets.
+
+ ### `defmt`
+
+ Currently these are only used for panicking calls, like
+ `assert!` `panic!` or `unwrap()`. These are enabled using the [defmt][]
+ [filter][].
+ For now [defmt][] is mostly intended for internal development and testing
+ to further reduce panicking calls in this crate.
+ The support of this feature is _subject to change_ as the development
+ of [defmt][] is advancing.
+
+ To use this feature follow the [Application Setup][] of the `defmt-book`.
+
+ [Application Setup]: https://defmt.ferrous-systems.com/setup-app.html
+ [defmt]: https://github.com/knurling-rs/defmt
+ [filter]: https://defmt.ferrous-systems.com/filtering.html
 */
 #![no_std]
 #![allow(non_camel_case_types)]
