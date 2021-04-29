@@ -11,31 +11,36 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # Devices only differ in memory size are commented out
         mcu:
-          - stm32f301
-          - stm32f318
-          - stm32f302xb
-          - stm32f302xc
-          - stm32f302xd
-          - stm32f302xe
+          - stm32f301x6
+          - stm32f318x8
           - stm32f302x6
-          - stm32f302x8
-          - stm32f303xb
-          - stm32f303xc
-          - stm32f303xd
-          - stm32f303xe
+          # - stm32f302x8
+          - stm32f302xb
+          # - stm32f302xc
+          - stm32f302xd
+          # - stm32f302xe
           - stm32f303x6
-          - stm32f303x8
-          - stm32f373
-          - stm32f378
-          - stm32f334
-          - stm32f328
-          - stm32f358
-          - stm32f398
+          # - stm32f303x8
+          - stm32f303xb
+          # - stm32f303xc
+          - stm32f303xd
+          # - stm32f303xe
+          - stm32f328x8
+          - stm32f358xc
+          - stm32f398xe
+          - stm32f373x8
+          # - stm32f373xb
+          # - stm32f373xc
+          - stm32f378xc
+          - stm32f334x4
+          # - stm32f334x6
+          # - stm32f334x8
         features: ["rt"]
         include:
           - mcu: stm32f303xc
-            features: rt,stm32-usbd
+            features: rt,can,stm32-usbd
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -47,7 +52,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=${{ matrix.mcu }},${{ matrix.features }} --lib --examples
+          args: --features=${{ matrix.mcu }},ld,${{ matrix.features }} --lib --examples
 
   # This is our MSRV. However this is only for documentation
   # purposes and should be increased if newer features are used.
@@ -66,7 +71,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=stm32f303xc,stm32-usbd,rt,can --lib --examples
+          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
 
   check-tests:
     name: Check Tests
@@ -89,7 +94,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=rt,defmt,${{ matrix.mcu }} --test ${{ matrix.test }}
+          args: --features=ld,defmt,${{ matrix.mcu }} --test ${{ matrix.test }}
 
   clippy:
     name: Clippy
@@ -107,7 +112,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: >
-            --features=stm32f303xc,rt,stm32-usbd,can --lib --examples
+            --features=stm32f303xc,ld,rt,stm32-usbd,can --lib --examples
             -- -D warnings
 
   rustfmt:
