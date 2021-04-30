@@ -12,7 +12,7 @@
 //! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.7.0/examples/can.rs
 
 use crate::gpio::{gpioa, gpiob};
-use crate::gpio::{AF7, AF9};
+use crate::gpio::{PushPull, AF7, AF9};
 use crate::pac;
 
 use crate::rcc::APB1;
@@ -34,22 +34,20 @@ cfg_if! {
     if #[cfg(any(feature = "gpio-f302", feature = "gpio-f303"))] {
         use crate::gpio::gpiod;
 
-        impl sealed::Sealed for gpioa::PA11<AF9> {}
-        impl RxPin for gpioa::PA11<AF9> {}
-        impl sealed::Sealed for gpioa::PA12<AF9> {}
-        impl TxPin for gpioa::PA12<AF9> {}
+        impl sealed::Sealed for gpioa::PA11<AF9<PushPull>> {}
+        impl RxPin for gpioa::PA11<AF9<PushPull>> {}
+        impl sealed::Sealed for gpioa::PA12<AF9<PushPull>> {}
+        impl TxPin for gpioa::PA12<AF9<PushPull>> {}
 
-        impl sealed::Sealed for gpiob::PB8<AF9> {}
-        impl RxPin for gpiob::PB8<AF9> {}
-        impl sealed::Sealed for gpiob::PB9<AF9> {}
-        impl TxPin for gpiob::PB9<AF9> {}
+        impl sealed::Sealed for gpiob::PB8<AF9<PushPull>> {}
+        impl RxPin for gpiob::PB8<AF9<PushPull>> {}
+        impl sealed::Sealed for gpiob::PB9<AF9<PushPull>> {}
+        impl TxPin for gpiob::PB9<AF9<PushPull>> {}
 
-        impl sealed::Sealed for gpiod::PD0<AF7> {}
-        impl RxPin for gpiod::PD0<AF7> {}
-        impl sealed::Sealed for gpiod::PD1<AF7> {}
-        impl TxPin for gpiod::PD1<AF7> {}
-
-
+        impl sealed::Sealed for gpiod::PD0<AF7<PushPull>> {}
+        impl RxPin for gpiod::PD0<AF7<PushPull>> {}
+        impl sealed::Sealed for gpiod::PD1<AF7<PushPull>> {}
+        impl TxPin for gpiod::PD1<AF7<PushPull>> {}
     }
 }
 
