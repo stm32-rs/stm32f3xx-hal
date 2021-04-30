@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking Changes
 
+- The MSVR was bumped to 1.50 ([#220])
 - Replace custom time based units with types defined in the [embedded-time][]
   crate ([#192])
 - The `rcc` public API now expects time based units in `Megahertz`.
