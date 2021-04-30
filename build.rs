@@ -30,7 +30,7 @@ fn check_device_feature() {
             In this case replace it with `stm32f303xc` to make your code build again.\n\
             \n\
             For more information, see \
-            \x1b]8;;https://github.com/stm32-rs/stm32f3xx-hal#selecting-the-right-chip\x1b\\README\
+            \x1b]8;;https://github.com/stm32-rs/stm32f3xx-hal#selecting-the-right-chip\x1b\\README \
             -> Selecting the right chip\x1b]8;;\x1b\\."
         );
         std::process::exit(1);
@@ -43,10 +43,10 @@ fn check_device_feature() {
         .unwrap()
         .features
         .iter()
-        .filter_map(|(feature, dependend_features)| {
-            dependend_features
+        .filter_map(|(feature, dependent_features)| {
+            dependent_features
                 .iter()
-                .any(|dependend_feature| dependend_feature == "device-selected")
+                .any(|dependent_feature| dependent_feature == "device-selected")
                 .then(|| feature.clone())
         })
         .collect();
