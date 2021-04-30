@@ -9,10 +9,10 @@ use core::ptr;
 use crate::hal::spi::FullDuplex;
 pub use crate::hal::spi::{Mode, Phase, Polarity};
 use crate::pac::{
+    spi1,
     spi1::cr2::{DS_A, FRXTH_A},
     SPI1, SPI2, SPI3,
 };
-use crate::stm32::spi1;
 
 #[cfg(any(
     feature = "stm32f302xd",
@@ -21,7 +21,7 @@ use crate::stm32::spi1;
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-use crate::stm32::SPI4;
+use crate::pac::SPI4;
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
 use crate::gpio::gpioa::{PA1, PA10, PA12, PA13, PA2, PA3, PA8, PA9};

@@ -1,6 +1,6 @@
-//! Direct memory access (DMA) controller
+//! Direct memory access (DMA) controller. (Requires feature `stm32f303*` or `stm32f302*`)
 //!
-//! Currently DMA is only supported for STM32F303 MCUs.
+//! Currently DMA is only supported for STM32F303 or STM32F302 MCUs.
 //!
 //! An example how to use DMA for serial, can be found at [examples/serial_dma.rs]
 //!

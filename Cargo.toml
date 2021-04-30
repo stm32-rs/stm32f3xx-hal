@@ -61,6 +61,10 @@ panic-probe = "0.2"
 defmt-rtt = "0.2"
 defmt-test = "0.2"
 
+[build-dependencies]
+cargo_metadata = "0.13.1"
+slice-group-by = "0.2.6"
+
 [features]
 default = ["unproven"]
 unproven = ["embedded-hal/unproven"]

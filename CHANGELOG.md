@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking Changes
 
+- The MSVR was bumped to 1.50 ([#220])
 - Replace custom time based units with types defined in the [embedded-time][]
   crate ([#192])
 - The `rcc` public API now expects time based units in `Megahertz`.
@@ -62,6 +63,9 @@ let clocks = rcc
   in alternate function mode ([#189])
 - GPIO internal resistor configuration is no longer encoded into pin typestate
   in input mode ([#189])
+- Remove `stm32` module. Use `use stm32f3xx_hal::pac` instead.
+  This module was a deprecated in [v0.5.0][] and is now subject for
+  removal. ([#220])
 
 ## [v0.6.1] - 2020-12-10
 
@@ -316,6 +320,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#220]: https://github.com/stm32-rs/stm32f3xx-hal/pull/220
 [#217]: https://github.com/stm32-rs/stm32f3xx-hal/pull/217
 [#216]: https://github.com/stm32-rs/stm32f3xx-hal/pull/216
 [#211]: https://github.com/stm32-rs/stm32f3xx-hal/pull/211

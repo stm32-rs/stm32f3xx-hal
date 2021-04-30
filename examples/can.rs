@@ -9,8 +9,8 @@ use stm32f3xx_hal as hal;
 use cortex_m::asm;
 use cortex_m_rt::entry;
 
+use hal::pac;
 use hal::prelude::*;
-use hal::stm32;
 use hal::watchdog::IndependentWatchDog;
 
 use hal::can::{Can, CanFilter, CanFrame, CanId, Filter, Frame, Receiver, Transmitter};
@@ -22,7 +22,7 @@ const ID: u16 = 0b100;
 
 #[entry]
 fn main() -> ! {
-    let dp = stm32::Peripherals::take().unwrap();
+    let dp = pac::Peripherals::take().unwrap();
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();

@@ -47,27 +47,43 @@
 
  [README]: https://github.com/stm32-rs/stm32f3xx-hal/blob/master/README.md#selecting-the-right-chip
 
- ### ld
+ ### `ld`
 
  When this feature is enabled the `memory.x` linker script for target chip is automatically
  provided by this crate. See [`cortex-m-rt` document][memoryx] for more info.
 
  [memoryx]: https://docs.rs/cortex-m-rt/0.6.13/cortex_m_rt/#memoryx
 
- ### rt
+ ### `rt`
 
  This feature enables [`stm32f3`][]'s `rt` feature. See [`cortex-m-rt` document][device] for more info.
 
  [`stm32f3`]: https://crates.io/crates/stm32f3
  [device]: https://docs.rs/cortex-m-rt/0.6.13/cortex_m_rt/#device
 
- ### can
+ ### `can`
 
  Enable CAN peripherals on supported targets.
 
- ### stm32-usbd
+ ### `stm32-usbd`
 
  Enable USB peripherals on supported targets.
+
+ ### `defmt`
+
+ Currently these are only used for panicking calls, like
+ `assert!` `panic!` or `unwrap()`. These are enabled using the [defmt][]
+ [filter][].
+ For now [defmt][] is mostly intended for internal development and testing
+ to further reduce panicking calls in this crate.
+ The support of this feature is _subject to change_ as the development
+ of [defmt][] is advancing.
+
+ To use this feature follow the [Application Setup][] of the `defmt-book`.
+
+ [Application Setup]: https://defmt.ferrous-systems.com/setup-app.html
+ [defmt]: https://github.com/knurling-rs/defmt
+ [filter]: https://defmt.ferrous-systems.com/filtering.html
 */
 #![no_std]
 #![allow(non_camel_case_types)]
@@ -104,11 +120,7 @@ pub use stm32f3::stm32f373 as pac;
 #[cfg(feature = "svd-f3x4")]
 pub use stm32f3::stm32f3x4 as pac;
 
-/// Peripheral access
-#[deprecated(since = "0.5.0", note = "please use `pac` instead")]
-pub use crate::pac as stm32;
-
-// Enable use of interrupt macro
+/// Enable use of interrupt macro. (Requires feature `rt`)
 #[cfg(feature = "rt")]
 pub use crate::pac::interrupt;
 
