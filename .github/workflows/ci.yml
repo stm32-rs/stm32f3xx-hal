@@ -92,16 +92,9 @@ jobs:
           command: check
           args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
 
-  check-tests:
-    name: Check Tests
+  build-testsuite:
+    name: Build Testsuite
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test:
-          - rcc
-        mcu:
-          - stm32f303xc
-          - stm32f303xd
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -112,8 +105,8 @@ jobs:
           profile: minimal
       - uses: actions-rs/cargo@v1
         with:
-          command: check
-          args: --features=ld,defmt,${{ matrix.mcu }} --test ${{ matrix.test }}
+          command: test
+          args: -p testsuite --no-run
 
   check-doc:
     name: Check Documentation Build
