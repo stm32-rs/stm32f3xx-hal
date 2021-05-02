@@ -141,13 +141,25 @@ defmt-info = ["defmt"]
 defmt-warn = ["defmt"]
 defmt-error = ["defmt"]
 
+# cargo build/run
 [profile.dev]
-debug = true
+debug = 2
 lto = true
 
+# cargo test
+[profile.test]
+debug = 2
+opt-level = 3 # <-
+
+# cargo build/run --release
 [profile.release]
-debug = true
+debug = 2
 lto = true
+opt-level = "s"
+
+# cargo test --release
+[profile.bench]
+debug = 2
 opt-level = "s"
 
 [[example]]
