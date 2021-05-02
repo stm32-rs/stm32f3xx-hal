@@ -20,6 +20,10 @@ harness = false
 name = "gpio_output_open_drain"
 harness = false
 
+[[test]]
+name = "gpio_input_puller"
+harness = false
+
 [dev-dependencies]
 cfg-if = "1.0"
 cortex-m = "0.7.0"
