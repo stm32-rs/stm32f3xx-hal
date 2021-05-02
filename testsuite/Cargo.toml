@@ -36,7 +36,7 @@ panic-probe = { version = "0.2.0", features = ["print-defmt"] }
 
 [features]
 # enable all defmt logging levels
-default = ["defmt-trace"]
+default = ["defmt-trace", "stm32f3xx-hal/stm32f303xc"]
 
 # do not modify these features
 defmt-default = []
