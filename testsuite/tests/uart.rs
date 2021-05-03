@@ -1,19 +1,21 @@
 #![no_std]
 #![no_main]
 
-// TODO: Get pa9 and pa10 because these also implement spi and uart
 use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
-use hal::gpio::{
-    gpioa::{PA10, PA2, PA3, PA9},
-    gpiob::{PB10, PB11},
-};
 use hal::gpio::{OpenDrain, PushPull, AF7};
 use hal::pac;
 use hal::prelude::*;
-use hal::serial::{Rx, Serial, Tx};
+use hal::serial::Serial;
+use hal::{
+    gpio::{
+        gpioa::{PA10, PA2, PA3, PA9},
+        gpiob::{PB10, PB11},
+    },
+    rcc::{Clocks, APB2},
+};
 
 use core::array::IntoIter;
 
@@ -23,6 +25,8 @@ struct State {
     serial1: Option<Serial<pac::USART1, (PA9<AF7<PushPull>>, PA10<AF7<PushPull>>)>>,
     serial_slow: Option<Serial<pac::USART2, (PA2<AF7<PushPull>>, PA3<AF7<OpenDrain>>)>>,
     serial_fast: Option<Serial<pac::USART3, (PB10<AF7<PushPull>>, PB11<AF7<OpenDrain>>)>>,
+    clocks: Clocks,
+    apb2: APB2,
 }
 
 const TEST_MSG: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
@@ -31,7 +35,7 @@ const TEST_MSG: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
 mod tests {
     use super::*;
     use defmt::{self, assert, assert_eq, unwrap};
-    use testsuite::{SerialPair, CrossSerialPair1, CrossSerialPair2};
+    use testsuite::{CrossSerialPair1, CrossSerialPair2, SerialPair};
 
     #[init]
     fn init() -> super::State {
@@ -90,36 +94,34 @@ mod tests {
                 clocks,
                 &mut rcc.apb1,
             )),
+            clocks,
+            apb2: rcc.apb2,
         }
-
-        // super::State { serial, clocks, apb2: rcc.apb2 }
     }
 
-    // Problems:
-    // 1. if we split, we can not join (no runtime informatino which pins where associated with the
-    //    uart)
-    // 2. if we free, we could crate a new one,
-    // 3. but to use the serial we **have** to split, so this is useless
-    // 4. So we have to implement join and than split on the whole uart to gain the uart + pins again.
-    // 5. We should introduce the builder pattern (config pattern instead of dirtctl setting the
-    //    buad rate)
-    // 6. No way to set parity etc.
-    // 7. We have to implement read and write directly on the peripheral
-    //  - Maybe this should also follow
-    //
-    // #[test]
-    // fn send_receive_split_fast(state: &mut super::State) {
-    //     let (usart, pins) = unwrap!(state.serial1.take()).free();
-    //     let mut serial = Serial::usart1(usart, pins, 115200.Bd(), state.clocks, &mut state.apb2);
-    //     let (mut tx, mut rx) = serial.split();
-    //     for i in &TEST_MSG {
-    //         nb::block!(tx.write(*i));
-    //         let c = unwrap!(nb::block!(rx.read()));
-    //         assert_eq!(c, *i);
-    //     }
-
-    //     state.serial = Some(serial);
-    // }
+    #[test]
+    fn test_many_baudrates(state: &mut super::State) {
+        use hal::time::rate::Baud;
+        for baudrate in &[
+            Baud(1200),
+            Baud(9600),
+            Baud(19200),
+            Baud(38400),
+            Baud(57600),
+            Baud(115200),
+            Baud(230400),
+            Baud(460800),
+        ] {
+            let (usart, pins) = unwrap!(state.serial1.take()).free();
+            let mut serial = Serial::usart1(usart, pins, *baudrate, state.clocks, &mut state.apb2);
+            for i in &TEST_MSG {
+                unwrap!(nb::block!(serial.write(*i)));
+                let c = unwrap!(nb::block!(serial.read()));
+                assert_eq!(c, *i);
+            }
+            state.serial1 = Some(serial);
+        }
+    }
 
     #[test]
     fn send_receive_split(state: &mut super::State) {
@@ -156,4 +158,12 @@ mod tests {
         defmt::info!("{}", c);
         assert!(matches!(c, Err(Error::Framing)));
     }
+
+    // TODO: Check the parity. But currently, there is no way to configure the parity
+    // #[test]
+    // fn check_parity(state: &mut super::State) { }
+
+    // TODO: Test interrupts
+    // #[test]
+    // fn enable_interrupt_and_wait_for_fire(state: &mut super::State) {}
 }
