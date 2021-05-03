@@ -203,3 +203,9 @@ cfg_if! {
         }
     }
 }
+
+mod private {
+    /// Private sealed trait to seal all GPIO implementations
+    /// which do implement peripheral functionalities.
+    pub trait Sealed {}
+}
