@@ -5,6 +5,10 @@ publish = false
 version = "0.0.0"
 
 [[test]]
+name = "uart"
+harness = false
+
+[[test]]
 name = "rcc"
 harness = false
 
@@ -33,6 +37,7 @@ defmt-test = "0.2.0"
 # TODO: Set stm32f303xc as default, but make it overwritable
 stm32f3xx-hal = { path = "..", features = ["rt","defmt-trace","can", "ld"]}
 panic-probe = { version = "0.2.0", features = ["print-defmt"] }
+nb = "1.0.0"
 
 [features]
 # enable all defmt logging levels
