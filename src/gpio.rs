@@ -927,7 +927,7 @@ macro_rules! gpio {
 
                 $(
                     #[doc = "Pin " $PXi]
-                    pub type $PXi<Mode> = Pin<$Gpiox, $Ui, Mode>;
+                    pub type $PXi<Mode> = Pin<$Gpiox, Mode, $Ui>;
 
                     $(
                         impl<Mode> marker::$IntoAfi for $PXi<Mode> {
