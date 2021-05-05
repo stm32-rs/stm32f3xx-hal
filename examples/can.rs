@@ -13,7 +13,7 @@ use hal::pac;
 use hal::prelude::*;
 use hal::watchdog::IndependentWatchDog;
 
-use bxcan::filter::{Mask16, Mask32};
+use bxcan::filter::Mask32;
 use bxcan::{Frame, StandardId};
 use hal::can::Can;
 use nb::block;
@@ -31,7 +31,7 @@ fn main() -> ! {
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
-    let clocks = rcc
+    let _clocks = rcc
         .cfgr
         .use_hse(32.MHz())
         .hclk(64.MHz())
