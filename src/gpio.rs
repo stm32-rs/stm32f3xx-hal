@@ -223,7 +223,7 @@ pub struct Input;
 /// Output mode (type state)
 pub struct Output<Otype>(PhantomData<Otype>);
 /// Alternate function (type state)
-pub struct Alternate<Otype, const Af: u8>(u8, PhantomData<Otype>);
+pub struct Alternate<Otype, const AF: u8>(u8, PhantomData<Otype>);
 /// Analog mode (type state)
 pub struct Analog;
 
@@ -235,10 +235,10 @@ pub struct OpenDrain;
 impl marker::Readable for Input {}
 impl marker::Readable for Output<OpenDrain> {}
 impl<Otype> marker::OutputSpeed for Output<Otype> {}
-impl<Otype, const Af: u8> marker::OutputSpeed for Alternate<Otype, { Af }> {}
+impl<Otype, const AF: u8> marker::OutputSpeed for Alternate<Otype, { AF }> {}
 impl marker::Active for Input {}
 impl<Otype> marker::Active for Output<Otype> {}
-impl<Otype, const Af: u8> marker::Active for Alternate<Otype, { Af }> {}
+impl<Otype, const AF: u8> marker::Active for Alternate<Otype, { AF }> {}
 
 /// Slew rate configuration
 pub enum Speed {
@@ -271,7 +271,7 @@ pub enum Edge {
 }
 
 /// Generic pin
-pub struct Pin<Gpio, Mode, const Index: u8> {
+pub struct Pin<Gpio, Mode, const INDEX: u8> {
     gpio: Gpio,
     index: u8,
     _mode: PhantomData<Mode>,
@@ -299,16 +299,16 @@ macro_rules! modify_at {
     };
 }
 
-impl<Gpio, Mode, const Index: u8> Pin<Gpio, Mode, { Index } >
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, { INDEX } >
 {
     /// Erases the pin number from the type
     ///
     /// This is useful when you want to collect the pins into an array where you
     /// need all the elements to have the same type
-    pub fn downgrade(self) -> Pin<Gpio, Mode, { Index } > {
+    pub fn downgrade(self) -> Pin<Gpio, Mode, { INDEX } > {
         Pin {
             gpio: self.gpio,
-            index: Index,
+            index: INDEX,
             _mode: self._mode,
         }
     }
@@ -335,8 +335,8 @@ impl<Gpio, Mode, const Index: u8> Pin<Gpio, Mode, { Index } >
 //    }
 //}
 
-impl<Gpio, Mode, const Index: u8> Pin<Gpio, Mode, { Index }> {
-    fn into_mode<NewMode>(self) -> Pin<Gpio, NewMode, { Index }> {
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, { INDEX }> {
+    fn into_mode<NewMode>(self) -> Pin<Gpio, NewMode, { INDEX }> {
         Pin {
             gpio: self.gpio,
             index: self.index,
@@ -345,12 +345,12 @@ impl<Gpio, Mode, const Index: u8> Pin<Gpio, Mode, { Index }> {
     }
 }
 
-impl<Gpio, Mode, const Index: u8> Pin<Gpio, Mode, Index>
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, INDEX>
 where
     Gpio: marker::GpioStatic,
 {
     /// Configures the pin to operate as an input pin
-    pub fn into_input(self, moder: &mut Gpio::MODER) -> Pin<Gpio, Input, { Index }> {
+    pub fn into_input(self, moder: &mut Gpio::MODER) -> Pin<Gpio, Input, { INDEX }> {
         moder.input(self.index);
         self.into_mode()
     }
@@ -361,7 +361,7 @@ where
         self,
         moder: &mut Gpio::MODER,
         pupdr: &mut Gpio::PUPDR,
-    ) -> Pin<Gpio, Input, { Index } > {
+    ) -> Pin<Gpio, Input, { INDEX } > {
         moder.input(self.index);
         pupdr.floating(self.index);
         self.into_mode()
@@ -373,7 +373,7 @@ where
         self,
         moder: &mut Gpio::MODER,
         pupdr: &mut Gpio::PUPDR,
-    ) -> Pin<Gpio, Input, { Index } > {
+    ) -> Pin<Gpio, Input, { INDEX } > {
         moder.input(self.index);
         pupdr.pull_up(self.index);
         self.into_mode()
@@ -385,7 +385,7 @@ where
         self,
         moder: &mut Gpio::MODER,
         pupdr: &mut Gpio::PUPDR,
-    ) -> Pin<Gpio, Input, {Index}> {
+    ) -> Pin<Gpio, Input, {INDEX}> {
         moder.input(self.index);
         pupdr.pull_down(self.index);
         self.into_mode()
@@ -396,7 +396,7 @@ where
         self,
         moder: &mut Gpio::MODER,
         otyper: &mut Gpio::OTYPER,
-    ) -> Pin<Gpio, Output<PushPull>, Index> {
+    ) -> Pin<Gpio, Output<PushPull>, INDEX> {
         moder.output(self.index);
         otyper.push_pull(self.index);
         self.into_mode()
@@ -407,7 +407,7 @@ where
         self,
         moder: &mut Gpio::MODER,
         otyper: &mut Gpio::OTYPER,
-    ) -> Pin<Gpio, Output<OpenDrain>, Index> {
+    ) -> Pin<Gpio, Output<OpenDrain>, INDEX> {
         moder.output(self.index);
         otyper.open_drain(self.index);
         self.into_mode()
@@ -418,14 +418,14 @@ where
         self,
         moder: &mut Gpio::MODER,
         pupdr: &mut Gpio::PUPDR,
-    ) -> Pin<Gpio, Analog, Index> {
+    ) -> Pin<Gpio, Analog, INDEX> {
         moder.analog(self.index);
         pupdr.floating(self.index);
         self.into_mode()
     }
 }
 
-impl<Gpio, Mode, const Index: u8> Pin<Gpio, Mode, { Index }>
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, { INDEX }>
 where
     Gpio: marker::GpioStatic,
     Mode: marker::OutputSpeed,
@@ -440,7 +440,7 @@ where
     }
 }
 
-impl<Gpio, Mode, const Index: u8> Pin<Gpio, Mode, {Index}>
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, {INDEX}>
 where
     Gpio: marker::GpioStatic,
     Mode: marker::Active,
@@ -467,7 +467,7 @@ where
     }
 }
 
-impl<Gpio, Otype, const Index: u8> OutputPin for Pin<Gpio, Output<Otype>, {Index}>
+impl<Gpio, Otype, const INDEX: u8> OutputPin for Pin<Gpio, Output<Otype>, {INDEX}>
 where
     Gpio: marker::Gpio,
 {
@@ -487,7 +487,7 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<Gpio, Mode, const Index: u8> InputPin for Pin<Gpio, Mode, {Index}>
+impl<Gpio, Mode, const INDEX: u8> InputPin for Pin<Gpio, Mode, {INDEX}>
 where
     Gpio: marker::Gpio,
     Mode: marker::Readable,
@@ -505,7 +505,7 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<Gpio, Otype, const Index: u8> StatefulOutputPin for Pin<Gpio, Output<Otype>, { Index }>
+impl<Gpio, Otype, const INDEX: u8> StatefulOutputPin for Pin<Gpio, Output<Otype>, { INDEX }>
 where
     Gpio: marker::Gpio,
 {
@@ -520,7 +520,7 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<Gpio, Otype, const Index: u8 > toggleable::Default for Pin<Gpio, Output<Otype>, { Index }>
+impl<Gpio, Otype, const INDEX: u8 > toggleable::Default for Pin<Gpio, Output<Otype>, { INDEX }>
 where
     Gpio: marker::Gpio,
 {
@@ -544,7 +544,7 @@ macro_rules! reg_for_cpu {
     };
 }
 
-impl<Gpio, Mode, const Index: u8> Pin<Gpio, Mode, {Index}>
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, {INDEX}>
 where
     Gpio: marker::Gpio,
     Mode: marker::Active,
@@ -632,7 +632,7 @@ macro_rules! af {
             pub type $AFi<Otype> = Alternate<Otype, { $i }>;
         }
 
-        impl<Gpio, Mode, const Index: u8 > Pin<Gpio, Mode, {Index} >
+        impl<Gpio, Mode, const INDEX: u8 > Pin<Gpio, Mode, {INDEX} >
         where
             Self: marker::$IntoAfi,
             Gpio: marker::GpioStatic,
@@ -643,7 +643,7 @@ macro_rules! af {
                 moder: &mut Gpio::MODER,
                 otyper: &mut Gpio::OTYPER,
                 afr: &mut <Self as marker::$IntoAfi>::AFR,
-            ) -> Pin<Gpio, $AFi<PushPull>, { Index }> {
+            ) -> Pin<Gpio, $AFi<PushPull>, { INDEX }> {
                 moder.alternate(self.index);
                 otyper.push_pull(self.index);
                 afr.afx(self.index, $i);
@@ -656,7 +656,7 @@ macro_rules! af {
                 moder: &mut Gpio::MODER,
                 otyper: &mut Gpio::OTYPER,
                 afr: &mut <Self as marker::$IntoAfi>::AFR,
-            ) -> Pin<Gpio, $AFi<OpenDrain>, { Index }> {
+            ) -> Pin<Gpio, $AFi<OpenDrain>, { INDEX }> {
                 moder.alternate(self.index);
                 otyper.open_drain(self.index);
                 afr.afx(self.index, $i);
