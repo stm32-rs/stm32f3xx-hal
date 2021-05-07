@@ -72,7 +72,7 @@ use crate::{
 #[cfg(feature = "unproven")]
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
 
-use typenum::{Unsigned, U0, U1, U10, U11, U12, U13, U14, U15, U2, U3, U4, U5, U6, U7, U8, U9};
+use typenum::{Unsigned};
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers
 pub trait GpioExt {
@@ -299,13 +299,12 @@ macro_rules! modify_at {
     };
 }
 
-impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, { INDEX } >
-{
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, { INDEX }> {
     /// Erases the pin number from the type
     ///
     /// This is useful when you want to collect the pins into an array where you
     /// need all the elements to have the same type
-    pub fn downgrade(self) -> Pin<Gpio, Mode, { INDEX } > {
+    pub fn downgrade(self) -> Pin<Gpio, Mode, { INDEX }> {
         Pin {
             gpio: self.gpio,
             index: INDEX,
@@ -361,7 +360,7 @@ where
         self,
         moder: &mut Gpio::MODER,
         pupdr: &mut Gpio::PUPDR,
-    ) -> Pin<Gpio, Input, { INDEX } > {
+    ) -> Pin<Gpio, Input, { INDEX }> {
         moder.input(self.index);
         pupdr.floating(self.index);
         self.into_mode()
@@ -373,7 +372,7 @@ where
         self,
         moder: &mut Gpio::MODER,
         pupdr: &mut Gpio::PUPDR,
-    ) -> Pin<Gpio, Input, { INDEX } > {
+    ) -> Pin<Gpio, Input, { INDEX }> {
         moder.input(self.index);
         pupdr.pull_up(self.index);
         self.into_mode()
@@ -385,7 +384,7 @@ where
         self,
         moder: &mut Gpio::MODER,
         pupdr: &mut Gpio::PUPDR,
-    ) -> Pin<Gpio, Input, {INDEX}> {
+    ) -> Pin<Gpio, Input, { INDEX }> {
         moder.input(self.index);
         pupdr.pull_down(self.index);
         self.into_mode()
@@ -440,7 +439,7 @@ where
     }
 }
 
-impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, {INDEX}>
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, { INDEX }>
 where
     Gpio: marker::GpioStatic,
     Mode: marker::Active,
@@ -467,7 +466,7 @@ where
     }
 }
 
-impl<Gpio, Otype, const INDEX: u8> OutputPin for Pin<Gpio, Output<Otype>, {INDEX}>
+impl<Gpio, Otype, const INDEX: u8> OutputPin for Pin<Gpio, Output<Otype>, { INDEX }>
 where
     Gpio: marker::Gpio,
 {
@@ -487,7 +486,7 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<Gpio, Mode, const INDEX: u8> InputPin for Pin<Gpio, Mode, {INDEX}>
+impl<Gpio, Mode, const INDEX: u8> InputPin for Pin<Gpio, Mode, { INDEX }>
 where
     Gpio: marker::Gpio,
     Mode: marker::Readable,
@@ -520,9 +519,8 @@ where
 }
 
 #[cfg(feature = "unproven")]
-impl<Gpio, Otype, const INDEX: u8 > toggleable::Default for Pin<Gpio, Output<Otype>, { INDEX }>
-where
-    Gpio: marker::Gpio,
+impl<Gpio, Otype, const INDEX: u8> toggleable::Default for Pin<Gpio, Output<Otype>, { INDEX }> where
+    Gpio: marker::Gpio
 {
 }
 
@@ -544,7 +542,7 @@ macro_rules! reg_for_cpu {
     };
 }
 
-impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, {INDEX}>
+impl<Gpio, Mode, const INDEX: u8> Pin<Gpio, Mode, { INDEX }>
 where
     Gpio: marker::Gpio,
     Mode: marker::Active,
@@ -788,11 +786,6 @@ macro_rules! gpio {
                 use super::{
                     Input, Output, Analog, PushPull, OpenDrain,
                     AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF13, AF14, AF15,
-                };
-
-                #[allow(unused_imports)]
-                use typenum::{
-                    U0, U1, U2, U3, U4, U5, U6, U7, U8, U9, U10, U11, U12, U13, U14, U15
                 };
 
                 /// GPIO parts
