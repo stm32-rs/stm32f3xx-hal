@@ -16,7 +16,8 @@ use crate::gpio::{PushPull, AF7, AF9};
 use crate::pac;
 
 use crate::rcc::APB1;
-use crate::stm32;
+
+pub use bxcan;
 use bxcan::RegisterBlock;
 
 use cfg_if::cfg_if;
