@@ -72,8 +72,11 @@ where
 {
     /// Create a new CAN instance, using the specified TX and RX pins.
     ///
-    /// Note: this does not actually initialize the CAN bus. You will need to first call [`bxcan::Can::new`] and  set the bus configuration and filters before the peripheral can be enabled. See the CAN example, for a more thorough example of the full setup process.
-    pub fn new(can: stm32::CAN, tx: TX, rx: RX, apb1: &mut APB1) -> Self {
+    /// Note: this does not actually initialize the CAN bus.
+    /// You will need to first call [`bxcan::Can::new`] and  set the bus configuration and filters
+    /// before the peripheral can be enabled.
+    /// See the CAN example, for a more thorough example of the full setup process.
+    pub fn new(can: pac::CAN, tx: TX, rx: RX, apb1: &mut APB1) -> Self {
         apb1.enr().modify(|_, w| w.canen().enabled());
         apb1.rstr().modify(|_, w| w.canrst().set_bit());
         apb1.rstr().modify(|_, w| w.canrst().clear_bit());
