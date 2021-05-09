@@ -49,9 +49,7 @@ fn main() -> ! {
         .into_af9_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     // Initialize the CAN peripheral
-    let can = Can::new(dp.CAN, tx, rx, &mut rcc.apb1);
-
-    let mut can = bxcan::Can::new(can);
+    let mut can = Can::new(dp.CAN, tx, rx, &mut rcc.apb1);
 
     // Use loopback mode: No pins need to be assigned to peripheral.
     // APB1 (PCLK1): 64MHz, Bit rate: 500kBit/s, Sample Point 87.5%

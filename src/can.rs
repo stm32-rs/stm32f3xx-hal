@@ -77,16 +77,16 @@ where
     /// You will need to first call [`bxcan::Can::new`] and  set the bus configuration and filters
     /// before the peripheral can be enabled.
     /// See the CAN example, for a more thorough example of the full setup process.
-    pub fn new(can: pac::CAN, tx: TX, rx: RX, apb1: &mut APB1) -> Self {
+    pub fn new(can: pac::CAN, tx: TX, rx: RX, apb1: &mut APB1) -> bxcan::Can<Self> {
         apb1.enr().modify(|_, w| w.canen().enabled());
         apb1.rstr().modify(|_, w| w.canrst().set_bit());
         apb1.rstr().modify(|_, w| w.canrst().clear_bit());
 
-        Can {
+        bxcan::Can::new(Can {
             _can: can,
             _tx: tx,
             _rx: rx,
-        }
+        })
     }
 }
 
