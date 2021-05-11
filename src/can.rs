@@ -1,4 +1,4 @@
-//! Controller Area Network (Requires feature `can`)
+//! Controller Area Network.
 //!
 //! CAN is currently not enabled by default, and
 //! can be enabled by the `can` feature.

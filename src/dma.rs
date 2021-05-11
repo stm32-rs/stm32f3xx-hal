@@ -1,4 +1,4 @@
-//! Direct memory access (DMA) controller. (Requires feature `stm32f303*` or `stm32f302*`)
+//! Direct memory access (DMA) controller.
 //!
 //! Currently DMA is only supported for STM32F303 or STM32F302 MCUs.
 //!
