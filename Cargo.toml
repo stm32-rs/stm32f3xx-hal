@@ -18,6 +18,7 @@ exclude = [
     "codegen",
     ".markdownlint.yml"
 ]
+resolver = "2"
 
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "stm32-usbd", "can"]
