@@ -147,12 +147,6 @@ pub mod marker {
         type PUPDR: super::Pupdr;
     }
 
-    /// Marker trait for pin number
-    pub trait Index {
-        #[doc(hidden)]
-        fn index(&self) -> u8;
-    }
-
     /// Marker trait for readable pin modes
     pub trait Readable {}
 
@@ -201,22 +195,6 @@ impl marker::Gpio for Gpiox {}
 
 /// Runtime defined pin number (type state)
 pub struct Ux(u8);
-
-impl marker::Index for Ux {
-    fn index(&self) -> u8 {
-        self.0
-    }
-}
-
-impl<U> marker::Index for U
-where
-    U: Unsigned,
-{
-    #[inline(always)]
-    fn index(&self) -> u8 {
-        Self::U8
-    }
-}
 
 /// Input mode (type state)
 pub struct Input;
