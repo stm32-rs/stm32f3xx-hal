@@ -49,31 +49,31 @@ pub struct Adc<ADC> {
 ///
 /// Each channel can be sampled with a different sample time.
 /// There is always an overhead of 13 ADC clock cycles.
-/// E.g. For Sampletime T_19 the total conversion time (in ADC clock cycles) is
+/// E.g. For Sampletime T19 the total conversion time (in ADC clock cycles) is
 /// 13 + 19 = 32 ADC Clock Cycles
 pub enum SampleTime {
     /// 1.5 ADC clock cycles
-    T_1,
+    T1,
     /// 2.5 ADC clock cycles
-    T_2,
+    T2,
     /// 4.5 ADC clock cycles
-    T_4,
+    T4,
     /// 7.5 ADC clock cycles
-    T_7,
+    T7,
     /// 19.5 ADC clock cycles
-    T_19,
+    T19,
     /// 61.5 ADC clock cycles
-    T_61,
+    T61,
     /// 181.5 ADC clock cycles
-    T_181,
+    T181,
     /// 601.5 ADC clock cycles
-    T_601,
+    T601,
 }
 
 impl Default for SampleTime {
-    /// T_1 is also the reset value.
+    /// T1 is also the reset value.
     fn default() -> Self {
-        SampleTime::T_1
+        SampleTime::T1
     }
 }
 
@@ -81,14 +81,14 @@ impl SampleTime {
     /// Conversion to bits for SMP
     fn bitcode(&self) -> u8 {
         match self {
-            SampleTime::T_1 => 0b000,
-            SampleTime::T_2 => 0b001,
-            SampleTime::T_4 => 0b010,
-            SampleTime::T_7 => 0b011,
-            SampleTime::T_19 => 0b100,
-            SampleTime::T_61 => 0b101,
-            SampleTime::T_181 => 0b110,
-            SampleTime::T_601 => 0b111,
+            SampleTime::T1 => 0b000,
+            SampleTime::T2 => 0b001,
+            SampleTime::T4 => 0b010,
+            SampleTime::T7 => 0b011,
+            SampleTime::T19 => 0b100,
+            SampleTime::T61 => 0b101,
+            SampleTime::T181 => 0b110,
+            SampleTime::T601 => 0b111,
         }
     }
 }
@@ -101,23 +101,23 @@ pub enum OperationMode {
     OneShot,
 }
 
-#[derive(Clone, Copy, PartialEq)]
 /// ADC CkMode
 // TODO: Add ASYNCHRONOUS mode
+#[derive(Clone, Copy, PartialEq)]
 pub enum CkMode {
     // /// Use Kernel Clock adc_ker_ck_input divided by PRESC. Asynchronous to AHB clock
     // ASYNCHRONOUS = 0,
     /// Use AHB clock rcc_hclk3. In this case rcc_hclk must equal sys_d1cpre_ck
-    SYNCDIV1 = 1,
+    SyncDiv1 = 1,
     /// Use AHB clock rcc_hclk3 divided by 2
-    SYNCDIV2 = 2,
+    SyncDiv2 = 2,
     /// Use AHB clock rcc_hclk3 divided by 4
-    SYNCDIV4 = 4,
+    SyncDiv4 = 4,
 }
 
 impl Default for CkMode {
     fn default() -> Self {
-        CkMode::SYNCDIV2
+        CkMode::SyncDiv2
     }
 }
 
@@ -126,9 +126,9 @@ impl From<CkMode> for CKMODE_A {
     fn from(ckmode: CkMode) -> Self {
         match ckmode {
             //CkMode::ASYNCHRONOUS => CKMODE_A::ASYNCHRONOUS,
-            CkMode::SYNCDIV1 => CKMODE_A::SYNCDIV1,
-            CkMode::SYNCDIV2 => CKMODE_A::SYNCDIV2,
-            CkMode::SYNCDIV4 => CKMODE_A::SYNCDIV4,
+            CkMode::SyncDiv1 => CKMODE_A::SyncDiv1,
+            CkMode::SyncDiv2 => CKMODE_A::SyncDiv2,
+            CkMode::SyncDiv4 => CKMODE_A::SyncDiv4,
         }
     }
 }
@@ -339,10 +339,10 @@ macro_rules! adc_hal {
                     this_adc
                 }
 
-                /// Software can use CkMode::SYNCDIV1 only if
+                /// Software can use CkMode::SyncDiv1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    if (self.ckmode == CkMode::SYNCDIV1) {
+                    if (self.ckmode == CkMode::SyncDiv1) {
                         clocks.hclk().0 == clocks.sysclk().0
                     } else {
                         true
@@ -403,9 +403,9 @@ macro_rules! adc_hal {
                     // mode is implemented (CKMODE[1:0] = 00b).  This will force whoever is working
                     // on it to rethink what needs to be done here :)
                     let adc_per_cpu_cycles = match self.ckmode {
-                        CkMode::SYNCDIV1 => 1,
-                        CkMode::SYNCDIV2 => 2,
-                        CkMode::SYNCDIV4 => 4,
+                        CkMode::SyncDiv1 => 1,
+                        CkMode::SyncDiv2 => 2,
+                        CkMode::SyncDiv4 => 4,
                     };
                     asm::delay(adc_per_cpu_cycles * cycles);
                 }
@@ -477,15 +477,15 @@ macro_rules! adc_hal {
 
             }
 
-            impl<WORD, PIN> OneShot<$ADC, WORD, PIN> for Adc<$ADC>
+            impl<Word, Pin> OneShot<$ADC, Word, Pin> for Adc<$ADC>
             where
-                WORD: From<u16>,
-                PIN: Channel<$ADC, ID = u8>,
+                Word: From<u16>,
+                Pin: Channel<$ADC, ID = u8>,
                 {
                     type Error = ();
 
-                    fn read(&mut self, _pin: &mut PIN) -> nb::Result<WORD, Self::Error> {
-                        let res = self.convert_one(PIN::channel());
+                    fn read(&mut self, _pin: &mut Pin) -> nb::Result<Word, Self::Error> {
+                        let res = self.convert_one(Pin::channel());
                         return Ok(res.into());
                     }
                 }
