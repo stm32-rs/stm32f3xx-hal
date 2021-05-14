@@ -255,6 +255,12 @@ pub struct Pin<Gpio, Mode, const INDEX: u8> {
     _mode: PhantomData<Mode>,
 }
 
+pub struct PXx<Mode> {
+    gpio: Gpiox,
+    index: u8,
+    _mode: PhantomData<Mode>,
+}
+
 ///// Fully erased pin
 /////
 ///// This moves the pin type information to be known
@@ -883,7 +889,7 @@ macro_rules! gpio {
                 }
 
                 // /// Partially erased pin
-                // pub type $PXx<Mode> = Pin<$Gpiox, Mode, Ux>;
+                // pub type $PXx<Mode> = Pin<$Gpiox, Mode,{ Ux }>;
 
                 $(
                     #[doc = "Pin " $PXi]
