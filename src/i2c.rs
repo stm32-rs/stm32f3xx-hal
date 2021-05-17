@@ -7,6 +7,7 @@
 use core::{convert::TryFrom, ops::Deref};
 
 use cfg_if::cfg_if;
+use sealed::sealed;
 
 use crate::{
     gpio::{gpioa, gpiob, OpenDrain, AF4},
@@ -43,38 +44,54 @@ pub enum Error {
     // Alert, // SMBUS mode only
 }
 
-// FIXME these should be "closed" traits
-/// SCL pin -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait SclPin<I2C> {}
+/// SCL pin
+#[sealed]
+pub trait SclPin<I2C> {}
 
-/// SDA pin -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait SdaPin<I2C> {}
+/// SDA pin
+#[sealed]
+pub trait SdaPin<I2C> {}
 
-unsafe impl SclPin<I2C1> for gpioa::PA15<AF4<OpenDrain>> {}
-unsafe impl SclPin<I2C1> for gpiob::PB6<AF4<OpenDrain>> {}
-unsafe impl SclPin<I2C1> for gpiob::PB8<AF4<OpenDrain>> {}
-unsafe impl SdaPin<I2C1> for gpioa::PA14<AF4<OpenDrain>> {}
-unsafe impl SdaPin<I2C1> for gpiob::PB7<AF4<OpenDrain>> {}
-unsafe impl SdaPin<I2C1> for gpiob::PB9<AF4<OpenDrain>> {}
+#[sealed]
+impl SclPin<I2C1> for gpioa::PA15<AF4<OpenDrain>> {}
+#[sealed]
+impl SclPin<I2C1> for gpiob::PB6<AF4<OpenDrain>> {}
+#[sealed]
+impl SclPin<I2C1> for gpiob::PB8<AF4<OpenDrain>> {}
+#[sealed]
+impl SdaPin<I2C1> for gpioa::PA14<AF4<OpenDrain>> {}
+#[sealed]
+impl SdaPin<I2C1> for gpiob::PB7<AF4<OpenDrain>> {}
+#[sealed]
+impl SdaPin<I2C1> for gpiob::PB9<AF4<OpenDrain>> {}
 
 cfg_if! {
     if #[cfg(not(feature = "gpio-f333"))] {
-        unsafe impl SclPin<I2C2> for gpioa::PA9<AF4<OpenDrain>> {}
-        unsafe impl SclPin<I2C2> for gpiof::PF1<AF4<OpenDrain>> {}
+        #[sealed]
+        impl SclPin<I2C2> for gpioa::PA9<AF4<OpenDrain>> {}
+        #[sealed]
+        impl SclPin<I2C2> for gpiof::PF1<AF4<OpenDrain>> {}
         #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))]
-        unsafe impl SclPin<I2C2> for gpiof::PF6<AF4<OpenDrain>> {}
-        unsafe impl SdaPin<I2C2> for gpioa::PA10<AF4<OpenDrain>> {}
-        unsafe impl SdaPin<I2C2> for gpiof::PF0<AF4<OpenDrain>> {}
+        #[sealed]
+        impl SclPin<I2C2> for gpiof::PF6<AF4<OpenDrain>> {}
+        #[sealed]
+        impl SdaPin<I2C2> for gpioa::PA10<AF4<OpenDrain>> {}
+        #[sealed]
+        impl SdaPin<I2C2> for gpiof::PF0<AF4<OpenDrain>> {}
         #[cfg(feature = "gpio-f373")]
-        unsafe impl SdaPin<I2C2> for gpiof::PF7<AF4<OpenDrain>> {}
+        #[sealed]
+        impl SdaPin<I2C2> for gpiof::PF7<AF4<OpenDrain>> {}
     }
 }
 
 cfg_if! {
     if #[cfg(any(feature = "gpio-f302", feature = "gpio-f303e"))] {
-        unsafe impl SclPin<I2C3> for gpioa::PA8<AF3<OpenDrain>> {}
-        unsafe impl SdaPin<I2C3> for gpiob::PB5<AF8<OpenDrain>> {}
-        unsafe impl SdaPin<I2C3> for gpioc::PC9<AF3<OpenDrain>> {}
+        #[sealed]
+        impl SclPin<I2C3> for gpioa::PA8<AF3<OpenDrain>> {}
+        #[sealed]
+        impl SdaPin<I2C3> for gpiob::PB5<AF8<OpenDrain>> {}
+        #[sealed]
+        impl SdaPin<I2C3> for gpioc::PC9<AF3<OpenDrain>> {}
     }
 }
 
@@ -426,8 +443,9 @@ where
     }
 }
 
-/// I2C instance -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait Instance: Deref<Target = RegisterBlock> {
+/// I2C instance
+#[sealed]
+pub trait Instance: Deref<Target = RegisterBlock> {
     #[doc(hidden)]
     fn enable_clock(apb1: &mut APB1);
     #[doc(hidden)]
@@ -437,7 +455,8 @@ pub unsafe trait Instance: Deref<Target = RegisterBlock> {
 macro_rules! i2c {
     ($($I2CX:ident: ($i2cXen:ident, $i2cXrst:ident, $i2cXsw:ident),)+) => {
         $(
-            unsafe impl Instance for $I2CX {
+            #[sealed]
+            impl Instance for $I2CX {
                 fn enable_clock(apb1: &mut APB1) {
                     apb1.enr().modify(|_, w| w.$i2cXen().enabled());
                     apb1.rstr().modify(|_, w| w.$i2cXrst().reset());

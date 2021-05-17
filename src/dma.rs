@@ -16,6 +16,7 @@ use core::{
 };
 
 pub use embedded_dma::{ReadBuffer, WriteBuffer};
+use sealed::sealed;
 
 use crate::{
     pac::{self, dma1::ch::cr},
@@ -549,14 +550,18 @@ dma!( 2: { 1,2,3,4,5 } );
 ///
 /// `C` must be the correct DMA channel for the peripheral implementing
 /// this trait.
-pub unsafe trait OnChannel<C: Channel>: Target {}
+#[sealed]
+pub trait OnChannel<C: Channel>: Target {}
 
 macro_rules! on_channel {
     (
         $dma:ident,
         $( $target:ty => $C:ident, )+
     ) => {
-        $( unsafe impl OnChannel<$dma::$C> for $target {} )+
+        $(
+            #[sealed]
+            impl OnChannel<$dma::$C> for $target {}
+        )+
     };
 }
 
