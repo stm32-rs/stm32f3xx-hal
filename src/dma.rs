@@ -9,17 +9,18 @@
 // To learn about most of the ideas implemented here, check out the DMA section
 // of the Embedonomicon: https://docs.rust-embedded.org/embedonomicon/dma.html
 
+use core::{
+    convert::TryFrom,
+    mem,
+    sync::atomic::{self, Ordering},
+};
+
 pub use embedded_dma::{ReadBuffer, WriteBuffer};
 
 use crate::{
     pac::{self, dma1::ch::cr},
     rcc::AHB,
     serial,
-};
-use core::{
-    convert::TryFrom,
-    mem,
-    sync::atomic::{self, Ordering},
 };
 
 /// Extension trait to split a DMA peripheral into independent channels

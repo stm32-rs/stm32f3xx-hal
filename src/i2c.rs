@@ -6,6 +6,8 @@
 
 use core::{convert::TryFrom, ops::Deref};
 
+use cfg_if::cfg_if;
+
 use crate::{
     gpio::{gpioa, gpiob, OpenDrain, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
@@ -22,8 +24,6 @@ use crate::{
     gpio::{gpioc, AF3, AF8},
     pac::I2C3,
 };
-
-use cfg_if::cfg_if;
 
 /// I2C error
 #[derive(Debug)]

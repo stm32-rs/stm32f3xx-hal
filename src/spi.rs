@@ -4,6 +4,7 @@
 //!
 //! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/spi.rs
 
+use core::marker::PhantomData;
 use core::ptr;
 
 use crate::hal::spi::FullDuplex;
@@ -132,7 +133,6 @@ use crate::rcc::APB1;
 ))]
 use crate::rcc::APB2;
 use crate::time::rate::*;
-use core::marker::PhantomData;
 
 /// SPI error
 #[derive(Debug)]

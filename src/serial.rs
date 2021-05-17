@@ -2,6 +2,8 @@
 
 use core::{convert::Infallible, marker::PhantomData, ptr};
 
+use cfg_if::cfg_if;
+
 use crate::{
     gpio::{gpioa, gpiob, gpioc, AF7},
     hal::{blocking, serial},
@@ -9,8 +11,6 @@ use crate::{
     rcc::{Clocks, APB1, APB2},
     time::rate::*,
 };
-
-use cfg_if::cfg_if;
 
 cfg_if! {
     if #[cfg(any(feature = "stm32f302", feature = "stm32f303"))] {
