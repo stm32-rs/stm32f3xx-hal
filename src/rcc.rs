@@ -425,7 +425,7 @@ impl CFGR {
     /// - Maximal supported frequency with `HSE`: 72 Mhz
     /// - Maximal supported frequency without `HSE`: 64 Mhz
     ///
-    /// If [`CFGR::hse`] is not used, therefor `HSI / 2` is used.
+    /// If [`CFGR::use_hse`] is not set, `HSI / 2` will be used.
     /// Only multiples of (HSI / 2) (4 Mhz) are allowed.
     ///
     /// This is true for devices **except** the following devices,
@@ -818,7 +818,7 @@ impl Clocks {
     /// Returns whether the USBCLK clock frequency is valid for the USB peripheral
     ///
     /// If the microcontroller does support USB, 48 Mhz or 72 Mhz have to be used
-    /// and the [`CFGR::hse`] must be used.
+    /// and the [`CFGR::use_hse`] must be set.
     ///
     /// The APB1 / [`CFGR::pclk1`] clock must have a minimum frequency of 10 MHz to avoid data
     /// overrun/underrun problems. [RM0316 32.5.2][RM0316]

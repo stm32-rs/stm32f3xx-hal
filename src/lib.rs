@@ -125,11 +125,14 @@ pub use stm32f3::stm32f3x4 as pac;
 pub use crate::pac::interrupt;
 
 #[cfg(feature = "stm32f303")]
+#[cfg_attr(docsrs, doc(cfg(feature = "stm32f303")))]
 pub mod adc;
 #[cfg(feature = "can")]
+#[cfg_attr(docsrs, doc(cfg(feature = "can")))]
 pub mod can;
 pub mod delay;
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "stm32f302", feature = "stm32f303"))))]
 pub mod dma;
 pub mod flash;
 pub mod gpio;
@@ -151,6 +154,7 @@ pub mod timer;
         feature = "stm32f303xe",
     ),
 ))]
+#[cfg_attr(docsrs, doc(cfg(feature = "stm32-usbd")))]
 pub mod usb;
 pub mod watchdog;
 

@@ -1,4 +1,4 @@
-//! USB peripheral. (Requires feature `stm32-usbd`)
+//! USB peripheral.
 //!
 //! See [examples/usb_serial.rs] for a usage example.
 //!

@@ -1,4 +1,4 @@
-//! Analog to Digital Converter. (Requires feature `stm32f303x[bcde]`)
+//! Analog to Digital Converter.
 //!
 //! # Examples
 //!
