@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking Changes
 
-- The MSVR was bumped to 1.50 ([#220])
+- The MSVR was bumped to 1.51 ([#169])
 - Replace custom time based units with types defined in the [embedded-time][]
   crate ([#192])
 - The `rcc` public API now expects time based units in `Megahertz`.
@@ -333,6 +333,7 @@ let clocks = rcc
 [#184]: https://github.com/stm32-rs/stm32f3xx-hal/pull/184
 [#172]: https://github.com/stm32-rs/stm32f3xx-hal/pull/172
 [#170]: https://github.com/stm32-rs/stm32f3xx-hal/pull/170
+[#169]: https://github.com/stm32-rs/stm32f3xx-hal/pull/169
 [#164]: https://github.com/stm32-rs/stm32f3xx-hal/pull/164
 [#156]: https://github.com/stm32-rs/stm32f3xx-hal/pull/156
 [#154]: https://github.com/stm32-rs/stm32f3xx-hal/pull/154

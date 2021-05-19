@@ -154,13 +154,13 @@ See the [examples folder](examples) for more example programs.
 
 ## Minimum Supported Rust Version (MSRV)
 
-This crate is guaranteed to compile on stable Rust 1.50.0 and up. It *might*
+This crate is guaranteed to compile on stable Rust 1.51.0 and up. It *might*
 compile with older versions but that may change in any new patch release.
 
 <!-- This should not prevent anyone to use newer features. -->
-<!-- As soon as the MSVR does not compile anymore, just bump it. -->
+<!-- As soon as the MSRV does not compile anymore, just bump it. -->
 
-<!-- Don't forget to also adjust the MSVR version in `.github/workflows/ci.yml` -->
+<!-- Don't forget to also adjust the MSRV version in `.github/workflows/ci.yml` -->
 
 ## License
 
