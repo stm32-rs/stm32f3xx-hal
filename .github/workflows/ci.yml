@@ -49,10 +49,7 @@ jobs:
           target: thumbv7em-none-eabihf
           override: true
           profile: minimal
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features=${{ matrix.mcu }},ld,${{ matrix.features }} --lib --examples
+      - run: cargo check --features=${{ matrix.mcu }},ld,${{ matrix.features }} --lib --examples
 
   # This is our MSRV. However this is only for documentation
   # purposes and should be increased if newer features are used.
