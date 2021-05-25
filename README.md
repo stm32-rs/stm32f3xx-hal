@@ -154,7 +154,7 @@ See the [examples folder](examples) for more example programs.
 
 ## Minimum Supported Rust Version (MSRV)
 
-This crate is guaranteed to compile on stable Rust 1.50.0 and up. It *might*
+This crate is guaranteed to compile on stable Rust 1.51.0 and up. It *might*
 compile with older versions but that may change in any new patch release.
 
 <!-- This should not prevent anyone to use newer features. -->

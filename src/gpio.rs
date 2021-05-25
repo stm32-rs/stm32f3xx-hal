@@ -72,8 +72,6 @@ use crate::{
 #[cfg(feature = "unproven")]
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
 
-use typenum::{Unsigned, U0, U1, U10, U11, U12, U13, U14, U15, U2, U3, U4, U5, U6, U7, U8, U9};
-
 /// Extension trait to split a GPIO peripheral in independent pins and registers
 pub trait GpioExt {
     /// The Parts to split the GPIO peripheral into
@@ -208,13 +206,13 @@ impl marker::Index for Ux {
     }
 }
 
-impl<U> marker::Index for U
-where
-    U: Unsigned,
-{
+/// Compile time defined pin number (type state)
+pub struct U<const X: u8>;
+
+impl<const X: u8> marker::Index for U<X> {
     #[inline(always)]
     fn index(&self) -> u8 {
-        Self::U8
+        X
     }
 }
 
@@ -223,7 +221,7 @@ pub struct Input;
 /// Output mode (type state)
 pub struct Output<Otype>(PhantomData<Otype>);
 /// Alternate function (type state)
-pub struct Alternate<Af, Otype>(PhantomData<Af>, PhantomData<Otype>);
+pub struct Alternate<Otype, const AF: u8>(PhantomData<Otype>);
 /// Analog mode (type state)
 pub struct Analog;
 
@@ -235,10 +233,10 @@ pub struct OpenDrain;
 impl marker::Readable for Input {}
 impl marker::Readable for Output<OpenDrain> {}
 impl<Otype> marker::OutputSpeed for Output<Otype> {}
-impl<Af, Otype> marker::OutputSpeed for Alternate<Af, Otype> {}
+impl<Otype, const AF: u8> marker::OutputSpeed for Alternate<Otype, AF> {}
 impl marker::Active for Input {}
 impl<Otype> marker::Active for Output<Otype> {}
-impl<Af, Otype> marker::Active for Alternate<Af, Otype> {}
+impl<Otype, const AF: u8> marker::Active for Alternate<Otype, AF> {}
 
 /// Slew rate configuration
 pub enum Speed {
@@ -299,10 +297,7 @@ macro_rules! modify_at {
     };
 }
 
-impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
-where
-    Index: Unsigned,
-{
+impl<Gpio, Mode, const X: u8> Pin<Gpio, U<X>, Mode> {
     /// Erases the pin number from the type
     ///
     /// This is useful when you want to collect the pins into an array where you
@@ -310,7 +305,7 @@ where
     pub fn downgrade(self) -> Pin<Gpio, Ux, Mode> {
         Pin {
             gpio: self.gpio,
-            index: Ux(Index::U8),
+            index: Ux(X),
             _mode: self._mode,
         }
     }
@@ -633,10 +628,10 @@ where
 }
 
 macro_rules! af {
-    ($i:literal, $Ui:ty, $AFi:ident, $IntoAfi:ident, $into_afi_push_pull:ident, $into_afi_open_drain:ident) => {
+    ($i:literal, $AFi:ident, $IntoAfi:ident, $into_afi_push_pull:ident, $into_afi_open_drain:ident) => {
         paste::paste! {
             #[doc = "Alternate function " $i " (type state)"]
-            pub type $AFi<Otype> = Alternate<$Ui, Otype>;
+            pub type $AFi<Otype> = Alternate<Otype, $i>;
         }
 
         impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
@@ -676,7 +671,7 @@ macro_rules! af {
     ([$($i:literal),+ $(,)?]) => {
         paste::paste! {
             $(
-                af!($i, [<U $i>], [<AF $i>], [<IntoAf $i>],  [<into_af $i _push_pull>],  [<into_af $i _open_drain>]);
+                af!($i, [<AF $i>], [<IntoAf $i>],  [<into_af $i _push_pull>],  [<into_af $i _open_drain>]);
             )+
         }
     };
@@ -746,11 +741,11 @@ macro_rules! gpio {
         iopen: $iopxen:ident,
         ioprst: $iopxrst:ident,
         partially_erased_pin: $PXx:ty,
-        pins: {$(
-            $PXi:ty: (
-                $pxi:ident, $Ui:ty, $MODE:ty, $AFR:ident, [$($IntoAfi:ident),*],
+        pins: [$(
+            $i:literal => (
+                $PXi:ty, $pxi:ident, $MODE:ty, $AFR:ident, [$($IntoAfi:ident),*],
             ),
-        )+},
+        )+],
     }) => {
         paste::paste!{
             #[doc = "GPIO port " $GPIOX " (type state)"]
@@ -790,17 +785,12 @@ macro_rules! gpio {
                     rcc::AHB,
                 };
 
-                use super::{marker, Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pin, Pupdr, Ux};
+                use super::{marker, Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pin, Pupdr, U, Ux};
 
                 #[allow(unused_imports)]
                 use super::{
                     Input, Output, Analog, PushPull, OpenDrain,
                     AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF13, AF14, AF15,
-                };
-
-                #[allow(unused_imports)]
-                use typenum::{
-                    U0, U1, U2, U3, U4, U5, U6, U7, U8, U9, U10, U11, U12, U13, U14, U15
                 };
 
                 /// GPIO parts
@@ -841,7 +831,7 @@ macro_rules! gpio {
                             $(
                                 $pxi: $PXi {
                                     gpio: $Gpiox,
-                                    index: $Ui::new(),
+                                    index: U::<$i>,
                                     _mode: PhantomData,
                                 },
                             )+
@@ -924,7 +914,7 @@ macro_rules! gpio {
 
                 $(
                     #[doc = "Pin " $PXi]
-                    pub type $PXi<Mode> = Pin<$Gpiox, $Ui, Mode>;
+                    pub type $PXi<Mode> = Pin<$Gpiox, U<$i>, Mode>;
 
                     $(
                         impl<Mode> marker::$IntoAfi for $PXi<Mode> {
@@ -963,11 +953,11 @@ macro_rules! gpio {
                     iopen: [<iop $x en>],
                     ioprst: [<iop $x rst>],
                     partially_erased_pin: [<P $X x>],
-                    pins: {$(
-                        [<P $X $i>]: (
-                            [<p $x $i>], [<U $i>], $MODE, [<AFR $LH>], [$([<IntoAf $af>]),*],
+                    pins: [$(
+                        $i => (
+                            [<P $X $i>], [<p $x $i>], $MODE, [<AFR $LH>], [$([<IntoAf $af>]),*],
                         ),
-                    )+},
+                    )+],
                 });
             )+
         }
