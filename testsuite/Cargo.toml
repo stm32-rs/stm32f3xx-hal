@@ -5,6 +5,10 @@ publish = false
 version = "0.0.0"
 
 [[test]]
+name = "adc"
+harness = false
+
+[[test]]
 name = "uart"
 harness = false
 
