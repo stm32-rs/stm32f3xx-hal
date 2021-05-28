@@ -32,6 +32,10 @@ harness = false
 name = "gpio_input_puller"
 harness = false
 
+[[test]]
+name = "watchdog"
+harness = false
+
 [dev-dependencies]
 cfg-if = "1.0"
 cortex-m = "0.7.0"
