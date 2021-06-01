@@ -44,11 +44,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 // The supplied frequencies must be in `MHz`.
 let clocks = rcc
     .cfgr
-    .use_hse(8u32.MHz())
-    .hclk(48u32.MHz())
-    .sysclk(48u32.MHz())
-    .pclk1(12u32.MHz())
-    .pclk2(12u32.MHz())
+    .use_hse(8.MHz())
+    .hclk(48.MHz())
+    .sysclk(48.MHz())
+    .pclk1(12.MHz())
+    .pclk2(12.MHz())
 ```
 
 - You always required to select a sub-target for target chips ([#216])

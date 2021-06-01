@@ -61,7 +61,7 @@ mod tests {
     // the probe-run output is repeated many times (as the core is restareted).
     fn feed(state: &mut State) {
         // Calculate some overhead which is introduced by asm::delay
-        let interval_wo_overhead = INTERVAL - 35u32.milliseconds();
+        let interval_wo_overhead = INTERVAL - 35.milliseconds();
         let delay: u32 = (u32::try_from(
             Nanoseconds::from(interval_wo_overhead).integer()
                 / u64::from(
