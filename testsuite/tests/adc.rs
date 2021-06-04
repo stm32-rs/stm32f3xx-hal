@@ -29,6 +29,7 @@ struct State {
 mod tests {
     use super::*;
     use defmt::{self, assert, unwrap};
+    use testsuite::GenericPair;
 
     #[init]
     fn init() -> State {
@@ -39,6 +40,13 @@ mod tests {
         let clocks = rcc.cfgr.freeze(&mut flash.acr);
         let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
+        let pair = GenericPair {
+            0: gpioc.pc0.into_analog(&mut gpioc.moder, &mut gpioc.pupdr),
+            1: gpioc
+                .pc1
+                .into_push_pull_output(&mut gpioc.moder, &mut gpioc.otyper),
+        };
+
         State {
             adc: Some(adc::Adc::adc1(
                 dp.ADC1,
@@ -47,10 +55,8 @@ mod tests {
                 adc::CkMode::default(),
                 clocks,
             )),
-            analog: gpioc.pc0.into_analog(&mut gpioc.moder, &mut gpioc.pupdr),
-            output: gpioc
-                .pc1
-                .into_push_pull_output(&mut gpioc.moder, &mut gpioc.otyper),
+            analog: pair.0,
+            output: pair.1,
             ahb: rcc.ahb,
             clocks,
             adc1_2: dp.ADC1_2,
