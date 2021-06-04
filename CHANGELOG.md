@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for GPIO interrupts ([#189])
 - `ld` feature, which enables the memory.x generation ([#216])
 - Implement `DelayMs` for `Milliseconds` and `DelayUs` for `Microseconds` ([#234])
+- ADC can now be `free()`'d ([#212])
 
 ### Changed
 
@@ -329,6 +330,7 @@ let clocks = rcc
 [#220]: https://github.com/stm32-rs/stm32f3xx-hal/pull/220
 [#217]: https://github.com/stm32-rs/stm32f3xx-hal/pull/217
 [#216]: https://github.com/stm32-rs/stm32f3xx-hal/pull/216
+[#212]: https://github.com/stm32-rs/stm32f3xx-hal/pull/212
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
 [#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203
