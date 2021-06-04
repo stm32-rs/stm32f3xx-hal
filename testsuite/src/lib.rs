@@ -11,6 +11,7 @@ so that one one pin can confirm the correct behavior of the other pin and the un
 peripheral.
 */
 #![no_std]
+#![cfg_attr(test, no_main)]
 
 use defmt_rtt as _;
 use panic_probe as _;
@@ -43,3 +44,8 @@ pub struct CrossSerialPair1<T1, T2>(pub PA2<T1>, pub PB11<T2>);
 ///
 /// This is used for UART, where UART3(TX) is connected to UART2(RX)
 pub struct CrossSerialPair2<T1, T2>(pub PB10<T1>, pub PA3<T2>);
+
+#[export_name = "main"]
+unsafe extern "C" fn __dummy_entry() -> ! {
+    defmt_test::export::exit()
+}

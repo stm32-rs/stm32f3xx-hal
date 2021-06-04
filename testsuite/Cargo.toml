@@ -4,6 +4,9 @@ name = "testsuite"
 publish = false
 version = "0.0.0"
 
+[lib]
+harness = false
+
 [[test]]
 name = "adc"
 harness = false
