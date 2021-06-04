@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
 
-use defmt_rtt as _;
-use panic_probe as _;
+use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
@@ -15,8 +14,10 @@ struct State {
 
 #[defmt_test::tests]
 mod tests {
+    use super::*;
     use defmt::{assert, unwrap};
     use stm32f3xx_hal::{pac, prelude::*};
+    use testsuite::{GroundPin, VddPin};
 
     #[init]
     fn init() -> super::State {
@@ -24,20 +25,16 @@ mod tests {
 
         let mut rcc = dp.RCC.constrain();
         let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
-        let input_ground = gpioc
+        let input_ground: GroundPin<Input> = gpioc
             .pc3
-            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr)
-            .downgrade()
-            .downgrade();
-        let input_vdd = gpioc
+            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
+        let input_vdd: VddPin<Input> = gpioc
             .pc2
-            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr)
-            .downgrade()
-            .downgrade();
+            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
 
         super::State {
-            input_ground,
-            input_vdd,
+            input_ground: input_ground.downgrade().downgrade(),
+            input_vdd: input_vdd.downgrade().downgrade(),
         }
     }
 

@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
 
-use defmt_rtt as _;
-use panic_probe as _;
+use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
@@ -15,9 +14,9 @@ struct State {
 
 #[defmt_test::tests]
 mod tests {
-    use cortex_m::asm;
     use defmt::{assert, unwrap};
     use stm32f3xx_hal::{pac, prelude::*};
+    use testsuite::GenericPair;
 
     #[init]
     fn init() -> super::State {
@@ -26,20 +25,21 @@ mod tests {
         let mut rcc = dp.RCC.constrain();
         let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
-        let mut input_pin = gpioc
-            .pc0
-            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
+        let pair = GenericPair {
+            0: gpioc
+                .pc0
+                .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr),
+            1: gpioc
+                .pc1
+                .into_open_drain_output(&mut gpioc.moder, &mut gpioc.otyper),
+        };
+        let mut input_pin = pair.0;
         input_pin.internal_pull_up(&mut gpioc.pupdr, true);
-        let input_pin = input_pin.downgrade().downgrade();
-        let output_pin = gpioc
-            .pc1
-            .into_open_drain_output(&mut gpioc.moder, &mut gpioc.otyper)
-            .downgrade()
-            .downgrade();
+        let output_pin = pair.1;
 
         super::State {
-            input_pin,
-            output_pin,
+            input_pin: input_pin.downgrade().downgrade(),
+            output_pin: output_pin.downgrade().downgrade(),
         }
     }
 

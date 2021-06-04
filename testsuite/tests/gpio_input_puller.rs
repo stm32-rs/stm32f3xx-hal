@@ -1,8 +1,7 @@
 #![no_std]
 #![no_main]
 
-use defmt_rtt as _;
-use panic_probe as _;
+use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
@@ -21,6 +20,7 @@ struct State {
 mod tests {
     use super::*;
     use defmt::{assert, unwrap};
+    use testsuite::GenericPair;
 
     #[init]
     fn init() -> super::State {
@@ -29,21 +29,22 @@ mod tests {
         let mut rcc = dp.RCC.constrain();
         let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
-        let mut observer = gpioc
-            .pc0
-            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
+        let pair = GenericPair {
+            0: gpioc
+                .pc0
+                .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr),
+            1: gpioc
+                .pc1
+                .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr),
+        };
+        let mut observer = pair.0;
+        let puller = pair.1;
+
         observer.set_internal_resistor(&mut gpioc.pupdr, Resistor::Floating);
-
-        let observer = observer.downgrade().downgrade();
-
-        let puller = gpioc
-            .pc1
-            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
-
         let pupdr = gpioc.pupdr;
 
         super::State {
-            observer,
+            observer: observer.downgrade().downgrade(),
             puller,
             pupdr,
         }

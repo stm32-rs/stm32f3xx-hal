@@ -2,8 +2,7 @@
 #![no_main]
 
 // TODO: Get pa9 and pa10 because these also implement spi and uart
-use defmt_rtt as _;
-use panic_probe as _;
+use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
@@ -32,6 +31,7 @@ const TEST_MSG: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
 mod tests {
     use super::*;
     use defmt::{self, assert, assert_eq, unwrap};
+    use testsuite::{SerialPair, CrossSerialPair1, CrossSerialPair2};
 
     #[init]
     fn init() -> super::State {
@@ -43,49 +43,49 @@ mod tests {
         let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
         let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
 
-        let pins1 = (
-            gpioa
+        let serial_pair = SerialPair {
+            0: gpioa
                 .pa9
                 .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
-            gpioa
+            1: gpioa
                 .pa10
                 .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
-        );
-        let pins2 = (
-            gpioa
+        };
+        let cs_pair_1 = CrossSerialPair1 {
+            0: gpioa
                 .pa2
                 .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
-            gpioa
-                .pa3
-                .into_af7_open_drain(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
-        );
-        let pins3 = (
-            gpiob
-                .pb10
-                .into_af7_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
-            gpiob
+            1: gpiob
                 .pb11
                 .into_af7_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
-        );
+        };
+        let cs_pair_2 = CrossSerialPair2 {
+            0: gpiob
+                .pb10
+                .into_af7_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
+            1: gpioa
+                .pa3
+                .into_af7_open_drain(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
+        };
 
         super::State {
             serial1: Some(Serial::usart1(
                 dp.USART1,
-                pins1,
+                (serial_pair.0, serial_pair.1),
                 9600.Bd(),
                 clocks,
                 &mut rcc.apb2,
             )),
             serial_slow: Some(Serial::usart2(
                 dp.USART2,
-                pins2,
+                (cs_pair_1.0, cs_pair_2.1),
                 57600.Bd(),
                 clocks,
                 &mut rcc.apb1,
             )),
             serial_fast: Some(Serial::usart3(
                 dp.USART3,
-                pins3,
+                (cs_pair_2.0, cs_pair_1.1),
                 115200.Bd(),
                 clocks,
                 &mut rcc.apb1,
