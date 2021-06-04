@@ -81,4 +81,11 @@ mod tests {
             asm::delay(delay);
         }
     }
+
+    // It takes some time, until defmt_test exits.
+    // In this time, the wathcodg  can not be fed. So disable it in the last test.
+    #[test]
+    fn disable(state: &mut State) {
+        state.iwdg.stop();
+    }
 }

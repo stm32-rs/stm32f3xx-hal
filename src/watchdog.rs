@@ -92,6 +92,22 @@ impl IndependentWatchDog {
         self.iwdg.kr.write(|w| w.key().reset());
         a
     }
+
+    /// Stop the watchdog timer
+    pub fn stop(&mut self) -> Self {
+        self.access_registers(|iwdg| {
+            iwdg.pr.reset();
+            iwdg.rlr.reset();
+        });
+    }
+
+    /// Release the independent watchdog peripheral.
+    ///
+    /// Disables the watchdog before releasing it.
+    pub fn free(mut self) -> IWDG {
+        self.stop();
+        self.iwdg
+    }
 }
 
 impl WatchdogEnable for IndependentWatchDog {
