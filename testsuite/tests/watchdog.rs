@@ -22,12 +22,10 @@ struct State {
 #[defmt_test::tests]
 mod tests {
     use super::*;
-    use defmt::{assert_eq, unwrap};
-    use hal::time::duration::*; // imports all duration-related types and traits
-    use hal::time::duration::{Duration, Milliseconds, Nanoseconds, Seconds};
-    use hal::time::rate::Rate;
-    use hal::time::rate::*; // imports all rate-related types and traits
-    use hal::time::TimeInt;
+    use defmt::{assert, assert_eq, unwrap};
+    use hal::time::duration::{Milliseconds, Nanoseconds};
+    use hal::time::fixed_point::FixedPoint;
+    use hal::time::rate::{Kilohertz, Rate};
 
     const INTERVAL: Milliseconds = Milliseconds(100u32);
 
@@ -35,7 +33,7 @@ mod tests {
     fn init() -> State {
         let dp = unwrap!(hal::pac::Peripherals::take());
 
-        let mut rcc = dp.RCC.constrain();
+        let rcc = dp.RCC.constrain();
         let mut flash = dp.FLASH.constrain();
 
         // Watchdog makes sure this gets restarted periodically if nothing happens
@@ -62,7 +60,7 @@ mod tests {
     fn feed(state: &mut State) {
         // Calculate some overhead which is introduced by asm::delay
         let interval_wo_overhead = INTERVAL - 35.milliseconds();
-        let delay: u32 = (u32::try_from(
+        let delay: u32 = u32::try_from(
             Nanoseconds::from(interval_wo_overhead).integer()
                 / u64::from(
                     state
@@ -73,7 +71,7 @@ mod tests {
                         .integer(),
                 ),
         )
-        .unwrap());
+        .unwrap();
         defmt::info!("Delay = {}", delay);
         for _ in 0..5 {
             state.iwdg.feed();
@@ -82,10 +80,38 @@ mod tests {
         }
     }
 
-    // It takes some time, until defmt_test exits.
-    // In this time, the wathcodg  can not be fed. So disable it in the last test.
+    // TODO:
     #[test]
-    fn disable(state: &mut State) {
-        state.iwdg.stop();
+    fn test_intervals_around_maximum(state: &mut State) {
+        const MAX_RELOAD: u32 = 0x0FFF;
+        const MAX_PRESCALER: u32 = 256;
+        const LSI: Kilohertz = Kilohertz(40);
+        let max_period = Milliseconds(MAX_PRESCALER * MAX_RELOAD / LSI.integer());
+        let mut expected_interval = Milliseconds(15000);
+        while expected_interval < max_period + 100.milliseconds() {
+            expected_interval = expected_interval + 100.milliseconds();
+
+            state.iwdg.feed();
+            state.iwdg.start(expected_interval);
+            let interval = state.iwdg.interval();
+            if interval < max_period {
+                // Test if the approximate value is reached (it is slightly lower most of the time)
+                assert!(
+                    interval.integer()
+                        >= expected_interval
+                            .integer()
+                            .saturating_sub(10.milliseconds().integer())
+                );
+            }
+        }
+        assert_eq!(state.iwdg.interval().integer(), max_period.integer());
+    }
+
+    // It takes some time, until defmt_test exits.
+    // In this time, the watchdog can not be fed.
+    // set the value high enough, so this does not happen.
+    #[test]
+    fn finish(state: &mut State) {
+        state.iwdg.start(1000.milliseconds());
     }
 }
