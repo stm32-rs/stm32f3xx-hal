@@ -54,6 +54,7 @@ mod tests {
         state
             .puller
             .set_internal_resistor(&mut state.pupdr, Resistor::PullDown);
+        cortex_m::asm::delay(10);
         assert!(unwrap!(state.puller.is_low()));
         assert!(unwrap!(state.observer.is_low()));
     }
@@ -63,6 +64,7 @@ mod tests {
         state
             .puller
             .set_internal_resistor(&mut state.pupdr, Resistor::PullUp);
+        cortex_m::asm::delay(10);
         assert!(unwrap!(state.puller.is_high()));
         assert!(unwrap!(state.observer.is_high()));
     }
