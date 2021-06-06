@@ -182,7 +182,10 @@ impl APB2 {
     }
 }
 
-const HSI: u32 = 8_000_000; // Hz
+/// Frequency of interal hardware RC oscillator (HSI OSC)
+pub const HSI: Hertz = Hertz(8_000_000);
+/// Frequency of external 32.768 kHz oscillator (LSE OSC)
+pub const LSE: Hertz = Hertz(32_768);
 
 // some microcontrollers do not have USB
 #[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f334",))]
@@ -469,7 +472,7 @@ impl CFGR {
         feature = "stm32f398"
     )))]
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
-        let pllsrcclk = self.hse.unwrap_or(HSI / 2);
+        let pllsrcclk = self.hse.unwrap_or(HSI.integer() / 2);
         // Get the optimal value for the pll divisor (PLL_DIV) and multiplier (PLL_MUL)
         // Only for HSE PLL_DIV can be changed
         let (pll_mul, pll_div): (u32, Option<u32>) = if self.hse.is_some() {
@@ -545,7 +548,7 @@ impl CFGR {
         feature = "stm32f398",
     ))]
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
-        let pllsrcclk = self.hse.unwrap_or(HSI);
+        let pllsrcclk = self.hse.unwrap_or(HSI.integer());
 
         let (pll_mul, pll_div) = {
             // Get the optimal value for the pll divisor (PLL_DIV) and multiplcator (PLL_MUL)
@@ -613,7 +616,9 @@ impl CFGR {
             // Oscillator (max 32 Mhz), without using the PLL.
             (Some(sysclk), Some(hse)) if sysclk == hse => (hse, cfgr::SW_A::HSE, None),
             // No need to use the PLL
-            (Some(sysclk), None) if sysclk == HSI => (HSI, cfgr::SW_A::HSI, None),
+            (Some(sysclk), None) if sysclk == HSI.integer() => {
+                (HSI.integer(), cfgr::SW_A::HSI, None)
+            }
             (Some(sysclk), _) => {
                 let (sysclk, pll_config) = self.calc_pll(sysclk);
                 (sysclk, cfgr::SW_A::PLL, Some(pll_config))
@@ -621,7 +626,7 @@ impl CFGR {
             // Use HSE as system clock
             (None, Some(hse)) => (hse, cfgr::SW_A::HSE, None),
             // Use HSI as system clock
-            (None, None) => (HSI, cfgr::SW_A::HSI, None),
+            (None, None) => (HSI.integer(), cfgr::SW_A::HSI, None),
         }
     }
 
