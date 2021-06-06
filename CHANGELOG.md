@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Make `Clocks` `ppre1()` and `ppre2()` methods public, to get the current
   Prescaler value. ([#210])
+- Support for more CAN bit rates and modes. ([#186])
 - Implement `into_xxx` methods for partially erased pins ([#189])
 - Enable better GPIO internal resistor configuration ([#189])
 - Support for GPIO output slew rate configuration ([#189])
@@ -19,7 +20,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Changed
 
-- Added support for more CAN bit rates and modes. ([#186])
 - The structure of `gpio.rs` is greatly changed. Generic `Pin` struct is used
   for every GPIO pin now ([#189])
 
@@ -31,14 +31,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking Changes
 
-- The MSVR was bumped to 1.51 ([#227])
+- The MSRV was bumped to 1.51 ([#227])
 - Replace custom time based units with types defined in the [embedded-time][]
   crate ([#192])
 - The `rcc` public API now expects time based units in `Megahertz`.
   If the supplied frequency cannot be converted to `Hertz` the code
   will `panic`. This will occur if the supplied `Megahertz` frequency
   cannot fit into `u32::MAX` when converting to `Hertz` ([#192])
-- You always required to select a sub-target for target chips ([#216])
 
 ```rust
 // The supplied frequencies must be in `MHz`.
@@ -51,12 +50,15 @@ let clocks = rcc
     .pclk2(12u32.MHz())
 ```
 
-- Bump dependencies: ([#211])
-  - `stm32f3` dependency to 0.13
-  - `nb` to 1
-  - `cortex-m` to 0.7
-  - `stm32-usbd` to 0.6
-  - `defmt` to 0.2
+- You always required to select a sub-target for target chips ([#216])
+- Bump dependencies: ([#229])
+  - `cortex-m` to 0.7.2
+  - `cortex-m-rt` to 0.6.4
+  - `defmt` to 0.2.2
+  - `embedded-hal` to 0.2.5
+  - `nb` to 1.0.0
+  - `stm32f3` to 0.13.2
+  - `stm32-usbd` to 0.6.0
 - `into_afx` methods are splitted into `into_afx_push_pull` and
   `into_afx_open_drain` ([#189])
 - GPIO output mode (`PushPull` or `OpenDrain`) is encoded into pin typestate
@@ -320,11 +322,11 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#229]: https://github.com/stm32-rs/stm32f3xx-hal/pull/229
 [#227]: https://github.com/stm32-rs/stm32f3xx-hal/pull/227
 [#220]: https://github.com/stm32-rs/stm32f3xx-hal/pull/220
 [#217]: https://github.com/stm32-rs/stm32f3xx-hal/pull/217
 [#216]: https://github.com/stm32-rs/stm32f3xx-hal/pull/216
-[#211]: https://github.com/stm32-rs/stm32f3xx-hal/pull/211
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
 [#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203

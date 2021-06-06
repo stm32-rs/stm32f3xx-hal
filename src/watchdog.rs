@@ -96,7 +96,7 @@ impl WatchdogEnable for IndependentWatchDog {
     type Time = Milliseconds;
 
     fn start<T: Into<Self::Time>>(&mut self, period: T) {
-        self.setup(*period.into().integer());
+        self.setup(period.into().integer());
 
         self.iwdg.kr.write(|w| w.key().start());
     }

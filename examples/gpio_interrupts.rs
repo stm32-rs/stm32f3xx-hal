@@ -8,11 +8,11 @@ use stm32f3xx_hal as hal;
 use core::cell::RefCell;
 use cortex_m::asm;
 use cortex_m::interrupt::Mutex;
+use cortex_m::peripheral::NVIC;
 use cortex_m_rt::entry;
 use hal::gpio::{gpioa, gpioe, Edge, Input, Output, PushPull};
 use hal::interrupt;
 use hal::pac;
-use hal::pac::NVIC;
 use hal::prelude::*;
 
 type LedPin = gpioe::PE9<Output<PushPull>>;

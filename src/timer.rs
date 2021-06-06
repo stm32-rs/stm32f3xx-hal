@@ -95,7 +95,7 @@ macro_rules! hal {
                 {
                     self.stop();
 
-                    let frequency = *timeout.into().integer();
+                    let frequency = timeout.into().integer();
                     let timer_clock = $TIMX::get_clk(&self.clocks);
                     let ticks = timer_clock.0 * if self.clocks.ppre1() == 1 { 1 } else { 2 }
                         / frequency;

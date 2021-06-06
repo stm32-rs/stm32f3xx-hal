@@ -116,7 +116,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         SCL: SclPin<I2C>,
         SDA: SdaPin<I2C>,
     {
-        crate::assert!(*freq.integer() <= 1_000_000);
+        crate::assert!(freq.integer() <= 1_000_000);
 
         I2C::enable_clock(apb1);
 
@@ -129,8 +129,8 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         // t_SYNC1 + t_SYNC2 > 4 * t_I2CCLK
         // t_SCL ~= t_SYNC1 + t_SYNC2 + t_SCLL + t_SCLH
         let i2cclk = I2C::clock(&clocks).0;
-        let ratio = i2cclk / *freq.integer() - 4;
-        let (presc, scll, sclh, sdadel, scldel) = if *freq.integer() >= 100_000 {
+        let ratio = i2cclk / freq.integer() - 4;
+        let (presc, scll, sclh, sdadel, scldel) = if freq.integer() >= 100_000 {
             // fast-mode or fast-mode plus
             // here we pick SCLL + 1 = 2 * (SCLH + 1)
             let presc = ratio / 387;
@@ -138,7 +138,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
             let sclh = ((ratio / (presc + 1)) - 3) / 3;
             let scll = 2 * (sclh + 1) - 1;
 
-            let (sdadel, scldel) = if *freq.integer() > 400_000 {
+            let (sdadel, scldel) = if freq.integer() > 400_000 {
                 // fast-mode plus
                 let sdadel = 0;
                 let scldel = i2cclk / 4_000_000 / (presc + 1) - 1;

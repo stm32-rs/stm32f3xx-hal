@@ -70,6 +70,28 @@ jobs:
           command: check
           args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
 
+  check-min-deps:
+    name: Check Minimal Dependency Versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: thumbv7em-none-eabihf
+          profile: minimal
+      - run: cargo +nightly update -Z minimal-versions
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
+
   check-tests:
     name: Check Tests
     runs-on: ubuntu-latest
