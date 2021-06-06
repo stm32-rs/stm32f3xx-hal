@@ -22,7 +22,6 @@ mod tests {
     use super::*;
     use defmt::{assert, unwrap};
 
-    // Test the defaults with no configuration
     #[init]
     fn init() -> super::State {
         let dp = unwrap!(pac::Peripherals::take());

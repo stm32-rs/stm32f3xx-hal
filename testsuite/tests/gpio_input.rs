@@ -18,7 +18,6 @@ mod tests {
     use defmt::{assert, unwrap};
     use stm32f3xx_hal::{pac, prelude::*};
 
-    // Test the defaults with no configuration
     #[init]
     fn init() -> super::State {
         let dp = unwrap!(pac::Peripherals::take());

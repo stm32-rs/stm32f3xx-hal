@@ -4,6 +4,7 @@
 use defmt_rtt as _;
 use panic_probe as _;
 
+use hal::prelude::*;
 use stm32f3xx_hal as hal;
 
 use hal::gpio::{Input, Output, PXx, PushPull};
@@ -15,13 +16,12 @@ struct State {
 
 #[defmt_test::tests]
 mod tests {
+    use super::*;
     use defmt::{assert, unwrap};
-    use stm32f3xx_hal::{pac, prelude::*};
 
-    // Test the defaults with no configuration
     #[init]
     fn init() -> super::State {
-        let dp = unwrap!(pac::Peripherals::take());
+        let dp = unwrap!(hal::pac::Peripherals::take());
 
         let mut rcc = dp.RCC.constrain();
         let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
