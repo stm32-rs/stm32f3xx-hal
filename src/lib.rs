@@ -90,6 +90,7 @@
 #![allow(clippy::upper_case_acronyms)]
 #![warn(missing_docs)]
 #![deny(macro_use_extern_crate)]
+#![cfg_attr(nightly, deny(rustdoc::broken_intra_doc_links))]
 
 use cfg_if::cfg_if;
 

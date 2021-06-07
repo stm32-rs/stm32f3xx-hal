@@ -115,6 +115,22 @@ jobs:
           command: check
           args: --features=ld,defmt,${{ matrix.mcu }} --test ${{ matrix.test }}
 
+  check-doc:
+    name: Check Documentation Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --features=stm32f303xc,rt,stm32-usbd,can
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
