@@ -1,4 +1,12 @@
-//! Prelude
+//! # Prelude
+//!
+//! ```rust
+//! // Import common extension traits.
+//! //
+//! // This includes internal extension crates,
+//! // but also reexportet traits from embeded-hal or embedded time.
+//! use stm32f3xx-hal::prelude::*;
+//! ```
 
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 pub use crate::dma::DmaExt as _stm32f3xx_hal_dma_DmaExt;

@@ -1,4 +1,11 @@
-//! Serial
+//! # Serial
+//!
+//! Asynchronous serial communication using the interal USART peripherals
+//!
+//! The serial modules implement the [`Read`] and [`Write`] traits.
+//!
+//! [`Read`]: embedded_hal::serial::Read
+//! [`Write`]: embedded_hal::serial::Write
 
 use core::{convert::Infallible, marker::PhantomData, ptr};
 

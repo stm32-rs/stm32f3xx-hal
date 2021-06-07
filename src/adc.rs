@@ -1,6 +1,6 @@
-//! Analog to Digital Converter.
+//! # Analog to Digital Converter.
 //!
-//! # Examples
+//! ## Examples
 //!
 //! Check out [examles/adc.rs][].
 //!

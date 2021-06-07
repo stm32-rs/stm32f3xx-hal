@@ -1,4 +1,4 @@
-//! System configuration controller
+//! # System configuration controller
 
 use core::ops::Deref;
 

@@ -1,5 +1,5 @@
 /*!
- # stm32f3xx-hal
+ # `stm32f3xx-hal`
 
  `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
  peripheral access API for the STMicro [STM32F3][stm] series microcontrollers.

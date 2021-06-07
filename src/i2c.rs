@@ -1,4 +1,6 @@
-//! Inter-Integrated Circuit (I2C) bus
+//! # Inter-Integrated Circuit (I2C) bus
+//!
+//! ## Examples
 //!
 //! A usage example of the i2c peripheral can be found at [examples/i2c_scanner.rs]
 //!
