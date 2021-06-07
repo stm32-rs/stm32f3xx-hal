@@ -170,24 +170,4 @@ compile with older versions but that may change in any new patch release.
 
 ### Running Tests
 
-Tests are run via the integration test pattern and are executed on a target
-chip, rather than on a host system. First, install
-[probe-run](https://crates.io/crates/probe-run) via `cargo install probe-run`.
-
-Now, you can execute the tests via:
-
-```bash
-cargo test -p testsuite
-```
-
-This will execute all tests sequentially on the target device.
-
-Currently the tests are written for the `stm32f303xc` with the STM32F3Discovery
-Board in mind. To change that, specify a target as a feature:
-
-```bash
-cargo test -p testsuite --feature stm32f301xb
-```
-
-The result _always_ shows a backtrace, even in the case of success.
-Exit code of 0 means that the run was successful.
+See [`testsuite/README.md`](testsuite/README.md) for how to set up and run tests on the target.
