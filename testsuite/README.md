@@ -10,6 +10,8 @@ Currently the tests are written for the `stm32f303xc` with the STM32F3Discovery
 Board in mind. They expect that several pins are wired together as hinted in
 [`src/lib.rs`](src/lib.rs).
 
+![test wiring](assets/test-wiring.jpg "Test Wiring for STM32F3Discovery")
+
 
 ## Running Tests
 
