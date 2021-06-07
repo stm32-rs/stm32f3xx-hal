@@ -340,7 +340,7 @@ where
 
     fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
         if self.usart.isr.read().txe().bit_is_set() {
-            self.usart.tdr.write(|w| unsafe { w.tdr().bits(u16::from(byte)) });
+            self.usart.tdr.write(|w| w.tdr().bits(u16::from(byte)));
             Ok(())
         } else {
             Err(nb::Error::WouldBlock)
