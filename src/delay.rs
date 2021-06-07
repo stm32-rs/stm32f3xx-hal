@@ -12,6 +12,8 @@ use cortex_m::peripheral::SYST;
 
 use crate::hal::blocking::delay::{DelayMs, DelayUs};
 use crate::rcc::Clocks;
+use crate::time::duration::{Microseconds, Milliseconds};
+use crate::time::fixed_point::FixedPoint;
 
 /// System timer (SysTick) as a delay provider
 pub struct Delay {
@@ -104,5 +106,17 @@ impl DelayUs<u16> for Delay {
 impl DelayUs<u8> for Delay {
     fn delay_us(&mut self, us: u8) {
         self.delay_us(u32::from(us))
+    }
+}
+
+impl DelayUs<Microseconds> for Delay {
+    fn delay_us(&mut self, us: Microseconds) {
+        self.delay_us(us.integer());
+    }
+}
+
+impl DelayMs<Milliseconds> for Delay {
+    fn delay_ms(&mut self, ms: Milliseconds) {
+        self.delay_ms(ms.integer());
     }
 }
