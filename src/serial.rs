@@ -25,6 +25,8 @@ pub enum Event {
     Rxne,
     /// New data can be sent
     Txe,
+    /// Transmission complete
+    Tc,
 }
 
 /// Serial error
@@ -151,6 +153,9 @@ macro_rules! hal {
                         Event::Txe => {
                             self.usart.cr1.modify(|_, w| w.txeie().set_bit())
                         },
+                        Event::Tc => {
+                            self.usart.cr1.modify(|_, w| w.tcie().set_bit())
+                        },
                     }
                 }
 
@@ -163,8 +168,30 @@ macro_rules! hal {
                         Event::Txe => {
                             self.usart.cr1.modify(|_, w| w.txeie().clear_bit())
                         },
+                        Event::Tc => {
+                            self.usart.cr1.modify(|_, w| w.tcie().clear_bit())
+                        },
                     }
                 }
+
+                /// Return true if the line idle status is set
+                pub fn is_tc(&self) -> bool {
+                    let isr = unsafe { (*$USARTX::ptr()).isr.read() };
+                    isr.tc().bit_is_set()
+                }
+
+                /// Return true if the tx register is empty (and can accept data)
+                pub fn is_txe(&self) -> bool {
+                    let isr = unsafe { (*$USARTX::ptr()).isr.read() };
+                    isr.txe().bit_is_set()
+                }
+
+                /// Return true if the rx register is not empty (and can be read)
+                pub fn is_rxne(&self) -> bool {
+                    let isr = unsafe { (*$USARTX::ptr()).isr.read() };
+                    isr.rxne().bit_is_set()
+                }
+
 
                 /// Splits the `Serial` abstraction into a transmitter and a receiver half
                 pub fn split(self) -> (Tx<$USARTX>, Rx<$USARTX>) {
@@ -181,6 +208,35 @@ macro_rules! hal {
                 /// Releases the USART peripheral and associated pins
                 pub fn free(self) -> ($USARTX, (TX, RX)) {
                     (self.usart, self.pins)
+                }
+            }
+
+            impl<TX, RX> serial::Read<u8> for Serial<$USARTX, (TX, RX)> {
+                type Error = Error;
+
+                fn read(&mut self) -> nb::Result<u8, Error> {
+                    let mut rx: Rx<$USARTX> = Rx {
+                        _usart: PhantomData,
+                    };
+                    rx.read()
+                }
+            }
+
+            impl<TX, RX> serial::Write<u8> for Serial<$USARTX, (TX, RX)> {
+                type Error = Infallible;
+
+                fn flush(&mut self) -> nb::Result<(), Infallible> {
+                    let mut tx: Tx<$USARTX> = Tx {
+                        _usart: PhantomData,
+                    };
+                    tx.flush()
+                }
+
+                fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
+                    let mut tx: Tx<$USARTX> = Tx {
+                        _usart: PhantomData,
+                    };
+                    tx.write(byte)
                 }
             }
 

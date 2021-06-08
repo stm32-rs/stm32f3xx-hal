@@ -51,6 +51,10 @@ panic-probe = "0.2.0"
 panic-semihosting = "0.5.6"
 usbd-serial = "0.1.1"
 usb-device = "0.2.8"
+cortex-m-rtic = "0.6.0-alpha.4"
+dwt-systick-monotonic = "0.1.0-alpha.2"     
+panic-rtt-target = { version = "0.1", features = ["cortex-m"] }
+rtt-target = { version = "0.3.0", features = ["cortex-m"] }
 
 [build-dependencies]
 cargo_metadata = "0.13.1"
@@ -162,6 +166,10 @@ required-features = ["ld", "can", "stm32f303"]
 [[example]]
 name = "serial_dma"
 required-features = ["ld", "stm32f303"]
+
+[[example]]
+name = "serial_echo_rtic"
+required-features = ["ld", "rt", "stm32f303xc"]
 
 [[example]]
 name = "adc"
