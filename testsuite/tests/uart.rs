@@ -152,11 +152,12 @@ mod tests {
         defmt::info!("{}", c);
         assert!(matches!(c, Err(Error::Framing)));
 
-        // provoke an error (framing)
-        nb::block!(tx_fast.write(b'a'));
+        // provoke an error (this does not seem to be absolutely deterministic
+        // and we've seen multiple error variants in the wild)
+        unwrap!(nb::block!(tx_fast.write(b'a')));
         let c = nb::block!(rx_slow.read());
         defmt::info!("{}", c);
-        assert!(matches!(c, Err(Error::Framing)));
+        assert!(matches!(c, Err(Error::Framing) | Err(Error::Noise)));
     }
 
     // TODO: Check the parity. But currently, there is no way to configure the parity
