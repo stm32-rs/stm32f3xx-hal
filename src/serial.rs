@@ -192,7 +192,7 @@ macro_rules! hal {
                     isr.rxne().bit_is_set()
                 }
 
-                
+
                 /// Splits the `Serial` abstraction into a transmitter and a receiver half
                 pub fn split(self) -> (Tx<$USARTX>, Rx<$USARTX>) {
                     (
@@ -210,10 +210,10 @@ macro_rules! hal {
                     (self.usart, self.pins)
                 }
             }
-            
+
             impl<TX, RX> serial::Read<u8> for Serial<$USARTX, (TX, RX)> {
                 type Error = Error;
-            
+
                 fn read(&mut self) -> nb::Result<u8, Error> {
                     let mut rx: Rx<$USARTX> = Rx {
                         _usart: PhantomData,
