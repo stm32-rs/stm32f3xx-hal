@@ -12,7 +12,6 @@ Board in mind. They expect that several pins are wired together as hinted in
 
 ![test wiring](assets/test-wiring.jpg "Test Wiring for STM32F3Discovery")
 
-
 ## Running Tests
 
 Once you have set up the tooling and wired-up the board, you can execute the

@@ -170,4 +170,5 @@ compile with older versions but that may change in any new patch release.
 
 ### Running Tests
 
-See [`testsuite/README.md`](testsuite/README.md) for how to set up and run tests on the target.
+See [`testsuite/README.md`](testsuite/README.md) for how to set up and run
+tests on the target.
