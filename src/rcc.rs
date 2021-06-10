@@ -1,4 +1,4 @@
-//! Reset and Clock Control
+//! # Reset and Clock Control
 //!
 //! The most important function this module
 //! delivers is the clock configuration.

@@ -1,4 +1,6 @@
-//! Serial Peripheral Interface (SPI) bus
+//! # Serial Peripheral Interface (SPI) bus
+//!
+//! ## Examples
 //!
 //! A usage example of the can peripheral can be found at [examples/spi.rs]
 //!

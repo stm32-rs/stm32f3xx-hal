@@ -1,4 +1,8 @@
-//! USB peripheral.
+//! # USB peripheral.
+//!
+//! Mostly builds upon the [`stm32_usbd`] crate.
+//!
+//! ## Examples
 //!
 //! See [examples/usb_serial.rs] for a usage example.
 //!

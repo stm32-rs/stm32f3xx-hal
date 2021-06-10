@@ -1,4 +1,4 @@
-//! Real Time Clock
+//! # Real Time Clock
 //!
 //! Interface to the real time clock. See STM32F303 reference manual, section 27.
 //! For more details, see [ST AN4759][].

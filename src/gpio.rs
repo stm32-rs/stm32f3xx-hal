@@ -1,4 +1,4 @@
-//! General Purpose Input / Output
+//! # General Purpose Input / Output
 //!
 //! To use the GPIO pins, you first need to configure the GPIO port (GPIOA, GPIOB, ...) that you
 //! are interested in. This is done using the [`GpioExt::split`] function.

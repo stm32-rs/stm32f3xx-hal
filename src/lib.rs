@@ -1,5 +1,5 @@
 /*!
- # stm32f3xx-hal
+ # `stm32f3xx-hal`
 
  `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
  peripheral access API for the STMicro [STM32F3][stm] series microcontrollers.
@@ -90,6 +90,7 @@
 #![allow(clippy::upper_case_acronyms)]
 #![warn(missing_docs)]
 #![deny(macro_use_extern_crate)]
+#![cfg_attr(nightly, deny(rustdoc::broken_intra_doc_links))]
 
 use cfg_if::cfg_if;
 

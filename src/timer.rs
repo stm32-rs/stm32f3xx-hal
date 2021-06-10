@@ -1,4 +1,10 @@
-//! Timers
+//! # Timers
+//!
+//! Abstractions of the internal timer peripherals
+//! The timer modules implements the [`CountDown`] and [`Periodic`] traits.
+//!
+//! [Read]: embedded_hal::timer::CountDown
+//! [Write]: embedded_hal::timer::Periodic
 
 use core::convert::{From, TryFrom};
 

@@ -1,4 +1,6 @@
-//! Watchdog
+//! # Watchdog
+//!
+//! ## Examples
 //!
 //! A usage example of the watchdog can be found at [examples/can.rs]
 //!

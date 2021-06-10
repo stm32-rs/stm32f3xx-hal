@@ -1,4 +1,6 @@
-//! Flash memory
+//! # Flash memory
+//!
+//! Abstractions of the internal flash module.
 
 use crate::pac::{flash, FLASH};
 

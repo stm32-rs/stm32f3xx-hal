@@ -1,4 +1,9 @@
-//! Delays
+//! # Delays
+//!
+//! Implementations for the [`DelayMs`] and [`DelayUs`] traits
+//!
+//! [DelayMs]: embedded_hal::blocking::delay::DelayMs
+//! [DelayUs]: embedded_hal::blocking::delay::DelayUs
 
 use core::convert::From;
 
