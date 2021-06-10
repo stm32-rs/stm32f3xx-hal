@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for GPIO output slew rate configuration ([#189])
 - Support for GPIO interrupts ([#189])
 - `ld` feature, which enables the memory.x generation ([#216])
+- Implement `DelayMs` for `Milliseconds` and `DelayUs` for `Microseconds` ([#234])
 
 ### Changed
 
@@ -322,6 +323,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#234]: https://github.com/stm32-rs/stm32f3xx-hal/pull/234
 [#229]: https://github.com/stm32-rs/stm32f3xx-hal/pull/229
 [#227]: https://github.com/stm32-rs/stm32f3xx-hal/pull/227
 [#220]: https://github.com/stm32-rs/stm32f3xx-hal/pull/220
