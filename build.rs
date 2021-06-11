@@ -169,11 +169,26 @@ This may be due to incorrect feature configuration in Cargo.toml or stm32f3xx-ha
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let mut file = File::create(out_dir.join("memory.x")).unwrap();
     writeln!(file, "MEMORY {{").unwrap();
-    writeln!(file, "    FLASH (rx) : o = 0x8000000, l = {}K", flash).unwrap();
+    writeln!(
+        file,
+        "    FLASH (rx) : ORIGIN = 0x8000000, LENGTH = {}K",
+        flash
+    )
+    .unwrap();
     if ccmram > 0 {
-        writeln!(file, "    CCMRAM (rwx) : o = 0x10000000, l = {}K", ccmram).unwrap();
+        writeln!(
+            file,
+            "    CCMRAM (rwx) : ORIGIN = 0x10000000, LENGTH = {}K",
+            ccmram
+        )
+        .unwrap();
     }
-    writeln!(file, "    RAM (rwx) : o = 0x20000000, l = {}K", ram).unwrap();
+    writeln!(
+        file,
+        "    RAM (rwx) : ORIGIN = 0x20000000, LENGTH = {}K",
+        ram
+    )
+    .unwrap();
     writeln!(file, "}}").unwrap();
     println!("cargo:rustc-link-search={}", out_dir.display());
 }
