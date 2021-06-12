@@ -64,8 +64,8 @@ impl DelayMs<u8> for Delay {
 
 impl DelayUs<u32> for Delay {
     fn delay_us(&mut self, us: u32) {
-        // The RVR register is 24 bits wide, as SysTick is based on a 24 bit counter
-        const MAX_RVR: u32 = 1 << 24;
+        // The SysTick Reload Value register supports values between 1 and 0x00FFFFFF.
+        const MAX_RVR: u32 = 0x00FF_FFFF;
 
         // Depending on hclk (core clock), this 32 bit value allows
         // delays between 1 min to 9 min.
@@ -79,16 +79,18 @@ impl DelayUs<u32> for Delay {
         // Like dividing total_rvr / MAX_RVR
         // and delaying by MAX_RVR * (fraction).
         while total_rvr != 0 {
-            let current_rvr = if total_rvr < MAX_RVR {
+            let current_rvr = if total_rvr <= MAX_RVR {
                 total_rvr
             } else {
                 MAX_RVR
             };
-            total_rvr -= current_rvr;
 
             self.syst.set_reload(current_rvr);
             self.syst.clear_current();
             self.syst.enable_counter();
+
+            // Update the tracking variable while we are waiting...
+            total_rvr -= current_rvr;
 
             while !self.syst.has_wrapped() {}
 
