@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## Unreleased
 
 ### Added
 
@@ -388,21 +388,21 @@ let clocks = rcc
 [#4]: https://github.com/stm32-rs/stm32f3xx-hal/pull/4
 [#2]: https://github.com/stm32-rs/stm32f3xx-hal/pull/2
 
-[Unreleased]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.1...HEAD
-[v0.6.1]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.6.0...v0.6.1
-[v0.6.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.5.0...v0.6.0
-[v0.5.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.3...v0.5.0
-[v0.4.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.2...v0.4.3
-[v0.4.2]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.1...v0.4.2
-[v0.4.1]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.4.0...v0.4.1
-[v0.4.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.3.0...v0.4.0
-[v0.3.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.2.3...v0.3.0
-[v0.2.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.2.2...v0.2.3
-[v0.2.2]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.2.1...v0.2.2
-[v0.2.1]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.2.0...v0.2.1
-[v0.2.0]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.1.5...v0.2.0
-[v0.1.5]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.1.4...v0.1.5
-[v0.1.4]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.1.3...v0.1.4
-[v0.1.3]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.1.2...v0.1.3
-[v0.1.2]: https://github.com/stm32-rs/stm32f3xx-hal/compare/v0.1.1...v0.1.2
+<!-- cargo-release: latest tag -->
+[v0.6.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.6.1
+[v0.6.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.6.0
+[v0.5.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.5.0
+[v0.4.3]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.4.3
+[v0.4.2]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.4.2
+[v0.4.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.4.1
+[v0.4.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.4.0
+[v0.3.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.3.0
+[v0.2.3]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.2.3
+[v0.2.2]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.2.2
+[v0.2.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.2.1
+[v0.2.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.2.0
+[v0.1.5]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.1.5
+[v0.1.4]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.1.4
+[v0.1.3]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.1.3
+[v0.1.2]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.1.2
 [v0.1.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.1.1

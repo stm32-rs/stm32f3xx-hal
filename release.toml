@@ -1,0 +1,100 @@
+# cargo-release configuration
+
+tag-message = "{{version}}"
+no-dev-version = true
+pre-release-commit-message = "Release {{version}}"
+
+# Change the changelog's `Unreleased` section to refer to this release and
+# prepend a new `Unreleased` section
+[[pre-release-replacements]]
+file    = "CHANGELOG.md"
+search  = "## Unreleased\n"
+replace = """
+## Unreleased
+
+No changes.
+
+## [v{{version}}] {{date}}
+"""
+
+# Change the tag links in the bottom of the file
+#
+# The <!-- cargo-release: latest tag --> marker is needed to
+# reliably match on the latest tag
+[[pre-release-replacements]]
+exactly = 1
+file = "CHANGELOG.md"
+search = """
+<!-- cargo-release: latest tag -->
+\\[[a-z0-9\\.-]+\\]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/[a-z0-9\\.-]+
+"""
+replace = """
+<!-- cargo-release: latest tag -->
+[v{{version}}]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v{{version}}
+[v{{prev_version}}]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v{{prev_version}}
+"""
+
+# Bump the version inside the example manifest in `README.md`
+[[pre-release-replacements]]
+file = "README.md"
+search = 'stm32f3xx-hal = \{ version = "[a-z0-9\\.-]+",'
+replace = 'stm32f3xx-hal = { version = "{{version}}",'
+
+# Point to the latest release in documentation
+#
+# All files have to be listed here, until
+# https://github.com/sunng87/cargo-release/issues/104
+# is implemented.
+[[pre-release-replacements]]
+min = 0
+file = "src/i2c.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/serial.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/watchdog.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/gpio.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/dma.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/can.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/adc.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/usb.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/lib.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
