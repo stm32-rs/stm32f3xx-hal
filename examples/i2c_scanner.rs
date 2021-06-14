@@ -41,7 +41,7 @@ fn main() -> ! {
     let mut i2c = hal::i2c::I2c::new(
         dp.I2C1,
         (scl, sda),
-        100u32.kHz().try_into().unwrap(),
+        100.kHz().try_into().unwrap(),
         clocks,
         &mut rcc.apb1,
     );

@@ -32,8 +32,8 @@ fn main() -> ! {
 
     // Set up pin PA0 as analog pin.
     // This pin is connected to the user button on the stm32f3discovery board.
-    let mut gpio_a = dp.GPIOA.split(&mut rcc.ahb);
-    let mut adc1_in1_pin = gpio_a.pa0.into_analog(&mut gpio_a.moder, &mut gpio_a.pupdr);
+    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let mut adc1_in1_pin = gpioa.pa0.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
 
     // Be aware that the values in the table below depend on the input of VREF.
     // To have a stable VREF input, put a condensator and a volt limiting diode in front of it.

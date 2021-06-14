@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Support for GPIO interrupts ([#189])
 - `ld` feature, which enables the memory.x generation ([#216])
 - Implement `DelayMs` for `Milliseconds` and `DelayUs` for `Microseconds` ([#234])
+- ADC can now be `free()`'d ([#212])
 
 ### Changed
 
@@ -44,11 +45,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 // The supplied frequencies must be in `MHz`.
 let clocks = rcc
     .cfgr
-    .use_hse(8u32.MHz())
-    .hclk(48u32.MHz())
-    .sysclk(48u32.MHz())
-    .pclk1(12u32.MHz())
-    .pclk2(12u32.MHz())
+    .use_hse(8.MHz())
+    .hclk(48.MHz())
+    .sysclk(48.MHz())
+    .pclk1(12.MHz())
+    .pclk2(12.MHz())
 ```
 
 - You always required to select a sub-target for target chips ([#216])
@@ -329,6 +330,7 @@ let clocks = rcc
 [#220]: https://github.com/stm32-rs/stm32f3xx-hal/pull/220
 [#217]: https://github.com/stm32-rs/stm32f3xx-hal/pull/217
 [#216]: https://github.com/stm32-rs/stm32f3xx-hal/pull/216
+[#212]: https://github.com/stm32-rs/stm32f3xx-hal/pull/212
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
 [#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203

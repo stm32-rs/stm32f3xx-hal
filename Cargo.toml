@@ -20,6 +20,13 @@ exclude = [
 ]
 resolver = "2"
 
+[workspace]
+members = [
+    ".",
+    "testsuite",
+    "codegen"
+]
+
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "stm32-usbd", "can"]
 targets = ["thumbv7em-none-eabihf"]
@@ -134,13 +141,25 @@ defmt-info = ["defmt"]
 defmt-warn = ["defmt"]
 defmt-error = ["defmt"]
 
+# cargo build/run
 [profile.dev]
-debug = true
+debug = 2
 lto = true
 
+# cargo test
+[profile.test]
+debug = 2
+opt-level = 3 # <-
+
+# cargo build/run --release
 [profile.release]
-debug = true
+debug = 2
 lto = true
+opt-level = "s"
+
+# cargo test --release
+[profile.bench]
+debug = 2
 opt-level = "s"
 
 [[example]]
@@ -186,8 +205,3 @@ required-features = ["ld", "stm32f303xc"]
 [[example]]
 name = "gpio_interrupts"
 required-features = ["ld", "rt", "stm32f303xc"]
-
-[[test]]
-name = "rcc"
-required-features = ["ld", "defmt"]
-harness = false

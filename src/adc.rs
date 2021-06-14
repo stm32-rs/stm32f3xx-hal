@@ -339,6 +339,12 @@ macro_rules! adc_hal {
                     this_adc
                 }
 
+                /// Releases the ADC peripheral and associated pins
+                pub fn free(mut self) -> $ADC {
+                    self.disable();
+                    self.rb
+                }
+
                 /// Software can use CkMode::SYNCDIV1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
@@ -373,16 +379,47 @@ macro_rules! adc_hal {
                     self.rb.cfgr.modify(|_, w| w.align().variant(align.into()));
                 }
 
+                /// Software procedure to enable the ADC
+                /// According to RM0316 15.3.9
                 fn enable(&mut self) {
-                    self.rb.cr.modify(|_, w| w.aden().enable());
-                    while self.rb.isr.read().adrdy().is_not_ready() {}
+                    // This check assumes, that the ADC was enabled before and it was waited until
+                    // ADRDY=1 was set.
+                    // This assumption is true, if the peripheral was initially enabled through
+                    // this method.
+                    if !self.rb.cr.read().aden().is_enable() {
+                        // Set ADEN=1
+                        self.rb.cr.modify(|_, w| w.aden().enable());
+                        // Wait until ADRDY=1 (ADRDY is set after the ADC startup time). This can be
+                        // done using the associated interrupt (setting ADRDYIE=1).
+                        while self.rb.isr.read().adrdy().is_not_ready() {}
+                    }
                 }
 
+                /// Disable according to RM0316 15.3.9
                 fn disable(&mut self) {
-                    self.rb.cr.modify(|_, w| w.addis().disable());
+                    // NOTE: Software is allowed to set ADSTP only when ADSTART=1 and ADDIS=0
+                    // (ADC is enabled and eventually converting a regular conversion and there is no
+                    // pending request to disable the ADC)
+                    if self.rb.cr.read().addis().bit() == false
+                        && (self.rb.cr.read().adstart().bit() || self.rb.cr.read().jadstart().bit()) {
+                        self.rb.cr.modify(|_, w| w.adstp().stop());
+                        // NOTE: In auto-injection mode (JAUTO=1), setting ADSTP bit aborts both
+                        // regular and injected conversions (do not use JADSTP)
+                        if !self.rb.cfgr.read().jauto().is_enabled() {
+                            self.rb.cr.modify(|_, w| w.jadstp().stop());
+                        }
+                        while self.rb.cr.read().adstp().bit() || self.rb.cr.read().jadstp().bit() { }
+                    }
+
+                    // NOTE: Software is allowed to set ADDIS only when ADEN=1 and both ADSTART=0
+                    // and JADSTART=0 (which ensures that no conversion is ongoing)
+                    if self.rb.cr.read().aden().is_enable() {
+                        self.rb.cr.modify(|_, w| w.addis().disable());
+                        while self.rb.cr.read().addis().bit() { }
+                    }
                 }
 
-                /// Calibrate according to 15.3.8 in the Reference Manual
+                /// Calibrate according to RM0316 15.3.8
                 fn calibrate(&mut self) {
                     if !self.rb.cr.read().advregen().is_enabled() {
                         self.advregen_enable();
@@ -425,7 +462,9 @@ macro_rules! adc_hal {
 
                 /// busy ADC read
                 fn convert_one(&mut self, chan: u8) -> u16 {
-                    self.ensure_oneshot();
+                    if self.operation_mode != Some(OperationMode::OneShot) {
+                        self.setup_oneshot();
+                    }
                     self.set_chan_smps(chan, SampleTime::default());
                     self.select_single_chan(chan);
 
@@ -433,12 +472,6 @@ macro_rules! adc_hal {
                     while self.rb.isr.read().eos().is_not_complete() {}
                     self.rb.isr.modify(|_, w| w.eos().clear());
                     return self.rb.dr.read().rdata().bits();
-                }
-
-                fn ensure_oneshot(&mut self) {
-                    if self.operation_mode != Some(OperationMode::OneShot) {
-                        self.setup_oneshot();
-                    }
                 }
 
                 /// This should only be invoked with the defined channels for the particular
@@ -477,15 +510,16 @@ macro_rules! adc_hal {
 
             }
 
-            impl<WORD, PIN> OneShot<$ADC, WORD, PIN> for Adc<$ADC>
+            impl<Word, Pin> OneShot<$ADC, Word, Pin> for Adc<$ADC>
             where
-                WORD: From<u16>,
-                PIN: Channel<$ADC, ID = u8>,
+                Word: From<u16>,
+                Pin: Channel<$ADC, ID = u8>,
                 {
                     type Error = ();
 
-                    fn read(&mut self, _pin: &mut PIN) -> nb::Result<WORD, Self::Error> {
-                        let res = self.convert_one(PIN::channel());
+                    fn read(&mut self, _pin: &mut Pin) -> nb::Result<Word, Self::Error> {
+                        // TODO: Convert back to previous mode after use.
+                        let res = self.convert_one(Pin::channel());
                         return Ok(res.into());
                     }
                 }

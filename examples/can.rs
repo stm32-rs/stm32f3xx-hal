@@ -31,10 +31,10 @@ fn main() -> ! {
 
     let _clocks = rcc
         .cfgr
-        .use_hse(32u32.MHz())
-        .sysclk(32u32.MHz())
-        .pclk1(16u32.MHz())
-        .pclk2(16u32.MHz())
+        .use_hse(32.MHz())
+        .sysclk(32.MHz())
+        .pclk1(16.MHz())
+        .pclk2(16.MHz())
         .freeze(&mut flash.acr);
 
     // Configure CAN RX and TX pins (AF9)
@@ -58,13 +58,13 @@ fn main() -> ! {
         .into_push_pull_output(&mut gpiob.moder, &mut gpiob.otyper);
     led0.set_high().unwrap();
 
-    let filter = CanFilter::from_mask(0b100, ID as u32);
+    let filter = CanFilter::from_mask(0b100, ID.into());
     rx0.set_filter(filter);
 
     // Watchdog makes sure this gets restarted periodically if nothing happens
     let mut iwdg = IndependentWatchDog::new(dp.IWDG);
     iwdg.stop_on_debug(&dp.DBGMCU, true);
-    iwdg.start(100u32.milliseconds());
+    iwdg.start(100.milliseconds());
 
     // Send an initial message!
     asm::delay(100_000);
