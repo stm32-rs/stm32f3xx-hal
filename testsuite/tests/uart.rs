@@ -9,6 +9,10 @@ use hal::gpio::{OpenDrain, PushPull, AF7};
 use hal::pac;
 use hal::prelude::*;
 use hal::serial::Serial;
+use hal::serial::{
+    config::{Config, Parity, StopBits},
+    Error,
+};
 use hal::{
     gpio::{
         gpioa::{PA10, PA2, PA3, PA9},
@@ -18,8 +22,7 @@ use hal::{
 };
 
 use core::array::IntoIter;
-
-use hal::serial::Error;
+use defmt::{assert_eq, unwrap};
 
 struct State {
     serial1: Option<Serial<pac::USART1, (PA9<AF7<PushPull>>, PA10<AF7<PushPull>>)>>,
@@ -30,6 +33,19 @@ struct State {
 }
 
 const TEST_MSG: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
+
+fn test_test_msg_loopback(state: &mut State, config: impl Into<Config>) {
+    let (usart, pins) = unwrap!(state.serial1.take()).free();
+    let mut serial = Serial::new(usart, pins, config, state.clocks, &mut state.apb2);
+
+    for i in &TEST_MSG {
+        unwrap!(nb::block!(serial.write(*i)));
+        let c = unwrap!(nb::block!(serial.read()));
+        assert_eq!(c, *i);
+    }
+
+    state.serial1 = Some(serial);
+}
 
 #[defmt_test::tests]
 mod tests {
@@ -120,7 +136,35 @@ mod tests {
     }
 
     #[test]
-    fn test_many_baudrates(state: &mut super::State) {
+    fn config_builder() {
+        let default = Config::default();
+
+        let built_1 = Config::default()
+            .baudrate(123_456.Bd())
+            .parity(Parity::Even)
+            .stopbits(StopBits::STOP0P5);
+        assert!(built_1.baudrate == 123_456.Bd());
+        assert!(built_1.parity == Parity::Even);
+        assert!(built_1.stopbits == StopBits::STOP0P5);
+
+        let built_1_different_order = Config::default()
+            .baudrate(42.Bd())
+            .stopbits(StopBits::STOP0P5)
+            .parity(Parity::Even)
+            .baudrate(123_456.Bd());
+        assert!(built_1 == built_1_different_order);
+
+        let built_2 = Config::default().parity(Parity::Odd);
+        assert!(built_2.baudrate == default.baudrate);
+        assert!(built_2.parity == Parity::Odd);
+        assert!(built_2.stopbits == default.stopbits);
+
+        assert!(built_1 != default);
+        assert!(built_1 != built_2);
+    }
+
+    #[test]
+    fn some_baudrates_loopback(state: &mut super::State) {
         use hal::time::rate::Baud;
         for baudrate in &[
             Baud(1200),
@@ -132,14 +176,33 @@ mod tests {
             Baud(230400),
             Baud(460800),
         ] {
-            let (usart, pins) = unwrap!(state.serial1.take()).free();
-            let mut serial = Serial::new(usart, pins, *baudrate, state.clocks, &mut state.apb2);
-            for i in &TEST_MSG {
-                unwrap!(nb::block!(serial.write(*i)));
-                let c = unwrap!(nb::block!(serial.read()));
-                assert_eq!(c, *i);
-            }
-            state.serial1 = Some(serial);
+            test_test_msg_loopback(state, *baudrate);
+        }
+    }
+
+    #[rustfmt::skip]
+    #[test]
+    fn parity_modes_loopback(state: &mut super::State) {
+        for parity in &[
+            Parity::Even,
+            Parity::Odd,
+            Parity::None,
+        ] {
+            let config = Config::default().parity(*parity);
+            test_test_msg_loopback(state, config);
+        }
+    }
+
+    #[test]
+    fn stopbits_loopback(state: &mut super::State) {
+        for stopbits in &[
+            StopBits::STOP0P5,
+            StopBits::STOP1,
+            StopBits::STOP1P5,
+            StopBits::STOP2,
+        ] {
+            let config = Config::default().stopbits(*stopbits);
+            test_test_msg_loopback(state, config);
         }
     }
 
@@ -155,17 +218,20 @@ mod tests {
         assert!(matches!(c, Err(Error::Framing)));
 
         // provoke an error (this does not seem to be absolutely deterministic
-        // and we've seen multiple error variants in the wild)
+        // and we've seen multiple error variants in the wild, including
+        // receiving the wrong but valid character)
         unwrap!(nb::block!(tx_fast.write(b'a')));
         let c = nb::block!(rx_slow.read());
         defmt::info!("{}", c);
-        assert!(matches!(c, Err(Error::Framing) | Err(Error::Noise)));
+        assert!(matches!(c, Ok(240) | Err(Error::Framing) | Err(Error::Noise)));
 
         state.serial_slow = Some(Serial::join(tx_slow, rx_slow));
         state.serial_fast = Some(Serial::join(tx_fast, rx_fast));
     }
 
-    // TODO: Check the parity. But currently, there is no way to configure the parity
+    // TODO: Check the parity. There is only a loopback test with different
+    // parity parity settings. But we should check receiving data with wrong
+    // parity too.
     // #[test]
     // fn check_parity(state: &mut super::State) { }
 

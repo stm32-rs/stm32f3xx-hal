@@ -12,7 +12,12 @@ use core::{convert::Infallible, ops::Deref};
 use crate::{
     gpio::{gpioa, gpiob, gpioc, AF7},
     hal::{blocking, serial},
-    pac::{self, rcc::cfgr3::USART1SW_A, usart1::RegisterBlock, USART1, USART2, USART3},
+    pac::{
+        self,
+        rcc::cfgr3::USART1SW_A,
+        usart1::{cr1::M_A, cr1::PCE_A, cr1::PS_A, RegisterBlock},
+        USART1, USART2, USART3,
+    },
     rcc::{Clocks, APB1, APB2},
     time::rate::*,
 };
@@ -108,6 +113,100 @@ cfg_if! {
         impl<Otype> RxPin<UART4> for gpioc::PC11<AF5<Otype>> {}
         impl<Otype> TxPin<UART5> for gpioc::PC12<AF5<Otype>> {}
         impl<Otype> RxPin<UART5> for gpiod::PD2<AF5<Otype>> {}
+    }
+}
+
+/// Types for configuring a serial interface.
+pub mod config {
+    use crate::time::rate::{Baud, Extensions};
+
+    // Reexport stop bit enum from PAC. In case there is a breaking change,
+    // provide a compatible enum from this HAL.
+    pub use crate::pac::usart1::cr2::STOP_A as StopBits;
+
+    /// Parity generation and checking. If odd or even parity is selected, the
+    /// underlying USART will be configured to send/receive the parity bit in
+    /// addtion to the data bits.
+    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+    #[derive(Clone, Copy, PartialEq)]
+    pub enum Parity {
+        /// No parity bit will be added/checked.
+        None,
+        /// The MSB transmitted/received will be generated/checked to have a
+        /// even number of bits set.
+        Even,
+        /// The MSB transmitted/received will be generated/checked to have a
+        /// odd number of bits set.
+        Odd,
+    }
+
+    /// Configuration struct for [`Serial`](super::Serial) providing all
+    /// communication-related / parameters. `Serial` always uses eight data
+    /// bits plus the parity bit - if selected.
+    ///
+    /// Create a configuration by using `default` in combination with the
+    /// builder methods. The following snippet shows creating a configuration
+    /// for 19,200 Baud, 8N1 by deriving it from the default value:
+    /// ```
+    /// # use stm32f3xx_hal::serial::config::*;
+    /// # use stm32f3xx_hal::time::rate::{Baud, Extensions};
+    /// let config = Config::default().baudrate(19_200.Bd());
+    ///
+    /// assert!(config.baudrate == 19_200.Bd());
+    /// assert!(config.parity == Parity::None);
+    /// assert!(config.stopbits == StopBits::STOP1);
+    /// ```
+    #[derive(Clone, Copy, PartialEq)]
+    #[non_exhaustive]
+    pub struct Config {
+        /// Serial interface baud rate
+        pub baudrate: Baud,
+        /// Whether and how to generate/check a parity bit
+        pub parity: Parity,
+        /// The number of stop bits to follow the last data bit or the parity
+        /// bit
+        pub stopbits: StopBits,
+    }
+
+    impl Config {
+        /// Sets the given baudrate.
+        pub fn baudrate(mut self, baudrate: impl Into<Baud>) -> Self {
+            self.baudrate = baudrate.into();
+            self
+        }
+
+        /// Sets the given parity.
+        pub fn parity(mut self, parity: Parity) -> Self {
+            self.parity = parity;
+            self
+        }
+
+        /// Sets the stop bits to `stopbits`.
+        pub fn stopbits(mut self, stopbits: StopBits) -> Self {
+            self.stopbits = stopbits;
+            self
+        }
+    }
+
+    impl Default for Config {
+        /// Creates a new configuration with typically used parameters: 115,200
+        /// Baud 8N1.
+        fn default() -> Config {
+            Config {
+                baudrate: 115_200.Bd(),
+                parity: Parity::None,
+                stopbits: StopBits::STOP1,
+            }
+        }
+    }
+
+    impl<T: Into<Baud>> From<T> for Config {
+        fn from(b: T) -> Config {
+            Config {
+                baudrate: b.into(),
+                ..Default::default()
+            }
+        }
     }
 }
 
@@ -211,10 +310,10 @@ where
     Usart: Instance,
 {
     /// Configures a USART peripheral to provide serial communication
-    pub fn new(
+    pub fn new<Config>(
         usart: Usart,
         pins: (Tx, Rx),
-        baud_rate: Baud,
+        config: Config,
         clocks: Clocks,
         apb: &mut <Usart as Instance>::APB,
     ) -> Self
@@ -222,18 +321,43 @@ where
         Usart: Instance,
         Tx: TxPin<Usart>,
         Rx: RxPin<Usart>,
+        Config: Into<config::Config>,
     {
-        Usart::enable_clock(apb);
+        use self::config::*;
 
-        let brr = Usart::clock(&clocks).integer() / baud_rate.integer();
+        let config = config.into();
+
+        // Enable USART peripheral for any further interaction.
+        Usart::enable_clock(apb);
+        // Disable USART because some configuration bits could only be written
+        // in this state.
+        usart.cr1.modify(|_, w| w.ue().disabled());
+
+        let brr = Usart::clock(&clocks).integer() / config.baudrate.integer();
         crate::assert!(brr >= 16, "impossible baud rate");
         usart.brr.write(|w| w.brr().bits(brr as u16));
 
+        // We currently support only eight data bits as supporting a full-blown
+        // configuration gets complicated pretty fast. The USART counts data
+        // and partiy bits together so the actual amount depends on the parity
+        // selection.
+        let (m0, ps, pce) = match config.parity {
+            Parity::None => (M_A::BIT8, PS_A::EVEN, PCE_A::DISABLED),
+            Parity::Even => (M_A::BIT9, PS_A::EVEN, PCE_A::ENABLED),
+            Parity::Odd => (M_A::BIT9, PS_A::ODD, PCE_A::ENABLED),
+        };
+
+        usart.cr2.modify(|_, w| w.stop().variant(config.stopbits));
         usart.cr1.modify(|_, w| {
-            w.ue().enabled(); // enable USART
+            w.ps().variant(ps); // set parity mode
+            w.pce().variant(pce); // enable parity checking/generation
+            w.m().variant(m0); // set data bits
             w.re().enabled(); // enable receiver
             w.te().enabled() // enable transmitter
         });
+
+        // Finally enable the configured UART.
+        usart.cr1.modify(|_, w| w.ue().enabled());
 
         Self { usart, pins }
     }
