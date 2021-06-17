@@ -333,7 +333,10 @@ pub trait Channel: private::Channel {
             1 => BITS8,
             2 => BITS16,
             4 => BITS32,
-            s => crate::panic!("unsupported word size: {:?}", s),
+            #[cfg(not(feature = "defmt"))]
+            s => core::panic!("unsupported word size: {:?}", s),
+            #[cfg(feature = "defmt")]
+            _ => defmt::panic!("unsupported word size"),
         };
 
         self.ch().cr.modify(|_, w| {
