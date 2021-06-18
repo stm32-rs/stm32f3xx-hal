@@ -27,7 +27,7 @@ To run the tests on a different target than the STM32F3Discovery's
 `stm32f303xc`, specify a target as a feature:
 
 ```bash
-cargo test -p testsuite --feature stm32f301xb
+cargo test -p testsuite --no-default-features --features stm32f3xx-hal/stm32f301xb
 ```
 
 The result _always_ shows a backtrace, even in the case of success.
