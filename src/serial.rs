@@ -514,6 +514,7 @@ macro_rules! usart {
                 fn enable_clock(apb: &mut Self::APB) {
                     apb.enr().modify(|_, w| w.$usartXen().enabled());
                     apb.rstr().modify(|_, w| w.$usartXrst().reset());
+                    apb.rstr().modify(|_, w| w.$usartXrst().clear_bit());
                 }
 
                 fn clock(clocks: &Clocks) -> Hertz {
