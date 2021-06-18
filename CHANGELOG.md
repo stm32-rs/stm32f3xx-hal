@@ -329,6 +329,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#238]: https://github.com/stm32-rs/stm32f3xx-hal/pull/238
 [#234]: https://github.com/stm32-rs/stm32f3xx-hal/pull/234
 [#232]: https://github.com/stm32-rs/stm32f3xx-hal/pull/232
 [#229]: https://github.com/stm32-rs/stm32f3xx-hal/pull/229
