@@ -12,10 +12,13 @@ use core::{convert::Infallible, ops::Deref};
 use crate::{
     gpio::{gpioa, gpiob, gpioc, AF7},
     hal::{blocking, serial},
-    pac::{self, rcc::cfgr3::USART1SW_A, usart1::RegisterBlock, RCC, USART1, USART2, USART3},
+    pac::{self, rcc::cfgr3::USART1SW_A, usart1::RegisterBlock, USART1, USART2, USART3},
     rcc::{Clocks, APB1, APB2},
     time::rate::*,
 };
+
+#[allow(unused_imports)]
+use crate::pac::RCC;
 
 use cfg_if::cfg_if;
 
@@ -492,7 +495,18 @@ pub trait Instance: Deref<Target = RegisterBlock> + private::Sealed {
 }
 
 macro_rules! usart {
-    ($($USARTX:ident: ($usartXen:ident, $APB:ident, $pclkX:ident, $usartXrst:ident, $usartXsw:ident),)+) => {
+    (
+        $(
+            $USARTX:ident: (
+                $usartXen:ident,
+                $APB:ident,
+                $pclkX:ident,
+                $usartXrst:ident,
+                $usartXsw:ident,
+                $usartXclock:ident
+            ),
+        )+
+    ) => {
         $(
             impl private::Sealed for $USARTX {}
             impl Instance for $USARTX {
@@ -500,27 +514,13 @@ macro_rules! usart {
                 fn enable_clock(apb: &mut Self::APB) {
                     apb.enr().modify(|_, w| w.$usartXen().enabled());
                     apb.rstr().modify(|_, w| w.$usartXrst().reset());
-                    apb.rstr().modify(|_, w| w.$usartXrst().clear_bit());
                 }
 
                 fn clock(clocks: &Clocks) -> Hertz {
-                    // NOTE(unsafe) atomic read with no side effects
-
-                    // This is only partly sovable by this. The macro has to be adjusted, to give
-                    // information about, if sw is avalible for the uart implementation or not
-                    cfg_if::cfg_if! {
-                        if #[cfg(any(feature = "svd-f301", feature = "svd-f3x4"))] {
-                            clocks.$pclkX()
-                        } else {
-                            // FIXME usart2sw() is not avalible for stm32f318x8 for example
-                            match unsafe { (*RCC::ptr()).cfgr3.read().$usartXsw().variant() } {
-                                USART1SW_A::PCLK => clocks.$pclkX(),
-                                USART1SW_A::HSI => crate::rcc::HSI,
-                                USART1SW_A::SYSCLK => clocks.sysclk(),
-                                USART1SW_A::LSE => crate::rcc::LSE,
-                            }
-                        }
-                    }
+                    // Use the function created via another macro outside of this one,
+                    // because the implementation is dependend on the type $USARTX.
+                    // But macros can not differentiate between types.
+                    $usartXclock(clocks)
                 }
             }
 
@@ -552,12 +552,79 @@ macro_rules! usart {
     ([ $(($X:literal, $APB:literal)),+ ]) => {
         paste::paste! {
             usart!(
-                $([<USART $X>]: ([<usart $X en>], [<APB $APB>], [<pclk $APB>], [<usart $X rst>], [<usart $X sw>]),)+
+                $(
+                    [<USART $X>]: (
+                        [<usart $X en>],
+                        [<APB $APB>],
+                        [<pclk $APB>],
+                        [<usart $X rst>],
+                        [<usart $X sw>],
+                        [<usart $X clock>]
+                    ),
+                )+
             );
         }
     };
 }
 
-usart!([(1, 2)]);
-usart!([(2, 1)]);
-usart!([(3, 1)]);
+/// Generates a clock function for UART Peripherals, where
+/// the only clock source can be the peripheral clock
+#[allow(unused_macros)]
+macro_rules! usart_static_clock {
+    ($($usartXclock:ident, $pclkX:ident),+) => {
+        $(
+            /// Return the currently set source frequency the UART peripheral
+            /// depending on the clock source.
+            fn $usartXclock(clocks: &Clocks) -> Hertz {
+                clocks.$pclkX()
+            }
+        )+
+    };
+    ([ $(($X:literal, $APB:literal)),+ ]) => {
+        paste::paste! {
+            usart_static_clock!(
+                $([<usart $X clock>], [<pclk $APB>]),+
+            );
+        }
+    };
+}
+
+/// Generates a clock function for UART Peripherals, where
+/// the clock source can vary.
+macro_rules! usart_var_clock {
+    ($($usartXclock:ident, $usartXsw:ident, $pclkX:ident),+) => {
+        $(
+            /// Return the currently set source frequency the UART peripheral
+            /// depending on the clock source.
+            fn $usartXclock(clocks: &Clocks) -> Hertz {
+                // NOTE(unsafe): atomic read with no side effects
+                match unsafe {(*RCC::ptr()).cfgr3.read().$usartXsw().variant()} {
+                    USART1SW_A::PCLK => clocks.$pclkX(),
+                    USART1SW_A::HSI => crate::rcc::HSI,
+                    USART1SW_A::SYSCLK => clocks.sysclk(),
+                    USART1SW_A::LSE => crate::rcc::LSE,
+                }
+            }
+        )+
+    };
+    ([ $(($X:literal, $APB:literal)),+ ]) => {
+        paste::paste! {
+            usart_var_clock!(
+                $([<usart $X clock>], [<usart $X sw>], [<pclk $APB>]),+
+            );
+        }
+    };
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(any(feature = "svd-f301", feature = "svd-f3x4"))] {
+        usart_var_clock!([(1,2)]);
+        // These are uart peripherals, where the only clock source
+        // is the PCLK (peripheral clock).
+        usart_static_clock!([(2,1), (3,1)]);
+    } else {
+        usart_var_clock!([(1, 2), (2, 1), (3, 1)]);
+    }
+}
+// TODO: what about uart 4 and uart 5?
+usart!([(1, 2), (2, 1), (3, 1)]);
