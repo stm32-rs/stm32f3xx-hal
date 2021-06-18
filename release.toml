@@ -14,7 +14,7 @@ replace = """
 
 No changes.
 
-## [v{{version}}] {{date}}
+## [v{{version}}] - {{date}}
 """
 
 # Change the tag links in the bottom of the file
