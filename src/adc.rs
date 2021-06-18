@@ -7,7 +7,7 @@
 //! It can be built for the STM32F3Discovery running
 //! `cargo build --example adc --features=stm32f303xc`
 //!
-//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/adc.rs
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.7.0/examples/adc.rs
 
 use crate::{
     gpio::Analog,
