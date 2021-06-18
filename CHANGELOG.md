@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `ld` feature, which enables the memory.x generation ([#216])
 - Implement `DelayMs` for `Milliseconds` and `DelayUs` for `Microseconds` ([#234])
 - ADC can now be `free()`'d ([#212])
+- Serial does now implement `embedded_hal::serial::{Read, Write}`.
+  No `split()` necessary. ([#232])
+- Serial can now listen for the "Transmission Complete" `Tc` interrupt event ([#232])
+- Serial can now listen for the `Idle` interrupt event ([#238])
 
 ### Changed
 
@@ -70,6 +74,7 @@ let clocks = rcc
 - Remove `stm32` module. Use `use stm32f3xx_hal::pac` instead.
   This module was a deprecated in [v0.5.0][] and is now subject for
   removal. ([#220])
+- `Serial::uart1` ... functions are renamed to `Serial::new`. ([#212])
 
 ## [v0.6.1] - 2020-12-10
 
@@ -325,6 +330,7 @@ let clocks = rcc
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
 [#234]: https://github.com/stm32-rs/stm32f3xx-hal/pull/234
+[#232]: https://github.com/stm32-rs/stm32f3xx-hal/pull/232
 [#229]: https://github.com/stm32-rs/stm32f3xx-hal/pull/229
 [#227]: https://github.com/stm32-rs/stm32f3xx-hal/pull/227
 [#220]: https://github.com/stm32-rs/stm32f3xx-hal/pull/220

@@ -132,7 +132,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         // t_SCL ~= t_SYNC1 + t_SYNC2 + t_SCLL + t_SCLH
         let i2cclk = I2C::clock(&clocks).0;
         let ratio = i2cclk / freq.integer() - 4;
-        let (presc, scll, sclh, sdadel, scldel) = if freq.integer() >= 100_000 {
+        let (presc, scll, sclh, sdadel, scldel) = if freq >= 100.kHz() {
             // fast-mode or fast-mode plus
             // here we pick SCLL + 1 = 2 * (SCLH + 1)
             let presc = ratio / 387;
@@ -140,7 +140,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
             let sclh = ((ratio / (presc + 1)) - 3) / 3;
             let scll = 2 * (sclh + 1) - 1;
 
-            let (sdadel, scldel) = if freq.integer() > 400_000 {
+            let (sdadel, scldel) = if freq > 400.kHz() {
                 // fast-mode plus
                 let sdadel = 0;
                 let scldel = i2cclk / 4_000_000 / (presc + 1) - 1;
@@ -449,7 +449,7 @@ macro_rules! i2c {
                 fn clock(clocks: &Clocks) -> Hertz {
                     // NOTE(unsafe) atomic read with no side effects
                     match unsafe { (*RCC::ptr()).cfgr3.read().$i2cXsw().variant() } {
-                        I2C1SW_A::HSI => Hertz(8_000_000),
+                        I2C1SW_A::HSI => crate::rcc::HSI,
                         I2C1SW_A::SYSCLK => clocks.sysclk(),
                     }
                 }

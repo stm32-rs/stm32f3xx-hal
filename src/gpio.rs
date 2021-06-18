@@ -275,6 +275,9 @@ pub struct Pin<Gpio, Index, Mode> {
     _mode: PhantomData<Mode>,
 }
 
+// Make all GPIO peripheral trait extensions sealable.
+impl<Gpio, Index, Mode> crate::private::Sealed for Pin<Gpio, Index, Mode> {}
+
 /// Fully erased pin
 ///
 /// This moves the pin type information to be known

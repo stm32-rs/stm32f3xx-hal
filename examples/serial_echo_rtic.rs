@@ -64,13 +64,8 @@ mod app {
                 .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
         );
         pins.1.internal_pull_up(&mut gpioa.pupdr, true);
-        let mut serial: SerialType = Serial::usart1(
-            cx.device.USART1,
-            pins,
-            19200_u32.Bd(),
-            clocks,
-            &mut rcc.apb2,
-        );
+        let mut serial: SerialType =
+            Serial::new(cx.device.USART1, pins, 19200.Bd(), clocks, &mut rcc.apb2);
         serial.listen(Event::Rxne);
 
         rprintln!("post init");
