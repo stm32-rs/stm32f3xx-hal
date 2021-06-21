@@ -22,12 +22,8 @@ use crate::pac::RCC;
 
 use cfg_if::cfg_if;
 
-cfg_if! {
-    if #[cfg(any(feature = "stm32f302", feature = "stm32f303"))] {
-        use crate::dma;
-        use cortex_m::interrupt;
-    }
-}
+use crate::dma;
+use cortex_m::interrupt;
 
 /// Interrupt event
 pub enum Event {
@@ -402,7 +398,6 @@ where
     }
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> Rx<Usart>
 where
     Usart: Instance + Dma,
@@ -428,7 +423,6 @@ where
 
 impl<Usart> blocking::serial::write::Default<u8> for Tx<Usart> where Usart: Instance {}
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> Tx<Usart>
 where
     Usart: Instance + Dma,
@@ -452,7 +446,6 @@ where
     }
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> dma::Target for Rx<Usart>
 where
     Usart: Instance + Dma,
@@ -472,7 +465,6 @@ where
     }
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> dma::Target for Tx<Usart>
 where
     Usart: Instance + Dma,
@@ -492,7 +484,6 @@ where
     }
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
 where
     Usart: Instance + Dma,
@@ -530,7 +521,6 @@ where
     }
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart, Tx, Rx> dma::Target for Serial<Usart, (Tx, Rx)>
 where
     Usart: Instance + Dma,
