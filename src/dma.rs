@@ -561,10 +561,18 @@ macro_rules! on_channel {
     };
 }
 
+// See mapping details in RM0316 13.4.7 Fig 47 onwards
 on_channel!(
     dma1: [
         (pac::USART1, (C4, C5)),
         (pac::USART2, (C7, C6)),
         (pac::USART3, (C2, C3)),
+    ],
+);
+
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
+on_channel!(
+    dma2: [
+        (pac::UART4, (C5, C3)),
     ],
 );
