@@ -535,16 +535,7 @@ macro_rules! dma {
 
 dma!( 1: { 1,2,3,4,5,6,7 } );
 
-#[cfg(any(
-    feature = "stm32f302xb",
-    feature = "stm32f302xc",
-    feature = "stm32f302xd",
-    feature = "stm32f302xe",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
 dma!( 2: { 1,2,3,4,5 } );
 
 /// Marker trait mapping DMA targets to their channels
