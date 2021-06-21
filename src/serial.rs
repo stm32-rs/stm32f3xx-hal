@@ -131,7 +131,7 @@ mod split {
 
         /// Get a reference to internal usart peripheral
         ///
-        /// # SAFTY
+        /// # Safety
         ///
         /// This is unsafe, because the creation of this struct
         /// is only possible by splitting the the USART peripheral
@@ -159,7 +159,7 @@ mod split {
 
         /// Get a reference to internal usart peripheral
         ///
-        /// # SAFTY
+        /// # Safety
         ///
         /// This is unsafe, because the creation of this struct
         /// is only possible by splitting the the USART peripheral
@@ -477,6 +477,62 @@ where
         interrupt::free(|_| unsafe {
             self.usart().cr3.modify(|_, w| w.dmat().disabled());
         });
+    }
+}
+
+#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
+where
+    Usart: Instance,
+{
+    /// Fill the buffer with received data using DMA.
+    pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
+    where
+        Self: dma::OnChannel<C>,
+        B: dma::WriteBuffer<Word = u8> + 'static,
+        C: dma::Channel,
+    {
+        // NOTE(unsafe) usage of a valid peripheral address
+        unsafe {
+            channel.set_peripheral_address(
+                &self.usart.rdr as *const _ as u32,
+                dma::Increment::Disable,
+            )
+        };
+
+        dma::Transfer::start_write(buffer, channel, self)
+    }
+
+    /// Transmit all data in the buffer using DMA.
+    pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
+    where
+        Self: dma::OnChannel<C>,
+        B: dma::ReadBuffer<Word = u8> + 'static,
+        C: dma::Channel,
+    {
+        // NOTE(unsafe) usage of a valid peripheral address
+        unsafe {
+            channel.set_peripheral_address(
+                &self.usart.tdr as *const _ as u32,
+                dma::Increment::Disable,
+            )
+        };
+
+        dma::Transfer::start_read(buffer, channel, self)
+    }
+}
+
+#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
+impl<Usart, Tx, Rx> dma::Target for Serial<Usart, (Tx, Rx)>
+where
+    Usart: Instance,
+{
+    fn enable_dma(&mut self) {
+        self.usart.cr3.modify(|_, w| w.dmar().enabled().dmat().enabled())
+    }
+
+    fn disable_dma(&mut self) {
+        self.usart.cr3.modify(|_, w| w.dmar().disabled().dmat().disabled())
     }
 }
 
