@@ -543,21 +543,28 @@ pub trait OnChannel<C: Channel>: Target + crate::private::Sealed {}
 
 macro_rules! on_channel {
     (
-        $dma:ident,
-        $( $target:ty => $C:ident, )+
+        $(
+            $dma:ident: [$(($USART:ty, ($TxChannel:ident, $RxChannel:ident)),)+],
+        ),+
     ) => {
         $(
-            impl crate::private::Sealed for $target {}
-            impl OnChannel<$dma::$C> for $target {}
+            $(
+                impl crate::private::Sealed for serial::Tx<$USART> {}
+                impl OnChannel<$dma::$TxChannel> for serial::Tx<$USART> {}
+                impl crate::private::Sealed for serial::Rx<$USART> {}
+                impl OnChannel<$dma::$RxChannel> for serial::Rx<$USART> {}
+                impl<Tx, Rx> crate::private::Sealed for serial::Serial<$USART, (Tx, Rx)> {}
+                impl<Tx, Rx> OnChannel<$dma::$TxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
+                impl<Tx, Rx> OnChannel<$dma::$RxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
+            )+
         )+
     };
 }
 
-on_channel!(dma1,
-    serial::Rx<pac::USART1> => C5,
-    serial::Tx<pac::USART1> => C4,
-    serial::Rx<pac::USART2> => C6,
-    serial::Tx<pac::USART2> => C7,
-    serial::Rx<pac::USART3> => C3,
-    serial::Tx<pac::USART3> => C2,
+on_channel!(
+    dma1: [
+        (pac::USART1, (C4, C5)),
+        (pac::USART2, (C7, C6)),
+        (pac::USART3, (C2, C3)),
+    ],
 );
