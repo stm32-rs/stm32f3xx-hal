@@ -405,7 +405,7 @@ where
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> Rx<Usart>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     /// Fill the buffer with received data using DMA.
     pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -431,7 +431,7 @@ impl<Usart> blocking::serial::write::Default<u8> for Tx<Usart> where Usart: Inst
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> Tx<Usart>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     /// Transmit all data in the buffer using DMA.
     pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -455,7 +455,7 @@ where
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> dma::Target for Rx<Usart>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     fn enable_dma(&mut self) {
         // NOTE(unsafe) critical section prevents races
@@ -475,7 +475,7 @@ where
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> dma::Target for Tx<Usart>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     fn enable_dma(&mut self) {
         // NOTE(unsafe) critical section prevents races
@@ -495,7 +495,7 @@ where
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     /// Fill the buffer with received data using DMA.
     pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -506,10 +506,8 @@ where
     {
         // NOTE(unsafe) usage of a valid peripheral address
         unsafe {
-            channel.set_peripheral_address(
-                &self.usart.rdr as *const _ as u32,
-                dma::Increment::Disable,
-            )
+            channel
+                .set_peripheral_address(&self.usart.rdr as *const _ as u32, dma::Increment::Disable)
         };
 
         dma::Transfer::start_write(buffer, channel, self)
@@ -524,10 +522,8 @@ where
     {
         // NOTE(unsafe) usage of a valid peripheral address
         unsafe {
-            channel.set_peripheral_address(
-                &self.usart.tdr as *const _ as u32,
-                dma::Increment::Disable,
-            )
+            channel
+                .set_peripheral_address(&self.usart.tdr as *const _ as u32, dma::Increment::Disable)
         };
 
         dma::Transfer::start_read(buffer, channel, self)
@@ -537,20 +533,31 @@ where
 #[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart, Tx, Rx> dma::Target for Serial<Usart, (Tx, Rx)>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     fn enable_dma(&mut self) {
-        self.usart.cr3.modify(|_, w| w.dmar().enabled().dmat().enabled())
+        self.usart
+            .cr3
+            .modify(|_, w| w.dmar().enabled().dmat().enabled())
     }
 
     fn disable_dma(&mut self) {
-        self.usart.cr3.modify(|_, w| w.dmar().disabled().dmat().disabled())
+        self.usart
+            .cr3
+            .modify(|_, w| w.dmar().disabled().dmat().disabled())
     }
 }
 
 mod private {
     pub trait Sealed {}
 }
+
+/// Marker trait for DMA capable UART implementations.
+pub trait Dma: private::Sealed {}
+
+impl Dma for USART1 {}
+impl Dma for USART2 {}
+impl Dma for USART3 {}
 
 /// UART instance
 pub trait Instance: Deref<Target = RegisterBlock> + private::Sealed {
@@ -732,5 +739,7 @@ cfg_if::cfg_if! {
 
         uart_var_clock!([(4,1), (5,1)]);
         uart!([(4,1), (5,1)]);
+
+        impl Dma for UART4 {}
     }
 }
