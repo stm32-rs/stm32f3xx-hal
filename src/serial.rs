@@ -548,19 +548,15 @@ where
     }
 }
 
-mod private {
-    pub trait Sealed {}
-}
-
 /// Marker trait for DMA capable UART implementations.
-pub trait Dma: private::Sealed {}
+pub trait Dma: crate::private::Sealed {}
 
 impl Dma for USART1 {}
 impl Dma for USART2 {}
 impl Dma for USART3 {}
 
 /// UART instance
-pub trait Instance: Deref<Target = RegisterBlock> + private::Sealed {
+pub trait Instance: Deref<Target = RegisterBlock> + crate::private::Sealed {
     /// Peripheral bus instance which is responsible for the peripheral
     type APB;
     #[doc(hidden)]
@@ -583,7 +579,7 @@ macro_rules! usart {
         )+
     ) => {
         $(
-            impl private::Sealed for $USARTX {}
+            impl crate::private::Sealed for $USARTX {}
             impl Instance for $USARTX {
                 type APB = $APB;
                 fn enable_clock(apb: &mut Self::APB) {

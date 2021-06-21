@@ -548,19 +548,17 @@ dma!( 1: { 1,2,3,4,5,6,7 } );
 dma!( 2: { 1,2,3,4,5 } );
 
 /// Marker trait mapping DMA targets to their channels
-///
-/// # Safety
-///
-/// `C` must be the correct DMA channel for the peripheral implementing
-/// this trait.
-pub unsafe trait OnChannel<C: Channel>: Target {}
+pub trait OnChannel<C: Channel>: Target + crate::private::Sealed {}
 
 macro_rules! on_channel {
     (
         $dma:ident,
         $( $target:ty => $C:ident, )+
     ) => {
-        $( unsafe impl OnChannel<$dma::$C> for $target {} )+
+        $(
+            impl crate::private::Sealed for $target {}
+            impl OnChannel<$dma::$C> for $target {}
+        )+
     };
 }
 
