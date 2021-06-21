@@ -103,6 +103,18 @@ cfg_if! {
     }
 }
 
+cfg_if! {
+    if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))] {
+        use crate::pac::{UART4, UART5};
+        use crate::gpio::AF5;
+
+        impl<Otype> TxPin<UART4> for gpioc::PC10<AF5<Otype>> {}
+        impl<Otype> RxPin<UART4> for gpioc::PC11<AF5<Otype>> {}
+        impl<Otype> TxPin<UART5> for gpioc::PC12<AF5<Otype>> {}
+        impl<Otype> RxPin<UART5> for gpiod::PD2<AF5<Otype>> {}
+    }
+}
+
 /// Serial abstraction
 pub struct Serial<Usart, Pins> {
     usart: Usart,
@@ -683,5 +695,42 @@ cfg_if::cfg_if! {
         usart_var_clock!([(1, 2), (2, 1), (3, 1)]);
     }
 }
-// TODO: what about uart 4 and uart 5?
 usart!([(1, 2), (2, 1), (3, 1)]);
+
+cfg_if::cfg_if! {
+    // See table 29.4 RM0316
+    if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e"))] {
+
+        macro_rules! uart {
+            ([ $(($X:literal, $APB:literal)),+ ]) => {
+                paste::paste! {
+                    usart!(
+                        $(
+                            [<UART $X>]: (
+                                [<uart $X en>],
+                                [<APB $APB>],
+                                [<pclk $APB>],
+                                [<uart $X rst>],
+                                [<uart $X sw>],
+                                [<usart $X clock>]
+                            ),
+                        )+
+                    );
+                }
+            };
+        }
+
+        macro_rules! uart_var_clock {
+            ([ $(($X:literal, $APB:literal)),+ ]) => {
+                paste::paste! {
+                    usart_var_clock!(
+                        $([<usart $X clock>], [<uart $X sw>], [<pclk $APB>]),+
+                    );
+                }
+            };
+        }
+
+        uart_var_clock!([(4,1), (5,1)]);
+        uart!([(4,1), (5,1)]);
+    }
+}
