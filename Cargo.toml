@@ -184,7 +184,7 @@ required-features = ["ld", "can", "stm32f303"]
 
 [[example]]
 name = "serial_dma"
-required-features = ["ld", "stm32f303"]
+required-features = ["ld", "rt", "stm32f303"]
 
 [[example]]
 name = "serial_echo_rtic"
