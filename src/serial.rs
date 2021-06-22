@@ -120,21 +120,24 @@ pub struct Serial<Usart, Pins> {
 mod split {
     use super::Instance;
     /// Serial receiver
-    pub struct Rx<Usart> {
+    pub struct Rx<Usart, Pin> {
         usart: Usart,
+        pub(crate) pin: Pin,
     }
 
     /// Serial transmitter
-    pub struct Tx<Usart> {
+    pub struct Tx<Usart, Pin> {
         usart: Usart,
+        pub(crate) pin: Pin,
     }
 
-    impl<Usart> Tx<Usart>
+    impl<Usart, Pin> Tx<Usart, Pin>
     where
         Usart: Instance,
+        Pin: super::TxPin<Usart>,
     {
-        pub(crate) fn new(usart: Usart) -> Self {
-            Tx { usart }
+        pub(crate) fn new(usart: Usart, pin: Pin) -> Self {
+            Tx { usart, pin }
         }
 
         /// Get a reference to internal usart peripheral
@@ -155,14 +158,20 @@ mod split {
         pub(crate) unsafe fn usart(&self) -> &Usart {
             &self.usart
         }
+
+        /// Destruct [`Tx`] to regain access to underlying USART and pin.
+        pub(crate) fn free(self) -> (Usart, Pin) {
+            (self.usart, self.pin)
+        }
     }
 
-    impl<Usart> Rx<Usart>
+    impl<Usart, Pin> Rx<Usart, Pin>
     where
         Usart: Instance,
+        Pin: super::RxPin<Usart>,
     {
-        pub(crate) fn new(usart: Usart) -> Self {
-            Rx { usart }
+        pub(crate) fn new(usart: Usart, pin: Pin) -> Self {
+            Rx { usart, pin }
         }
 
         /// Get a reference to internal usart peripheral
@@ -182,6 +191,15 @@ mod split {
         /// the peripheral, which do not effect the other.
         pub(crate) unsafe fn usart(&self) -> &Usart {
             &self.usart
+        }
+
+        /// Destruct [`Rx`] to regain access to the underlying pin.
+        ///
+        /// The USART is omitted, as it is returnend from Tx already to avoid
+        /// beeing able to crate a duplicate reference to the same underlying
+        /// peripheral.
+        pub(crate) fn free(self) -> Pin {
+            self.pin
         }
     }
 }
@@ -267,6 +285,35 @@ where
             .modify(|_, w| w.ue().disabled().re().disabled().te().disabled());
         (self.usart, self.pins)
     }
+
+    /// Joins previously [`Serial::split()`] serial.
+    ///
+    /// This is often needed to access methods only implemented for [`Serial`]
+    /// but not for [`Tx`] nor [`Rx`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let dp = pac::Peripherals::take().unwrap();
+    ///
+    /// (tx, rx) = Serial::new(dp.USART1, ...).split();
+    ///
+    /// // Do something with tx and rx
+    ///
+    /// serial = Serial::join(tx, rx);
+    /// ```
+    pub fn join(tx: split::Tx<Usart, Tx>, rx: split::Rx<Usart, Rx>) -> Self
+    where
+        Tx: TxPin<Usart>,
+        Rx: RxPin<Usart>,
+    {
+        let (usart, tx_pin) = tx.free();
+        let rx_pin = rx.free();
+        Self {
+            usart,
+            pins: (tx_pin, rx_pin),
+        }
+    }
 }
 
 // TODO: Check if u16 for WORD is feasiable / possible
@@ -298,9 +345,10 @@ where
     }
 }
 
-impl<Usart> serial::Read<u8> for Rx<Usart>
+impl<Usart, Pin> serial::Read<u8> for Rx<Usart, Pin>
 where
     Usart: Instance,
+    Pin: RxPin<Usart>,
 {
     type Error = Error;
 
@@ -364,9 +412,10 @@ impl<USART, TX, RX> blocking::serial::write::Default<u8> for Serial<USART, (TX, 
 {
 }
 
-impl<Usart> serial::Write<u8> for Tx<Usart>
+impl<Usart, Pin> serial::Write<u8> for Tx<Usart, Pin>
 where
     Usart: Instance,
+    Pin: TxPin<Usart>,
 {
     // NOTE(Infallible) See section "29.7 USART interrupts"; the only possible errors during
     // transmission are: clear to send (which is disabled in this case) errors and
@@ -398,9 +447,10 @@ where
     }
 }
 
-impl<Usart> Rx<Usart>
+impl<Usart, Pin> Rx<Usart, Pin>
 where
     Usart: Instance + Dma,
+    Pin: RxPin<Usart>,
 {
     /// Fill the buffer with received data using DMA.
     pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -421,11 +471,17 @@ where
     }
 }
 
-impl<Usart> blocking::serial::write::Default<u8> for Tx<Usart> where Usart: Instance {}
+impl<Usart, Pin> blocking::serial::write::Default<u8> for Tx<Usart, Pin>
+where
+    Usart: Instance,
+    Pin: TxPin<Usart>,
+{
+}
 
-impl<Usart> Tx<Usart>
+impl<Usart, Pin> Tx<Usart, Pin>
 where
     Usart: Instance + Dma,
+    Pin: TxPin<Usart>,
 {
     /// Transmit all data in the buffer using DMA.
     pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -446,9 +502,10 @@ where
     }
 }
 
-impl<Usart> dma::Target for Rx<Usart>
+impl<Usart, Pin> dma::Target for Rx<Usart, Pin>
 where
     Usart: Instance + Dma,
+    Pin: RxPin<Usart>,
 {
     fn enable_dma(&mut self) {
         // NOTE(unsafe) critical section prevents races
@@ -465,9 +522,10 @@ where
     }
 }
 
-impl<Usart> dma::Target for Tx<Usart>
+impl<Usart, Pin> dma::Target for Tx<Usart, Pin>
 where
     Usart: Instance + Dma,
+    Pin: TxPin<Usart>,
 {
     fn enable_dma(&mut self) {
         // NOTE(unsafe) critical section prevents races
@@ -487,6 +545,8 @@ where
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
 where
     Usart: Instance + Dma,
+    Rx: RxPin<Usart>,
+    Tx: TxPin<Usart>,
 {
     /// Fill the buffer with received data using DMA.
     pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -587,9 +647,15 @@ macro_rules! usart {
             }
 
 
-            impl<Tx, Rx> Serial<$USARTX, (Tx, Rx)> {
-                /// Splits the `Serial` abstraction into a transmitter and a receiver half
-                pub fn split(self) -> (split::Tx<$USARTX>, split::Rx<$USARTX>) {
+            impl<Tx, Rx> Serial<$USARTX, (Tx, Rx)>
+                where Tx: TxPin<$USARTX>, Rx: RxPin<$USARTX> {
+                /// Splits the [`Serial`] abstraction into a transmitter and a receiver half.
+                ///
+                /// This allows using [`Tx`] and [`Rx`] related actions to
+                /// be handled independently and even use these safely in different
+                /// contexts (like interrupt routines) without needing to do synchronization work
+                /// between them.
+                pub fn split(self) -> (split::Tx<$USARTX, Tx>, split::Rx<$USARTX, Rx>) {
                     // NOTE(unsafe): This essentially duplicates the USART peripheral
                     //
                     // As RX and TX both do have direct access to the peripheral,
@@ -597,7 +663,7 @@ macro_rules! usart {
                     // registers to avoid data races.
                     //
                     // Tx and Rx won't access the same registers anyways,
-                    // as they have independet responbilities, which are NOT represented
+                    // as they have independent responsibilities, which are NOT represented
                     // in the type system.
                     let (tx, rx) = unsafe {
                         (
@@ -605,7 +671,7 @@ macro_rules! usart {
                             pac::Peripherals::steal().$USARTX,
                         )
                     };
-                    (split::Tx::new(tx), split::Rx::new(rx))
+                    (split::Tx::new(tx, self.pins.0), split::Rx::new(rx, self.pins.1))
                 }
             }
         )+

@@ -541,6 +541,8 @@ dma!( 2: { 1,2,3,4,5 } );
 /// Marker trait mapping DMA targets to their channels
 pub trait OnChannel<C: Channel>: Target + crate::private::Sealed {}
 
+use crate::serial::{RxPin, TxPin};
+
 macro_rules! on_channel {
     (
         $(
@@ -549,10 +551,10 @@ macro_rules! on_channel {
     ) => {
         $(
             $(
-                impl crate::private::Sealed for serial::Tx<$USART> {}
-                impl OnChannel<$dma::$TxChannel> for serial::Tx<$USART> {}
-                impl crate::private::Sealed for serial::Rx<$USART> {}
-                impl OnChannel<$dma::$RxChannel> for serial::Rx<$USART> {}
+                impl<Pin> crate::private::Sealed for serial::Tx<$USART, Pin> {}
+                impl<Pin> OnChannel<$dma::$TxChannel> for serial::Tx<$USART, Pin> where Pin: TxPin<$USART> {}
+                impl<Pin> crate::private::Sealed for serial::Rx<$USART, Pin> {}
+                impl<Pin> OnChannel<$dma::$RxChannel> for serial::Rx<$USART, Pin> where Pin: RxPin<$USART> {}
                 impl<Tx, Rx> crate::private::Sealed for serial::Serial<$USART, (Tx, Rx)> {}
                 impl<Tx, Rx> OnChannel<$dma::$TxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
                 impl<Tx, Rx> OnChannel<$dma::$RxChannel> for serial::Serial<$USART, (Tx, Rx)> {}

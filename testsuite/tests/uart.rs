@@ -100,6 +100,26 @@ mod tests {
     }
 
     #[test]
+    fn send_receive_split(state: &mut super::State) {
+        let (mut tx, mut rx) = unwrap!(state.serial1.take()).split();
+        for i in IntoIter::new(TEST_MSG) {
+            defmt::unwrap!(nb::block!(tx.write(i)));
+            let c = unwrap!(nb::block!(rx.read()));
+            assert_eq!(c, i);
+        }
+
+        // now provoke an overrun
+        // send 5 u8 bytes, which do not fit in the 32 bit buffer
+        for i in &TEST_MSG[..4] {
+            defmt::unwrap!(nb::block!(tx.write(*i)));
+        }
+        let c = nb::block!(rx.read());
+        assert!(matches!(c, Err(Error::Overrun)));
+
+        state.serial1 = Some(Serial::join(tx, rx));
+    }
+
+    #[test]
     fn test_many_baudrates(state: &mut super::State) {
         use hal::time::rate::Baud;
         for baudrate in &[
@@ -121,24 +141,6 @@ mod tests {
             }
             state.serial1 = Some(serial);
         }
-    }
-
-    #[test]
-    fn send_receive_split(state: &mut super::State) {
-        let (mut tx, mut rx) = unwrap!(state.serial1.take()).split();
-        for i in IntoIter::new(TEST_MSG) {
-            defmt::unwrap!(nb::block!(tx.write(i)));
-            let c = unwrap!(nb::block!(rx.read()));
-            assert_eq!(c, i);
-        }
-
-        // now provoke an overrun
-        // send 5 u8 bytes, which do not fit in the 32 bit buffer
-        for i in &TEST_MSG[..4] {
-            defmt::unwrap!(nb::block!(tx.write(*i)));
-        }
-        let c = nb::block!(rx.read());
-        assert!(matches!(c, Err(Error::Overrun)));
     }
 
     #[test]
