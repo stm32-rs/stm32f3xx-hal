@@ -27,13 +27,9 @@ mod sealed {
 }
 
 /// Marker trait for pins (with specific AF mode) that can be used as a CAN RX pin.
-///
-/// This trait is sealed, as it should not be implemented outside this module.
 pub trait RxPin: sealed::Sealed {}
 
 /// Marker trait for pins (with specific AF mode) that can be used as a CAN TX pin.
-///
-/// This trait is sealed, as it should not be implemented outside this module.
 pub trait TxPin: sealed::Sealed {}
 
 cfg_if! {
