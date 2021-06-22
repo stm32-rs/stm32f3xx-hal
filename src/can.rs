@@ -57,9 +57,9 @@ cfg_if! {
 ///
 /// See [`bxcan::Instance`] for more information on how to use the CAN interface.
 pub struct Can<Tx, Rx> {
-    _can: pac::CAN,
-    _tx: TX,
-    _rx: RX,
+    can: pac::CAN,
+    tx: Tx,
+    rx: Rx,
 }
 
 impl<Tx, Rx> Can<Tx, Rx>
@@ -78,11 +78,12 @@ where
         apb1.rstr().modify(|_, w| w.canrst().set_bit());
         apb1.rstr().modify(|_, w| w.canrst().clear_bit());
 
-        bxcan::Can::new(Can {
-            _can: can,
-            _tx: tx,
-            _rx: rx,
-        })
+        bxcan::Can::new(Can { can, tx, rx })
+    }
+
+    /// Releases the CAN peripheral and associated pins
+    pub fn free(self) -> (pac::CAN, Tx, Rx) {
+        (self.can, self.tx, self.rx)
     }
 }
 
