@@ -56,16 +56,16 @@ cfg_if! {
 /// Struct representing a CAN peripheral and its configured TX and RX pins.
 ///
 /// See [`bxcan::Instance`] for more information on how to use the CAN interface.
-pub struct Can<TX, RX> {
-    _can: stm32::CAN,
+pub struct Can<Tx, Rx> {
+    _can: pac::CAN,
     _tx: TX,
     _rx: RX,
 }
 
-impl<TX, RX> Can<TX, RX>
+impl<Tx, Rx> Can<Tx, Rx>
 where
-    TX: TxPin,
-    RX: RxPin,
+    Tx: TxPin,
+    Rx: RxPin,
 {
     /// Create a new CAN instance, using the specified TX and RX pins.
     ///
@@ -73,7 +73,7 @@ where
     /// You will need to first call [`bxcan::Can::new`] and  set the bus configuration and filters
     /// before the peripheral can be enabled.
     /// See the CAN example, for a more thorough example of the full setup process.
-    pub fn new(can: pac::CAN, tx: TX, rx: RX, apb1: &mut APB1) -> bxcan::Can<Self> {
+    pub fn new(can: pac::CAN, tx: Tx, rx: Rx, apb1: &mut APB1) -> bxcan::Can<Self> {
         apb1.enr().modify(|_, w| w.canen().enabled());
         apb1.rstr().modify(|_, w| w.canrst().set_bit());
         apb1.rstr().modify(|_, w| w.canrst().clear_bit());
@@ -86,10 +86,10 @@ where
     }
 }
 
-unsafe impl<TX, RX> bxcan::Instance for Can<TX, RX> {
-    const REGISTERS: *mut RegisterBlock = stm32::CAN::ptr() as *mut _;
+unsafe impl<Tx, Rx> bxcan::Instance for Can<Tx, Rx> {
+    const REGISTERS: *mut RegisterBlock = pac::CAN::ptr() as *mut _;
 }
 
-unsafe impl<TX, RX> bxcan::FilterOwner for Can<TX, RX> {
+unsafe impl<Tx, Rx> bxcan::FilterOwner for Can<Tx, Rx> {
     const NUM_FILTER_BANKS: u8 = 28;
 }
