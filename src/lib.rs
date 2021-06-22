@@ -132,8 +132,6 @@ pub mod adc;
 #[cfg_attr(docsrs, doc(cfg(feature = "can")))]
 pub mod can;
 pub mod delay;
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
-#[cfg_attr(docsrs, doc(cfg(any(feature = "stm32f302", feature = "stm32f303"))))]
 pub mod dma;
 pub mod flash;
 pub mod gpio;

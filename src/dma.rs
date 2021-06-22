@@ -535,40 +535,44 @@ macro_rules! dma {
 
 dma!( 1: { 1,2,3,4,5,6,7 } );
 
-#[cfg(any(
-    feature = "stm32f302xb",
-    feature = "stm32f302xc",
-    feature = "stm32f302xd",
-    feature = "stm32f302xe",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
 dma!( 2: { 1,2,3,4,5 } );
 
 /// Marker trait mapping DMA targets to their channels
-///
-/// # Safety
-///
-/// `C` must be the correct DMA channel for the peripheral implementing
-/// this trait.
-pub unsafe trait OnChannel<C: Channel>: Target {}
+pub trait OnChannel<C: Channel>: Target + crate::private::Sealed {}
 
 macro_rules! on_channel {
     (
-        $dma:ident,
-        $( $target:ty => $C:ident, )+
+        $(
+            $dma:ident: [$(($USART:ty, ($TxChannel:ident, $RxChannel:ident)),)+],
+        ),+
     ) => {
-        $( unsafe impl OnChannel<$dma::$C> for $target {} )+
+        $(
+            $(
+                impl crate::private::Sealed for serial::Tx<$USART> {}
+                impl OnChannel<$dma::$TxChannel> for serial::Tx<$USART> {}
+                impl crate::private::Sealed for serial::Rx<$USART> {}
+                impl OnChannel<$dma::$RxChannel> for serial::Rx<$USART> {}
+                impl<Tx, Rx> crate::private::Sealed for serial::Serial<$USART, (Tx, Rx)> {}
+                impl<Tx, Rx> OnChannel<$dma::$TxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
+                impl<Tx, Rx> OnChannel<$dma::$RxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
+            )+
+        )+
     };
 }
 
-on_channel!(dma1,
-    serial::Rx<pac::USART1> => C5,
-    serial::Tx<pac::USART1> => C4,
-    serial::Rx<pac::USART2> => C6,
-    serial::Tx<pac::USART2> => C7,
-    serial::Rx<pac::USART3> => C3,
-    serial::Tx<pac::USART3> => C2,
+// See mapping details in RM0316 13.4.7 Fig 47 onwards
+on_channel!(
+    dma1: [
+        (pac::USART1, (C4, C5)),
+        (pac::USART2, (C7, C6)),
+        (pac::USART3, (C2, C3)),
+    ],
+);
+
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
+on_channel!(
+    dma2: [
+        (pac::UART4, (C5, C3)),
+    ],
 );

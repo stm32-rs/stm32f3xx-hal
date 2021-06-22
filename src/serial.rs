@@ -22,12 +22,8 @@ use crate::pac::RCC;
 
 use cfg_if::cfg_if;
 
-cfg_if! {
-    if #[cfg(any(feature = "stm32f302", feature = "stm32f303"))] {
-        use crate::dma;
-        use cortex_m::interrupt;
-    }
-}
+use crate::dma;
+use cortex_m::interrupt;
 
 /// Interrupt event
 pub enum Event {
@@ -103,6 +99,18 @@ cfg_if! {
     }
 }
 
+cfg_if! {
+    if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))] {
+        use crate::pac::{UART4, UART5};
+        use crate::gpio::AF5;
+
+        impl<Otype> TxPin<UART4> for gpioc::PC10<AF5<Otype>> {}
+        impl<Otype> RxPin<UART4> for gpioc::PC11<AF5<Otype>> {}
+        impl<Otype> TxPin<UART5> for gpioc::PC12<AF5<Otype>> {}
+        impl<Otype> RxPin<UART5> for gpiod::PD2<AF5<Otype>> {}
+    }
+}
+
 /// Serial abstraction
 pub struct Serial<Usart, Pins> {
     usart: Usart,
@@ -131,7 +139,7 @@ mod split {
 
         /// Get a reference to internal usart peripheral
         ///
-        /// # SAFTY
+        /// # Safety
         ///
         /// This is unsafe, because the creation of this struct
         /// is only possible by splitting the the USART peripheral
@@ -159,7 +167,7 @@ mod split {
 
         /// Get a reference to internal usart peripheral
         ///
-        /// # SAFTY
+        /// # Safety
         ///
         /// This is unsafe, because the creation of this struct
         /// is only possible by splitting the the USART peripheral
@@ -390,10 +398,9 @@ where
     }
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> Rx<Usart>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     /// Fill the buffer with received data using DMA.
     pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -416,10 +423,9 @@ where
 
 impl<Usart> blocking::serial::write::Default<u8> for Tx<Usart> where Usart: Instance {}
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> Tx<Usart>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     /// Transmit all data in the buffer using DMA.
     pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -440,10 +446,9 @@ where
     }
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> dma::Target for Rx<Usart>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     fn enable_dma(&mut self) {
         // NOTE(unsafe) critical section prevents races
@@ -460,10 +465,9 @@ where
     }
 }
 
-#[cfg(any(feature = "stm32f302", feature = "stm32f303"))]
 impl<Usart> dma::Target for Tx<Usart>
 where
-    Usart: Instance,
+    Usart: Instance + Dma,
 {
     fn enable_dma(&mut self) {
         // NOTE(unsafe) critical section prevents races
@@ -480,12 +484,69 @@ where
     }
 }
 
-mod private {
-    pub trait Sealed {}
+impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
+where
+    Usart: Instance + Dma,
+{
+    /// Fill the buffer with received data using DMA.
+    pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
+    where
+        Self: dma::OnChannel<C>,
+        B: dma::WriteBuffer<Word = u8> + 'static,
+        C: dma::Channel,
+    {
+        // NOTE(unsafe) usage of a valid peripheral address
+        unsafe {
+            channel
+                .set_peripheral_address(&self.usart.rdr as *const _ as u32, dma::Increment::Disable)
+        };
+
+        dma::Transfer::start_write(buffer, channel, self)
+    }
+
+    /// Transmit all data in the buffer using DMA.
+    pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
+    where
+        Self: dma::OnChannel<C>,
+        B: dma::ReadBuffer<Word = u8> + 'static,
+        C: dma::Channel,
+    {
+        // NOTE(unsafe) usage of a valid peripheral address
+        unsafe {
+            channel
+                .set_peripheral_address(&self.usart.tdr as *const _ as u32, dma::Increment::Disable)
+        };
+
+        dma::Transfer::start_read(buffer, channel, self)
+    }
 }
 
+impl<Usart, Tx, Rx> dma::Target for Serial<Usart, (Tx, Rx)>
+where
+    Usart: Instance + Dma,
+{
+    fn enable_dma(&mut self) {
+        self.usart
+            .cr3
+            .modify(|_, w| w.dmar().enabled().dmat().enabled())
+    }
+
+    fn disable_dma(&mut self) {
+        self.usart
+            .cr3
+            .modify(|_, w| w.dmar().disabled().dmat().disabled())
+    }
+}
+
+/// Marker trait for DMA capable UART implementations.
+pub trait Dma: crate::private::Sealed {}
+
+impl Dma for USART1 {}
+impl Dma for USART2 {}
+impl Dma for USART3 {}
+
 /// UART instance
-pub trait Instance: Deref<Target = RegisterBlock> + private::Sealed {
+pub trait Instance: Deref<Target = RegisterBlock> + crate::private::Sealed {
     /// Peripheral bus instance which is responsible for the peripheral
     type APB;
     #[doc(hidden)]
@@ -508,7 +569,7 @@ macro_rules! usart {
         )+
     ) => {
         $(
-            impl private::Sealed for $USARTX {}
+            impl crate::private::Sealed for $USARTX {}
             impl Instance for $USARTX {
                 type APB = $APB;
                 fn enable_clock(apb: &mut Self::APB) {
@@ -627,5 +688,44 @@ cfg_if::cfg_if! {
         usart_var_clock!([(1, 2), (2, 1), (3, 1)]);
     }
 }
-// TODO: what about uart 4 and uart 5?
 usart!([(1, 2), (2, 1), (3, 1)]);
+
+cfg_if::cfg_if! {
+    // See table 29.4 RM0316
+    if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e"))] {
+
+        macro_rules! uart {
+            ([ $(($X:literal, $APB:literal)),+ ]) => {
+                paste::paste! {
+                    usart!(
+                        $(
+                            [<UART $X>]: (
+                                [<uart $X en>],
+                                [<APB $APB>],
+                                [<pclk $APB>],
+                                [<uart $X rst>],
+                                [<uart $X sw>],
+                                [<usart $X clock>]
+                            ),
+                        )+
+                    );
+                }
+            };
+        }
+
+        macro_rules! uart_var_clock {
+            ([ $(($X:literal, $APB:literal)),+ ]) => {
+                paste::paste! {
+                    usart_var_clock!(
+                        $([<usart $X clock>], [<uart $X sw>], [<pclk $APB>]),+
+                    );
+                }
+            };
+        }
+
+        uart_var_clock!([(4,1), (5,1)]);
+        uart!([(4,1), (5,1)]);
+
+        impl Dma for UART4 {}
+    }
+}

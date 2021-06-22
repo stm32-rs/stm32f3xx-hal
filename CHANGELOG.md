@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Readd MonoTimer. This was accidentally removed before. [#247]
+- Basic serial implementation also available for UART4 and UART5 [#246]
+- Implement serial DMA also for Serial [#246]
 
 ## [v0.7.0] - 2021-06-18
 
@@ -336,6 +338,7 @@ let clocks = rcc
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
 [#247]: https://github.com/stm32-rs/stm32f3xx-hal/pull/247
+[#246]: https://github.com/stm32-rs/stm32f3xx-hal/pull/246
 [#238]: https://github.com/stm32-rs/stm32f3xx-hal/pull/238
 [#234]: https://github.com/stm32-rs/stm32f3xx-hal/pull/234
 [#232]: https://github.com/stm32-rs/stm32f3xx-hal/pull/232
