@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-No changes.
+### Added
+
+- Readd MonoTimer. This was accidentally removed before. [#247]
 
 ## [v0.7.0] - 2021-06-18
 
@@ -333,6 +335,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#247]: https://github.com/stm32-rs/stm32f3xx-hal/pull/247
 [#238]: https://github.com/stm32-rs/stm32f3xx-hal/pull/238
 [#234]: https://github.com/stm32-rs/stm32f3xx-hal/pull/234
 [#232]: https://github.com/stm32-rs/stm32f3xx-hal/pull/232
