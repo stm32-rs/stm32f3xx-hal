@@ -21,18 +21,22 @@ use crate::{
 use crate::pac::RCC;
 
 use cfg_if::cfg_if;
+use enumset::{EnumSet, EnumSetType};
 
 use crate::dma;
 use cortex_m::interrupt;
 
 /// Interrupt event
+#[derive(Debug, EnumSetType)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
 pub enum Event {
-    /// New data has been received
-    Rxne,
     /// New data can be sent
     Txe,
     /// Transmission complete
     Tc,
+    /// New data has been received
+    Rxne,
     /// Idle line state detected
     Idle,
 }
@@ -241,9 +245,9 @@ where
     /// Starts listening for an interrupt event
     pub fn listen(&mut self, event: Event) {
         self.usart.cr1.modify(|_, w| match event {
-            Event::Rxne => w.rxneie().enabled(),
             Event::Txe => w.txeie().enabled(),
             Event::Tc => w.tcie().enabled(),
+            Event::Rxne => w.rxneie().enabled(),
             Event::Idle => w.idleie().enabled(),
         });
     }
@@ -251,11 +255,32 @@ where
     /// Stops listening for an interrupt event
     pub fn unlisten(&mut self, event: Event) {
         self.usart.cr1.modify(|_, w| match event {
-            Event::Rxne => w.rxneie().disabled(),
             Event::Txe => w.txeie().disabled(),
             Event::Tc => w.tcie().disabled(),
+            Event::Rxne => w.rxneie().disabled(),
             Event::Idle => w.idleie().disabled(),
         });
+    }
+
+    /// Get set of fired interrupt events
+    pub fn event(&self) -> EnumSet<Event> {
+        let mut events = EnumSet::new();
+        let isr = self.usart.isr.read();
+
+        if isr.txe().bit_is_set() {
+            events |= Event::Txe;
+        }
+        if isr.tc().bit_is_set() {
+            events |= Event::Tc;
+        }
+        if isr.rxne().bit_is_set() {
+            events |= Event::Rxne;
+        }
+        if isr.idle().bit_is_set() {
+            events |= Event::Idle;
+        }
+
+        events
     }
 
     /// Return true if the tx register is empty (and can accept data)
