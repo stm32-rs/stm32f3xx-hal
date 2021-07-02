@@ -32,11 +32,11 @@ use cortex_m::interrupt;
 #[non_exhaustive]
 pub enum Event {
     /// New data can be sent
-    Txe,
+    TransmitDataRegisterEmtpy,
     /// Transmission complete
-    Tc,
+    TransmissionComplete,
     /// New data has been received
-    Rxne,
+    ReceiveDataRegisterNotEmpty,
     /// Idle line state detected
     Idle,
 }
@@ -245,9 +245,9 @@ where
     /// Starts listening for an interrupt event
     pub fn listen(&mut self, event: Event) {
         self.usart.cr1.modify(|_, w| match event {
-            Event::Txe => w.txeie().enabled(),
-            Event::Tc => w.tcie().enabled(),
-            Event::Rxne => w.rxneie().enabled(),
+            Event::TransmitDataRegisterEmtpy => w.txeie().enabled(),
+            Event::TransmissionComplete => w.tcie().enabled(),
+            Event::ReceiveDataRegisterNotEmpty => w.rxneie().enabled(),
             Event::Idle => w.idleie().enabled(),
         });
     }
@@ -255,9 +255,9 @@ where
     /// Stops listening for an interrupt event
     pub fn unlisten(&mut self, event: Event) {
         self.usart.cr1.modify(|_, w| match event {
-            Event::Txe => w.txeie().disabled(),
-            Event::Tc => w.tcie().disabled(),
-            Event::Rxne => w.rxneie().disabled(),
+            Event::TransmitDataRegisterEmtpy => w.txeie().disabled(),
+            Event::TransmissionComplete => w.tcie().disabled(),
+            Event::ReceiveDataRegisterNotEmpty => w.rxneie().disabled(),
             Event::Idle => w.idleie().disabled(),
         });
     }
@@ -268,13 +268,13 @@ where
         let isr = self.usart.isr.read();
 
         if isr.txe().bit_is_set() {
-            events |= Event::Txe;
+            events |= Event::TransmitDataRegisterEmtpy;
         }
         if isr.tc().bit_is_set() {
-            events |= Event::Tc;
+            events |= Event::TransmissionComplete;
         }
         if isr.rxne().bit_is_set() {
-            events |= Event::Rxne;
+            events |= Event::ReceiveDataRegisterNotEmpty;
         }
         if isr.idle().bit_is_set() {
             events |= Event::Idle;
