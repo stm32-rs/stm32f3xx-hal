@@ -240,22 +240,22 @@ where
 
     /// Starts listening for an interrupt event
     pub fn listen(&mut self, event: Event) {
-        match event {
-            Event::Rxne => self.usart.cr1.modify(|_, w| w.rxneie().enabled()),
-            Event::Txe => self.usart.cr1.modify(|_, w| w.txeie().enabled()),
-            Event::Tc => self.usart.cr1.modify(|_, w| w.tcie().enabled()),
-            Event::Idle => self.usart.cr1.modify(|_, w| w.idleie().enabled()),
-        }
+        self.usart.cr1.modify(|_, w| match event {
+            Event::Rxne => w.rxneie().enabled(),
+            Event::Txe => w.txeie().enabled(),
+            Event::Tc => w.tcie().enabled(),
+            Event::Idle => w.idleie().enabled(),
+        });
     }
 
     /// Stops listening for an interrupt event
     pub fn unlisten(&mut self, event: Event) {
-        match event {
-            Event::Rxne => self.usart.cr1.modify(|_, w| w.rxneie().disabled()),
-            Event::Txe => self.usart.cr1.modify(|_, w| w.txeie().disabled()),
-            Event::Tc => self.usart.cr1.modify(|_, w| w.tcie().disabled()),
-            Event::Idle => self.usart.cr1.modify(|_, w| w.idleie().disabled()),
-        }
+        self.usart.cr1.modify(|_, w| match event {
+            Event::Rxne => w.rxneie().disabled(),
+            Event::Txe => w.txeie().disabled(),
+            Event::Tc => w.tcie().disabled(),
+            Event::Idle => w.idleie().disabled(),
+        });
     }
 
     /// Return true if the tx register is empty (and can accept data)
