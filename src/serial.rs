@@ -275,7 +275,7 @@ where
 
     /// Return true if the line idle status is set
     pub fn is_idle(&self) -> bool {
-        self.usart.isr.read().tc().bit_is_set()
+        self.usart.isr.read().idle().bit_is_set()
     }
 
     /// Releases the USART peripheral and associated pins
