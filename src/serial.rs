@@ -116,6 +116,9 @@ cfg_if! {
 }
 
 /// Serial abstraction
+///
+/// This is an abstraction of the UART peripheral intended to be
+/// used for standard duplex serial communication.
 pub struct Serial<Usart, Pins> {
     usart: Usart,
     pins: Pins,
