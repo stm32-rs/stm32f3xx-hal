@@ -269,8 +269,8 @@ where
         self
     }
 
-    /// Get set of fired interrupt events
-    pub fn event(&self) -> EnumSet<Event> {
+    /// Get an [`EnumSet`] of all fired intterupt events
+    pub fn events(&self) -> EnumSet<Event> {
         let mut events = EnumSet::new();
         let isr = self.usart.isr.read();
 
@@ -288,6 +288,18 @@ where
         }
 
         events
+    }
+
+    /// Check if an interrupt even happend.
+    pub fn is_event(&self, event: Event) -> bool {
+        let isr = self.usart.isr.read();
+        match event {
+            Event::TransmitDataRegisterEmtpy => isr.txe().bit_is_set(),
+            Event::TransmissionComplete => isr.tc().bit_is_set(),
+            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit_is_set(),
+            Event::Idle => isr.idle().bit_is_set(),
+            _ => false,
+        }
     }
 
     /// Return true if the tx register is empty (and can accept data)
