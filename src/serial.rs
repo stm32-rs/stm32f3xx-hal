@@ -246,23 +246,27 @@ where
     }
 
     /// Starts listening for an interrupt event
-    pub fn listen(&mut self, event: Event) {
+    ///
+    /// This enables the uart peripheral to generate an interrupt for the given event.
+    pub fn listen(&mut self, event: Event) -> &mut Self {
         self.usart.cr1.modify(|_, w| match event {
             Event::TransmitDataRegisterEmtpy => w.txeie().enabled(),
             Event::TransmissionComplete => w.tcie().enabled(),
             Event::ReceiveDataRegisterNotEmpty => w.rxneie().enabled(),
             Event::Idle => w.idleie().enabled(),
         });
+        self
     }
 
     /// Stops listening for an interrupt event
-    pub fn unlisten(&mut self, event: Event) {
+    pub fn unlisten(&mut self, event: Event) -> &mut Self {
         self.usart.cr1.modify(|_, w| match event {
             Event::TransmitDataRegisterEmtpy => w.txeie().disabled(),
             Event::TransmissionComplete => w.tcie().disabled(),
             Event::ReceiveDataRegisterNotEmpty => w.rxneie().disabled(),
             Event::Idle => w.idleie().disabled(),
         });
+        self
     }
 
     /// Get set of fired interrupt events
