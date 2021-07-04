@@ -33,16 +33,31 @@ use cortex_m::interrupt;
 pub enum Event {
     /// New data can be sent
     TransmitDataRegisterEmtpy,
+    /// CTS (Clear to Send) event
+    CtsInterrupt,
     /// Transmission complete
     TransmissionComplete,
     /// New data has been received
     ReceiveDataRegisterNotEmpty,
+    /// OverrunErrorDetected
+    OverrunError,
     /// Idle line state detected
     Idle,
+    /// Parity error detected
+    ParityError,
+    /// Noise error detected
+    NoiseError,
+    /// Framing error detected
+    FramingError,
+    /// LIN break
+    LinBreak,
     /// The received character matched the configured character.
     ///
     /// The matching character can be configured with [`Serial::match_character`]
     CharacterMatch,
+    ReceiverTimeout,
+    EndOfBlock,
+    WakeupFromStopMode,
 }
 
 /// Serial error
@@ -58,6 +73,17 @@ pub enum Error {
     Overrun,
     /// Parity check error
     Parity,
+}
+
+impl From<Error> for Event {
+    fn from(error: Error) -> Self {
+        match error {
+            Error::Framing => Event::FramingError,
+            Error::Overrun => Event::OverrunError,
+            Error::Noise => Event::NoiseError,
+            Error::Parity => Event::ParityError,
+        }
+    }
 }
 
 /// TX pin
@@ -252,26 +278,27 @@ where
     /// Starts listening for an interrupt event
     ///
     /// This enables the uart peripheral to generate an interrupt for the given event.
-    pub fn listen(&mut self, event: Event) -> &mut Self {
-        self.usart.cr1.modify(|_, w| match event {
-            Event::TransmitDataRegisterEmtpy => w.txeie().enabled(),
-            Event::TransmissionComplete => w.tcie().enabled(),
-            Event::ReceiveDataRegisterNotEmpty => w.rxneie().enabled(),
-            Event::Idle => w.idleie().enabled(),
-            Event::CharacterMatch => w.cmie().enabled(),
-        });
-        self
-    }
-
-    /// Stops listening for an interrupt event
-    pub fn unlisten(&mut self, event: Event) -> &mut Self {
-        self.usart.cr1.modify(|_, w| match event {
-            Event::TransmitDataRegisterEmtpy => w.txeie().disabled(),
-            Event::TransmissionComplete => w.tcie().disabled(),
-            Event::ReceiveDataRegisterNotEmpty => w.rxneie().disabled(),
-            Event::Idle => w.idleie().disabled(),
-            Event::CharacterMatch => w.cmie().disabled(),
-        });
+    // TODO: Provide enumset method
+    // TODO: Rename listen, so that enumset has distiguishable name
+    pub fn listen(&mut self, event: Event, enable: bool) -> &mut Self {
+        match event {
+            Event::TransmitDataRegisterEmtpy => self.usart.cr1.modify(|_, w| w.txeie().bit(enable)),
+            Event::CtsInterrupt => self.usart.cr3.modify(|_, w| w.ctsie().bit(enable)),
+            Event::TransmissionComplete => self.usart.cr1.modify(|_, w| w.tcie().bit(enable)),
+            Event::ReceiveDataRegisterNotEmpty => {
+                self.usart.cr1.modify(|_, w| w.rxneie().bit(enable))
+            }
+            Event::ParityError => self.usart.cr1.modify(|_, w| w.peie().bit(enable)),
+            Event::LinBreak => self.usart.cr2.modify(|_, w| w.lbdie().bit(enable)),
+            Event::NoiseError | Event::OverrunError | Event::FramingError => {
+                self.usart.cr3.modify(|_, w| w.eie().bit(enable))
+            }
+            Event::Idle => self.usart.cr1.modify(|_, w| w.idleie().bit(enable)),
+            Event::CharacterMatch => self.usart.cr1.modify(|_, w| w.cmie().bit(enable)),
+            Event::ReceiverTimeout => self.usart.cr1.modify(|_, w| w.rtoie().bit(enable)),
+            Event::EndOfBlock => self.usart.cr1.modify(|_, w| w.eobie().bit(enable)),
+            Event::WakeupFromStopMode => self.usart.cr3.modify(|_, w| w.wufie().bit(enable)),
+        };
         self
     }
 
