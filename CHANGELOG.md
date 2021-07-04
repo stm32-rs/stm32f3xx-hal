@@ -56,6 +56,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   used ([#255])
 - Add (almost) all missing serial (interrupt and status) events.
   Also rename all the event names to be more descriptive. ([#253])
+- A new serial interrupt API was introduced: ([#253])
+  - `listen()` and `unlisten()` are renamed to `enable_interrupt()` and
+  `disable_interrupt()`.
+  - `is_tc()` and other non-parametrizable functions are removed.
+  - `configure_interrupt()` was added, which can be parameterized.
+  - `clear_event()` was added to clear specific events.
+  - `clear_events()` was added to clear all events at once.
+  - `is_event_triggered()` can check if an `Event` is triggered.
+  - `triggered_events` returns an `EnumSet` of triggered events.
 
 ## [v0.7.0] - 2021-06-18
 

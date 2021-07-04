@@ -492,63 +492,129 @@ where
         Self { usart, pins }
     }
 
-    /// Starts listening for an interrupt event
-    pub fn listen(&mut self, event: Event) {
-        self.usart.cr1.modify(|_, w| match event {
-            Event::TransmitDataRegisterEmtpy => w.txeie().enabled(),
-            Event::TransmissionComplete => w.tcie().enabled(),
-            Event::ReceiveDataRegisterNotEmpty => w.rxneie().enabled(),
-            Event::Idle => w.idleie().enabled(),
-            Event::CharacterMatch => w.cmie().enabled(),
-        });
+    /// Enable or disable the interrupt for the specified [`Event`].
+    #[inline]
+    pub fn configure_interrupt(&mut self, event: Event, enable: bool) -> &mut Self {
+        match event {
+            Event::TransmitDataRegisterEmtpy => self.usart.cr1.modify(|_, w| w.txeie().bit(enable)),
+            Event::CtsInterrupt => self.usart.cr3.modify(|_, w| w.ctsie().bit(enable)),
+            Event::TransmissionComplete => self.usart.cr1.modify(|_, w| w.tcie().bit(enable)),
+            Event::ReceiveDataRegisterNotEmpty => {
+                self.usart.cr1.modify(|_, w| w.rxneie().bit(enable))
+            }
+            Event::ParityError => self.usart.cr1.modify(|_, w| w.peie().bit(enable)),
+            Event::LinBreak => self.usart.cr2.modify(|_, w| w.lbdie().bit(enable)),
+            Event::NoiseError | Event::OverrunError | Event::FramingError => {
+                self.usart.cr3.modify(|_, w| w.eie().bit(enable))
+            }
+            Event::Idle => self.usart.cr1.modify(|_, w| w.idleie().bit(enable)),
+            Event::CharacterMatch => self.usart.cr1.modify(|_, w| w.cmie().bit(enable)),
+            Event::ReceiverTimeout => self.usart.cr1.modify(|_, w| w.rtoie().bit(enable)),
+            // Event::EndOfBlock => self.usart.cr1.modify(|_, w| w.eobie().bit(enable)),
+            // Event::WakeupFromStopMode => self.usart.cr3.modify(|_, w| w.wufie().bit(enable)),
+        };
+        self
     }
 
-    /// Stops listening for an interrupt event
-    pub fn unlisten(&mut self, event: Event) {
-        self.usart.cr1.modify(|_, w| match event {
-            Event::TransmitDataRegisterEmtpy => w.txeie().disabled(),
-            Event::TransmissionComplete => w.tcie().disabled(),
-            Event::ReceiveDataRegisterNotEmpty => w.rxneie().disabled(),
-            Event::Idle => w.idleie().disabled(),
-            Event::CharacterMatch => w.cmie().disabled(),
-        });
+    /// Enable or disable interrupt for the specified [`Event`]s.
+    ///
+    /// Like [`Serial::configure_interrupt`], but instead using an enumset. The corresponding
+    /// interrupt for every [`Event`] in the set will be enabled, every other interrupt will be
+    /// **disabled**.
+    #[cfg(feature = "enumset")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
+    pub fn configure_interrupts(&mut self, events: EnumSet<Event>) -> &mut Self {
+        for event in events.complement().iter() {
+            self.configure_interrupt(event, false);
+        }
+        for event in events.iter() {
+            self.configure_interrupt(event, true);
+        }
+
+        self
     }
 
-    /// Get an [`EnumSet`] of all fired intterupt events
-    pub fn events(&self) -> EnumSet<Event> {
+    /// Get an [`EnumSet`] of all fired interrupt events.
+    ///
+    /// # Examples
+    ///
+    /// This allows disabling all fired event at once, via the enum set abstraction, like so
+    ///
+    /// ```rust
+    /// for event in serial.events() {
+    ///     serial.listen(event, false);
+    /// }
+    /// ```
+    #[cfg(feature = "enumset")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
+    pub fn triggered_events(&self) -> EnumSet<Event> {
         let mut events = EnumSet::new();
-        let isr = self.usart.isr.read();
 
-        if isr.txe().bit_is_set() {
-            events |= Event::TransmitDataRegisterEmtpy;
-        }
-        if isr.tc().bit_is_set() {
-            events |= Event::TransmissionComplete;
-        }
-        if isr.rxne().bit_is_set() {
-            events |= Event::ReceiveDataRegisterNotEmpty;
-        }
-        if isr.idle().bit_is_set() {
-            events |= Event::Idle;
-        }
-        if isr.cmf().bit_is_set() {
-            events |= Event::CharacterMatch;
+        for event in EnumSet::<Event>::all().iter() {
+            if self.is_event_triggered(event) {
+                events |= event;
+            }
         }
 
         events
     }
 
-    /// Check if an interrupt even happend.
-    pub fn is_event(&self, event: Event) -> bool {
+    /// Clear **all** interrupt events.
+    #[inline]
+    pub fn clear_events(&mut self) {
+        // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
+        self.usart.icr.write(|w| unsafe { w.bits(u32::MAX) });
+    }
+
+    /// Clear the given interrupt event flag.
+    #[inline]
+    pub fn clear_event(&mut self, event: Event) {
+        self.usart.icr.write(|w| match event {
+            Event::CtsInterrupt => w.ctscf().clear(),
+            Event::TransmissionComplete => w.tccf().clear(),
+            Event::OverrunError => w.orecf().clear(),
+            Event::Idle => w.idlecf().clear(),
+            Event::ParityError => w.pecf().clear(),
+            Event::LinBreak => w.lbdcf().clear(),
+            Event::NoiseError => w.ncf().clear(),
+            Event::FramingError => w.fecf().clear(),
+            Event::CharacterMatch => w.cmcf().clear(),
+            Event::ReceiverTimeout => w.rtocf().clear(),
+            // Event::EndOfBlock => w.eobcf().clear(),
+            // Event::WakeupFromStopMode => w.wucf().clear(),
+            Event::ReceiveDataRegisterNotEmpty => {
+                // Flush the register data queue, so that this even will not be thrown again.
+                self.usart.rqr.write(|w| w.rxfrq().set_bit());
+                w
+            }
+            // Do nothing with this event (only useful for Smartcard, which is not
+            // supported right now)
+            Event::TransmitDataRegisterEmtpy => w,
+        });
+    }
+
+    /// Check if an interrupt event happend.
+    #[inline]
+    pub fn is_event_triggered(&self, event: Event) -> bool {
         let isr = self.usart.isr.read();
         match event {
-            Event::TransmitDataRegisterEmtpy => isr.txe().bit_is_set(),
-            Event::TransmissionComplete => isr.tc().bit_is_set(),
-            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit_is_set(),
-            Event::Idle => isr.idle().bit_is_set(),
-            _ => false,
+            Event::TransmitDataRegisterEmtpy => isr.txe().bit(),
+            Event::CtsInterrupt => isr.ctsif().bit(),
+            Event::TransmissionComplete => isr.tc().bit(),
+            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit(),
+            Event::OverrunError => isr.ore().bit(),
+            Event::Idle => isr.idle().bit(),
+            Event::ParityError => isr.pe().bit(),
+            Event::LinBreak => isr.lbdf().bit(),
+            Event::NoiseError => isr.nf().bit(),
+            Event::FramingError => isr.fe().bit(),
+            Event::CharacterMatch => isr.cmf().bit(),
+            Event::ReceiverTimeout => isr.rtof().bit(),
+            // Event::EndOfBlock => isr.eobf().bit(),
+            // Event::WakeupFromStopMode => isr.wuf().bit(),
         }
     }
+
 
     /// Configuring the UART to match each received character,
     /// with the configured one.
@@ -569,26 +635,6 @@ where
     #[inline(always)]
     pub fn match_character(&self) -> u8 {
         self.usart.cr2.read().add().bits()
-    }
-
-    /// Return true if the tx register is empty (and can accept data)
-    pub fn is_txe(&self) -> bool {
-        self.usart.isr.read().txe().bit_is_set()
-    }
-
-    /// Return true if the rx register is not empty (and can be read)
-    pub fn is_rxne(&self) -> bool {
-        self.usart.isr.read().rxne().bit_is_set()
-    }
-
-    /// Return true if the transmission is complete
-    pub fn is_tc(&self) -> bool {
-        self.usart.isr.read().tc().bit_is_set()
-    }
-
-    /// Return true if the line idle status is set
-    pub fn is_idle(&self) -> bool {
-        self.usart.isr.read().tc().bit_is_set()
     }
 
     /// Releases the USART peripheral and associated pins
