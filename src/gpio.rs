@@ -183,6 +183,18 @@ pub struct Gpiox {
     index: u8,
 }
 
+// # SAFETY
+// As Gpiox uses `dyn GpioRegExt` pointer internally, `Send` is not auto-implemented.
+// But since GpioExt does only do atomic operations without side-effects we can assume
+// that it safe to `Send` this type.
+unsafe impl Send for Gpiox {}
+
+// # SAFETY
+// As Gpiox uses `dyn GpioRegExt` pointer internally, `Sync` is not auto-implemented.
+// But since GpioExt does only do atomic operations without side-effects we can assume
+// that it safe to `Send` this type.
+unsafe impl Sync for Gpiox {}
+
 impl private::Gpio for Gpiox {
     type Reg = dyn GpioRegExt;
 

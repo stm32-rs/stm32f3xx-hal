@@ -15,7 +15,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Implement `Serial::join` which allows to re-create the serial peripheral,
   when `Serial::split` was previously called. ([#252])
 
-## Breaking Changes
+### Changed
+
+- `PXx` struct (representing a generic GPIO pin) implements `Send` and `Sync` [#251]
+
+### Breaking Changes
 
 - Refactor CAN to use the [`bxCan`](https://github.com/stm32-rs/bxcan) crate. ([#207])
 
