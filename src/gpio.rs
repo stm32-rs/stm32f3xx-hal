@@ -133,6 +133,12 @@ macro_rules! gpio {
             _mode: PhantomData<MODE>,
         }
 
+        // NOTE(unsafe) we only use atomic operations on the gpio registers
+        unsafe impl<MODE> Send for PXx<MODE> {}
+
+        // NOTE(unsafe) we only use atomic operations on the gpio registers
+        unsafe impl<MODE> Sync for PXx<MODE> {}
+
         impl<MODE> OutputPin for PXx<Output<MODE>> {
             type Error = ();
 
