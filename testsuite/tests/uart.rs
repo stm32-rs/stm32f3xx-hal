@@ -124,6 +124,32 @@ mod tests {
     }
 
     #[test]
+    fn trigger_events(state: &mut super::State) {
+        let (usart, pins) = unwrap!(state.serial1.take()).free();
+        let mut serial = Serial::new(usart, pins, 115200.Bd(), state.clocks, &mut state.apb2);
+
+        for i in &TEST_MSG[..4] {
+            defmt::unwrap!(nb::block!(serial.write(*i)));
+        }
+        let c = nb::block!(serial.read());
+        assert!(matches!(c, Err(Error::Overrun)));
+        defmt::info!("First events");
+        for event in serial.triggered_events() {
+            defmt::info!("{}", event);
+        }
+
+        cortex_m::asm::delay(10);
+
+        defmt::info!("Second events");
+        serial.clear_events();
+        for event in serial.triggered_events() {
+            defmt::info!("{}", event);
+        }
+
+        state.serial1 = Some(serial);
+    }
+
+    #[test]
     fn send_receive_split(state: &mut super::State) {
         let (mut tx, mut rx) = unwrap!(state.serial1.take()).split();
         for i in IntoIter::new(TEST_MSG) {

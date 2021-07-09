@@ -9,6 +9,7 @@
 use core::convert::{From, TryFrom};
 
 use cortex_m::peripheral::DWT;
+use enumset::{EnumSet, EnumSetType};
 use void::Void;
 
 use crate::hal::timer::{CountDown, Periodic};
@@ -120,6 +121,9 @@ pub struct Timer<TIM> {
 }
 
 /// Interrupt events
+#[non_exhaustive]
+#[derive(Debug, EnumSetType)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Event {
     /// Timer timed out / count down ended
     Update,
@@ -202,17 +206,10 @@ macro_rules! hal {
                     timer
                 }
 
-                /// Starts listening for an `event`
-                pub fn listen(&mut self, event: Event) {
+                /// Enable or disable the interrupt for the specified [`Event`].
+                pub fn configure_interrupt(&mut self, event: Event, enable: bool) {
                     match event {
-                        Event::Update => self.tim.dier.write(|w| w.uie().enabled()),
-                    }
-                }
-
-                /// Stops listening for an `event`
-                pub fn unlisten(&mut self, event: Event) {
-                    match event {
-                        Event::Update => self.tim.dier.write(|w| w.uie().disabled()),
+                        Event::Update => self.tim.dier.write(|w| w.uie().bit(enable)),
                     }
                 }
 

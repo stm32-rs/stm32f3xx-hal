@@ -83,6 +83,7 @@ pub trait GpioExt {
 
 /// GPIO Register interface traits private to this module
 mod private {
+    // TODO: Make it public
     pub trait GpioRegExt {
         fn is_low(&self, i: u8) -> bool;
         fn is_set_low(&self, i: u8) -> bool;
@@ -682,6 +683,7 @@ macro_rules! af {
 
 af!([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 
+// TODO: This could use ConstGenerics to make it public then?
 macro_rules! gpio_trait {
     ([$($gpioy:ident),+ $(,)?]) => {
         $(

@@ -24,6 +24,8 @@ use core::{
     sync::atomic::{self, Ordering},
 };
 
+use enumset::{EnumSet, EnumSetType};
+
 /// Extension trait to split a DMA peripheral into independent channels
 pub trait DmaExt {
     /// The type to split the DMA into
@@ -247,6 +249,7 @@ pub enum Event {
 /// Trait implemented by all DMA channels
 pub trait Channel: private::Channel {
     /// Is the interrupt flag for the given event set?
+    // TODO: Rename this
     fn event_occurred(&self, event: Event) -> bool;
 
     /// Clear the interrupt flag for the given event.
@@ -256,6 +259,7 @@ pub trait Channel: private::Channel {
     /// Note that the the global interrupt flag is not automatically cleared
     /// even when all other flags are cleared. The only way to clear it is to
     /// call this method with `Event::Any`.
+    // TODO: Rename this
     fn clear_event(&mut self, event: Event);
 
     /// Reset the control registers of this channel.
