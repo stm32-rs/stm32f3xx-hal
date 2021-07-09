@@ -26,7 +26,8 @@ use enumset::{EnumSet, EnumSetType};
 use crate::dma;
 use cortex_m::interrupt;
 
-/// Interrupt event
+/// Interrupt and status events
+// TODO: Sort as flags are ordered in register
 #[derive(Debug, EnumSetType)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
@@ -53,15 +54,34 @@ pub enum Event {
     LinBreak,
     /// The received character matched the configured character.
     ///
-    /// The matching character can be configured with [`Serial::match_character`]
+    /// The matching character can be configured with [`Serial::match_character()`]
     CharacterMatch,
+    /// Nothing was received since the last received character for
+    /// [`Serial::receiver_timeout()`] amount of time.
+    ///
+    /// # Note
+    ///
+    /// Never set for UART peripheral, which does not have [`ReceiverTimeoutFeature`]
+    /// implemented.
+    // TODO: Maybe exclude depending on feature set (which might be difficult,
+    // as feature gating the value is not easy because it depends on the USART peripheral,
+    // and the hardware does support the value, but just does not set it.
+    // Maybe than configure the feature via trait of the is_event function?)
     ReceiverTimeout,
-    EndOfBlock,
+    // TODO: SmartCard Mode not implemented, no use as of now.
+    // EndOfBlock,
+    /// The peripheral was woken up from "Stop Mode".
+    ///
+    /// The condition, when it does wake up can be configured via
+    /// [`Serial::wakeup_from_stopmode_reason()`]
     WakeupFromStopMode,
 }
 
 /// Serial error
-#[derive(Debug)]
+///
+/// As these are status events, they can be
+/// converted to [`Event`]s.
+#[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 pub enum Error {
@@ -75,6 +95,7 @@ pub enum Error {
     Parity,
 }
 
+// TODO: If From is implemented, none_exhaustive on Error does not make sense?
 impl From<Error> for Event {
     fn from(error: Error) -> Self {
         match error {
@@ -243,6 +264,8 @@ mod split {
 
 pub use split::{Rx, Tx};
 
+type StopModeWakeup = pac::usart1::cr3::WUS_A;
+
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
 where
     Usart: Instance,
@@ -275,13 +298,11 @@ where
         Self { usart, pins }
     }
 
-    /// Starts listening for an interrupt event
-    ///
-    /// This enables the uart peripheral to generate an interrupt for the given event.
+    /// Enable or disable the interrupt for the specified [`Event`].
     // TODO: Provide enumset method
     // TODO: Rename listen, so that enumset has distiguishable name
-    pub fn listen(&mut self, event: Event, enable: bool) -> &mut Self {
-        match event {
+    pub fn configure_interrupt(&mut self, event: impl Into<Event>, enable: bool) -> &mut Self {
+        match event.into() {
             Event::TransmitDataRegisterEmtpy => self.usart.cr1.modify(|_, w| w.txeie().bit(enable)),
             Event::CtsInterrupt => self.usart.cr3.modify(|_, w| w.ctsie().bit(enable)),
             Event::TransmissionComplete => self.usart.cr1.modify(|_, w| w.tcie().bit(enable)),
@@ -296,81 +317,112 @@ where
             Event::Idle => self.usart.cr1.modify(|_, w| w.idleie().bit(enable)),
             Event::CharacterMatch => self.usart.cr1.modify(|_, w| w.cmie().bit(enable)),
             Event::ReceiverTimeout => self.usart.cr1.modify(|_, w| w.rtoie().bit(enable)),
-            Event::EndOfBlock => self.usart.cr1.modify(|_, w| w.eobie().bit(enable)),
+            // Event::EndOfBlock => self.usart.cr1.modify(|_, w| w.eobie().bit(enable)),
             Event::WakeupFromStopMode => self.usart.cr3.modify(|_, w| w.wufie().bit(enable)),
         };
         self
     }
 
     /// Get an [`EnumSet`] of all fired intterupt events
-    pub fn events(&self) -> EnumSet<Event> {
+    ///
+    /// # Examples
+    ///
+    /// This allows disabling all fired event at once, via the enum set abstraction, like so
+    ///
+    /// ```rust
+    /// for event in serial.events() {
+    ///     serial.listen(event, false);
+    /// }
+    /// ```
+    pub fn triggered_events(&self) -> EnumSet<Event> {
         let mut events = EnumSet::new();
-        let isr = self.usart.isr.read();
 
-        if isr.txe().bit_is_set() {
-            events |= Event::TransmitDataRegisterEmtpy;
-        }
-        if isr.tc().bit_is_set() {
-            events |= Event::TransmissionComplete;
-        }
-        if isr.rxne().bit_is_set() {
-            events |= Event::ReceiveDataRegisterNotEmpty;
-        }
-        if isr.idle().bit_is_set() {
-            events |= Event::Idle;
-        }
-        if isr.cmf().bit_is_set() {
-            events |= Event::CharacterMatch;
+        for event in EnumSet::<Event>::all().iter() {
+            if self.is_event_triggered(event) {
+                events |= event;
+            }
         }
 
         events
     }
 
-    /// Check if an interrupt even happend.
-    pub fn is_event(&self, event: Event) -> bool {
+    pub fn clear_events(&mut self) {
+        // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
+        self.usart.icr.write(|w| unsafe { w.bits(u32::MAX) });
+    }
+
+    /// Clear the interrupt event flag
+    ///
+    ///
+    pub fn clear_event(&mut self, event: impl Into<Event>) {
+        self.usart.icr.write(|w| match event.into() {
+            Event::CtsInterrupt => w.ctscf().clear(),
+            Event::TransmissionComplete => w.tccf().clear(),
+            Event::OverrunError => w.orecf().clear(),
+            Event::Idle => w.idlecf().clear(),
+            Event::ParityError => w.pecf().clear(),
+            Event::LinBreak => w.lbdcf().clear(),
+            Event::NoiseError => w.ncf().clear(),
+            Event::FramingError => w.fecf().clear(),
+            Event::CharacterMatch => w.cmcf().clear(),
+            Event::ReceiverTimeout => w.rtocf().clear(),
+            // Event::EndOfBlock => w.eobcf().clear(),
+            Event::WakeupFromStopMode => w.wucf().clear(),
+            Event::TransmitDataRegisterEmtpy | Event::ReceiveDataRegisterNotEmpty => w,
+        });
+    }
+
+    /// Check if an interrupt event happend.
+    pub fn is_event_triggered(&self, event: impl Into<Event>) -> bool {
         let isr = self.usart.isr.read();
-        match event {
+        match event.into() {
             Event::TransmitDataRegisterEmtpy => isr.txe().bit_is_set(),
+            Event::CtsInterrupt => isr.ctsif().bit_is_set(),
             Event::TransmissionComplete => isr.tc().bit_is_set(),
             Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit_is_set(),
+            Event::OverrunError => isr.ore().bit_is_set(),
             Event::Idle => isr.idle().bit_is_set(),
-            _ => false,
+            Event::ParityError => isr.pe().bit_is_set(),
+            Event::LinBreak => isr.lbdf().bit_is_set(),
+            Event::NoiseError => isr.nf().bit_is_set(),
+            Event::FramingError => isr.fe().bit_is_set(),
+            Event::CharacterMatch => isr.cmf().bit_is_set(),
+            Event::ReceiverTimeout => isr.rtof().bit_is_set(),
+            // Event::EndOfBlock => isr.eobf().bit_is_set(),
+            Event::WakeupFromStopMode => isr.wuf().bit_is_set(),
         }
     }
+
 
     /// Configuring the UART to match each received character,
     /// with the configured one.
     ///
     /// If the character is matched [`Event::CharacterMatch`] is generated,
     /// which can fire an intterrupt, if enabeled via [`Serial::listen()`]
-    pub fn match_character(&mut self, char: u8) -> &mut Self{
+    #[inline(always)]
+    pub fn set_match_character(&mut self, char: u8) {
         self.usart.cr2.modify(|_, w| w.add().bits(char));
-        self
     }
 
     /// Read out the configured match character.
-    pub fn read_match_character(&mut self) -> u8 {
+    #[inline(always)]
+    pub fn match_character(&self) -> u8 {
         self.usart.cr2.read().add().bits()
     }
 
-    /// Return true if the tx register is empty (and can accept data)
-    pub fn is_txe(&self) -> bool {
-        self.usart.isr.read().txe().bit_is_set()
+    #[inline(always)]
+    pub fn set_wakeup_from_stopmode(&mut self, selection: StopModeWakeup) {
+        self.usart.cr3.modify(|_, w| w.wus().variant(selection));
     }
 
-    /// Return true if the rx register is not empty (and can be read)
-    pub fn is_rxne(&self) -> bool {
-        self.usart.isr.read().rxne().bit_is_set()
-    }
-
-    /// Return true if the transmission is complete
-    pub fn is_tc(&self) -> bool {
-        self.usart.isr.read().tc().bit_is_set()
-    }
-
-    /// Return true if the line idle status is set
-    pub fn is_idle(&self) -> bool {
-        self.usart.isr.read().idle().bit_is_set()
+    #[inline(always)]
+    pub fn wakeup_from_stopmode_reason(&mut self) -> StopModeWakeup {
+        match self.usart.cr3.read().wus().variant() {
+            stm32f3::Variant::Val(val) => val,
+            // The value is reservered and can not be configured,
+            // so assume the default.
+            stm32f3::Variant::Res(_) => StopModeWakeup::ADDRESS,
+        }
     }
 
     /// Releases the USART peripheral and associated pins
@@ -411,6 +463,38 @@ where
     }
 }
 
+impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
+where
+    Usart: Instance + ReceiverTimeoutFeature,
+{
+    /// Set the receiver timeout value.
+    ///
+    /// The RTOF flag [`Event::ReceiverTimeout`] is set if, after the last received character,
+    /// no new start bit is detected for more than the RTO value, where the value
+    /// is beeing a counter, which is decresed by the configured baud rate.
+    ///
+    /// A simple calulation might be `time_per_counter_value = 1 / configured_baud_rate`
+    ///
+    /// ## Note
+    ///
+    /// - This value must only be programmed once per received character.
+    /// - Can be written on the fly. If the new value is lower than or equal to the counter,
+    ///   the RTOF flag is set.
+    /// - Values higher than 24 bits are trunctuated to 24 bit max (16_777_216).
+    // TODO: Not avaliable for STM32F303x6/8 and STM32F328x8 USART2 and USART3
+    // Make it depended marker trait like DMA?
+    pub fn receiver_timeout(&mut self, value: u32) {
+        self.usart.rtor.modify(|_, w| w.rto().bits(value))
+    }
+
+    // TODO: Make value smarter
+    /// Read out the currently
+    pub fn read_receiver_timeout(&self) -> u32 {
+        self.usart.rtor.read().rto().bits()
+    }
+}
+
+
 // TODO: Check if u16 for WORD is feasiable / possible
 impl<Usart, Tx, Rx> serial::Read<u8> for Serial<Usart, (Tx, Rx)>
 where
@@ -420,7 +504,12 @@ where
     fn read(&mut self) -> nb::Result<u8, Error> {
         let isr = self.usart.isr.read();
 
-        Err(if isr.pe().bit_is_set() {
+        // TODO: REACK TEACK???
+        // TODO: Is clearing the interrupt event flag
+        // a good thing or bad thing to do?
+        Err(if isr.busy().bit_is_set() {
+            nb::Error::WouldBlock
+        } else if isr.pe().bit_is_set() {
             self.usart.icr.write(|w| w.pecf().clear());
             nb::Error::Other(Error::Parity)
         } else if isr.fe().bit_is_set() {
@@ -700,6 +789,15 @@ impl Dma for USART1 {}
 impl Dma for USART2 {}
 impl Dma for USART3 {}
 
+/// Marker trait for Receiver Timeout capable UART implementations.
+pub trait ReceiverTimeoutFeature: crate::private::Sealed {}
+
+impl ReceiverTimeoutFeature for USART1 {}
+#[cfg(not(any(feature = "gpio-f333")))]
+impl ReceiverTimeoutFeature for USART2 {}
+#[cfg(not(any(feature = "gpio-f333")))]
+impl ReceiverTimeoutFeature for USART3 {}
+
 /// UART instance
 pub trait Instance: Deref<Target = RegisterBlock> + crate::private::Sealed {
     /// Peripheral bus instance which is responsible for the peripheral
@@ -888,5 +986,8 @@ cfg_if::cfg_if! {
         uart!([(4,1), (5,1)]);
 
         impl Dma for UART4 {}
+
+        impl ReceiverTimeoutFeature for UART4 {}
+        impl ReceiverTimeoutFeature for UART5 {}
     }
 }
