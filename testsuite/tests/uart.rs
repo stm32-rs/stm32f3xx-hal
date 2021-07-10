@@ -100,6 +100,26 @@ mod tests {
     }
 
     #[test]
+    fn send_receive_split(state: &mut super::State) {
+        let (mut tx, mut rx) = unwrap!(state.serial1.take()).split();
+        for i in IntoIter::new(TEST_MSG) {
+            defmt::unwrap!(nb::block!(tx.write(i)));
+            let c = unwrap!(nb::block!(rx.read()));
+            assert_eq!(c, i);
+        }
+
+        // now provoke an overrun
+        // send 5 u8 bytes, which do not fit in the 32 bit buffer
+        for i in &TEST_MSG[..4] {
+            defmt::unwrap!(nb::block!(tx.write(*i)));
+        }
+        let c = nb::block!(rx.read());
+        assert!(matches!(c, Err(Error::Overrun)));
+
+        state.serial1 = Some(Serial::join(tx, rx));
+    }
+
+    #[test]
     fn test_many_baudrates(state: &mut super::State) {
         use hal::time::rate::Baud;
         for baudrate in &[
@@ -124,24 +144,6 @@ mod tests {
     }
 
     #[test]
-    fn send_receive_split(state: &mut super::State) {
-        let (mut tx, mut rx) = unwrap!(state.serial1.take()).split();
-        for i in IntoIter::new(TEST_MSG) {
-            defmt::unwrap!(nb::block!(tx.write(i)));
-            let c = unwrap!(nb::block!(rx.read()));
-            assert_eq!(c, i);
-        }
-
-        // now provoke an overrun
-        // send 5 u8 bytes, which do not fit in the 32 bit buffer
-        for i in &TEST_MSG[..4] {
-            defmt::unwrap!(nb::block!(tx.write(*i)));
-        }
-        let c = nb::block!(rx.read());
-        assert!(matches!(c, Err(Error::Overrun)));
-    }
-
-    #[test]
     fn send_receive_wrong_baud(state: &mut super::State) {
         let (mut tx_slow, mut rx_slow) = unwrap!(state.serial_slow.take()).split();
         let (mut tx_fast, mut rx_fast) = unwrap!(state.serial_fast.take()).split();
@@ -158,6 +160,9 @@ mod tests {
         let c = nb::block!(rx_slow.read());
         defmt::info!("{}", c);
         assert!(matches!(c, Err(Error::Framing) | Err(Error::Noise)));
+
+        state.serial_slow = Some(Serial::join(tx_slow, rx_slow));
+        state.serial_fast = Some(Serial::join(tx_fast, rx_fast));
     }
 
     // TODO: Check the parity. But currently, there is no way to configure the parity

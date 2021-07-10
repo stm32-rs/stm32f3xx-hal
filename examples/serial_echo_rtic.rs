@@ -24,14 +24,18 @@ mod app {
         ),
     >;
     type DirType = stm32f3xx_hal::gpio::gpioe::PE13<Output<PushPull>>;
-    #[resources]
-    struct Resources {
+
+    #[shared]
+    struct Shared {}
+
+    #[local]
+    struct Local {
         serial: SerialType,
         dir: DirType,
     }
 
     #[init]
-    fn init(cx: init::Context) -> (init::LateResources, init::Monotonics) {
+    fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut flash = cx.device.FLASH.constrain();
         let mut rcc = cx.device.RCC.constrain();
         let mut dcb = cx.core.DCB;
@@ -72,35 +76,31 @@ mod app {
 
         task1::spawn().unwrap();
 
-        (init::LateResources { dir, serial }, init::Monotonics(mono))
+        (Shared {}, Local { serial, dir }, init::Monotonics(mono))
     }
 
-    #[task(binds = USART1_EXTI25, resources = [serial, dir])]
+    #[task(binds = USART1_EXTI25, local = [serial, dir])]
     fn protocol_serial_task(cx: protocol_serial_task::Context) {
-        let mut serial = cx.resources.serial;
-        let mut dir = cx.resources.dir;
+        let serial = cx.local.serial;
+        let dir = cx.local.dir;
 
-        serial.lock(|serial| {
-            dir.lock(|dir| {
-                if serial.is_rxne() {
-                    dir.set_high().unwrap();
-                    serial.unlisten(Event::Rxne);
-                    match serial.read() {
-                        Ok(byte) => {
-                            serial.write(byte).unwrap();
-                            serial.listen(Event::Tc);
-                        }
-                        Err(_error) => rprintln!("irq error"),
-                    };
+        if serial.is_rxne() {
+            dir.set_high().unwrap();
+            serial.unlisten(Event::Rxne);
+            match serial.read() {
+                Ok(byte) => {
+                    serial.write(byte).unwrap();
+                    serial.listen(Event::Tc);
                 }
+                Err(_error) => rprintln!("irq error"),
+            };
+        }
 
-                if serial.is_tc() {
-                    dir.set_low().unwrap();
-                    serial.unlisten(Event::Tc);
-                    serial.listen(Event::Rxne);
-                }
-            })
-        });
+        if serial.is_tc() {
+            dir.set_low().unwrap();
+            serial.unlisten(Event::Tc);
+            serial.listen(Event::Rxne);
+        }
     }
 
     #[task]

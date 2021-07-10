@@ -9,9 +9,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Readd MonoTimer. This was accidentally removed before. [#247]
-- Basic serial implementation also available for UART4 and UART5 [#246]
-- Implement serial DMA also for Serial [#246]
+- Readd MonoTimer. This was accidentally removed before. ([#247])
+- Basic serial implementation also available for UART4 and UART5 ([#246])
+- Implement serial DMA also for Serial ([#246])
+- Implement `Serial::join` which allows to re-create the serial peripheral,
+  when `Serial::split` was previously called. ([#252])
 
 ## Breaking Changes
 
@@ -341,6 +343,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#252]: https://github.com/stm32-rs/stm32f3xx-hal/pull/252
 [#247]: https://github.com/stm32-rs/stm32f3xx-hal/pull/247
 [#246]: https://github.com/stm32-rs/stm32f3xx-hal/pull/246
 [#238]: https://github.com/stm32-rs/stm32f3xx-hal/pull/238
@@ -354,6 +357,7 @@ let clocks = rcc
 [#212]: https://github.com/stm32-rs/stm32f3xx-hal/pull/212
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208
+[#207]: https://github.com/stm32-rs/stm32f3xx-hal/pull/207
 [#203]: https://github.com/stm32-rs/stm32f3xx-hal/issues/203
 [#192]: https://github.com/stm32-rs/stm32f3xx-hal/pull/192
 [#189]: https://github.com/stm32-rs/stm32f3xx-hal/pull/189
