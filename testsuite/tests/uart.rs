@@ -160,6 +160,9 @@ mod tests {
         let c = nb::block!(rx_slow.read());
         defmt::info!("{}", c);
         assert!(matches!(c, Err(Error::Framing) | Err(Error::Noise)));
+
+        state.serial_slow = Some(Serial::join(tx_slow, rx_slow));
+        state.serial_fast = Some(Serial::join(tx_fast, rx_fast));
     }
 
     // TODO: Check the parity. But currently, there is no way to configure the parity
