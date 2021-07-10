@@ -13,12 +13,13 @@ use hal::serial::{
     config::{Config, Parity, StopBits},
     Error,
 };
+use hal::time::rate::Baud;
 use hal::{
     gpio::{
         gpioa::{PA10, PA2, PA3, PA9},
         gpiob::{PB10, PB11},
     },
-    rcc::{Clocks, APB2},
+    rcc::{Clocks, APB1, APB2},
 };
 
 use core::array::IntoIter;
@@ -29,9 +30,12 @@ struct State {
     serial_slow: Option<Serial<pac::USART2, (PA2<AF7<PushPull>>, PA3<AF7<OpenDrain>>)>>,
     serial_fast: Option<Serial<pac::USART3, (PB10<AF7<PushPull>>, PB11<AF7<OpenDrain>>)>>,
     clocks: Clocks,
+    apb1: APB1,
     apb2: APB2,
 }
 
+const BAUD_FAST: Baud = Baud(115_200);
+const BAUD_SLOW: Baud = Baud(57_600);
 const TEST_MSG: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
 
 fn test_test_msg_loopback(state: &mut State, config: impl Into<Config>) {
@@ -99,18 +103,19 @@ mod tests {
             serial_slow: Some(Serial::new(
                 dp.USART2,
                 (cs_pair_1.0, cs_pair_2.1),
-                57600.Bd(),
+                BAUD_SLOW,
                 clocks,
                 &mut rcc.apb1,
             )),
             serial_fast: Some(Serial::new(
                 dp.USART3,
                 (cs_pair_2.0, cs_pair_1.1),
-                115200.Bd(),
+                BAUD_FAST,
                 clocks,
                 &mut rcc.apb1,
             )),
             clocks,
+            apb1: rcc.apb1,
             apb2: rcc.apb2,
         }
     }
@@ -207,6 +212,58 @@ mod tests {
     }
 
     #[test]
+    fn check_parity_mismatch(state: &mut super::State) {
+        // Repurpose crossover serials from state.
+        let (usart_even, pins_even) = unwrap!(state.serial_slow.take()).free();
+        let config_even = Config::default().parity(Parity::Even);
+        let mut serial_even = Serial::new(
+            usart_even,
+            pins_even,
+            config_even,
+            state.clocks,
+            &mut state.apb1,
+        );
+        let (usart_odd, pins_odd) = unwrap!(state.serial_fast.take()).free();
+        let config_odd = Config::default().parity(Parity::Odd);
+        let mut serial_odd = Serial::new(
+            usart_odd,
+            pins_odd,
+            config_odd,
+            state.clocks,
+            &mut state.apb1,
+        );
+
+        // Transmit data with wrong parity in both directions.
+        unwrap!(nb::block!(serial_even.write(b'x')));
+        let result = nb::block!(serial_odd.read());
+        assert!(matches!(result, Err(Error::Parity)));
+
+        unwrap!(nb::block!(serial_odd.write(b'x')));
+        let result = nb::block!(serial_even.read());
+        assert!(matches!(result, Err(Error::Parity)));
+
+        // Finally restore serial devices in state.
+        let (usart_slow, pins_slow) = serial_even.free();
+        let serial_slow = Serial::new(
+            usart_slow,
+            pins_slow,
+            BAUD_SLOW,
+            state.clocks,
+            &mut state.apb1,
+        );
+        let (usart_fast, pins_fast) = serial_odd.free();
+        let serial_fast = Serial::new(
+            usart_fast,
+            pins_fast,
+            BAUD_FAST,
+            state.clocks,
+            &mut state.apb1,
+        );
+        state.serial_slow = Some(serial_slow);
+        state.serial_fast = Some(serial_fast);
+    }
+
+    #[test]
     fn send_receive_wrong_baud(state: &mut super::State) {
         let (mut tx_slow, mut rx_slow) = unwrap!(state.serial_slow.take()).split();
         let (mut tx_fast, mut rx_fast) = unwrap!(state.serial_fast.take()).split();
@@ -221,19 +278,20 @@ mod tests {
         // and we've seen multiple error variants in the wild, including
         // receiving the wrong but valid character)
         unwrap!(nb::block!(tx_fast.write(b'a')));
-        let c = nb::block!(rx_slow.read());
-        defmt::info!("{}", c);
-        assert!(matches!(c, Ok(240) | Err(Error::Framing) | Err(Error::Noise)));
+        let result = nb::block!(rx_slow.read());
+        defmt::debug!("{}", result);
+        assert!(match result {
+            Ok(c) => {
+                defmt::warn!("Expected Err, got Ok({:x})", c);
+                c != b'a'
+            }
+            Err(Error::Framing | Error::Noise) => true,
+            Err(_) => false,
+        });
 
         state.serial_slow = Some(Serial::join(tx_slow, rx_slow));
         state.serial_fast = Some(Serial::join(tx_fast, rx_fast));
     }
-
-    // TODO: Check the parity. There is only a loopback test with different
-    // parity parity settings. But we should check receiving data with wrong
-    // parity too.
-    // #[test]
-    // fn check_parity(state: &mut super::State) { }
 
     // TODO: Test interrupts
     // #[test]
