@@ -110,7 +110,7 @@ mod tests {
 
         // now provoke an overrun
         // send 5 u8 bytes, which do not fit in the 32 bit buffer
-        for i in &TEST_MSG[..4] {
+        for i in &TEST_MSG[..5] {
             defmt::unwrap!(nb::block!(tx.write(*i)));
         }
         let c = nb::block!(rx.read());
