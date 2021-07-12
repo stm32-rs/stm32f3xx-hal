@@ -19,7 +19,7 @@ use hal::{
 
 use core::array::IntoIter;
 
-use hal::serial::Error;
+use hal::serial::{Error, Event};
 
 struct State {
     serial1: Option<Serial<pac::USART1, (PA9<AF7<PushPull>>, PA10<AF7<PushPull>>)>>,
@@ -110,62 +110,19 @@ mod tests {
 
         // now provoke an overrun
         // send 5 u8 bytes, which do not fit in the 32 bit buffer
-        for i in &TEST_MSG[..4] {
+        for i in &TEST_MSG[..5] {
             defmt::unwrap!(nb::block!(tx.write(*i)));
         }
         let c = nb::block!(rx.read());
         assert!(matches!(c, Err(Error::Overrun)));
-
-        state.serial1 = Some(Serial::join(tx, rx));
-    }
-
-    #[test]
-    fn test_many_baudrates(state: &mut super::State) {
-        use hal::time::rate::Baud;
-        for baudrate in &[
-            Baud(1200),
-            Baud(9600),
-            Baud(19200),
-            Baud(38400),
-            Baud(57600),
-            Baud(115200),
-            Baud(230400),
-            Baud(460800),
-        ] {
-            let (usart, pins) = unwrap!(state.serial1.take()).free();
-            let mut serial = Serial::new(usart, pins, *baudrate, state.clocks, &mut state.apb2);
-            for i in &TEST_MSG {
-                unwrap!(nb::block!(serial.write(*i)));
-                let c = unwrap!(nb::block!(serial.read()));
-                assert_eq!(c, *i);
-            }
-            state.serial1 = Some(serial);
-        }
-    }
-
-    #[test]
-    fn trigger_events(state: &mut super::State) {
-        let (usart, pins) = unwrap!(state.serial1.take()).free();
-        let mut serial = Serial::new(usart, pins, 115200.Bd(), state.clocks, &mut state.apb2);
-
-        for i in &TEST_MSG[..4] {
-            defmt::unwrap!(nb::block!(serial.write(*i)));
-        }
-        let c = nb::block!(serial.read());
-        assert!(matches!(c, Err(Error::Overrun)));
-        defmt::info!("First events");
+        let _ = unwrap!(nb::block!(rx.read()));
+        let mut serial = Serial::join(tx, rx);
         for event in serial.triggered_events() {
-            defmt::info!("{}", event);
+            defmt::debug!("{}", event);
         }
 
-        cortex_m::asm::delay(10);
-
-        defmt::info!("Second events");
+        serial.bflush();
         serial.clear_events();
-        for event in serial.triggered_events() {
-            defmt::info!("{}", event);
-        }
-
         state.serial1 = Some(serial);
     }
 
@@ -191,6 +148,72 @@ mod tests {
         state.serial_fast = Some(Serial::join(tx_fast, rx_fast));
     }
 
+
+    #[test]
+    fn test_many_baudrates(state: &mut super::State) {
+        use hal::time::rate::Baud;
+        for baudrate in &[
+            Baud(1200),
+            Baud(9600),
+            Baud(19200),
+            Baud(38400),
+            Baud(57600),
+            Baud(115200),
+            Baud(230400),
+            Baud(460800),
+        ] {
+            let (usart, pins) = unwrap!(state.serial1.take()).free();
+            let mut serial = Serial::new(usart, pins, *baudrate, state.clocks, &mut state.apb2);
+            for i in &TEST_MSG {
+                unwrap!(nb::block!(serial.write(*i)));
+                let c = unwrap!(nb::block!(serial.read()));
+                assert_eq!(c, *i);
+            }
+            serial.bflush();
+            serial.clear_events();
+            state.serial1 = Some(serial);
+        }
+    }
+
+    #[test]
+    fn trigger_events(state: &mut super::State) {
+        let (usart, pins) = unwrap!(state.serial1.take()).free();
+        let mut serial = Serial::new(usart, pins, 115200.Bd(), state.clocks, &mut state.apb2);
+
+        defmt::info!("0th events");
+        for event in serial.triggered_events() {
+            defmt::debug!("{}", event);
+        }
+        for i in &TEST_MSG[..4] {
+            defmt::unwrap!(nb::block!(serial.write(*i)));
+        }
+        let c = nb::block!(serial.read());
+        assert!(matches!(c, Err(Error::Overrun)));
+        let _ = unwrap!(nb::block!(serial.read()));
+        // FIXME: What happns if i add a delay here?
+        cortex_m::asm::delay(1000); // <--- 1000 as a delay is long enough, that the shift register content
+        // is put into the read register again and than overrun flag is set again.
+        assert!(!serial.is_event_triggered(Error::Overrun));
+        assert!(!serial.is_event_triggered(Event::OverrunError));
+        // FIXME: Here is the cause, why I saw Overrun again?
+        // Without this call the overrun flag is set, even
+        // though I explicity checked for it before.
+        defmt::debug!("{}", unwrap!(nb::block!(serial.read())));
+        defmt::info!("First events");
+        for event in serial.triggered_events() {
+            defmt::debug!("{}", event);
+        }
+
+        cortex_m::asm::delay(10);
+
+        defmt::info!("Second events");
+        serial.clear_events();
+        for event in serial.triggered_events() {
+            defmt::debug!("{}", event);
+        }
+
+        state.serial1 = Some(serial);
+    }
     // TODO: Check the parity. But currently, there is no way to configure the parity
     // #[test]
     // fn check_parity(state: &mut super::State) { }

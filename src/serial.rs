@@ -79,8 +79,7 @@ pub enum Event {
 
 /// Serial error
 ///
-/// As these are status events, they can be
-/// converted to [`Event`]s.
+/// As these are status events, they can be converted to [`Event`]s.
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
@@ -90,6 +89,21 @@ pub enum Error {
     /// Noise error
     Noise,
     /// RX buffer overrun
+    ///
+    /// # Cause
+    ///
+    /// An overrun error occurs when a character is received when RXNE has not been reset. Data can
+    /// not be transferred from the shift register to the RDR register until the RXNE bit is
+    /// cleared.The RXNE flag is set after every byte received. An overrun error occurs if RXNE
+    /// flag is set when the next data is received or the previous DMA request has not been
+    /// serviced.
+    ///
+    /// # Behavior
+    ///
+    /// - The RDR content will not be lost. The previous data is available when a read to USART_RDR
+    ///   is performed.
+    /// - The shift register will be overwritten. After that point, any data received
+    ///   during overrun is lost
     Overrun,
     /// Parity check error
     Parity,
@@ -301,6 +315,7 @@ where
     /// Enable or disable the interrupt for the specified [`Event`].
     // TODO: Provide enumset method
     // TODO: Rename listen, so that enumset has distiguishable name
+    #[inline]
     pub fn configure_interrupt(&mut self, event: impl Into<Event>, enable: bool) -> &mut Self {
         match event.into() {
             Event::TransmitDataRegisterEmtpy => self.usart.cr1.modify(|_, w| w.txeie().bit(enable)),
@@ -346,6 +361,7 @@ where
         events
     }
 
+    #[inline]
     pub fn clear_events(&mut self) {
         // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
         self.usart.icr.write(|w| unsafe { w.bits(u32::MAX) });
@@ -354,6 +370,7 @@ where
     /// Clear the interrupt event flag
     ///
     ///
+    #[inline]
     pub fn clear_event(&mut self, event: impl Into<Event>) {
         self.usart.icr.write(|w| match event.into() {
             Event::CtsInterrupt => w.ctscf().clear(),
@@ -373,23 +390,24 @@ where
     }
 
     /// Check if an interrupt event happend.
+    #[inline]
     pub fn is_event_triggered(&self, event: impl Into<Event>) -> bool {
         let isr = self.usart.isr.read();
         match event.into() {
-            Event::TransmitDataRegisterEmtpy => isr.txe().bit_is_set(),
-            Event::CtsInterrupt => isr.ctsif().bit_is_set(),
-            Event::TransmissionComplete => isr.tc().bit_is_set(),
-            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit_is_set(),
-            Event::OverrunError => isr.ore().bit_is_set(),
-            Event::Idle => isr.idle().bit_is_set(),
-            Event::ParityError => isr.pe().bit_is_set(),
-            Event::LinBreak => isr.lbdf().bit_is_set(),
-            Event::NoiseError => isr.nf().bit_is_set(),
-            Event::FramingError => isr.fe().bit_is_set(),
-            Event::CharacterMatch => isr.cmf().bit_is_set(),
-            Event::ReceiverTimeout => isr.rtof().bit_is_set(),
-            // Event::EndOfBlock => isr.eobf().bit_is_set(),
-            Event::WakeupFromStopMode => isr.wuf().bit_is_set(),
+            Event::TransmitDataRegisterEmtpy => isr.txe().bit(),
+            Event::CtsInterrupt => isr.ctsif().bit(),
+            Event::TransmissionComplete => isr.tc().bit(),
+            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit(),
+            Event::OverrunError => isr.ore().bit(),
+            Event::Idle => isr.idle().bit(),
+            Event::ParityError => isr.pe().bit(),
+            Event::LinBreak => isr.lbdf().bit(),
+            Event::NoiseError => isr.nf().bit(),
+            Event::FramingError => isr.fe().bit(),
+            Event::CharacterMatch => isr.cmf().bit(),
+            Event::ReceiverTimeout => isr.rtof().bit(),
+            // Event::EndOfBlock => isr.eobf().bit(),
+            Event::WakeupFromStopMode => isr.wuf().bit(),
         }
     }
 
@@ -494,7 +512,6 @@ where
     }
 }
 
-
 // TODO: Check if u16 for WORD is feasiable / possible
 impl<Usart, Tx, Rx> serial::Read<u8> for Serial<Usart, (Tx, Rx)>
 where
@@ -542,7 +559,9 @@ where
 
         // NOTE(unsafe, write) write accessor for atomic writes with no side effects
         let icr = unsafe { &self.usart().icr };
-        Err(if isr.pe().bit_is_set() {
+        Err(if isr.busy().bit_is_set() {
+            nb::Error::WouldBlock
+        } else if isr.pe().bit_is_set() {
             icr.write(|w| w.pecf().clear());
             nb::Error::Other(Error::Parity)
         } else if isr.fe().bit_is_set() {
