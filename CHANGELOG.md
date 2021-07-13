@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   `serial::config::Config`. ([#239])
 - Implement `Serial::join` which allows to re-create the serial peripheral,
   when `Serial::split` was previously called. ([#252])
+- Parameterized `usb::Peripheral` and `usb::UsbType` on the pin configuration
+  used ([#254])
 
 ## [v0.7.0] - 2021-06-18
 
