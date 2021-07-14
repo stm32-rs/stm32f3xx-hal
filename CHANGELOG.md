@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Breaking Changes
 
 - Refactor CAN to use the [`bxCan`](https://github.com/stm32-rs/bxcan) crate. ([#207])
+- Add support for configuring parity and stop bits in addition to baud rate for `Serial` with
+  `serial::config::Config`. ([#239])
 - Implement `Serial::join` which allows to re-create the serial peripheral,
   when `Serial::split` was previously called. ([#252])
 
@@ -350,6 +352,7 @@ let clocks = rcc
 [#252]: https://github.com/stm32-rs/stm32f3xx-hal/pull/252
 [#247]: https://github.com/stm32-rs/stm32f3xx-hal/pull/247
 [#246]: https://github.com/stm32-rs/stm32f3xx-hal/pull/246
+[#239]: https://github.com/stm32-rs/stm32f3xx-hal/pull/239
 [#238]: https://github.com/stm32-rs/stm32f3xx-hal/pull/238
 [#234]: https://github.com/stm32-rs/stm32f3xx-hal/pull/234
 [#232]: https://github.com/stm32-rs/stm32f3xx-hal/pull/232
