@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+<!-- 
+  If you are adding a CHANGELOG entry with a link to the PR e.g. ([#123])
+  do not forget to add the corresponding URL at the end of the file:
+
+  [#123]: https://github.com/stm32-rs/stm32f3xx-hal/pull/123
+-->
+
 ## Unreleased
 
 ### Added
