@@ -23,6 +23,11 @@ cargo test -p testsuite
 
 This will execute all tests sequentially on the target device.
 
+The result _always_ shows a backtrace, even in the case of success.
+Exit code of 0 means that the run was successful.
+
+### Using a different board
+
 To run the tests on a different target than the STM32F3Discovery's
 `stm32f303xc`, specify a target as a feature:
 
@@ -30,5 +35,13 @@ To run the tests on a different target than the STM32F3Discovery's
 cargo test -p testsuite --no-default-features --features stm32f3xx-hal/stm32f301xb
 ```
 
-The result _always_ shows a backtrace, even in the case of success.
-Exit code of 0 means that the run was successful.
+If the wiring is different for your board, adjust the type definitions in
+`src/lib.rs`.
+
+### Running a single test
+
+Single test of the testsuite can be run, with the `cargo-test` familiar syntax.
+
+```bash
+cargo test -p testsuite --test uart
+```
