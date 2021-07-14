@@ -89,7 +89,4 @@ pub type UsbBusType<Dm = PA11<gpio::AF14<gpio::PushPull>>, Dp = PA12<gpio::AF14<
 
 /// Type of the UsbBus
 #[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
-pub type UsbBusType<
-    Dm = PA11<gpio::Output<gpio::PushPull>>,
-    Dp = PA12<gpio::Output<gpio::PushPull>>,
-> = UsbBus<Peripheral<Dm, Dp>>;
+pub type UsbBusType<Dm = PA11<gpio::Input>, Dp = PA12<gpio::Input>> = UsbBus<Peripheral<Dm, Dp>>;
