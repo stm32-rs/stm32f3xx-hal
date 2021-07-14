@@ -269,9 +269,9 @@ mod tests {
         let (mut tx_fast, mut rx_fast) = unwrap!(state.serial_fast.take()).split();
 
         // provoke an error (framing)
-        defmt::unwrap!(nb::block!(tx_slow.write(b'a')));
+        unwrap!(nb::block!(tx_slow.write(b'a')));
         let c = nb::block!(rx_fast.read());
-        defmt::info!("{}", c);
+        defmt::debug!("{}", c);
         assert!(matches!(c, Err(Error::Framing)));
 
         // provoke an error (this does not seem to be absolutely deterministic

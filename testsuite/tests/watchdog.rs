@@ -72,7 +72,7 @@ mod tests {
                 ),
         )
         .unwrap();
-        defmt::info!("Delay = {}", delay);
+        defmt::debug!("Delay = {}", delay);
         for _ in 0..5 {
             state.iwdg.feed();
 
