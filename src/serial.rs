@@ -41,6 +41,8 @@ pub enum Event {
     /// New data has been received
     ReceiveDataRegisterNotEmpty,
     /// OverrunErrorDetected
+    ///
+    /// See [`Error::Overrun`] for a more detailed description.
     OverrunError,
     /// Idle line state detected
     Idle,
@@ -338,6 +340,21 @@ where
         self
     }
 
+    /// TODO: Serial read out of the read register
+    ///
+    /// no error handling and no side-effects.
+    ///
+    /// Returns `None` if hardware is busy.
+    //
+    // TODO: Use raw_read() or read_raw()?
+    pub fn raw_read(&self) -> Option<u8> {
+        if self.usart.isr.read().busy().bit_is_set() {
+            return None
+        } else {
+            return Some(self.usart.rdr.read().rdr().bits() as u8)
+        }
+    }
+
     /// Get an [`EnumSet`] of all fired intterupt events
     ///
     /// # Examples
@@ -518,6 +535,10 @@ where
     Usart: Instance,
 {
     type Error = Error;
+    // TODO: Document behavior of this function
+    // (like clearing the error flag)
+    // TODO: Maybe implement a read function, which ignores
+    // the error, but does not clear the error event??
     fn read(&mut self) -> nb::Result<u8, Error> {
         let isr = self.usart.isr.read();
 
@@ -553,16 +574,38 @@ where
 {
     type Error = Error;
 
+    /// TODO:
+    ///
+    /// This function has the side effect for error handling, that the flag of the return error is
+    /// cleared.
+    ///
+    /// This might be a problem, because if an interrupt is enalbed for this particular flag, the
+    /// intterupt handler might not have the chance to find out from which flag the intterupt
+    /// originated.
+    ///
+    /// So this function is only intended to be used for direct error hanndling and not leaving it
+    /// up to the intterupt handler.
+    ///
+    /// To get the content of the read register - ignoring if an error occured, use
+    /// [`Serial::raw_read()`]
+    ///
+    /// TODO: Getting back an error means that the error is defined as "handled":
+    /// ...
+    // TODO: If error occur, should the errornous byte be skipped or not?
+    // -> According to this API it should be skipped.
     fn read(&mut self) -> nb::Result<u8, Error> {
         // NOTE(unsafe) atomic read with no side effects
         let isr = unsafe { self.usart().isr.read() };
 
         // NOTE(unsafe, write) write accessor for atomic writes with no side effects
         let icr = unsafe { &self.usart().icr };
+
         Err(if isr.busy().bit_is_set() {
             nb::Error::WouldBlock
         } else if isr.pe().bit_is_set() {
             icr.write(|w| w.pecf().clear());
+            // TODO: Find out if a error parity flag occures, if the next read does read
+            // out the errornous byte or if it skips it.
             nb::Error::Other(Error::Parity)
         } else if isr.fe().bit_is_set() {
             icr.write(|w| w.fecf().clear());

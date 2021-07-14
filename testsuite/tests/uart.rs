@@ -29,7 +29,7 @@ struct State {
     apb2: APB2,
 }
 
-const TEST_MSG: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
+const TEST_MSG: [u8; 8] = [0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xaa, 0xbb];
 
 #[defmt_test::tests]
 mod tests {
@@ -184,9 +184,14 @@ mod tests {
         for event in serial.triggered_events() {
             defmt::debug!("{}", event);
         }
-        for i in &TEST_MSG[..4] {
+        // FIXME: The order and the amount of Overrun flags depend on the
+        // amount of written bytes.
+        //
+        // The assumption, that the register could hold 32 bit is wrong!
+        for i in &TEST_MSG[..3] {
             defmt::unwrap!(nb::block!(serial.write(*i)));
         }
+        if false {
         let c = nb::block!(serial.read());
         assert!(matches!(c, Err(Error::Overrun)));
         let _ = unwrap!(nb::block!(serial.read()));
@@ -199,6 +204,15 @@ mod tests {
         // Without this call the overrun flag is set, even
         // though I explicity checked for it before.
         defmt::debug!("{}", unwrap!(nb::block!(serial.read())));
+        }
+        loop {
+            match nb::block!(serial.read()) {
+                Ok(c) => defmt::info!("{:x}", c),
+                Err(e @ Error::Overrun) => defmt::info!("{}", e),
+                Err(e) => defmt::panic!("{}", e),
+            }
+        }
+
         defmt::info!("First events");
         for event in serial.triggered_events() {
             defmt::debug!("{}", event);
