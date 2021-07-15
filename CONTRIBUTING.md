@@ -1,11 +1,73 @@
-- If the MSRV (Minimal supported rust version) CI job fails, feel free to update
-  it. Places are:
-  - in the [ci.yml](.github/workflows/ci.yml)
-  - in the [README.md][]
-- For any **user** visible change, please a note, what changed in the
-  [CHANGELOG.md]
-  - For easier trackability a link to the corresponding PR impelemnting that
-  change is appended, e.g.
+# CONTRIBUTING.md
+
+This document explains some concepts used for this repository and answers some 
+questions for contributors.
+
+## Overview
+
+## API
+
+### Principle of least surprise
+
+If adding a new feature does mean designing a new API or ["Principle of least surprise"](https://en.wikipedia.org/wiki/Principle_of_least_astonishment)
+
+### Paramatrization before nameability.
+
+E.g. don't introduce a bool for every Enum variant `fn is_enum_variant_1()`, `fn
+is_enum_variant_2()`, `...`, rather use `fn is_enum_variant(enum: Enum)`.
+
+### Abstracting a new peripheral
+
+- Useful documentations are 
+  - STM datasheets - a list of these can be found in the [`stm32f3`](https://github.com/stm32-rs/stm32-rs-nightlies/tree/master/stm32f3#supported-devices) README.
+  - Documentation of [`stm32f3`](https://docs.rs/stm32f3/latest/stm32f3/)
+  itself.
+  - The HTML table overview of [all documented registers](https://stm32-rs.github.io/stm32-rs/).
+  - 
+- While designing take inspiration of existing 
+- Incomplete abstraction of peripherals are OK!
+  - Reading through the documentation can be daunting. 
+  - Rather concentrate on a few features you want to support.
+  - Think about extensibility.
+     - If you now your implementation is incomplete leave it in a state, 
+     where it is easy to at least at the most common features afterwards
+     without having to introduce [Breaking Changes][]. For example
+     use [`#[non_exhaustive]`](https://rust-lang.github.io/rfcs/2008-non-exhaustive.html) where it does make sense.
+
+### Misc
+
+- Add `#[derive(Debug)]` and `#[cfg_attr(feature = "defmt", derive(defmt::Format))]` to new
+`struct`s and `enum`s where possible. And add `#[derive(Copy)]` for `enum`s and
+small `struct`s, which is not bound to a resource (like a peripheral) where
+leveraging the move semantics does not make sense.
+
+### Breaking Changes
+
+- Breaking changes are defined [here](https://doc.rust-lang.org/cargo/reference/semver.html)
+- Do not fear to introduce a breaking change! 
+  - This crate is a long way of being stable API wise (v1.0.0) and the best
+  practices in the embedded ecosystem are still evolving. 
+  Also, introducing new useful compiler features like [`const-generics`](https://rust-lang.github.io/rfcs/2000-const-generics.html) means that there is no other way, than introducing them with a breaking change.
+  (_[`min_const_generics`](https://blog.rust-lang.org/2021/02/26/const-generics-mvp-beta.html) are already usable_)
+
+## Test your changes
+
+If possible, test if your changes still work with the testsuite (see
+[here](testsuite/README.md)).
+This for now requires a stm32f3-discovery board, which you might not have.
+[Adjustments](testsuite/README.md#using-a-different-board) can be made to be
+able to run it on your board.
+If you are not sure and / or want to test your changes on the full testsuite
+either way, ask a contributor who should have a board available to test your
+changes on. (In the future there might also be a job running which automatically
+tests your changes on a physical board.)
+
+## CHANGELOG entry
+
+For any **user** visible change, please a note, what changed in the [CHANGELOG](CHANGELOG.md)
+
+For easier tractability a link to the corresponding PR implementing that
+change is appended, e.g.
 
 ```markdown
 ### CHANGED
@@ -18,5 +80,10 @@
 [#123]: https://github.com/stm32-rs/stm32f3xx-hal/pull/123
 ```
 
-- If possible, test if your changes still work with the testsuite (see
-  [here](testsuite/README.md)).
+## MSVR Job is failing
+
+If the MSRV (Minimal supported rust version) CI job fails, feel free to update
+it. Places are:
+
+- in the [ci.yml](.github/workflows/ci.yml)
+- in the [README.md][]
