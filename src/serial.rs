@@ -28,7 +28,7 @@ use cortex_m::interrupt;
 
 /// Interrupt and status events
 // TODO: Sort as flags are ordered in register
-#[derive(Debug, EnumSetType)]
+#[derive(Copy, Debug, EnumSetType)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 pub enum Event {
