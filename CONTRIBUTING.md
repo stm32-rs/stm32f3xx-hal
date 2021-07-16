@@ -37,7 +37,7 @@ is_enum_variant_2()`, `...`, rather use `fn is_enum_variant(enum: Enum)`.
 ### Misc
 
 - Add `#[derive(Debug)]` and `#[cfg_attr(feature = "defmt", derive(defmt::Format))]` to new
-`struct`s and `enum`s where possible. And add `#[derive(Copy)]` for `enum`s and
+`struct`s and `enum`s where possible. And add `#[derive(Copy, Clone)]` for `enum`s and
 small `struct`s, which is not bound to a resource (like a peripheral) where
 leveraging the move semantics does not make sense.
 
