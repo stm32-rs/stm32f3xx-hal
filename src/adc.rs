@@ -9,19 +9,14 @@
 //!
 //! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.7.0/examples/adc.rs
 
-use crate::{
-    gpio::Analog,
-    rcc::{Clocks, AHB},
-};
 use cortex_m::asm;
 use embedded_hal::adc::{Channel, OneShot};
 
 use crate::{
-    gpio::{gpioa, gpiob, gpioc},
-    pac::{ADC1, ADC1_2, ADC2},
+    gpio::{self, Analog},
+    pac::{adc1::cfgr::ALIGN_A, adc1_2::ccr::CKMODE_A, ADC1, ADC1_2, ADC2},
+    rcc::{Clocks, AHB},
 };
-use stm32f3::stm32f303::{adc1::cfgr::ALIGN_A, adc1_2::ccr::CKMODE_A};
-const MAX_ADVREGEN_STARTUP_US: u32 = 10;
 
 #[cfg(any(
     feature = "stm32f303xb",
@@ -29,10 +24,9 @@ const MAX_ADVREGEN_STARTUP_US: u32 = 10;
     feature = "stm32f303xd",
     feature = "stm32f303xe",
 ))]
-use crate::{
-    gpio::{gpiod, gpioe, gpiof},
-    pac::{ADC3, ADC3_4, ADC4},
-};
+use crate::pac::{ADC3, ADC3_4, ADC4};
+
+const MAX_ADVREGEN_STARTUP_US: u32 = 10;
 
 /// Analog Digital Converter Peripheral
 // TODO: Remove `pub` from the register block once all functionalities are implemented.
@@ -174,21 +168,21 @@ macro_rules! adc_pins {
 
 #[cfg(feature = "stm32f303")]
 adc_pins!(ADC1,
-    gpioa::PA0<Analog> => 1,
-    gpioa::PA1<Analog> => 2,
-    gpioa::PA2<Analog> => 3,
-    gpioa::PA3<Analog> => 4,
-    gpioc::PC0<Analog> => 6,
-    gpioc::PC1<Analog> => 7,
-    gpioc::PC2<Analog> => 8,
-    gpioc::PC3<Analog> => 9,
+    gpio::PA0<Analog> => 1,
+    gpio::PA1<Analog> => 2,
+    gpio::PA2<Analog> => 3,
+    gpio::PA3<Analog> => 4,
+    gpio::PC0<Analog> => 6,
+    gpio::PC1<Analog> => 7,
+    gpio::PC2<Analog> => 8,
+    gpio::PC3<Analog> => 9,
 );
 
 #[cfg(any(feature = "stm32f303x6", feature = "stm32f303x8"))]
 adc_pins!(ADC1,
-    gpiob::PB0<Analog> => 11,
-    gpiob::PB1<Analog> => 12,
-    gpiob::PB13<Analog> => 13,
+    gpio::PB0<Analog> => 11,
+    gpio::PB1<Analog> => 12,
+    gpio::PB13<Analog> => 13,
 );
 
 #[cfg(any(
@@ -198,8 +192,8 @@ adc_pins!(ADC1,
     feature = "stm32f303xe",
 ))]
 adc_pins!(ADC1,
-    gpiof::PF4<Analog> => 5,
-    gpiof::PF2<Analog> => 10,
+    gpio::PF4<Analog> => 5,
+    gpio::PF2<Analog> => 10,
 );
 
 // # ADC2 Pin/Channel mapping
@@ -207,24 +201,24 @@ adc_pins!(ADC1,
 
 #[cfg(feature = "stm32f303")]
 adc_pins!(ADC2,
-    gpioa::PA4<Analog> => 1,
-    gpioa::PA5<Analog> => 2,
-    gpioa::PA6<Analog> => 3,
-    gpioa::PA7<Analog> => 4,
-    gpioc::PC4<Analog> => 5,
-    gpioc::PC0<Analog> => 6,
-    gpioc::PC1<Analog> => 7,
-    gpioc::PC2<Analog> => 8,
-    gpioc::PC3<Analog> => 9,
-    gpioc::PC5<Analog> => 11,
-    gpiob::PB2<Analog> => 12,
+    gpio::PA4<Analog> => 1,
+    gpio::PA5<Analog> => 2,
+    gpio::PA6<Analog> => 3,
+    gpio::PA7<Analog> => 4,
+    gpio::PC4<Analog> => 5,
+    gpio::PC0<Analog> => 6,
+    gpio::PC1<Analog> => 7,
+    gpio::PC2<Analog> => 8,
+    gpio::PC3<Analog> => 9,
+    gpio::PC5<Analog> => 11,
+    gpio::PB2<Analog> => 12,
 );
 
 #[cfg(any(feature = "stm32f303x6", feature = "stm32f303x8"))]
 adc_pins!(ADC2,
-    gpiob::PB12<Analog> => 13,
-    gpiob::PB14<Analog> => 14,
-    gpiob::PB15<Analog> => 15,
+    gpio::PB12<Analog> => 13,
+    gpio::PB14<Analog> => 14,
+    gpio::PB15<Analog> => 15,
 );
 
 #[cfg(any(
@@ -234,7 +228,7 @@ adc_pins!(ADC2,
     feature = "stm32f303xe",
 ))]
 adc_pins!(ADC2,
-    gpiof::PF2<Analog> => 10,
+    gpio::PF2<Analog> => 10,
 );
 
 // # ADC3 Pin/Channel mapping
@@ -247,22 +241,22 @@ adc_pins!(ADC2,
     feature = "stm32f303xe",
 ))]
 adc_pins!(ADC3,
-    gpiob::PB1<Analog> => 1,
-    gpioe::PE9<Analog> => 2,
-    gpioe::PE13<Analog> => 3,
+    gpio::PB1<Analog> => 1,
+    gpio::PE9<Analog> => 2,
+    gpio::PE13<Analog> => 3,
     // There is no ADC3 Channel #4
-    gpiob::PB13<Analog> => 5,
-    gpioe::PE8<Analog> => 6,
-    gpiod::PD10<Analog> => 7,
-    gpiod::PD11<Analog> => 8,
-    gpiod::PD12<Analog> => 9,
-    gpiod::PD13<Analog> => 10,
-    gpiod::PD14<Analog> => 11,
-    gpiob::PB0<Analog> => 12,
-    gpioe::PE7<Analog> => 13,
-    gpioe::PE10<Analog> => 14,
-    gpioe::PE11<Analog> => 15,
-    gpioe::PE12<Analog> => 16,
+    gpio::PB13<Analog> => 5,
+    gpio::PE8<Analog> => 6,
+    gpio::PD10<Analog> => 7,
+    gpio::PD11<Analog> => 8,
+    gpio::PD12<Analog> => 9,
+    gpio::PD13<Analog> => 10,
+    gpio::PD14<Analog> => 11,
+    gpio::PB0<Analog> => 12,
+    gpio::PE7<Analog> => 13,
+    gpio::PE10<Analog> => 14,
+    gpio::PE11<Analog> => 15,
+    gpio::PE12<Analog> => 16,
 );
 
 // # ADC4 Pin/Channel mapping
@@ -275,19 +269,19 @@ adc_pins!(ADC3,
     feature = "stm32f303xe",
 ))]
 adc_pins!(ADC4,
-    gpioe::PE14<Analog> => 1,
-    gpioe::PE15<Analog> => 2,
-    gpiob::PB12<Analog> => 3,
-    gpiob::PB14<Analog> => 4,
-    gpiob::PB15<Analog> => 5,
-    gpioe::PE8<Analog> => 6,
-    gpiod::PD10<Analog> => 7,
-    gpiod::PD11<Analog> => 8,
-    gpiod::PD12<Analog> => 9,
-    gpiod::PD13<Analog> => 10,
-    gpiod::PD14<Analog> => 11,
-    gpiod::PD8<Analog> => 12,
-    gpiod::PD9<Analog> => 13,
+    gpio::PE14<Analog> => 1,
+    gpio::PE15<Analog> => 2,
+    gpio::PB12<Analog> => 3,
+    gpio::PB14<Analog> => 4,
+    gpio::PB15<Analog> => 5,
+    gpio::PE8<Analog> => 6,
+    gpio::PD10<Analog> => 7,
+    gpio::PD11<Analog> => 8,
+    gpio::PD12<Analog> => 9,
+    gpio::PD13<Analog> => 10,
+    gpio::PD14<Analog> => 11,
+    gpio::PD8<Analog> => 12,
+    gpio::PD9<Analog> => 13,
 );
 
 // Abstract implementation of ADC functionality

@@ -755,42 +755,54 @@ macro_rules! gpio {
         gpio_mapped: $gpioy:ident,
         iopen: $iopxen:ident,
         ioprst: $iopxrst:ident,
-        partially_erased_pin: $PXx:ty,
+        partially_erased_pin: $PXx:ident,
         pins: [$(
             $i:literal => (
-                $PXi:ty, $pxi:ident, $MODE:ty, $AFR:ident, [$($IntoAfi:ident),*],
+                $PXi:ident, $pxi:ident, $MODE:ty, $AFR:ident, [$($IntoAfi:ident),*],
             ),
         )+],
     }) => {
-        paste::paste!{
+        paste::paste! {
             #[doc = "GPIO port " $GPIOX " (type state)"]
             pub struct $Gpiox;
-        }
 
-        impl private::Gpio for $Gpiox {
-            type Reg = crate::pac::$gpioy::RegisterBlock;
+            impl private::Gpio for $Gpiox {
+                type Reg = crate::pac::$gpioy::RegisterBlock;
 
-            #[inline(always)]
-            fn ptr(&self) -> *const Self::Reg {
-                crate::pac::$GPIOX::ptr()
+                #[inline(always)]
+                fn ptr(&self) -> *const Self::Reg {
+                    crate::pac::$GPIOX::ptr()
+                }
+
+                #[inline(always)]
+                fn port_index(&self) -> u8 {
+                    $port_index
+                }
             }
 
-            #[inline(always)]
-            fn port_index(&self) -> u8 {
-                $port_index
+            impl marker::Gpio for $Gpiox {}
+
+            impl marker::GpioStatic for $Gpiox {
+                type MODER = $gpiox::MODER;
+                type OTYPER = $gpiox::OTYPER;
+                type OSPEEDR = $gpiox::OSPEEDR;
+                type PUPDR = $gpiox::PUPDR;
             }
-        }
 
-        impl marker::Gpio for $Gpiox {}
+            $(
+                #[doc = "Pin " $PXi]
+                pub type $PXi<Mode> = Pin<$Gpiox, U<$i>, Mode>;
 
-        impl marker::GpioStatic for $Gpiox {
-            type MODER = $gpiox::MODER;
-            type OTYPER = $gpiox::OTYPER;
-            type OSPEEDR = $gpiox::OSPEEDR;
-            type PUPDR = $gpiox::PUPDR;
-        }
+                $(
+                    impl<Mode> marker::$IntoAfi for $PXi<Mode> {
+                        type AFR = $gpiox::$AFR;
+                    }
+                )*
+            )+
 
-        paste::paste!{
+            #[doc = "Partially erased pin for " $GPIOX]
+            pub type $PXx<Mode> = Pin<$Gpiox, Ux, Mode>;
+
             #[doc = "All Pins and associated registers for GPIO port " $GPIOX]
             pub mod $gpiox {
                 use core::marker::PhantomData;
@@ -800,12 +812,19 @@ macro_rules! gpio {
                     rcc::AHB,
                 };
 
-                use super::{marker, Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pin, Pupdr, U, Ux};
+                use super::{Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pupdr, U};
 
                 #[allow(unused_imports)]
                 use super::{
                     Input, Output, Analog, PushPull, OpenDrain,
                     AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF13, AF14, AF15,
+                };
+
+                pub use super::{
+                    $PXx,
+                    $(
+                        $PXi,
+                    )+
                 };
 
                 /// GPIO parts
@@ -923,20 +942,6 @@ macro_rules! gpio {
                         fn pull_down { PULLDOWN }
                     }
                 }
-
-                /// Partially erased pin
-                pub type $PXx<Mode> = Pin<$Gpiox, Ux, Mode>;
-
-                $(
-                    #[doc = "Pin " $PXi]
-                    pub type $PXi<Mode> = Pin<$Gpiox, U<$i>, Mode>;
-
-                    $(
-                        impl<Mode> marker::$IntoAfi for $PXi<Mode> {
-                            type AFR = $AFR;
-                        }
-                    )*
-                )+
             }
         }
     };
