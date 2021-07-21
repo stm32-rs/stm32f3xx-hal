@@ -104,7 +104,7 @@ pub enum Event {
     /// This event is set by hardware, when a wakeup event is detected.
     ///
     /// The condition, when it does wake up can be configured via
-    /// [`Serial::wakeup_from_stopmode_reason()`]
+    /// [`Serial::set_wakeup_from_stopmode_reason()`]
     WakeupFromStopMode,
 }
 
@@ -315,7 +315,8 @@ mod split {
 
 pub use split::{Rx, Tx};
 
-type StopModeWakeup = pac::usart1::cr3::WUS_A;
+/// The flag to select the wakeup from stopmode behavior
+pub type StopModeWakeup = pac::usart1::cr3::WUS_A;
 
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
 where
@@ -493,13 +494,17 @@ where
         self.usart.cr2.read().add().bits()
     }
 
+    /// Select Wakeup from Stop mode interrupt reason.
+    ///
+    /// This can be used in conjuction with enabling the [`Event::WakeupFromStopMode`] interrupt.
     #[inline(always)]
-    pub fn set_wakeup_from_stopmode(&mut self, selection: StopModeWakeup) {
+    pub fn set_wakeup_from_stopmode_reason(&mut self, selection: StopModeWakeup) {
         self.usart.cr3.modify(|_, w| w.wus().variant(selection));
     }
 
+    /// Selecte wakeup from Stop mode interrupt flag.
     #[inline(always)]
-    pub fn wakeup_from_stopmode_reason(&mut self) -> StopModeWakeup {
+    pub fn wakeup_from_stopmode(&mut self) -> StopModeWakeup {
         match self.usart.cr3.read().wus().variant() {
             stm32f3::Variant::Val(val) => val,
             // The value is reservered and can not be configured,
