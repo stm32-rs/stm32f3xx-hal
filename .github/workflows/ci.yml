@@ -92,6 +92,22 @@ jobs:
           command: check
           args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
 
+  check-minimal-feature-set:
+    name: Check minimal feature set
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --no-default-features --features=stm32f303xc --lib --examples
+
   build-testsuite:
     name: Build Testsuite
     runs-on: ubuntu-latest
