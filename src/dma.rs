@@ -24,6 +24,7 @@ use core::{
     sync::atomic::{self, Ordering},
 };
 
+#[cfg(feature = "enumset")]
 use enumset::{EnumSet, EnumSetType};
 
 /// Extension trait to split a DMA peripheral into independent channels

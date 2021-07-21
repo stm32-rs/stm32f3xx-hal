@@ -9,6 +9,7 @@
 use core::convert::{From, TryFrom};
 
 use cortex_m::peripheral::DWT;
+#[cfg(feature = "enumset")]
 use enumset::{EnumSet, EnumSetType};
 use void::Void;
 
@@ -121,9 +122,12 @@ pub struct Timer<TIM> {
 }
 
 /// Interrupt events
-#[non_exhaustive]
-#[derive(Debug, EnumSetType)]
+#[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "enumset", derive(EnumSetType))]
+#[cfg_attr(not(feature = "enumset"), derive(Copy, Clone, PartialEq, Eq))]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
 pub enum Event {
     /// Timer timed out / count down ended
     Update,

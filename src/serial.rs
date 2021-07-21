@@ -21,38 +21,69 @@ use crate::{
 use crate::pac::RCC;
 
 use cfg_if::cfg_if;
+#[cfg(feature = "enumset")]
 use enumset::{EnumSet, EnumSetType};
 
 use crate::dma;
 use cortex_m::interrupt;
 
 /// Interrupt and status events
-// TODO: Sort as flags are ordered in register
-#[derive(Debug, EnumSetType)]
+#[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "enumset", derive(EnumSetType))]
+#[cfg_attr(not(feature = "enumset"), derive(Copy, Clone, PartialEq, Eq))]
 #[non_exhaustive]
 pub enum Event {
-    /// New data can be sent
+    /// Transmit data register empty / new data can be sent.
+    ///
+    /// This event is set by hardware when the content of the TDR register has been transferred
+    /// into the shift register. It is cleared by a [`Serial::write`] to the TDR register.
     TransmitDataRegisterEmtpy,
-    /// CTS (Clear to Send) event
+    /// CTS (Clear to Send) event.
+    ///
+    /// This event is set by hardware when the CTS input toggles, if the CTSE bit is set.
     CtsInterrupt,
     /// Transmission complete
+    ///
+    /// This event is set by hardware if the transmission of a frame containing data is complete and
+    /// if TXE is set.
     TransmissionComplete,
-    /// New data has been received
+    /// Read data register not empty / new data has been received.
+    ///
+    /// This event is set by hardware when the content of the RDR shift register has been
+    /// transferred to the RDR register.
+    /// It is cleared by a read to the USART_RDR register.
     ReceiveDataRegisterNotEmpty,
-    /// OverrunErrorDetected
+    /// Overrun Error detected.
+    ///
+    /// This event is set by hardware when the data currently being received in the shift register
+    /// is ready to be transferred into the RDR register while
+    /// [`Event::ReceiveDataRegisterNotEmpty`] is set.
     ///
     /// See [`Error::Overrun`] for a more detailed description.
     OverrunError,
-    /// Idle line state detected
+    /// Idle line state detected.
+    ///
+    /// This event is set by hardware when an Idle Line is detected.
     Idle,
-    /// Parity error detected
+    /// Parity error detected.
+    ///
+    /// This event is set by hardware when a parity error occurs in receiver mode.
+    ///
+    /// Parity can be configured by using [`config::Parity`] to create a [`config::Config`].
     ParityError,
-    /// Noise error detected
+    /// Noise error detected.
+    ///
+    /// This event is set by hardware when noise is detected on a received frame.
     NoiseError,
     /// Framing error detected
+    ///
+    /// This event is set by hardware when a de-synchronization, excessive noise or a break character
+    /// is detected.
     FramingError,
     /// LIN break
+    ///
+    /// This bit is set by hardware when the LIN break is detected.
     LinBreak,
     /// The received character matched the configured character.
     ///
@@ -65,14 +96,12 @@ pub enum Event {
     ///
     /// Never set for UART peripheral, which does not have [`ReceiverTimeoutFeature`]
     /// implemented.
-    // TODO: Maybe exclude depending on feature set (which might be difficult,
-    // as feature gating the value is not easy because it depends on the USART peripheral,
-    // and the hardware does support the value, but just does not set it.
-    // Maybe than configure the feature via trait of the is_event function?)
     ReceiverTimeout,
     // TODO: SmartCard Mode not implemented, no use as of now.
     // EndOfBlock,
     /// The peripheral was woken up from "Stop Mode".
+    ///
+    /// This event is set by hardware, when a wakeup event is detected.
     ///
     /// The condition, when it does wake up can be configured via
     /// [`Serial::wakeup_from_stopmode_reason()`]
@@ -81,14 +110,19 @@ pub enum Event {
 
 /// Serial error
 ///
-/// As these are status events, they can be converted to [`Event`]s.
-#[derive(Copy, Clone, Debug)]
+/// As these are status events, they can be converted to [`Event`]s, via [`Into`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 pub enum Error {
     /// Framing error
+    ///
+    /// This error is thrown by hardware when a de-synchronization, excessive noise or a break
+    /// character is detected.
     Framing,
     /// Noise error
+    ///
+    /// This error is thrown by hardware when noise is detected on a received frame.
     Noise,
     /// RX buffer overrun
     ///
@@ -96,7 +130,7 @@ pub enum Error {
     ///
     /// An overrun error occurs when a character is received when RXNE has not been reset. Data can
     /// not be transferred from the shift register to the RDR register until the RXNE bit is
-    /// cleared.The RXNE flag is set after every byte received. An overrun error occurs if RXNE
+    /// cleared. The RXNE flag is set after every byte received. An overrun error occurs if RXNE
     /// flag is set when the next data is received or the previous DMA request has not been
     /// serviced.
     ///
@@ -108,10 +142,11 @@ pub enum Error {
     ///   during overrun is lost
     Overrun,
     /// Parity check error
+    ///
+    /// This error is thrown by hardware when a parity error occurs in receiver mode.
     Parity,
 }
 
-// TODO: If From is implemented, none_exhaustive on Error does not make sense?
 impl From<Error> for Event {
     fn from(error: Error) -> Self {
         match error {
@@ -315,11 +350,9 @@ where
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
-    // TODO: Provide enumset method
-    // TODO: Rename listen, so that enumset has distiguishable name
     #[inline]
-    pub fn configure_interrupt(&mut self, event: impl Into<Event>, enable: bool) -> &mut Self {
-        match event.into() {
+    pub fn configure_interrupt(&mut self, event: Event, enable: bool) -> &mut Self {
+        match event {
             Event::TransmitDataRegisterEmtpy => self.usart.cr1.modify(|_, w| w.txeie().bit(enable)),
             Event::CtsInterrupt => self.usart.cr3.modify(|_, w| w.ctsie().bit(enable)),
             Event::TransmissionComplete => self.usart.cr1.modify(|_, w| w.tcie().bit(enable)),
@@ -340,32 +373,39 @@ where
         self
     }
 
-    /// TODO: Serial read out of the read register
+    /// Enable or disable interrupt for the specified [`Event`]s.
     ///
-    /// no error handling and no side-effects.
+    /// Like [`Serial::configure_interrupt`], but instead using an enumset. The corresponding
+    /// interrupt for every [`Event`] in the set will be enabled, every other interrupt will be
+    /// **disabled**.
+    #[cfg(feature = "enumset")]
+    pub fn configure_interrupts(&mut self, events: EnumSet<Event>) -> &mut Self {
+        for event in events.iter() {
+            self.configure_interrupt(event, true);
+        }
+        for event in events.complement().iter() {
+            self.configure_interrupt(event, false);
+        }
+
+        self
+    }
+
+    /// Serial read out of the read register
     ///
-    /// Returns `None` if hardware is busy.
-    //
-    // TODO: Use raw_read() or read_raw()?
+    /// No error handling and no side-effects.
+    /// Handling errors has to be done manually. This can be done, by checking
+    /// the triggered events via [`Serial::triggered_events`].
+    ///
+    /// Returns `None` if the hardware is busy.
     pub fn raw_read(&self) -> Option<u8> {
         if self.usart.isr.read().busy().bit_is_set() {
             return None
-        } else {
-            return Some(self.usart.rdr.read().rdr().bits() as u8)
         }
+        Some(self.usart.rdr.read().rdr().bits() as u8)
     }
 
-    /// Get an [`EnumSet`] of all fired intterupt events
-    ///
-    /// # Examples
-    ///
-    /// This allows disabling all fired event at once, via the enum set abstraction, like so
-    ///
-    /// ```rust
-    /// for event in serial.events() {
-    ///     serial.listen(event, false);
-    /// }
-    /// ```
+    /// Get an [`EnumSet`] of all fired interrupt events.
+    #[cfg(feature = "enumset")]
     pub fn triggered_events(&self) -> EnumSet<Event> {
         let mut events = EnumSet::new();
 
@@ -378,18 +418,17 @@ where
         events
     }
 
+    /// Clear **all** interrut events.
     #[inline]
     pub fn clear_events(&mut self) {
         // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
         self.usart.icr.write(|w| unsafe { w.bits(u32::MAX) });
     }
 
-    /// Clear the interrupt event flag
-    ///
-    ///
+    /// Clear the given interrupt event flag.
     #[inline]
-    pub fn clear_event(&mut self, event: impl Into<Event>) {
-        self.usart.icr.write(|w| match event.into() {
+    pub fn clear_event(&mut self, event: Event) {
+        self.usart.icr.write(|w| match event {
             Event::CtsInterrupt => w.ctscf().clear(),
             Event::TransmissionComplete => w.tccf().clear(),
             Event::OverrunError => w.orecf().clear(),
@@ -402,15 +441,24 @@ where
             Event::ReceiverTimeout => w.rtocf().clear(),
             // Event::EndOfBlock => w.eobcf().clear(),
             Event::WakeupFromStopMode => w.wucf().clear(),
-            Event::TransmitDataRegisterEmtpy | Event::ReceiveDataRegisterNotEmpty => w,
+            Event::ReceiveDataRegisterNotEmpty => {
+                // TODO: This could be usefull to solve the weird overrun behavior.
+                // RM0316 29.8.7: This allows to discard the received data without reading it, and
+                // avoid an overrun condition.
+                self.usart.rqr.write(|w| w.rxfrq().set_bit());
+                w
+            }
+            // Do nothing with this event (only useful for Smartcard, which is not
+            // supported right now)
+            Event::TransmitDataRegisterEmtpy => w,
         });
     }
 
     /// Check if an interrupt event happend.
     #[inline]
-    pub fn is_event_triggered(&self, event: impl Into<Event>) -> bool {
+    pub fn is_event_triggered(&self, event: Event) -> bool {
         let isr = self.usart.isr.read();
-        match event.into() {
+        match event {
             Event::TransmitDataRegisterEmtpy => isr.txe().bit(),
             Event::CtsInterrupt => isr.ctsif().bit(),
             Event::TransmissionComplete => isr.tc().bit(),
@@ -433,7 +481,7 @@ where
     /// with the configured one.
     ///
     /// If the character is matched [`Event::CharacterMatch`] is generated,
-    /// which can fire an intterrupt, if enabeled via [`Serial::listen()`]
+    /// which can fire an intterrupt, if enabeled via [`Serial::configure_interrupt()`]
     #[inline(always)]
     pub fn set_match_character(&mut self, char: u8) {
         self.usart.cr2.modify(|_, w| w.add().bits(char));
@@ -516,14 +564,14 @@ where
     /// - Can be written on the fly. If the new value is lower than or equal to the counter,
     ///   the RTOF flag is set.
     /// - Values higher than 24 bits are trunctuated to 24 bit max (16_777_216).
-    // TODO: Not avaliable for STM32F303x6/8 and STM32F328x8 USART2 and USART3
-    // Make it depended marker trait like DMA?
     pub fn receiver_timeout(&mut self, value: u32) {
         self.usart.rtor.modify(|_, w| w.rto().bits(value))
     }
 
-    // TODO: Make value smarter
-    /// Read out the currently
+    /// Read out the currently set timeout value out of the RTOR register.
+    ///
+    /// Therelationship between the unit value and time is described in
+    /// [`Serial::receiver_timeout`].
     pub fn read_receiver_timeout(&self) -> u32 {
         self.usart.rtor.read().rto().bits()
     }
@@ -535,10 +583,27 @@ where
     Usart: Instance,
 {
     type Error = Error;
-    // TODO: Document behavior of this function
-    // (like clearing the error flag)
-    // TODO: Maybe implement a read function, which ignores
-    // the error, but does not clear the error event??
+
+    /// TODO: Document behavior of this function
+    /// (like clearing the error flag)
+    ///
+    /// This function has the side effect for error handling, that the flag of the return error is
+    /// cleared.
+    ///
+    /// This might be a problem, because if an interrupt is enalbed for this particular flag, the
+    /// intterupt handler might not have the chance to find out from which flag the intterupt
+    /// originated.
+    ///
+    /// So this function is only intended to be used for direct error hanndling and not leaving it
+    /// up to the intterupt handler.
+    ///
+    /// To get the content of the read register - ignoring if an error occured, use
+    /// [`Serial::raw_read()`]
+    ///
+    /// TODO: Getting back an error means that the error is defined as "handled":
+    /// ...
+    // TODO: If error occur, should the errornous byte be skipped or not?
+    // -> According to this API it should be skipped.
     fn read(&mut self) -> nb::Result<u8, Error> {
         let isr = self.usart.isr.read();
 
@@ -558,6 +623,7 @@ where
             nb::Error::Other(Error::Noise)
         } else if isr.ore().bit_is_set() {
             self.usart.icr.write(|w| w.orecf().clear());
+            self.usart.rqr.write(|w| w.rxfrq().set_bit());
             nb::Error::Other(Error::Overrun)
         } else if isr.rxne().bit_is_set() {
             return Ok(self.usart.rdr.read().bits() as u8);
@@ -574,25 +640,10 @@ where
 {
     type Error = Error;
 
-    /// TODO:
-    ///
-    /// This function has the side effect for error handling, that the flag of the return error is
-    /// cleared.
-    ///
-    /// This might be a problem, because if an interrupt is enalbed for this particular flag, the
-    /// intterupt handler might not have the chance to find out from which flag the intterupt
-    /// originated.
-    ///
-    /// So this function is only intended to be used for direct error hanndling and not leaving it
-    /// up to the intterupt handler.
-    ///
-    /// To get the content of the read register - ignoring if an error occured, use
-    /// [`Serial::raw_read()`]
-    ///
-    /// TODO: Getting back an error means that the error is defined as "handled":
-    /// ...
-    // TODO: If error occur, should the errornous byte be skipped or not?
-    // -> According to this API it should be skipped.
+    // TODO: Maybe implement a read function, which ignores
+    // the error, but does not clear the error event??
+    // TODO: Somehow share the implementation better between those functions.
+    /// The exact behavior of this implementation is described in [`Serial::read()`].
     fn read(&mut self) -> nb::Result<u8, Error> {
         // NOTE(unsafe) atomic read with no side effects
         let isr = unsafe { self.usart().isr.read() };
@@ -615,6 +666,7 @@ where
             nb::Error::Other(Error::Noise)
         } else if isr.ore().bit_is_set() {
             icr.write(|w| w.orecf().clear());
+            unsafe { self.usart().rqr.write(|w| w.rxfrq().set_bit()) };
             nb::Error::Other(Error::Overrun)
         } else if isr.rxne().bit_is_set() {
             // NOTE(unsafe) atomic read with no side effects

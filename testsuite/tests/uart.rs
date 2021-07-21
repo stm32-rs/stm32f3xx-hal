@@ -188,6 +188,10 @@ mod tests {
         // amount of written bytes.
         //
         // The assumption, that the register could hold 32 bit is wrong!
+        // NOTE: This could be helpfull self.usart.rqr.write(|w| w.rxfrq().set_bit());
+        // TODO: This could be usefull to solve the weird overrun behavior.
+        // RM0316 29.8.7: This allows to discard the received data without reading it, and
+        // avoid an overrun condition.
         for i in &TEST_MSG[..3] {
             defmt::unwrap!(nb::block!(serial.write(*i)));
         }
