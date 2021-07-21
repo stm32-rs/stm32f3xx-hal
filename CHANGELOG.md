@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - `PXx` struct (representing a generic GPIO pin) implements `Send` and `Sync` ([#251])
 
+### Fixed
+
+- The "unproven" feature, which itself does enable the "embedded-hal/unproven"
+  features, can no longer be disabled. ([#253])
+  1. The "unproven" features are no longer unproven and used anywhere anyways.
+  2. This crate was not building successfully without the unproven feature.
+
 ### Breaking Changes
 
 - Refactor CAN to use the [`bxCan`](https://github.com/stm32-rs/bxcan) crate. ([#207])
@@ -354,6 +361,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#253]: https://github.com/stm32-rs/stm32f3xx-hal/pull/253
 [#252]: https://github.com/stm32-rs/stm32f3xx-hal/pull/252
 [#251]: https://github.com/stm32-rs/stm32f3xx-hal/pull/251
 [#247]: https://github.com/stm32-rs/stm32f3xx-hal/pull/247
