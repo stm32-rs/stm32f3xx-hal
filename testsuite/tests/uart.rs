@@ -192,30 +192,30 @@ mod tests {
         // TODO: This could be usefull to solve the weird overrun behavior.
         // RM0316 29.8.7: This allows to discard the received data without reading it, and
         // avoid an overrun condition.
-        for i in &TEST_MSG[..3] {
+        for i in &TEST_MSG[..4] {
             defmt::unwrap!(nb::block!(serial.write(*i)));
         }
         if false {
         let c = nb::block!(serial.read());
         assert!(matches!(c, Err(Error::Overrun)));
-        let _ = unwrap!(nb::block!(serial.read()));
+        // let _ = unwrap!(nb::block!(serial.read()));
         // FIXME: What happns if i add a delay here?
-        cortex_m::asm::delay(1000); // <--- 1000 as a delay is long enough, that the shift register content
+        // cortex_m::asm::delay(1000); // <--- 1000 as a delay is long enough, that the shift register content
         // is put into the read register again and than overrun flag is set again.
-        assert!(!serial.is_event_triggered(Error::Overrun));
+        assert!(!serial.is_event_triggered(Error::Overrun.into()));
         assert!(!serial.is_event_triggered(Event::OverrunError));
         // FIXME: Here is the cause, why I saw Overrun again?
         // Without this call the overrun flag is set, even
         // though I explicity checked for it before.
         defmt::debug!("{}", unwrap!(nb::block!(serial.read())));
         }
-        loop {
-            match nb::block!(serial.read()) {
-                Ok(c) => defmt::info!("{:x}", c),
-                Err(e @ Error::Overrun) => defmt::info!("{}", e),
-                Err(e) => defmt::panic!("{}", e),
-            }
-        }
+        // loop {
+        //     match nb::block!(serial.read()) {
+        //         Ok(c) => defmt::info!("{:x}", c),
+        //         Err(e @ Error::Overrun) => defmt::info!("{}", e),
+        //         Err(e) => defmt::panic!("{}", e),
+        //     }
+        // }
 
         defmt::info!("First events");
         for event in serial.triggered_events() {
