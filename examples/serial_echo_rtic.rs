@@ -9,6 +9,7 @@ mod app {
     use rtt_target::{rprintln, rtt_init_print};
     use stm32f3xx_hal::{
         gpio::{self, Output, PushPull, AF7},
+        pac,
         prelude::*,
         serial::{Event, Serial},
     };
@@ -16,14 +17,8 @@ mod app {
     #[monotonic(binds = SysTick, default = true)]
     type DwtMono = DwtSystick<48_000_000>;
 
-    type SerialType = Serial<
-        stm32f3xx_hal::pac::USART1,
-        (
-            gpio::gpioa::PA9<AF7<PushPull>>,
-            gpio::gpioa::PA10<AF7<PushPull>>,
-        ),
-    >;
-    type DirType = stm32f3xx_hal::gpio::gpioe::PE13<Output<PushPull>>;
+    type SerialType = Serial<pac::USART1, (gpio::PA9<AF7<PushPull>>, gpio::PA10<AF7<PushPull>>)>;
+    type DirType = gpio::PE13<Output<PushPull>>;
 
     #[shared]
     struct Shared {}

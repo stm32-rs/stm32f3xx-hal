@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - `PXx` struct (representing a generic GPIO pin) implements `Send` and `Sync` [#251]
+- Each pin aliases (`PA0`, `PA1`, ..) are defined under `gpio` module directly.
+  Re-export from gpio port sub-modules are provided for compatibility. [#257]
 
 ### Breaking Changes
 
@@ -351,6 +353,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#257]: https://github.com/stm32-rs/stm32f3xx-hal/pull/257
 [#255]: https://github.com/stm32-rs/stm32f3xx-hal/pull/255
 [#252]: https://github.com/stm32-rs/stm32f3xx-hal/pull/252
 [#247]: https://github.com/stm32-rs/stm32f3xx-hal/pull/247

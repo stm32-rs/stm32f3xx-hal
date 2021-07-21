@@ -1,24 +1,23 @@
 #![no_main]
 #![no_std]
 
+use core::cell::RefCell;
+
 use panic_semihosting as _;
 
-use stm32f3xx_hal as hal;
-
-use core::cell::RefCell;
-use cortex_m::asm;
-use cortex_m::interrupt::Mutex;
-use cortex_m::peripheral::NVIC;
+use cortex_m::{asm, interrupt::Mutex, peripheral::NVIC};
 use cortex_m_rt::entry;
-use hal::gpio::{gpioa, gpioe, Edge, Input, Output, PushPull};
-use hal::interrupt;
-use hal::pac;
-use hal::prelude::*;
 
-type LedPin = gpioe::PE9<Output<PushPull>>;
+use stm32f3xx_hal::{
+    gpio::{self, Edge, Input, Output, PushPull},
+    interrupt, pac,
+    prelude::*,
+};
+
+type LedPin = gpio::PE9<Output<PushPull>>;
 static LED: Mutex<RefCell<Option<LedPin>>> = Mutex::new(RefCell::new(None));
 
-type ButtonPin = gpioa::PA0<Input>;
+type ButtonPin = gpio::PA0<Input>;
 static BUTTON: Mutex<RefCell<Option<ButtonPin>>> = Mutex::new(RefCell::new(None));
 
 // When the user button is pressed. The north LED will toggle.
