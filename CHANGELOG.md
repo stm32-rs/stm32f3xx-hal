@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Each pin aliases (`PA0`, `PA1`, ..) are defined under `gpio` module directly.
   Re-export from gpio port sub-modules are provided for compatibility. [#257]
 
+### Fixed
+
+- The "unproven" feature, which itself does enable the "embedded-hal/unproven"
+  features, can no longer be disabled. ([#259])
+  1. The "unproven" features are no longer unproven and used anywhere anyways.
+  2. This crate was not building successfully without the unproven feature.
+
 ### Breaking Changes
 
 - Refactor CAN to use the [`bxCan`](https://github.com/stm32-rs/bxcan) crate. ([#207])
@@ -360,6 +367,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#259]: https://github.com/stm32-rs/stm32f3xx-hal/pull/259
 [#257]: https://github.com/stm32-rs/stm32f3xx-hal/pull/257
 [#255]: https://github.com/stm32-rs/stm32f3xx-hal/pull/255
 [#252]: https://github.com/stm32-rs/stm32f3xx-hal/pull/252

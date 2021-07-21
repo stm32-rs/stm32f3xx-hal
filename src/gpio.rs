@@ -69,7 +69,6 @@ use crate::{
     syscfg::SysCfg,
 };
 
-#[cfg(feature = "unproven")]
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers
@@ -499,7 +498,6 @@ where
     }
 }
 
-#[cfg(feature = "unproven")]
 impl<Gpio, Index, Mode> InputPin for Pin<Gpio, Index, Mode>
 where
     Gpio: marker::Gpio,
@@ -518,7 +516,6 @@ where
     }
 }
 
-#[cfg(feature = "unproven")]
 impl<Gpio, Index, Otype> StatefulOutputPin for Pin<Gpio, Index, Output<Otype>>
 where
     Gpio: marker::Gpio,
@@ -534,7 +531,6 @@ where
     }
 }
 
-#[cfg(feature = "unproven")]
 impl<Gpio, Index, Otype> toggleable::Default for Pin<Gpio, Index, Output<Otype>>
 where
     Gpio: marker::Gpio,
