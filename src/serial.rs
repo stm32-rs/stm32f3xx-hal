@@ -15,6 +15,7 @@ use crate::{
     pac::{self, rcc::cfgr3::USART1SW_A, usart1::RegisterBlock, USART1, USART2, USART3},
     rcc::{Clocks, APB1, APB2},
     time::rate::*,
+    Toggle,
 };
 
 #[allow(unused_imports)]
@@ -27,7 +28,10 @@ use enumset::{EnumSet, EnumSetType};
 use crate::dma;
 use cortex_m::interrupt;
 
-/// Interrupt and status events
+/// Interrupt and status events.
+///
+/// All events can be cleared by [`Serial::clear_event`] or [`Serial::clear_events`].
+/// Some events are also cleared on other conditions.
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[cfg_attr(feature = "enumset", derive(EnumSetType))]
@@ -38,6 +42,7 @@ pub enum Event {
     ///
     /// This event is set by hardware when the content of the TDR register has been transferred
     /// into the shift register. It is cleared by a [`Serial::write`] to the TDR register.
+    #[doc(alias = "TDRE")] // TOOD: Check if that is correct
     TransmitDataRegisterEmtpy,
     /// CTS (Clear to Send) event.
     ///
@@ -47,12 +52,15 @@ pub enum Event {
     ///
     /// This event is set by hardware if the transmission of a frame containing data is complete and
     /// if TXE is set.
+    /// It is cleared by a [`Serial::write()`] to the USART_TDR register.
+    #[doc(alias = "TC")]
     TransmissionComplete,
     /// Read data register not empty / new data has been received.
     ///
     /// This event is set by hardware when the content of the RDR shift register has been
     /// transferred to the RDR register.
-    /// It is cleared by a read to the USART_RDR register.
+    /// It is cleared by a [`Serial::read()`] to the USART_RDR register.
+    #[doc(alias = "RXNE")]
     ReceiveDataRegisterNotEmpty,
     /// Overrun Error detected.
     ///
@@ -96,6 +104,7 @@ pub enum Event {
     ///
     /// Never set for UART peripheral, which does not have [`ReceiverTimeoutFeature`]
     /// implemented.
+    #[doc(alias = "RTOF")]
     ReceiverTimeout,
     // TODO: SmartCard Mode not implemented, no use as of now.
     // EndOfBlock,
@@ -316,6 +325,7 @@ mod split {
 pub use split::{Rx, Tx};
 
 /// The flag to select the wakeup from stopmode behavior
+#[doc(alias = "WUS")]
 pub type StopModeWakeup = pac::usart1::cr3::WUS_A;
 
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
@@ -352,7 +362,9 @@ where
 
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
-    pub fn configure_interrupt(&mut self, event: Event, enable: bool) -> &mut Self {
+    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) -> &mut Self {
+        // Do a round way trip to be convert Into<Toggle> -> bool
+        let enable: bool = Toggle::from(enable.into()).into();
         match event {
             Event::TransmitDataRegisterEmtpy => self.usart.cr1.modify(|_, w| w.txeie().bit(enable)),
             Event::CtsInterrupt => self.usart.cr3.modify(|_, w| w.ctsie().bit(enable)),
@@ -380,6 +392,7 @@ where
     /// interrupt for every [`Event`] in the set will be enabled, every other interrupt will be
     /// **disabled**.
     #[cfg(feature = "enumset")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
     pub fn configure_interrupts(&mut self, events: EnumSet<Event>) -> &mut Self {
         for event in events.iter() {
             self.configure_interrupt(event, true);
@@ -393,11 +406,13 @@ where
 
     /// Serial read out of the read register
     ///
-    /// No error handling and no side-effects.
+    /// No error handling and no additional side-effects, besides the implied
+    /// side-effects when reading out the RDR register.
     /// Handling errors has to be done manually. This can be done, by checking
     /// the triggered events via [`Serial::triggered_events`].
     ///
     /// Returns `None` if the hardware is busy.
+    #[doc(alias = "RDR")]
     pub fn raw_read(&self) -> Option<u8> {
         if self.usart.isr.read().busy().bit_is_set() {
             return None
@@ -407,6 +422,7 @@ where
 
     /// Get an [`EnumSet`] of all fired interrupt events.
     #[cfg(feature = "enumset")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
     pub fn triggered_events(&self) -> EnumSet<Event> {
         let mut events = EnumSet::new();
 
@@ -419,7 +435,7 @@ where
         events
     }
 
-    /// Clear **all** interrut events.
+    /// Clear **all** interrupt events.
     #[inline]
     pub fn clear_events(&mut self) {
         // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
@@ -556,7 +572,7 @@ where
 {
     /// Set the receiver timeout value.
     ///
-    /// The RTOF flag [`Event::ReceiverTimeout`] is set if, after the last received character,
+    /// The RTOF flag ([`Event::ReceiverTimeout`]) is set if, after the last received character,
     /// no new start bit is detected for more than the RTO value, where the value
     /// is beeing a counter, which is decresed by the configured baud rate.
     ///

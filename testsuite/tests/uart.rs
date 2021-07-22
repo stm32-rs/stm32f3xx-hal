@@ -115,7 +115,10 @@ mod tests {
         }
         let c = nb::block!(rx.read());
         assert!(matches!(c, Err(Error::Overrun)));
-        let _ = unwrap!(nb::block!(rx.read()));
+        let c = unwrap!(nb::block!(rx.read()));
+        assert_eq!(c, TEST_MSG[3]);
+        let c = unwrap!(nb::block!(rx.read()));
+        assert_eq!(c, TEST_MSG[4]);
         let mut serial = Serial::join(tx, rx);
         for event in serial.triggered_events() {
             defmt::debug!("{}", event);
