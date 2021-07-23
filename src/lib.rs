@@ -245,4 +245,3 @@ impl From<bool> for Toggle {
         }
     }
 }
-

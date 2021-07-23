@@ -7,7 +7,10 @@
 //! [`Read`]: embedded_hal::serial::Read
 //! [`Write`]: embedded_hal::serial::Write
 
-use core::{convert::Infallible, ops::Deref};
+use core::{
+    convert::{Infallible, TryFrom},
+    ops::Deref,
+};
 
 use crate::{
     gpio::{gpioa, gpiob, gpioc, AF7},
@@ -182,6 +185,24 @@ impl From<Error> for Event {
             Error::Noise => Event::NoiseError,
             Error::Parity => Event::ParityError,
         }
+    }
+}
+
+/// The error type returned when a [`Event`] to [`Error`] conversion failed.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct TryFromEventError(pub(crate) ());
+
+impl TryFrom<Event> for Error {
+    type Error = TryFromEventError;
+    fn try_from(event: Event) -> Result<Self, Self::Error> {
+        Ok(match event {
+            Event::FramingError => Error::Framing,
+            Event::OverrunError => Error::Overrun,
+            Event::NoiseError => Error::Noise,
+            Event::ParityError => Error::Parity,
+            _ => return Err(TryFromEventError(())),
+        })
     }
 }
 
