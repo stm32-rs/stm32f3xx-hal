@@ -1347,7 +1347,7 @@ macro_rules! usart_static_clock {
 macro_rules! usart_var_clock {
     ($($usartXclock:ident, $usartXsw:ident, $pclkX:ident),+) => {
         $(
-            /// Return the currently set source frequency the UART peripheral
+            /// Return the currently set source frequency for the UART peripheral
             /// depending on the clock source.
             fn $usartXclock(clocks: &Clocks) -> Hertz {
                 // NOTE(unsafe): atomic read with no side effects
