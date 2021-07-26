@@ -690,6 +690,21 @@ where
         self
     }
 
+    /// Enable or disable overrun detection
+    ///
+    /// When overrun detection is disabled and new data is received while the
+    /// [`Event::ReceiveDataRegisterNotEmpty`] flag is still set,
+    /// the [`Event::OverrunError`] flag is not set and the new received data overwrites the
+    /// previous content of the RDR register.
+    #[doc(alias = "OVRDIS")]
+    #[inline]
+    pub fn detect_overrun(&mut self, enable: bool) {
+        let uart_enabled = self.usart.cr1.read().ue().bit();
+        self.usart.cr1.modify(|_, w| w.ue().disabled());
+        self.usart.cr3.modify(|_, w| w.ovrdis().bit(!enable));
+        self.usart.cr1.modify(|_, w| w.ue().bit(uart_enabled));
+    }
+
     /// Get an [`EnumSet`] of all fired interrupt events.
     ///
     /// # Examples

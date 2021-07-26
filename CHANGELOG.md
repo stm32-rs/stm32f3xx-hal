@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   Useful to block on this function, e.g. `while serial.is_busy() {}`. ([#253])
 - Add `BaudTable` a convinience wrapper around `Baud` to configure the `Serial`
   to the most commen baud rates. ([#253])
+- Add `Serial::detect_overrun()` function, to en- or disable the overrun
+  detection of the `Serial`. If overrun is disabled (enabled by default), than
+  newly arrived bytes are overwriting the current data in the read receive
+  register without throwing any event. ([#253]).
 
 [`enumset`]: https://crates.io/crates/enumset
 
