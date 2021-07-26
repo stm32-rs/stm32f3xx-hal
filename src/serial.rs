@@ -206,6 +206,59 @@ impl TryFrom<Event> for Error {
     }
 }
 
+/// An convinicnce enum for the most typical baud rates
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
+#[allow(missing_docs)]
+pub enum BaudTable {
+    Bd1200,
+    Bd9600,
+    Bd19200,
+    Bd38400,
+    Bd57600,
+    Bd115200,
+    Bd230400,
+    Bd460800,
+}
+
+impl From<BaudTable> for Baud {
+    fn from(baud: BaudTable) -> Self {
+        match baud {
+            BaudTable::Bd1200 => Baud(1200),
+            BaudTable::Bd9600 => Baud(9600),
+            BaudTable::Bd19200 => Baud(19200),
+            BaudTable::Bd38400 => Baud(38400),
+            BaudTable::Bd57600 => Baud(57600),
+            BaudTable::Bd115200 => Baud(115200),
+            BaudTable::Bd230400 => Baud(230400),
+            BaudTable::Bd460800 => Baud(460800),
+        }
+    }
+}
+
+/// The error type returned when a [`Baud`] to [`BaudTable`] conversion failed.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct TryFromBaudError(pub(crate) ());
+
+impl TryFrom<Baud> for BaudTable {
+    type Error = TryFromBaudError;
+    fn try_from(baud: Baud) -> Result<Self, Self::Error> {
+        Ok(match baud {
+            Baud(1200) => BaudTable::Bd1200,
+            Baud(9600) => BaudTable::Bd9600,
+            Baud(19200) => BaudTable::Bd19200,
+            Baud(38400) => BaudTable::Bd38400,
+            Baud(57600) => BaudTable::Bd57600,
+            Baud(115200) => BaudTable::Bd115200,
+            Baud(230400) => BaudTable::Bd230400,
+            Baud(460800) => BaudTable::Bd460800,
+            _ => return Err(TryFromBaudError(())),
+        })
+    }
+}
+
 /// TX pin
 pub trait TxPin<Usart>: crate::private::Sealed {}
 

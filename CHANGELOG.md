@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   An `nvic()` function to `Serial` was also added for convinience. ([#253])
 - Add a `Serial::is_busy()` function to check, if the serial device is busy.
   Useful to block on this function, e.g. `while serial.is_busy() {}`. ([#253])
+- Add `BaudTable` a convinience wrapper around `Baud` to configure the `Serial`
+  to the most commen baud rates. ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 
