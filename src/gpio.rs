@@ -251,6 +251,8 @@ impl<Otype> marker::Active for Output<Otype> {}
 impl<Otype, const AF: u8> marker::Active for Alternate<Otype, AF> {}
 
 /// Slew rate configuration
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Speed {
     /// Low speed
     Low,
@@ -261,6 +263,8 @@ pub enum Speed {
 }
 
 /// Internal pull-up and pull-down resistor configuration
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Resistor {
     /// Floating
     Floating,
@@ -271,6 +275,8 @@ pub enum Resistor {
 }
 
 /// GPIO interrupt trigger edge selection
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Edge {
     /// Rising edge of voltage
     Rising,
