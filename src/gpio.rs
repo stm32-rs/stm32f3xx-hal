@@ -210,6 +210,9 @@ impl private::Gpio for Gpiox {
 impl marker::Gpio for Gpiox {}
 
 /// Runtime defined pin number (type state)
+// TODO(Sh3Rm4n): If the pin number wouldn't be runtime defined, the implementation for all
+// statically defined pins would be much easier (and withless overhead). What could be the
+// solution?
 pub struct Ux(u8);
 
 impl marker::Index for Ux {
