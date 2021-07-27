@@ -626,6 +626,7 @@ where
             Edge::Falling => (false as u32, true as u32),
             Edge::RisingFalling => (true as u32, true as u32),
         };
+        // SAFETY: Unguarded write to the register, but behind a &mut
         unsafe {
             modify_at!(reg_for_cpu!(exti, rtsr), BITWIDTH, index, rise);
             modify_at!(reg_for_cpu!(exti, ftsr), BITWIDTH, index, fall);
@@ -644,6 +645,7 @@ where
 
         let index = self.index.index();
         let value = u32::from(enable);
+        // SAFETY: Unguarded write to the register, but behind a &mut
         unsafe { modify_at!(reg_for_cpu!(exti, imr), BITWIDTH, index, value) };
     }
 
@@ -659,11 +661,13 @@ where
 
     /// Clear the interrupt pending bit for this pin
     pub fn clear_interrupt(&mut self) {
+        // SAFETY: Atomic write to register without side-effects.
         unsafe { reg_for_cpu!((*EXTI::ptr()), pr).write(|w| w.bits(1 << self.index.index())) };
     }
 
     /// Reads the interrupt pending bit for this pin
     pub fn is_interrupt_pending(&self) -> bool {
+        // SAFETY: Atomic write to register without side-effects.
         unsafe { reg_for_cpu!((*EXTI::ptr()), pr).read().bits() & (1 << self.index.index()) != 0 }
     }
 }
