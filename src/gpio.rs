@@ -603,21 +603,23 @@ where
     ///
     /// For example, only on of `PA1`, `PB1`, `PC1`, ... can be activated.
     pub fn make_interrupt_source(&mut self, syscfg: &mut SysCfg) {
-        let bitwidth = 4;
+        const BITWIDTH: u8 = 4;
         let index = self.index.index() % 4;
         let extigpionr = self.gpio.port_index() as u32;
         match self.index.index() {
-            0..=3 => unsafe { modify_at!(syscfg.exticr1, bitwidth, index, extigpionr) },
-            4..=7 => unsafe { modify_at!(syscfg.exticr2, bitwidth, index, extigpionr) },
-            8..=11 => unsafe { modify_at!(syscfg.exticr3, bitwidth, index, extigpionr) },
-            12..=15 => unsafe { modify_at!(syscfg.exticr4, bitwidth, index, extigpionr) },
+            // SAFETY: These are all unguarded writes directly to the register,
+            // without leveraging the safety of stm32f3 generated values.
+            0..=3 => unsafe { modify_at!(syscfg.exticr1, BITWIDTH, index, extigpionr) },
+            4..=7 => unsafe { modify_at!(syscfg.exticr2, BITWIDTH, index, extigpionr) },
+            8..=11 => unsafe { modify_at!(syscfg.exticr3, BITWIDTH, index, extigpionr) },
+            12..=15 => unsafe { modify_at!(syscfg.exticr4, BITWIDTH, index, extigpionr) },
             _ => unreachable!(),
         };
     }
 
     /// Generate interrupt on rising edge, falling edge, or both
     pub fn trigger_on_edge(&mut self, exti: &mut EXTI, edge: Edge) {
-        let bitwidth = 1;
+        const BITWIDTH: u8 = 1;
         let index = self.index.index();
         let (rise, fall) = match edge {
             Edge::Rising => (true as u32, false as u32),
@@ -625,8 +627,8 @@ where
             Edge::RisingFalling => (true as u32, true as u32),
         };
         unsafe {
-            modify_at!(reg_for_cpu!(exti, rtsr), bitwidth, index, rise);
-            modify_at!(reg_for_cpu!(exti, ftsr), bitwidth, index, fall);
+            modify_at!(reg_for_cpu!(exti, rtsr), BITWIDTH, index, rise);
+            modify_at!(reg_for_cpu!(exti, ftsr), BITWIDTH, index, fall);
         }
     }
 
@@ -635,13 +637,14 @@ where
     /// Remeber to also configure the interrupt pin on
     /// the SysCfg site, with [`Pin::make_interrupt_source()`]
     pub fn configure_interrupt(&mut self, exti: &mut EXTI, enable: impl Into<Toggle>) {
+        const BITWIDTH: u8 = 1;
+
         let enable: Toggle = enable.into();
         let enable: bool = enable.into();
 
-        let bitwidth = 1;
         let index = self.index.index();
         let value = u32::from(enable);
-        unsafe { modify_at!(reg_for_cpu!(exti, imr), bitwidth, index, value) };
+        unsafe { modify_at!(reg_for_cpu!(exti, imr), BITWIDTH, index, value) };
     }
 
     /// Enable external interrupts from this pin
@@ -902,8 +905,8 @@ macro_rules! gpio {
                 impl Afr for AFRH {
                     #[inline]
                     fn afx(&mut self, i: u8, x: u8) {
-                        let bitwidth = 4;
-                        unsafe { modify_at!((*$GPIOX::ptr()).afrh, bitwidth, i - 8, x as u32) };
+                        const BITWIDTH: u8 = 4;
+                        unsafe { modify_at!((*$GPIOX::ptr()).afrh, BITWIDTH, i - 8, x as u32) };
                     }
                 }
 
@@ -913,8 +916,8 @@ macro_rules! gpio {
                 impl Afr for AFRL {
                     #[inline]
                     fn afx(&mut self, i: u8, x: u8) {
-                        let bitwidth = 4;
-                        unsafe { modify_at!((*$GPIOX::ptr()).afrl, bitwidth, i, x as u32) };
+                        const BITWIDTH: u8 = 4;
+                        unsafe { modify_at!((*$GPIOX::ptr()).afrl, BITWIDTH, i, x as u32) };
                     }
                 }
 
