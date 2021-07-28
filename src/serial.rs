@@ -32,12 +32,12 @@ use cortex_m::interrupt;
 
 /// Interrupt event
 pub enum Event {
-    /// New data has been received
-    Rxne,
     /// New data can be sent
-    Txe,
+    TransmitDataRegisterEmtpy,
     /// Transmission complete
-    Tc,
+    TransmissionComplete,
+    /// New data has been received
+    ReceiveDataRegisterNotEmpty,
     /// Idle line state detected
     Idle,
 }
@@ -367,22 +367,22 @@ where
 
     /// Starts listening for an interrupt event
     pub fn listen(&mut self, event: Event) {
-        match event {
-            Event::Rxne => self.usart.cr1.modify(|_, w| w.rxneie().enabled()),
-            Event::Txe => self.usart.cr1.modify(|_, w| w.txeie().enabled()),
-            Event::Tc => self.usart.cr1.modify(|_, w| w.tcie().enabled()),
-            Event::Idle => self.usart.cr1.modify(|_, w| w.idleie().enabled()),
-        }
+        self.usart.cr1.modify(|_, w| match event {
+            Event::TransmitDataRegisterEmtpy => w.txeie().enabled(),
+            Event::TransmissionComplete => w.tcie().enabled(),
+            Event::ReceiveDataRegisterNotEmpty => w.rxneie().enabled(),
+            Event::Idle => w.idleie().enabled(),
+        });
     }
 
     /// Stops listening for an interrupt event
     pub fn unlisten(&mut self, event: Event) {
-        match event {
-            Event::Rxne => self.usart.cr1.modify(|_, w| w.rxneie().disabled()),
-            Event::Txe => self.usart.cr1.modify(|_, w| w.txeie().disabled()),
-            Event::Tc => self.usart.cr1.modify(|_, w| w.tcie().disabled()),
-            Event::Idle => self.usart.cr1.modify(|_, w| w.idleie().disabled()),
-        }
+        self.usart.cr1.modify(|_, w| match event {
+            Event::TransmitDataRegisterEmtpy => w.txeie().disabled(),
+            Event::TransmissionComplete => w.tcie().disabled(),
+            Event::ReceiveDataRegisterNotEmpty => w.rxneie().disabled(),
+            Event::Idle => w.idleie().disabled(),
+        });
     }
 
     /// Return true if the tx register is empty (and can accept data)
