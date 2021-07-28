@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   and `From<Error>` is implemented for conversions. ([#253])
 - Add serial character match function, with which events can be triggered for
   the set character. ([#253])
+- Add receiver timeout function, which configures the serial peripheral to
+  trigger an event, if nothing happened after a certain time on the serial
+  receiver line. ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 

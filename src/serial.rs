@@ -675,6 +675,51 @@ where
     }
 }
 
+impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
+where
+    Usart: Instance + ReceiverTimeoutExt,
+{
+    /// Set the receiver timeout value.
+    ///
+    /// The RTOF flag ([`Event::ReceiverTimeout`]) is set if, after the last received character,
+    /// no new start bit is detected for more than the receiver timeout value, where the value
+    /// is being a counter, which is decreased by the configured baud rate.
+    ///
+    /// A simple calculation might be `time_per_counter_value = 1 / configured_baud_rate`
+    ///
+    ///
+    /// ## Note
+    ///
+    /// - If the value is None, the receiver timeout feature is disabled.
+    /// - This value must only be programmed once per received character.
+    /// - Can be written on the fly. If the new value is lower than or equal to the counter,
+    ///   the RTOF flag is set.
+    /// - Values higher than 24 bits are truncated to 24 bit max (16_777_216).
+    pub fn set_receiver_timeout(&mut self, value: Option<u32>) {
+        if let Some(value) = value {
+            self.usart.cr2.modify(|_, w| w.rtoen().enabled());
+            self.usart.rtor.modify(|_, w| w.rto().bits(value))
+        } else {
+            self.usart.cr2.modify(|_, w| w.rtoen().disabled());
+        }
+    }
+
+    /// Read out the currently set timeout value
+    ///
+    /// The relationship between the unit value and time is described in
+    /// [`Serial::receiver_timeout`].
+    ///
+    /// - If the value is None, the receiver timeout feature is disabled.
+    pub fn receiver_timeout(&self) -> Option<u32> {
+        if self.usart.cr2.read().rtoen().is_enabled() {
+            Some(self.usart.rtor.read().rto().bits())
+        } else {
+            None
+        }
+    }
+}
+
+
 // TODO: Check if u16 for WORD is feasiable / possible
 impl<Usart, Tx, Rx> serial::Read<u8> for Serial<Usart, (Tx, Rx)>
 where
@@ -964,6 +1009,15 @@ impl Dma for USART1 {}
 impl Dma for USART2 {}
 impl Dma for USART3 {}
 
+/// Marker trait for Receiver Timeout capable UART implementations.
+pub trait ReceiverTimeoutExt: crate::private::Sealed {}
+
+impl ReceiverTimeoutExt for USART1 {}
+#[cfg(not(any(feature = "gpio-f333")))]
+impl ReceiverTimeoutExt for USART2 {}
+#[cfg(not(any(feature = "gpio-f333")))]
+impl ReceiverTimeoutExt for USART3 {}
+
 /// UART instance
 pub trait Instance: Deref<Target = RegisterBlock> + crate::private::Sealed {
     /// Peripheral bus instance which is responsible for the peripheral
@@ -1166,5 +1220,8 @@ cfg_if::cfg_if! {
         uart!([(4,1), (5,1)]);
 
         impl Dma for UART4 {}
+
+        impl ReceiverTimeoutExt for UART4 {}
+        impl ReceiverTimeoutExt for UART5 {}
     }
 }
