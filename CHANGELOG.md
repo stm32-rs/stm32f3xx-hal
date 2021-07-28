@@ -32,8 +32,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   features, can no longer be disabled. ([#259])
   1. The "unproven" features are no longer unproven and used anywhere anyways.
   2. This crate was not building successfully without the unproven feature.
-- Set the correct baud rate for chips where `USART1SW_A::PCLK` leads to a baud rate 
-  derived from PCLK1, rather than the ports own bus clock, PCLK2. ([#260])
+- Set the correct baud rate for chips where `USART1SW_A::PCLK` leads to a
+  baud rate derived from PCLK1, rather than the ports own bus clock, PCLK2.
+  ([#260])
 
 ### Breaking Changes
 
