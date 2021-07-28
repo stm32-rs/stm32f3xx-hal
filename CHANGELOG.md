@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add receiver timeout function, which configures the serial peripheral to
   trigger an event, if nothing happened after a certain time on the serial
   receiver line. ([#253])
+- Add `raw_read()` function, which does no error handling and also does not
+  clear any `Event` by itself. Useful, if the error_handling has to be done in
+  another context (like an interrupt rountine). ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 

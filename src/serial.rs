@@ -492,6 +492,22 @@ where
         Self { usart, pins }
     }
 
+    /// Serial read out of the read register
+    ///
+    /// No error handling and no additional side-effects, besides the implied
+    /// side-effects when reading out the RDR register.
+    /// Handling errors has to be done manually. This can be done, by checking
+    /// the triggered events via [`Serial::triggered_events`].
+    ///
+    /// Returns `None` if the hardware is busy.
+    #[doc(alias = "RDR")]
+    pub fn raw_read(&self) -> Option<u8> {
+        if self.usart.isr.read().busy().bit_is_set() {
+            return None
+        }
+        Some(self.usart.rdr.read().rdr().bits() as u8)
+    }
+
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
     pub fn configure_interrupt(&mut self, event: Event, enable: bool) -> &mut Self {
