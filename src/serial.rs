@@ -413,6 +413,18 @@ where
         events
     }
 
+    /// Check if an interrupt even happend.
+    pub fn is_event(&self, event: Event) -> bool {
+        let isr = self.usart.isr.read();
+        match event {
+            Event::TransmitDataRegisterEmtpy => isr.txe().bit_is_set(),
+            Event::TransmissionComplete => isr.tc().bit_is_set(),
+            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit_is_set(),
+            Event::Idle => isr.idle().bit_is_set(),
+            _ => false,
+        }
+    }
+
     /// Return true if the tx register is empty (and can accept data)
     pub fn is_txe(&self) -> bool {
         self.usart.isr.read().txe().bit_is_set()
