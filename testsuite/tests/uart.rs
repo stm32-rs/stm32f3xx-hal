@@ -111,7 +111,11 @@ mod tests {
 
         let mut rcc = dp.RCC.constrain();
         let mut flash = dp.FLASH.constrain();
-        let clocks = rcc.cfgr.freeze(&mut flash.acr);
+        let clocks = rcc
+            .cfgr
+            .use_hse(8.MHz())
+            .sysclk(64.MHz())
+            .freeze(&mut flash.acr);
         let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
         let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
 
