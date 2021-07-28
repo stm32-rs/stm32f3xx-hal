@@ -869,8 +869,17 @@ macro_rules! usart_var_clock {
 }
 
 cfg_if::cfg_if! {
-    if #[cfg(any(feature = "svd-f301", feature = "svd-f3x4"))] {
-        usart_var_clock!([(1,2)]);
+    if #[cfg(all(
+        any(
+            feature = "mem-4",
+            feature = "mem-6",
+            feature = "mem-8",
+        ),
+        not(feature = "svd-f373")
+    ))] {
+        // USART1 is accessed through APB2,
+        // but USART1SW_A::PCLK will connect its phy to PCLK1.
+        usart_var_clock!([(1,1)]);
         // These are uart peripherals, where the only clock source
         // is the PCLK (peripheral clock).
         usart_static_clock!([(2,1), (3,1)]);
