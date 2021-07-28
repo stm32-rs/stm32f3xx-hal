@@ -47,6 +47,7 @@ stm32f3 = "0.13.2"
 bxcan = { version = ">=0.4, <0.6", optional = true }
 stm32-usbd = { version = "0.6.0", optional = true }
 void = { version = "1.0.2", default-features = false }
+enumset = "1.0.6"
 
 [dev-dependencies]
 cortex-m = "0.7.2"

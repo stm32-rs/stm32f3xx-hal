@@ -26,11 +26,15 @@ use crate::{
 use crate::pac::RCC;
 
 use cfg_if::cfg_if;
+use enumset::{EnumSet, EnumSetType};
 
 use crate::dma;
 use cortex_m::interrupt;
 
 /// Interrupt event
+#[derive(Debug, EnumSetType)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
 pub enum Event {
     /// New data can be sent
     TransmitDataRegisterEmtpy,
@@ -383,6 +387,30 @@ where
             Event::ReceiveDataRegisterNotEmpty => w.rxneie().disabled(),
             Event::Idle => w.idleie().disabled(),
         });
+    }
+
+    /// Get an [`EnumSet`] of all fired intterupt events
+    pub fn events(&self) -> EnumSet<Event> {
+        let mut events = EnumSet::new();
+        let isr = self.usart.isr.read();
+
+        if isr.txe().bit_is_set() {
+            events |= Event::TransmitDataRegisterEmtpy;
+        }
+        if isr.tc().bit_is_set() {
+            events |= Event::TransmissionComplete;
+        }
+        if isr.rxne().bit_is_set() {
+            events |= Event::ReceiveDataRegisterNotEmpty;
+        }
+        if isr.idle().bit_is_set() {
+            events |= Event::Idle;
+        }
+        if isr.cmf().bit_is_set() {
+            events |= Event::CharacterMatch;
+        }
+
+        events
     }
 
     /// Return true if the tx register is empty (and can accept data)
