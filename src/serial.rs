@@ -729,7 +729,9 @@ where
     fn read(&mut self) -> nb::Result<u8, Error> {
         let isr = self.usart.isr.read();
 
-        Err(if isr.pe().bit_is_set() {
+        Err(if isr.busy().bit_is_set() {
+            nb::Error::WouldBlock
+        } else if isr.pe().bit_is_set() {
             self.usart.icr.write(|w| w.pecf().clear());
             nb::Error::Other(Error::Parity)
         } else if isr.fe().bit_is_set() {
@@ -762,7 +764,9 @@ where
 
         // NOTE(unsafe, write) write accessor for atomic writes with no side effects
         let icr = unsafe { &self.usart().icr };
-        Err(if isr.pe().bit_is_set() {
+        Err(if isr.busy().bit_is_set() {
+            nb::Error::WouldBlock
+        } else if isr.pe().bit_is_set() {
             icr.write(|w| w.pecf().clear());
             nb::Error::Other(Error::Parity)
         } else if isr.fe().bit_is_set() {
