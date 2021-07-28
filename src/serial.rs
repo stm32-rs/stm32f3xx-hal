@@ -550,6 +550,27 @@ where
         }
     }
 
+    /// Configuring the UART to match each received character,
+    /// with the configured one.
+    ///
+    /// If the character is matched [`Event::CharacterMatch`] is generated,
+    /// which can fire an interrupt, if enabled via [`Serial::configure_interrupt()`]
+    #[inline(always)]
+    pub fn set_match_character(&mut self, char: u8) {
+        // Note: This bit field can only be written when reception is disabled (RE = 0) or the
+        // USART is disabled
+        let enabled = self.usart.cr1.read().ue().bit_is_set();
+        self.usart.cr1.modify(|_, w| w.ue().disabled());
+        self.usart.cr2.modify(|_, w| w.add().bits(char));
+        self.usart.cr1.modify(|_, w| w.ue().bit(enabled));
+    }
+
+    /// Read out the configured match character.
+    #[inline(always)]
+    pub fn match_character(&self) -> u8 {
+        self.usart.cr2.read().add().bits()
+    }
+
     /// Return true if the tx register is empty (and can accept data)
     pub fn is_txe(&self) -> bool {
         self.usart.isr.read().txe().bit_is_set()

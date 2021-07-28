@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#253])
 - As serial `Error` and serial `Events` share things in common. `TryFrom<Event>`
   and `From<Error>` is implemented for conversions. ([#253])
+- Add serial character match function, with which events can be triggered for
+  the set character. ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 
