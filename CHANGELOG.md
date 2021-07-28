@@ -39,7 +39,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - `PXx` struct (representing a generic GPIO pin) implements `Send` and `Sync` ([#251])
 - Each pin aliases (`PA0`, `PA1`, ..) are defined under `gpio` module directly.
-  Re-export from gpio port sub-modules are provided for compatibility. [#257]
+  Re-export from gpio port sub-modules are provided for compatibility. ([#257])
+- The `embedded-hal` Read implementation of `Serial` does now return `WoudBlock`
+  if the peripheral is busy. Also if an `Overrun` occured the receive data
+  register (RDR) is flushed to have a more consistent API. ([#253])
 
 ### Fixed
 

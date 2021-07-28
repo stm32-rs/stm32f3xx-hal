@@ -118,7 +118,7 @@ pub enum Event {
     /// implemented.
     #[doc(alias = "RTOF")]
     ReceiverTimeout,
-    // TODO: SmartCard Mode not implemented, no use as of now.
+    // TODO(Sh3Rm4n): SmartCard Mode not implemented, no use as of now.
     // EndOfBlock,
     // TODO(Sh3Rm4n): The wakeup from stop mode is alittle bit more complicated:
     // - UESM has to be enabled so that it works (RM0316 29.8.1)
@@ -388,6 +388,16 @@ mod split {
             &self.usart
         }
 
+        /// Get a reference to internal usart peripheral
+        ///
+        /// # Saftey
+        ///
+        /// Same as in [`Self::usart()`].
+        #[allow(dead_code)]
+        pub(crate) unsafe fn usart_mut(&mut self) -> &mut Usart {
+            &mut self.usart
+        }
+
         /// Destruct [`Tx`] to regain access to underlying USART and pin.
         pub(crate) fn free(self) -> (Usart, Pin) {
             (self.usart, self.pin)
@@ -420,6 +430,15 @@ mod split {
         /// the peripheral, which do not effect the other.
         pub(crate) unsafe fn usart(&self) -> &Usart {
             &self.usart
+        }
+
+        /// Get a reference to internal usart peripheral
+        ///
+        /// # Saftey
+        ///
+        /// Same as in [`Self::usart()`].
+        pub(crate) unsafe fn usart_mut(&mut self) -> &mut Usart {
+            &mut self.usart
         }
 
         /// Destruct [`Rx`] to regain access to the underlying pin.
@@ -503,7 +522,7 @@ where
     #[doc(alias = "RDR")]
     pub fn raw_read(&self) -> Option<u8> {
         if self.usart.isr.read().busy().bit_is_set() {
-            return None
+            return None;
         }
         Some(self.usart.rdr.read().rdr().bits() as u8)
     }
@@ -747,6 +766,61 @@ where
     }
 }
 
+/// Implementation of the [`embedded_hal::serial::Read`] trait
+/// shared between [`Rx::read()`] and [`Serial::read()`]
+fn eh_read<Usart>(usart: &mut Usart) -> nb::Result<u8, Error>
+where
+    Usart: Instance,
+{
+    let isr = usart.isr.read();
+
+    Err(if isr.busy().bit_is_set() {
+        nb::Error::WouldBlock
+    } else if isr.pe().bit_is_set() {
+        usart.icr.write(|w| w.pecf().clear());
+        nb::Error::Other(Error::Parity)
+    } else if isr.fe().bit_is_set() {
+        usart.icr.write(|w| w.fecf().clear());
+        nb::Error::Other(Error::Framing)
+    } else if isr.nf().bit_is_set() {
+        usart.icr.write(|w| w.ncf().clear());
+        nb::Error::Other(Error::Noise)
+    } else if isr.ore().bit_is_set() {
+        usart.icr.write(|w| w.orecf().clear());
+        // Flush the receive data
+        //
+        // Imagine a case of an overrun, where 2 or more bytes have been received by the hardware
+        // but haven't been read out yet: An overrun is signaled!
+        //
+        // The current state is: One byte is in the RDR (read data register) one one byte is still
+        // in the hardware pipeline (shift register).
+        //
+        // With this implementation, the overrun flag would be cleared but the data would not be
+        // read out, so there are still to bytes waiting in the pipeline.
+        //
+        // In case the flush wasn't called: The next read would then be successful, as the RDR is
+        // cleared, but the read after that would again report an overrun error, because the byte
+        // still in the hardware shift register would signal it.
+        //
+        // This means, that the overrun error is not completely handled by this read()
+        // implementation and leads to surprising behavior, if one would explicitly check for
+        // Error::Overrun and think, that this error would than be handled, which would not be the
+        // case.
+        //
+        // This is because, with this function signature, the data can not be returned
+        // simultainously with the error.
+        //
+        // To mitigate this and have an implementation without these surprises flush the RDR
+        // register. This leads to loosing a theoretically still receivable data byte! But at least
+        // no cleanup is needed, after an overrun is called.
+        usart.rqr.write(|w| w.rxfrq().set_bit());
+        nb::Error::Other(Error::Overrun)
+    } else if isr.rxne().bit_is_set() {
+        return Ok(usart.rdr.read().bits() as u8);
+    } else {
+        nb::Error::WouldBlock
+    })
+}
 
 // TODO: Check if u16 for WORD is feasiable / possible
 impl<Usart, Tx, Rx> serial::Read<u8> for Serial<Usart, (Tx, Rx)>
@@ -754,28 +828,25 @@ where
     Usart: Instance,
 {
     type Error = Error;
-    fn read(&mut self) -> nb::Result<u8, Error> {
-        let isr = self.usart.isr.read();
 
-        Err(if isr.busy().bit_is_set() {
-            nb::Error::WouldBlock
-        } else if isr.pe().bit_is_set() {
-            self.usart.icr.write(|w| w.pecf().clear());
-            nb::Error::Other(Error::Parity)
-        } else if isr.fe().bit_is_set() {
-            self.usart.icr.write(|w| w.fecf().clear());
-            nb::Error::Other(Error::Framing)
-        } else if isr.nf().bit_is_set() {
-            self.usart.icr.write(|w| w.ncf().clear());
-            nb::Error::Other(Error::Noise)
-        } else if isr.ore().bit_is_set() {
-            self.usart.icr.write(|w| w.orecf().clear());
-            nb::Error::Other(Error::Overrun)
-        } else if isr.rxne().bit_is_set() {
-            return Ok(self.usart.rdr.read().bits() as u8);
-        } else {
-            nb::Error::WouldBlock
-        })
+    /// Getting back an error means that the error is defined as "handled":
+    ///
+    /// This implementation has the side effect for error handling, that the [`Event`] flag of the returned
+    /// [`Error`] is cleared.
+    ///
+    /// This might be a problem, because if an interrupt is enabled for this particular flag, the
+    /// interrupt handler might not have the chance to find out from which flag the interrupt
+    /// originated.
+    ///
+    /// So this function is only intended to be used for direct error handling and not leaving it
+    /// up to the interrupt handler.
+    ///
+    /// To read out the content of the read register without internal error handling, use
+    /// [`Serial::raw_read()`].
+    /// ...
+    // -> According to this API it should be skipped.
+    fn read(&mut self) -> nb::Result<u8, Error> {
+        eh_read(&mut self.usart)
     }
 }
 
@@ -786,32 +857,9 @@ where
 {
     type Error = Error;
 
+    /// This implementation shares the same effects as the [`Serial`]s [`serial::Read`] implemenation.
     fn read(&mut self) -> nb::Result<u8, Error> {
-        // NOTE(unsafe) atomic read with no side effects
-        let isr = unsafe { self.usart().isr.read() };
-
-        // NOTE(unsafe, write) write accessor for atomic writes with no side effects
-        let icr = unsafe { &self.usart().icr };
-        Err(if isr.busy().bit_is_set() {
-            nb::Error::WouldBlock
-        } else if isr.pe().bit_is_set() {
-            icr.write(|w| w.pecf().clear());
-            nb::Error::Other(Error::Parity)
-        } else if isr.fe().bit_is_set() {
-            icr.write(|w| w.fecf().clear());
-            nb::Error::Other(Error::Framing)
-        } else if isr.nf().bit_is_set() {
-            icr.write(|w| w.ncf().clear());
-            nb::Error::Other(Error::Noise)
-        } else if isr.ore().bit_is_set() {
-            icr.write(|w| w.orecf().clear());
-            nb::Error::Other(Error::Overrun)
-        } else if isr.rxne().bit_is_set() {
-            // NOTE(unsafe) atomic read with no side effects
-            return Ok(unsafe { self.usart().rdr.read().bits() as u8 });
-        } else {
-            nb::Error::WouldBlock
-        })
+        eh_read(unsafe { self.usart_mut() })
     }
 }
 
