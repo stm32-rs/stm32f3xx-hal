@@ -95,6 +95,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - Becuase EXTI interrupt confiugration could cancel out, make it more obvious
   in that SysCfg manages the interrupts, not the pin itself.
   Change `make_interrupt_source()` to `SysCfg::select_exti_interrupt_source()`.
+- Change dma interrupt API to be more in line with the new serial interrupt
+  API. ([#263])
 
 ## [v0.7.0] - 2021-06-18
 
@@ -420,6 +422,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#263]: https://github.com/stm32-rs/stm32f3xx-hal/pull/263
 [#262]: https://github.com/stm32-rs/stm32f3xx-hal/pull/262
 [#260]: https://github.com/stm32-rs/stm32f3xx-hal/pull/260
 [#259]: https://github.com/stm32-rs/stm32f3xx-hal/pull/259

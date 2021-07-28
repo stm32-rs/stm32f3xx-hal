@@ -24,6 +24,9 @@ use core::{
     sync::atomic::{self, Ordering},
 };
 
+#[cfg(feature = "enumset")]
+use enumset::EnumSetType;
+
 /// Extension trait to split a DMA peripheral into independent channels
 pub trait DmaExt {
     /// The type to split the DMA into
@@ -42,6 +45,8 @@ pub trait Target {
 }
 
 /// An in-progress one-shot DMA transfer
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Transfer<B, C: Channel, T: Target> {
     // This is always a `Some` outside of `drop`.
     inner: Option<TransferInner<B, C, T>>,
@@ -131,7 +136,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     /// Is this transfer complete?
     pub fn is_complete(&self) -> bool {
         let inner = crate::unwrap!(self.inner.as_ref());
-        inner.channel.event_occurred(Event::TransferComplete)
+        inner.channel.is_event_triggered(Event::TransferComplete)
     }
 
     /// Stop this transfer and return ownership over its parts
@@ -159,6 +164,8 @@ impl<B, C: Channel, T: Target> Drop for Transfer<B, C, T> {
 }
 
 /// This only exists so we can implement `Drop` for `Transfer`.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct TransferInner<B, C, T> {
     buffer: B,
     channel: C,
@@ -176,6 +183,8 @@ impl<B, C: Channel, T: Target> TransferInner<B, C, T> {
 }
 
 /// DMA address increment mode
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Increment {
     /// Enable increment
     Enable,
@@ -193,6 +202,8 @@ impl From<Increment> for cr::PINC_A {
 }
 
 /// Channel priority level
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Priority {
     /// Low
     Low,
@@ -216,6 +227,8 @@ impl From<Priority> for cr::PL_A {
 }
 
 /// DMA transfer direction
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Direction {
     /// From memory to peripheral
     FromMemory,
@@ -233,6 +246,10 @@ impl From<Direction> for cr::DIR_A {
 }
 
 /// DMA events
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "enumset", derive(EnumSetType))]
+#[cfg_attr(not(feature = "enumset"), derive(Copy, Clone, PartialEq, Eq))]
 pub enum Event {
     /// First half of a transfer is done
     HalfTransfer,
@@ -247,7 +264,7 @@ pub enum Event {
 /// Trait implemented by all DMA channels
 pub trait Channel: private::Channel {
     /// Is the interrupt flag for the given event set?
-    fn event_occurred(&self, event: Event) -> bool;
+    fn is_event_triggered(&self, event: Event) -> bool;
 
     /// Clear the interrupt flag for the given event.
     ///
@@ -257,6 +274,11 @@ pub trait Channel: private::Channel {
     /// even when all other flags are cleared. The only way to clear it is to
     /// call this method with `Event::Any`.
     fn clear_event(&mut self, event: Event);
+
+    /// Clear **all** interrupt event flags
+    fn clear_events(&mut self) {
+        self.clear_event(Event::Any);
+    }
 
     /// Reset the control registers of this channel.
     /// This stops any ongoing transfers.
@@ -357,34 +379,28 @@ pub trait Channel: private::Channel {
         self.ch().cr.modify(|_, w| w.dir().variant(dir));
     }
 
-    /// Enable the interrupt for the given event
-    fn listen(&mut self, event: Event) {
-        use Event::*;
+    /// Enable or disable the interrupt for the specified [`Event`].
+    fn configure_intterupt(&mut self, event: Event, enable: bool) {
         match event {
-            HalfTransfer => self.ch().cr.modify(|_, w| w.htie().enabled()),
-            TransferComplete => self.ch().cr.modify(|_, w| w.tcie().enabled()),
-            TransferError => self.ch().cr.modify(|_, w| w.teie().enabled()),
-            Any => self.ch().cr.modify(|_, w| {
-                w.htie().enabled();
-                w.tcie().enabled();
-                w.teie().enabled()
+            Event::HalfTransfer => self.ch().cr.modify(|_, w| w.htie().bit(enable)),
+            Event::TransferComplete => self.ch().cr.modify(|_, w| w.tcie().bit(enable)),
+            Event::TransferError => self.ch().cr.modify(|_, w| w.teie().bit(enable)),
+            Event::Any => self.ch().cr.modify(|_, w| {
+                w.htie().bit(enable);
+                w.tcie().bit(enable);
+                w.teie().bit(enable)
             }),
         }
     }
 
-    /// Disable the interrupt for the given event
-    fn unlisten(&mut self, event: Event) {
-        use Event::*;
-        match event {
-            HalfTransfer => self.ch().cr.modify(|_, w| w.htie().disabled()),
-            TransferComplete => self.ch().cr.modify(|_, w| w.tcie().disabled()),
-            TransferError => self.ch().cr.modify(|_, w| w.teie().disabled()),
-            Any => self.ch().cr.modify(|_, w| {
-                w.htie().disabled();
-                w.tcie().disabled();
-                w.teie().disabled()
-            }),
-        }
+    /// Enable the interrupt for the given [`Event`].
+    fn enable_interrupt(&mut self, event: Event) {
+        self.configure_intterupt(event, true);
+    }
+
+    /// Disable the interrupt for the given [`Event`].
+    fn disable_interrupt(&mut self, event: Event) {
+        self.configure_intterupt(event, false);
     }
 
     /// Start a transfer
@@ -447,6 +463,8 @@ macro_rules! dma {
                 }
 
                 /// DMA channels
+                #[derive(Debug)]
+                #[cfg_attr(feature = "defmt", derive(defmt::Format))]
                 pub struct Channels {
                     $(
                         /// Channel
@@ -464,6 +482,8 @@ macro_rules! dma {
 
                 $(
                     /// Singleton that represents a DMA channel
+                    #[derive(Debug)]
+                    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
                     pub struct $Ci {
                         _0: (),
                     }
@@ -476,7 +496,7 @@ macro_rules! dma {
                     }
 
                     impl Channel for $Ci {
-                        fn event_occurred(&self, event: Event) -> bool {
+                        fn is_event_triggered(&self, event: Event) -> bool {
                             use Event::*;
 
                             // NOTE(unsafe) atomic read
