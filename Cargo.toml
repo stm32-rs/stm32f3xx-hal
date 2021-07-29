@@ -187,7 +187,7 @@ required-features = ["ld", "rt", "stm32f303"]
 
 [[example]]
 name = "serial_echo_rtic"
-required-features = ["ld", "rt", "stm32f303xc"]
+required-features = ["ld", "rt", "stm32f303xc", "enumset"]
 
 [[example]]
 name = "adc"
