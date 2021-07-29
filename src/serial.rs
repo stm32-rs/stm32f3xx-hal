@@ -19,7 +19,7 @@ use crate::{
         self,
         rcc::cfgr3::USART1SW_A,
         usart1::{cr1::M_A, cr1::PCE_A, cr1::PS_A, RegisterBlock},
-        USART1, USART2, USART3,
+        Interrupt, USART1, USART2, USART3,
     },
     rcc::{Clocks, APB1, APB2},
     time::rate::*,
@@ -547,6 +547,29 @@ where
             return None;
         }
         Some(self.usart.rdr.read().rdr().bits() as u8)
+    }
+
+    /// Obtain the assocated intterupt number for the serial peripheral.
+    ///
+    /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`]
+    /// This is useful for all `cortex_m::peripheral::INTERRUPT` functions.
+    ///
+    /// # Note
+    ///
+    /// This is the easier alternative to obatain the interrupt for:
+    ///
+    /// ```
+    /// use cortex_m::peripheral::INTERRUPT;
+    /// use stm32f3xx_hal::pac::USART1;
+    /// use stm32f3xx_hal::serial::Instance;
+    ///
+    /// const interrupt: INTERRUPT = <USART1 as Instance>::INTERRUPT;
+    /// ```
+    ///
+    /// though this function can not be used in a const context.
+    #[doc(alias = "unmask")]
+    pub fn nvic() -> Interrupt {
+        <Usart as Instance>::INTERRUPT
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
@@ -1127,6 +1150,11 @@ impl ReceiverTimeoutExt for USART3 {}
 pub trait Instance: Deref<Target = RegisterBlock> + crate::private::Sealed {
     /// Peripheral bus instance which is responsible for the peripheral
     type APB;
+
+    /// The associated interrupt number, used to unmask / enable the interrupt
+    /// with [`cortex_m::peripheral::NVIC::unmask()`]
+    const INTERRUPT: Interrupt;
+
     #[doc(hidden)]
     fn enable_clock(apb1: &mut Self::APB);
     #[doc(hidden)]
@@ -1139,6 +1167,7 @@ macro_rules! usart {
             $USARTX:ident: (
                 $usartXen:ident,
                 $APB:ident,
+                $INTERRUPT:path,
                 $pclkX:ident,
                 $usartXrst:ident,
                 $usartXsw:ident,
@@ -1150,6 +1179,7 @@ macro_rules! usart {
             impl crate::private::Sealed for $USARTX {}
             impl Instance for $USARTX {
                 type APB = $APB;
+                const INTERRUPT: Interrupt = $INTERRUPT;
                 fn enable_clock(apb: &mut Self::APB) {
                     apb.enr().modify(|_, w| w.$usartXen().enabled());
                     apb.rstr().modify(|_, w| w.$usartXrst().reset());
@@ -1195,13 +1225,14 @@ macro_rules! usart {
         )+
     };
 
-    ([ $(($X:literal, $APB:literal)),+ ]) => {
+    ([ $(($X:literal, $APB:literal, $INTERRUPT:path)),+ ]) => {
         paste::paste! {
             usart!(
                 $(
                     [<USART $X>]: (
                         [<usart $X en>],
                         [<APB $APB>],
+                        $INTERRUPT,
                         [<pclk $APB>],
                         [<usart $X rst>],
                         [<usart $X sw>],
@@ -1286,20 +1317,33 @@ cfg_if::cfg_if! {
         usart_var_clock!([(1, 2), (2, 1), (3, 1)]);
     }
 }
-usart!([(1, 2), (2, 1), (3, 1)]);
+
+#[cfg(not(feature = "svd-f373"))]
+usart!([
+    (1, 2, Interrupt::USART1_EXTI25),
+    (2, 1, Interrupt::USART2_EXTI26),
+    (3, 1, Interrupt::USART3_EXTI28)
+]);
+#[cfg(feature = "svd-f373")]
+usart!([
+    (1, 2, Interrupt::USART1),
+    (2, 1, Interrupt::USART2),
+    (3, 1, Interrupt::USART3)
+]);
 
 cfg_if::cfg_if! {
     // See table 29.4 RM0316
     if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e"))] {
 
         macro_rules! uart {
-            ([ $(($X:literal, $APB:literal)),+ ]) => {
+            ([ $(($X:literal, $APB:literal, $INTERRUPT:path)),+ ]) => {
                 paste::paste! {
                     usart!(
                         $(
                             [<UART $X>]: (
                                 [<uart $X en>],
                                 [<APB $APB>],
+                                $INTERRUPT,
                                 [<pclk $APB>],
                                 [<uart $X rst>],
                                 [<uart $X sw>],
@@ -1322,7 +1366,7 @@ cfg_if::cfg_if! {
         }
 
         uart_var_clock!([(4,1), (5,1)]);
-        uart!([(4,1), (5,1)]);
+        uart!([(4,1, Interrupt::UART4_EXTI34), (5,1, Interrupt::UART5_EXTI35)]);
 
         impl Dma for UART4 {}
 

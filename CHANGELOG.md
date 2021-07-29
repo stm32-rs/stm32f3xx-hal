@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   another context (like an interrupt rountine). ([#253])
 - Introduce `Toggle`, with `On` and `Off` as a convinience wrapper around `bool`
   for configuration purposes. ([#253])
+- Add an associated const to `serial::Instance` to return the corresponding
+  `pac::Interrupt`-number, which is useful to `unmask()` interrupts.
+  An `nvic()` function to `Serial` was also added for convinience. ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 
