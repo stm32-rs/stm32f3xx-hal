@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `raw_read()` function, which does no error handling and also does not
   clear any `Event` by itself. Useful, if the error_handling has to be done in
   another context (like an interrupt rountine). ([#253])
+- Introduce `Toggle`, with `On` and `Off` as a convinience wrapper around `bool`
+  for configuration purposes. ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 

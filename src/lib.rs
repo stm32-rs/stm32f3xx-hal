@@ -218,3 +218,31 @@ mod private {
     /// which do implement peripheral functionalities.
     pub trait Sealed {}
 }
+
+/// Toggle something on or off.
+///
+/// Convenience enum and wrapper around a bool, which more explicit about the intention to enable
+/// or disable something, in comparison to `true` or `false`.
+// TODO: Maybe move to some mod like "util"?
+pub enum Toggle {
+    /// Toggle something on / enable a thing.
+    On,
+    /// Toggle something off / disable a thing.
+    Off,
+}
+
+impl From<Toggle> for bool {
+    fn from(toggle: Toggle) -> Self {
+        matches!(toggle, Toggle::On)
+    }
+}
+
+impl From<bool> for Toggle {
+    fn from(b: bool) -> Self {
+        match b {
+            true => Toggle::On,
+            false => Toggle::Off,
+        }
+    }
+}
+

@@ -20,6 +20,7 @@ use crate::{
     },
     rcc::{Clocks, APB1, APB2},
     time::rate::*,
+    Toggle,
 };
 
 #[allow(unused_imports)]
@@ -529,7 +530,10 @@ where
 
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
-    pub fn configure_interrupt(&mut self, event: Event, enable: bool) -> &mut Self {
+    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) -> &mut Self {
+        // Do a round way trip to be convert Into<Toggle> -> bool
+        let enable: Toggle = enable.into();
+        let enable: bool = enable.into();
         match event {
             Event::TransmitDataRegisterEmtpy => self.usart.cr1.modify(|_, w| w.txeie().bit(enable)),
             Event::CtsInterrupt => self.usart.cr3.modify(|_, w| w.ctsie().bit(enable)),
