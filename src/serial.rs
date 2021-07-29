@@ -173,6 +173,17 @@ pub enum Error {
     Parity,
 }
 
+impl From<Error> for Event {
+    fn from(error: Error) -> Self {
+        match error {
+            Error::Framing => Event::FramingError,
+            Error::Overrun => Event::OverrunError,
+            Error::Noise => Event::NoiseError,
+            Error::Parity => Event::ParityError,
+        }
+    }
+}
+
 /// TX pin
 pub trait TxPin<Usart>: crate::private::Sealed {}
 

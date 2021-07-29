@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add [`enumset`][] as a optional dependency, which allow more ergonomic functions
   regarding enums. This is especially useful for status event query functions.
   ([#253])
+- As serial `Error` and serial `Events` share things in common. `TryFrom<Event>`
+  and `From<Error>` is implemented for conversions. ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 
