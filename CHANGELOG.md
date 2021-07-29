@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add an associated const to `serial::Instance` to return the corresponding
   `pac::Interrupt`-number, which is useful to `unmask()` interrupts.
   An `nvic()` function to `Serial` was also added for convinience. ([#253])
+- Add a `Serial::is_busy()` function to check, if the serial device is busy.
+  Useful to block on this function, e.g. `while serial.is_busy() {}`. ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 

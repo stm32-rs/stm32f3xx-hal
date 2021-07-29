@@ -549,6 +549,14 @@ where
         Some(self.usart.rdr.read().rdr().bits() as u8)
     }
 
+    /// Check if the USART peripheral is busy.
+    ///
+    /// This can be useful to block on to synchronize between peripheral and CPU
+    /// because of the asynchronous nature of the peripheral.
+    pub fn is_busy(&mut self) -> bool {
+        self.usart.isr.read().busy().bit_is_set()
+    }
+
     /// Obtain the assocated intterupt number for the serial peripheral.
     ///
     /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`]
