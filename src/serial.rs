@@ -376,6 +376,7 @@ where
             Event::TransmissionComplete => w.tcie().enabled(),
             Event::ReceiveDataRegisterNotEmpty => w.rxneie().enabled(),
             Event::Idle => w.idleie().enabled(),
+            Event::CharacterMatch => w.cmie().enabled(),
         });
     }
 
@@ -386,6 +387,7 @@ where
             Event::TransmissionComplete => w.tcie().disabled(),
             Event::ReceiveDataRegisterNotEmpty => w.rxneie().disabled(),
             Event::Idle => w.idleie().disabled(),
+            Event::CharacterMatch => w.cmie().disabled(),
         });
     }
 
