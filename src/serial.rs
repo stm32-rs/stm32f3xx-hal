@@ -135,17 +135,41 @@ pub enum Event {
 }
 
 /// Serial error
-#[derive(Debug)]
+///
+/// As these are status events, they can be converted to [`Event`]s, via [`Into`].
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 pub enum Error {
     /// Framing error
+    ///
+    /// This error is thrown by hardware when a de-synchronization, excessive noise or a break
+    /// character is detected.
     Framing,
     /// Noise error
+    ///
+    /// This error is thrown by hardware when noise is detected on a received frame.
     Noise,
     /// RX buffer overrun
+    ///
+    /// # Cause
+    ///
+    /// An overrun error occurs when a character is received when RXNE has not been reset. Data can
+    /// not be transferred from the shift register to the RDR register until the RXNE bit is
+    /// cleared. The RXNE flag is set after every byte received. An overrun error occurs if RXNE
+    /// flag is set when the next data is received or the previous DMA request has not been
+    /// serviced.
+    ///
+    /// # Behavior
+    ///
+    /// - The RDR content will not be lost. The previous data is available when a read to USART_RDR
+    ///   is performed.
+    /// - The shift register will be overwritten. After that point, any data received
+    ///   during overrun is lost
     Overrun,
     /// Parity check error
+    ///
+    /// This error is thrown by hardware when a parity error occurs in receiver mode.
     Parity,
 }
 
