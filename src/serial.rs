@@ -516,6 +516,18 @@ where
         self
     }
 
+    /// Enable the interrupt for the specified [`Event`].
+    #[inline]
+    pub fn enable_interrupt(&mut self, event: Event) {
+        self.configure_interrupt(event, Toggle::On);
+    }
+
+    /// Disable the interrupt for the specified [`Event`].
+    #[inline]
+    pub fn disable_interrupt(&mut self, event: Event) {
+        self.configure_interrupt(event, Toggle::Off);
+    }
+
     /// Enable or disable interrupt for the specified [`Event`]s.
     ///
     /// Like [`Serial::configure_interrupt`], but instead using an enumset. The corresponding
