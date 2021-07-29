@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   when `Serial::split` was previously called. ([#252])
 - Parameterized `usb::Peripheral` and `usb::UsbType` on the pin configuration
   used ([#255])
+- Add (almost) all missing serial (interrupt and status) events.
+  Also rename all the event names to be more descriptive. ([#253])
 
 ## [v0.7.0] - 2021-06-18
 
@@ -374,6 +376,7 @@ let clocks = rcc
 [#259]: https://github.com/stm32-rs/stm32f3xx-hal/pull/259
 [#257]: https://github.com/stm32-rs/stm32f3xx-hal/pull/257
 [#255]: https://github.com/stm32-rs/stm32f3xx-hal/pull/255
+[#253]: https://github.com/stm32-rs/stm32f3xx-hal/pull/253
 [#252]: https://github.com/stm32-rs/stm32f3xx-hal/pull/252
 [#251]: https://github.com/stm32-rs/stm32f3xx-hal/pull/251
 [#247]: https://github.com/stm32-rs/stm32f3xx-hal/pull/247

@@ -31,19 +31,100 @@ use enumset::{EnumSet, EnumSetType};
 use crate::dma;
 use cortex_m::interrupt;
 
-/// Interrupt event
+/// Interrupt and status events.
+///
+/// All events can be cleared by [`Serial::clear_event`] or [`Serial::clear_events`].
+/// Some events are also cleared on other conditions.
 #[derive(Debug, EnumSetType)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 pub enum Event {
-    /// New data can be sent
+    /// Transmit data register empty / new data can be sent.
+    ///
+    /// This event is set by hardware when the content of the TDR register has been transferred
+    /// into the shift register. It is cleared by [`Serial`]s [`serial::Write::write()`]
+    /// implementation to the TDR register.
+    #[doc(alias = "TXE")]
     TransmitDataRegisterEmtpy,
+    /// CTS (Clear to Send) event.
+    ///
+    /// This event is set by hardware when the CTS input toggles, if the CTSE bit is set.
+    #[doc(alias = "CTSIF")]
+    CtsInterrupt,
     /// Transmission complete
+    ///
+    /// This event is set by hardware if the transmission of a frame containing data is complete and
+    /// if TXE is set.
+    /// It is cleared by [`Serial`]s [`serial::Write::write()`] implementaiton to the USART_TDR register.
+    #[doc(alias = "TC")]
     TransmissionComplete,
-    /// New data has been received
+    /// Read data register not empty / new data has been received.
+    ///
+    /// This event is set by hardware when the content of the RDR shift register has been
+    /// transferred to the RDR register.
+    /// It is cleared by [`Serial`]s [`serial::Read::read()`] to the USART_RDR register.
+    #[doc(alias = "RXNE")]
     ReceiveDataRegisterNotEmpty,
-    /// Idle line state detected
+    /// Overrun Error detected.
+    ///
+    /// This event is set by hardware when the data currently being received in the shift register
+    /// is ready to be transferred into the RDR register while
+    /// [`Event::ReceiveDataRegisterNotEmpty`] is set.
+    ///
+    /// See [`Error::Overrun`] for a more detailed description.
+    #[doc(alias = "ORE")]
+    OverrunError,
+    /// Idle line state detected.
+    ///
+    /// This event is set by hardware when an Idle Line is detected.
     Idle,
+    /// Parity error detected.
+    ///
+    /// This event is set by hardware when a parity error occurs in receiver mode.
+    ///
+    /// Parity can be configured by using [`config::Parity`] to create a [`config::Config`].
+    #[doc(alias = "PE")]
+    ParityError,
+    /// Noise error detected.
+    ///
+    /// This event is set by hardware when noise is detected on a received frame.
+    #[doc(alias = "NF")]
+    NoiseError,
+    /// Framing error detected
+    ///
+    /// This event is set by hardware when a de-synchronization, excessive noise or a break character
+    /// is detected.
+    #[doc(alias = "FE")]
+    FramingError,
+    /// LIN break
+    ///
+    /// This bit is set by hardware when the LIN break is detected.
+    #[doc(alias = "LBDF")]
+    LinBreak,
+    /// The received character matched the configured character.
+    ///
+    /// The matching character can be configured with [`Serial::match_character()`]
+    #[doc(alias = "CMF")]
+    CharacterMatch,
+    /// Nothing was received since the last received character for
+    /// [`Serial::receiver_timeout()`] amount of time.
+    ///
+    /// # Note
+    ///
+    /// Never set for UART peripheral, which does not have [`ReceiverTimeoutExt`]
+    /// implemented.
+    #[doc(alias = "RTOF")]
+    ReceiverTimeout,
+    // TODO: SmartCard Mode not implemented, no use as of now.
+    // EndOfBlock,
+    /// The peripheral was woken up from "Stop Mode".
+    ///
+    /// This event is set by hardware, when a wakeup event is detected.
+    ///
+    /// The condition, when it does wake up can be configured via
+    /// [`Serial::set_wakeup_from_stopmode_reason()`]
+    #[doc(alias = "WUF")]
+    WakeupFromStopMode,
 }
 
 /// Serial error
