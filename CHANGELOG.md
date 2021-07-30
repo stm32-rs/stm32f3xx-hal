@@ -91,6 +91,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - `triggered_events` returns an `EnumSet` of triggered events.
 - Change gpio interrupt API to be more in line with the new serial interrupt
   API. ([#262])
+- Move EXTI interrupt management to SysCfg. ([#262])
+  - Becuase EXTI interrupt confiugration could cancel out, make it more obvious
+  in that SysCfg manages the interrupts, not the pin itself.
+  Change `make_interrupt_source()` to `SysCfg::select_exti_interrupt_source()`.
 
 ## [v0.7.0] - 2021-06-18
 

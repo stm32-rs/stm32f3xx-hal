@@ -66,7 +66,6 @@ use crate::{
     hal::digital::v2::OutputPin,
     pac::{Interrupt, EXTI},
     rcc::AHB,
-    syscfg::SysCfg,
     Toggle,
 };
 
@@ -291,8 +290,8 @@ pub enum Edge {
 
 /// Generic pin
 pub struct Pin<Gpio, Index, Mode> {
-    gpio: Gpio,
-    index: Index,
+    pub(crate) gpio: Gpio,
+    pub(crate) index: Index,
     _mode: PhantomData<Mode>,
 }
 
@@ -309,17 +308,6 @@ impl<Gpio, Index, Mode> crate::private::Sealed for Pin<Gpio, Index, Mode> {}
 ///
 /// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.7.0/examples/gpio_erased.rs
 pub type PXx<Mode> = Pin<Gpiox, Ux, Mode>;
-
-/// Modify specific index of array-like register
-macro_rules! modify_at {
-    ($reg:expr, $bitwidth:expr, $index:expr, $value:expr) => {
-        $reg.modify(|r, w| {
-            let mask = !(u32::MAX >> (32 - $bitwidth) << ($bitwidth * $index));
-            let value = $value << ($bitwidth * $index);
-            w.bits(r.bits() & mask | value)
-        });
-    };
-}
 
 impl<Gpio, Mode, const X: u8> Pin<Gpio, U<X>, Mode> {
     /// Erases the pin number from the type
@@ -593,31 +581,8 @@ where
             #[cfg(not(feature = "svd-f373"))]
             5..=9 => Interrupt::EXTI9_5,
             10..=15 => Interrupt::EXTI15_10,
-            _ => unreachable!(),
+            _ => crate::unreachable!(),
         }
-    }
-
-    /// Make corresponding EXTI line sensitive to this pin.
-    ///
-    /// # Note
-    ///
-    /// Only **one** Pin index of all banks can be activated
-    /// for interrupts simultainously.
-    ///
-    /// For example, only on of `PA1`, `PB1`, `PC1`, ... can be activated.
-    pub fn make_interrupt_source(&mut self, syscfg: &mut SysCfg) {
-        const BITWIDTH: u8 = 4;
-        let index = self.index.index() % 4;
-        let extigpionr = self.gpio.port_index() as u32;
-        match self.index.index() {
-            // SAFETY: These are all unguarded writes directly to the register,
-            // without leveraging the safety of stm32f3 generated values.
-            0..=3 => unsafe { modify_at!(syscfg.exticr1, BITWIDTH, index, extigpionr) },
-            4..=7 => unsafe { modify_at!(syscfg.exticr2, BITWIDTH, index, extigpionr) },
-            8..=11 => unsafe { modify_at!(syscfg.exticr3, BITWIDTH, index, extigpionr) },
-            12..=15 => unsafe { modify_at!(syscfg.exticr4, BITWIDTH, index, extigpionr) },
-            _ => unreachable!(),
-        };
     }
 
     /// Generate interrupt on rising edge, falling edge, or both
@@ -631,15 +596,17 @@ where
         };
         // SAFETY: Unguarded write to the register, but behind a &mut
         unsafe {
-            modify_at!(reg_for_cpu!(exti, rtsr), BITWIDTH, index, rise);
-            modify_at!(reg_for_cpu!(exti, ftsr), BITWIDTH, index, fall);
+            crate::modify_at!(reg_for_cpu!(exti, rtsr), BITWIDTH, index, rise);
+            crate::modify_at!(reg_for_cpu!(exti, ftsr), BITWIDTH, index, fall);
         }
     }
 
     /// Configure external interrupts from this pin
     ///
+    /// # Note
+    ///
     /// Remeber to also configure the interrupt pin on
-    /// the SysCfg site, with [`Pin::make_interrupt_source()`]
+    /// the SysCfg site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
     pub fn configure_interrupt(&mut self, exti: &mut EXTI, enable: impl Into<Toggle>) {
         const BITWIDTH: u8 = 1;
 
@@ -649,10 +616,15 @@ where
         let index = self.index.index();
         let value = u32::from(enable);
         // SAFETY: Unguarded write to the register, but behind a &mut
-        unsafe { modify_at!(reg_for_cpu!(exti, imr), BITWIDTH, index, value) };
+        unsafe { crate::modify_at!(reg_for_cpu!(exti, imr), BITWIDTH, index, value) };
     }
 
     /// Enable external interrupts from this pin
+    ///
+    /// # Note
+    ///
+    /// Remeber to also configure the interrupt pin on
+    /// the SysCfg site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
     pub fn enable_interrupt(&mut self, exti: &mut EXTI) {
         self.configure_interrupt(exti, Toggle::On)
     }
@@ -772,7 +744,7 @@ macro_rules! r_trait {
                 #[inline]
                 fn $fn(&mut self, i: u8) {
                     let value = $gpioy::$xr::$enum::$VARIANT as u32;
-                    unsafe { modify_at!((*$GPIOX::ptr()).$xr, $bitwidth, i, value) };
+                    unsafe { crate::modify_at!((*$GPIOX::ptr()).$xr, $bitwidth, i, value) };
                 }
             )+
         }
@@ -913,7 +885,7 @@ macro_rules! gpio {
                     #[inline]
                     fn afx(&mut self, i: u8, x: u8) {
                         const BITWIDTH: u8 = 4;
-                        unsafe { modify_at!((*$GPIOX::ptr()).afrh, BITWIDTH, i - 8, x as u32) };
+                        unsafe { crate::modify_at!((*$GPIOX::ptr()).afrh, BITWIDTH, i - 8, x as u32) };
                     }
                 }
 
@@ -924,7 +896,7 @@ macro_rules! gpio {
                     #[inline]
                     fn afx(&mut self, i: u8, x: u8) {
                         const BITWIDTH: u8 = 4;
-                        unsafe { modify_at!((*$GPIOX::ptr()).afrl, BITWIDTH, i, x as u32) };
+                        unsafe { crate::modify_at!((*$GPIOX::ptr()).afrl, BITWIDTH, i, x as u32) };
                     }
                 }
 
