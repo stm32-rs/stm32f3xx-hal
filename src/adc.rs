@@ -93,6 +93,7 @@ impl SampleTime {
 // TODO: Implement other modes (DMA, Differential,…)
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
 pub enum OperationMode {
     /// OneShot Mode
     OneShot,

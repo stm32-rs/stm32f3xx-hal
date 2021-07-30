@@ -103,6 +103,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Make timer Events `#[non_exhaustive]`. ([#264])
 - Renames timers `release()` function to `free()` to be more in line with the
   rest of this crate. ([#264])
+- rtc's `Error` type and `OperationMode` and `CkMode` of adc are now `#[non_exhaustive]`.
+  ([#266])
 
 ## [v0.7.0] - 2021-06-18
 
@@ -428,6 +430,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#266]: https://github.com/stm32-rs/stm32f3xx-hal/pull/266
 [#265]: https://github.com/stm32-rs/stm32f3xx-hal/pull/265
 [#264]: https://github.com/stm32-rs/stm32f3xx-hal/pull/264
 [#263]: https://github.com/stm32-rs/stm32f3xx-hal/pull/263
