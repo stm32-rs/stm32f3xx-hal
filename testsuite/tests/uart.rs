@@ -3,15 +3,16 @@
 
 use testsuite as _;
 
+use enumset::EnumSet;
+
 use stm32f3xx_hal as hal;
 
 use hal::gpio::{OpenDrain, PushPull, AF7};
 use hal::pac;
 use hal::prelude::*;
-use hal::serial::Serial;
 use hal::serial::{
     config::{Config, Parity, StopBits},
-    Error, Event,
+    Error, Event, Instance, Serial, TxPin, RxPin,
 };
 use hal::time::rate::Baud;
 use hal::{
@@ -22,8 +23,14 @@ use hal::{
     rcc::{Clocks, APB1, APB2},
 };
 
+use hal::interrupt;
+
 use core::array::IntoIter;
-use defmt::{assert_eq, unwrap};
+use defmt::{assert, assert_eq, unwrap};
+
+use core::sync::atomic::{AtomicBool, Ordering};
+
+static INTERRUPT_FIRED: AtomicBool = AtomicBool::new(false);
 
 struct State {
     serial1: Option<Serial<pac::USART1, (PA9<AF7<PushPull>>, PA10<AF7<PushPull>>)>>,
@@ -49,6 +56,47 @@ fn test_test_msg_loopback(state: &mut State, config: impl Into<Config>) {
     }
 
     state.serial1 = Some(serial);
+}
+
+fn trigger_event<Usart, Tx, Rx>(
+    event: Event,
+    serial: &mut Serial<Usart, (Tx, Rx)>,
+    mut trigger: impl FnMut(&mut Serial<Usart, (Tx, Rx)>),
+) where
+    Usart: Instance,
+    Tx: TxPin<Usart>,
+    Rx: RxPin<Usart>,
+{
+    // Create an enumset of events with only one
+    // event. Applying it disabled all other interrupts.
+    let mut events = EnumSet::new();
+    events.insert(event);
+    // Clear events, so that previously triggered events do not fire
+    // the now configured interupt imediatly.
+    serial.clear_events();
+    serial.configure_interrupts(events);
+    // Check that the interrupt has not been run, since the configuration
+    // and before the trigger.
+    assert!(!INTERRUPT_FIRED.load(Ordering::SeqCst));
+    trigger(serial);
+    while !INTERRUPT_FIRED.load(Ordering::SeqCst) {}
+    // Disable all configured interrupts.
+    serial.configure_interrupts(EnumSet::new());
+    // Only clear the particular event, which fired the interrupt
+    assert!(serial.triggered_events().contains(event));
+    serial.clear_event(event);
+    assert!(!serial.triggered_events().contains(event));
+    // TODO: Is that true?: Unpend any pending interrupts - more than one could be pending,
+    // because of the late clearing of the interrupt
+    cortex_m::peripheral::NVIC::unpend(<pac::USART1 as Instance>::INTERRUPT);
+    // Now unmask all interrupts again, which where masks in the iterrupt rountine,
+    // as a measurement to disable all interrupts.
+    unsafe { cortex_m::peripheral::NVIC::unmask(<pac::USART1 as Instance>::INTERRUPT) }
+    // Clear the interrupt flag again. And make double sure, that no interrupt
+    // fired again.
+    INTERRUPT_FIRED.store(false, Ordering::SeqCst);
+    cortex_m::asm::delay(10);
+    assert!(!INTERRUPT_FIRED.load(Ordering::SeqCst));
 }
 
 #[defmt_test::tests]
@@ -91,6 +139,8 @@ mod tests {
                 .pa3
                 .into_af7_open_drain(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
         };
+
+        unsafe { cortex_m::peripheral::NVIC::unmask(<pac::USART1 as Instance>::INTERRUPT) }
 
         super::State {
             serial1: Some(Serial::new(
@@ -310,7 +360,74 @@ mod tests {
         state.serial_fast = Some(Serial::join(tx_fast, rx_fast));
     }
 
-    // TODO: Test interrupts
-    // #[test]
-    // fn enable_interrupt_and_wait_for_fire(state: &mut super::State) {}
+    // TODO: Currently, this is a limited test, just to see, that
+    // an interrupt has fired. It does **not** test, if the correct
+    // event caused the interrupt.
+    //
+    // This increases the implemetation effort, because
+    #[test]
+    fn trigger_events(state: &mut super::State) {
+        let mut serial = state.serial1.take().unwrap();
+        // let mut events = EnumSet::new();
+
+        trigger_event(Event::ReceiveDataRegisterNotEmpty, &mut serial, |serial| {
+            unwrap!(serial.write(b'A').ok());
+        });
+
+        trigger_event(Event::TransmissionComplete, &mut serial, |serial| {
+            unwrap!(serial.write(b'A').ok());
+        });
+
+        // TODO: This is difficult to test, as the data reigster is
+        // empty imidiatly, when the interrupt is configured.
+        // trigger_event(Event::TransmitDataRegisterEmtpy, &mut serial, |serial| {
+        //     unwrap!(serial.write(b'A').ok());
+        // });
+
+        trigger_event(Event::OverrunError, &mut serial, |serial| {
+            // Imidiatly overrun, because we do not read out the received register.
+            unwrap!(nb::block!(serial.write(b'A')).ok());
+        });
+
+        trigger_event(Event::Idle, &mut serial, |serial| {
+            // Note: The IDLE bit will not be set again until the RXNE bit has been set (i.e. a new
+            // idle line occurs).
+            // To provoke IDLE, send something again so that RXNE is set.
+            unwrap!(nb::block!(serial.write(b'A')).ok());
+        });
+
+        serial.set_match_character(b'A');
+        assert!(serial.match_character() == b'A');
+        trigger_event(Event::CharacterMatch, &mut serial, |serial| {
+            unwrap!(nb::block!(serial.write(b'A')).ok());
+        });
+
+        serial.set_receiver_timeout(Some(100));
+        assert!(serial.receiver_timeout() == Some(100));
+        trigger_event(Event::ReceiverTimeout, &mut serial, |serial| {
+            unwrap!(nb::block!(serial.write(b'A')).ok());
+            unwrap!(nb::block!(serial.read()));
+        });
+
+        state.serial1 = Some(serial);
+    }
+}
+
+// TODO: This maybe can be moved into a function inside the
+// mod tests, if defmt_test does allow free functions, which do not
+// correspond to tests.
+#[interrupt]
+fn USART1_EXTI25() {
+    INTERRUPT_FIRED.store(true, Ordering::SeqCst);
+
+    // Make it easy on ourselfs and just disable all interrupts.
+    // This way, the interrupt rountine dooes not have to have access to the serial peripheral,
+    // which would mean to access the internally managed state of the test module,
+    // which can't be accessed right now.
+    //
+    // This is all needed, to clear the fired interrupt.
+    assert!(cortex_m::peripheral::NVIC::is_active(
+        <pac::USART1 as Instance>::INTERRUPT
+    ));
+    cortex_m::peripheral::NVIC::mask(<pac::USART1 as Instance>::INTERRUPT);
 }
