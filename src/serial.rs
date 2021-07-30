@@ -685,6 +685,18 @@ where
         <Usart as Instance>::INTERRUPT
     }
 
+    /// Enable the interrupt for the specified [`Event`].
+    #[inline]
+    pub fn enable_interrupt(&mut self, event: Event) {
+        self.configure_interrupt(event, Toggle::On);
+    }
+
+    /// Disable the interrupt for the specified [`Event`].
+    #[inline]
+    pub fn disable_interrupt(&mut self, event: Event) {
+        self.configure_interrupt(event, Toggle::Off);
+    }
+
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
     pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) -> &mut Self {
@@ -712,18 +724,6 @@ where
         self
     }
 
-    /// Enable the interrupt for the specified [`Event`].
-    #[inline]
-    pub fn enable_interrupt(&mut self, event: Event) {
-        self.configure_interrupt(event, Toggle::On);
-    }
-
-    /// Disable the interrupt for the specified [`Event`].
-    #[inline]
-    pub fn disable_interrupt(&mut self, event: Event) {
-        self.configure_interrupt(event, Toggle::Off);
-    }
-
     /// Enable or disable interrupt for the specified [`Event`]s.
     ///
     /// Like [`Serial::configure_interrupt`], but instead using an enumset. The corresponding
@@ -742,19 +742,26 @@ where
         self
     }
 
-    /// Enable or disable overrun detection
-    ///
-    /// When overrun detection is disabled and new data is received while the
-    /// [`Event::ReceiveDataRegisterNotEmpty`] flag is still set,
-    /// the [`Event::OverrunError`] flag is not set and the new received data overwrites the
-    /// previous content of the RDR register.
-    #[doc(alias = "OVRDIS")]
+    /// Check if an interrupt event happend.
     #[inline]
-    pub fn detect_overrun(&mut self, enable: bool) {
-        let uart_enabled = self.usart.cr1.read().ue().bit();
-        self.usart.cr1.modify(|_, w| w.ue().disabled());
-        self.usart.cr3.modify(|_, w| w.ovrdis().bit(!enable));
-        self.usart.cr1.modify(|_, w| w.ue().bit(uart_enabled));
+    pub fn is_event_triggered(&self, event: Event) -> bool {
+        let isr = self.usart.isr.read();
+        match event {
+            Event::TransmitDataRegisterEmtpy => isr.txe().bit(),
+            Event::CtsInterrupt => isr.ctsif().bit(),
+            Event::TransmissionComplete => isr.tc().bit(),
+            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit(),
+            Event::OverrunError => isr.ore().bit(),
+            Event::Idle => isr.idle().bit(),
+            Event::ParityError => isr.pe().bit(),
+            Event::LinBreak => isr.lbdf().bit(),
+            Event::NoiseError => isr.nf().bit(),
+            Event::FramingError => isr.fe().bit(),
+            Event::CharacterMatch => isr.cmf().bit(),
+            Event::ReceiverTimeout => isr.rtof().bit(),
+            // Event::EndOfBlock => isr.eobf().bit(),
+            // Event::WakeupFromStopMode => isr.wuf().bit(),
+        }
     }
 
     /// Get an [`EnumSet`] of all fired interrupt events.
@@ -780,13 +787,6 @@ where
         }
 
         events
-    }
-
-    /// Clear **all** interrupt events.
-    #[inline]
-    pub fn clear_events(&mut self) {
-        // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
-        self.usart.icr.write(|w| unsafe { w.bits(u32::MAX) });
     }
 
     /// Clear the given interrupt event flag.
@@ -816,26 +816,26 @@ where
         });
     }
 
-    /// Check if an interrupt event happend.
+    /// Clear **all** interrupt events.
     #[inline]
-    pub fn is_event_triggered(&self, event: Event) -> bool {
-        let isr = self.usart.isr.read();
-        match event {
-            Event::TransmitDataRegisterEmtpy => isr.txe().bit(),
-            Event::CtsInterrupt => isr.ctsif().bit(),
-            Event::TransmissionComplete => isr.tc().bit(),
-            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit(),
-            Event::OverrunError => isr.ore().bit(),
-            Event::Idle => isr.idle().bit(),
-            Event::ParityError => isr.pe().bit(),
-            Event::LinBreak => isr.lbdf().bit(),
-            Event::NoiseError => isr.nf().bit(),
-            Event::FramingError => isr.fe().bit(),
-            Event::CharacterMatch => isr.cmf().bit(),
-            Event::ReceiverTimeout => isr.rtof().bit(),
-            // Event::EndOfBlock => isr.eobf().bit(),
-            // Event::WakeupFromStopMode => isr.wuf().bit(),
-        }
+    pub fn clear_events(&mut self) {
+        // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
+        self.usart.icr.write(|w| unsafe { w.bits(u32::MAX) });
+    }
+
+    /// Enable or disable overrun detection
+    ///
+    /// When overrun detection is disabled and new data is received while the
+    /// [`Event::ReceiveDataRegisterNotEmpty`] flag is still set,
+    /// the [`Event::OverrunError`] flag is not set and the new received data overwrites the
+    /// previous content of the RDR register.
+    #[doc(alias = "OVRDIS")]
+    #[inline]
+    pub fn detect_overrun(&mut self, enable: bool) {
+        let uart_enabled = self.usart.cr1.read().ue().bit();
+        self.usart.cr1.modify(|_, w| w.ue().disabled());
+        self.usart.cr3.modify(|_, w| w.ovrdis().bit(!enable));
+        self.usart.cr1.modify(|_, w| w.ue().bit(uart_enabled));
     }
 
     /// Configuring the UART to match each received character,
