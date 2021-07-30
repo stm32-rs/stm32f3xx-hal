@@ -91,6 +91,26 @@ pub use nb::block;
 
 pub use embedded_time as time;
 
+mod private {
+    /// Private sealed trait to seal all GPIO implementations
+    /// which do implement peripheral functionalities.
+    pub trait Sealed {}
+
+    /// Modify specific index of array-like register
+    macro_rules! modify_at {
+        ($reg:expr, $bitwidth:expr, $index:expr, $value:expr) => {
+            $reg.modify(|r, w| {
+                let mask = !(u32::MAX >> (32 - $bitwidth) << ($bitwidth * $index));
+                let value = $value << ($bitwidth * $index);
+                w.bits(r.bits() & mask | value)
+            });
+        };
+    }
+    pub(crate) use modify_at;
+}
+
+pub(crate) use private::modify_at;
+
 /// Peripheral access
 #[cfg(feature = "svd-f301")]
 pub use stm32f3::stm32f301 as pac;
@@ -194,12 +214,6 @@ cfg_if! {
             pub(crate) use expect_wrapper as expect;
         }
     }
-}
-
-mod private {
-    /// Private sealed trait to seal all GPIO implementations
-    /// which do implement peripheral functionalities.
-    pub trait Sealed {}
 }
 
 /// Toggle something on or off.

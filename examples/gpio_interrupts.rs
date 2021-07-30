@@ -44,7 +44,7 @@ fn main() -> ! {
     let mut user_button = gpioa
         .pa0
         .into_pull_down_input(&mut gpioa.moder, &mut gpioa.pupdr);
-    user_button.make_interrupt_source(&mut syscfg);
+    syscfg.select_exti_interrupt_source(&user_button);
     user_button.trigger_on_edge(&mut exti, Edge::Rising);
     user_button.enable_interrupt(&mut exti);
     let interrupt_num = user_button.nvic(); // hal::pac::Interrupt::EXTI0
@@ -82,6 +82,6 @@ fn EXTI0() {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .clear_interrupt_pending_bit();
+            .clear_interrupt();
     })
 }
