@@ -120,14 +120,18 @@ pub enum Event {
     ReceiverTimeout,
     // TODO: SmartCard Mode not implemented, no use as of now.
     // EndOfBlock,
-    /// The peripheral was woken up from "Stop Mode".
-    ///
-    /// This event is set by hardware, when a wakeup event is detected.
-    ///
-    /// The condition, when it does wake up can be configured via
-    /// [`Serial::set_wakeup_from_stopmode_reason()`]
-    #[doc(alias = "WUF")]
-    WakeupFromStopMode,
+    // TODO(Sh3Rm4n): The wakeup from stop mode is alittle bit more complicated:
+    // - UESM has to be enabled so that it works (RM0316 29.8.1)
+    // - Only works with LSI and HSI (which are not configurable yet)
+    // - ...
+    // /// The peripheral was woken up from "Stop Mode".
+    // ///
+    // /// This event is set by hardware, when a wakeup event is detected.
+    // ///
+    // /// The condition, when it does wake up can be configured via
+    // /// [`Serial::set_wakeup_from_stopmode_reason()`]
+    // #[doc(alias = "WUF")]
+    // WakeupFromStopMode,
 }
 
 /// Serial error
