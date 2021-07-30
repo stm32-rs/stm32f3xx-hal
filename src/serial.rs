@@ -26,6 +26,7 @@ use crate::{
 use crate::pac::RCC;
 
 use cfg_if::cfg_if;
+#[cfg(feature = "enumset")]
 use enumset::{EnumSet, EnumSetType};
 
 use crate::dma;
@@ -35,8 +36,10 @@ use cortex_m::interrupt;
 ///
 /// All events can be cleared by [`Serial::clear_event`] or [`Serial::clear_events`].
 /// Some events are also cleared on other conditions.
-#[derive(Debug, EnumSetType)]
+#[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "enumset", derive(EnumSetType))]
+#[cfg_attr(not(feature = "enumset"), derive(Copy, Clone, PartialEq, Eq))]
 #[non_exhaustive]
 pub enum Event {
     /// Transmit data register empty / new data can be sent.

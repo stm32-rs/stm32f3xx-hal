@@ -19,6 +19,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Readd MonoTimer. This was accidentally removed before. ([#247])
 - Basic serial implementation also available for UART4 and UART5 ([#246])
 - Implement serial DMA also for Serial ([#246])
+- Add [`enumset`][] as a optional dependency, which allow more ergonomic functions
+  regarding enums. This is especially useful for status event query functions.
+  ([#253])
+
+[`enumset`]: https://crates.io/crates/enumset
 
 ### Changed
 

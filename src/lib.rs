@@ -69,6 +69,12 @@
 
  Enable USB peripherals on supported targets.
 
+ ### `enumset`
+
+ Enable functions, which leverage [`enumset`](https://crates.io/crates/enumset).
+ This is especially usefull to get all set status events at once,
+ see for example [`serial::Serial::events()`]
+
  ### `defmt`
 
  Currently these are only used for panicking calls, like

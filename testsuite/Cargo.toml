@@ -46,7 +46,7 @@ defmt = "0.2.0"
 defmt-rtt = "0.2.0"
 defmt-test = "0.2.0"
 # TODO: Set stm32f303xc as default, but make it overwritable
-stm32f3xx-hal = { path = "..", features = ["rt","defmt-trace","can", "ld"]}
+stm32f3xx-hal = { path = "..", features = ["rt", "defmt-trace", "can", "ld", "enumset"]}
 panic-probe = { version = "0.2.0", features = ["print-defmt"] }
 nb = "1.0.0"
 
