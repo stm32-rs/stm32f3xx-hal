@@ -67,6 +67,7 @@ use crate::{
     pac::{Interrupt, EXTI},
     rcc::AHB,
     syscfg::SysCfg,
+    Toggle,
 };
 
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
@@ -582,7 +583,14 @@ where
         }
     }
 
-    /// Make corresponding EXTI line sensitive to this pin
+    /// Make corresponding EXTI line sensitive to this pin.
+    ///
+    /// # Note
+    ///
+    /// Only **one** Pin index of all banks can be activated
+    /// for interrupts simultainously.
+    ///
+    /// For example, only on of `PA1`, `PB1`, `PC1`, ... can be activated.
     pub fn make_interrupt_source(&mut self, syscfg: &mut SysCfg) {
         let bitwidth = 4;
         let index = self.index.index() % 4;
@@ -611,29 +619,37 @@ where
         }
     }
 
-    /// Enable external interrupts from this pin
-    pub fn enable_interrupt(&mut self, exti: &mut EXTI) {
+    /// Configure external interrupts from this pin
+    ///
+    /// Remeber to also configure the interrupt pin on
+    /// the SysCfg site, with [`Pin::make_interrupt_source()`]
+    pub fn configure_interrupt(&mut self, exti: &mut EXTI, enable: impl Into<Toggle>) {
+        let enable: Toggle = enable.into();
+        let enable: bool = enable.into();
+
         let bitwidth = 1;
         let index = self.index.index();
-        let value = 1;
+        let value = u32::from(enable);
         unsafe { modify_at!(reg_for_cpu!(exti, imr), bitwidth, index, value) };
+    }
+
+    /// Enable external interrupts from this pin
+    pub fn enable_interrupt(&mut self, exti: &mut EXTI) {
+        self.configure_interrupt(exti, Toggle::On)
     }
 
     /// Disable external interrupts from this pin
     pub fn disable_interrupt(&mut self, exti: &mut EXTI) {
-        let bitwidth = 1;
-        let index = self.index.index();
-        let value = 0;
-        unsafe { modify_at!(reg_for_cpu!(exti, imr), bitwidth, index, value) };
+        self.configure_interrupt(exti, Toggle::Off)
     }
 
     /// Clear the interrupt pending bit for this pin
-    pub fn clear_interrupt_pending_bit(&mut self) {
+    pub fn clear_interrupt(&mut self) {
         unsafe { reg_for_cpu!((*EXTI::ptr()), pr).write(|w| w.bits(1 << self.index.index())) };
     }
 
     /// Reads the interrupt pending bit for this pin
-    pub fn check_interrupt(&self) -> bool {
+    pub fn is_interrupt_pending(&self) -> bool {
         unsafe { reg_for_cpu!((*EXTI::ptr()), pr).read().bits() & (1 << self.index.index()) != 0 }
     }
 }

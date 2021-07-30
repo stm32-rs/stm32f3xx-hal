@@ -89,6 +89,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - `clear_events()` was added to clear all events at once.
   - `is_event_triggered()` can check if an `Event` is triggered.
   - `triggered_events` returns an `EnumSet` of triggered events.
+- Change gpio interrupt API to be more in line with the new serial interrupt
+  API. ([#262])
 
 ## [v0.7.0] - 2021-06-18
 
@@ -414,6 +416,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#262]: https://github.com/stm32-rs/stm32f3xx-hal/pull/262
 [#260]: https://github.com/stm32-rs/stm32f3xx-hal/pull/260
 [#259]: https://github.com/stm32-rs/stm32f3xx-hal/pull/259
 [#257]: https://github.com/stm32-rs/stm32f3xx-hal/pull/257

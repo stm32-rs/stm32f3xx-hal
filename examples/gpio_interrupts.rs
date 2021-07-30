@@ -82,6 +82,6 @@ fn EXTI0() {
             .borrow_mut()
             .as_mut()
             .unwrap()
-            .clear_interrupt_pending_bit();
+            .clear_interrupt();
     })
 }
