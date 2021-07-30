@@ -19,12 +19,45 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Readd MonoTimer. This was accidentally removed before. ([#247])
 - Basic serial implementation also available for UART4 and UART5 ([#246])
 - Implement serial DMA also for Serial ([#246])
+- Add [`enumset`][] as a optional dependency, which allow more ergonomic functions
+  regarding enums. This is especially useful for status event query functions.
+  ([#253])
+- As serial `Error` and serial `Events` share things in common. `TryFrom<Event>`
+  and `From<Error>` is implemented for conversions. ([#253])
+- Add serial character match function, with which events can be triggered for
+  the set character. ([#253])
+- Add receiver timeout function, which configures the serial peripheral to
+  trigger an event, if nothing happened after a certain time on the serial
+  receiver line. ([#253])
+- Add `raw_read()` function, which does no error handling and also does not
+  clear any `Event` by itself. Useful, if the error_handling has to be done in
+  another context (like an interrupt rountine). ([#253])
+- Introduce `Toggle`, with `On` and `Off` as a convinience wrapper around `bool`
+  for configuration purposes. ([#253])
+- Add an associated const to `serial::Instance` to return the corresponding
+  `pac::Interrupt`-number, which is useful to `unmask()` interrupts.
+  An `nvic()` function to `Serial` was also added for convinience. ([#253])
+- Add a `Serial::is_busy()` function to check, if the serial device is busy.
+  Useful to block on this function, e.g. `while serial.is_busy() {}`. ([#253])
+- Add `BaudTable` a convinience wrapper around `Baud` to configure the `Serial`
+  to the most commen baud rates. ([#253])
+- Add `Serial::detect_overrun()` function, to en- or disable the overrun
+  detection of the `Serial`. If overrun is disabled (enabled by default), than
+  newly arrived bytes are overwriting the current data in the read receive
+  register without throwing any event. ([#253]).
+- Lift generic constraint of most `Serial` method on `TxPin` and `RxPin`.
+  This should make it easier to generically use the `Serial` peripheral. ([#253])
+
+[`enumset`]: https://crates.io/crates/enumset
 
 ### Changed
 
 - `PXx` struct (representing a generic GPIO pin) implements `Send` and `Sync` ([#251])
 - Each pin aliases (`PA0`, `PA1`, ..) are defined under `gpio` module directly.
-  Re-export from gpio port sub-modules are provided for compatibility. [#257]
+  Re-export from gpio port sub-modules are provided for compatibility. ([#257])
+- The `embedded-hal` Read implementation of `Serial` does now return `WoudBlock`
+  if the peripheral is busy. Also if an `Overrun` occured the receive data
+  register (RDR) is flushed to have a more consistent API. ([#253])
 
 ### Fixed
 
@@ -45,6 +78,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   when `Serial::split` was previously called. ([#252])
 - Parameterized `usb::Peripheral` and `usb::UsbType` on the pin configuration
   used ([#255])
+- Add (almost) all missing serial (interrupt and status) events.
+  Also rename all the event names to be more descriptive. ([#253])
+- A new serial interrupt API was introduced: ([#253])
+  - `listen()` and `unlisten()` are renamed to `enable_interrupt()` and
+  `disable_interrupt()`.
+  - `is_tc()` and other non-parametrizable functions are removed.
+  - `configure_interrupt()` was added, which can be parameterized.
+  - `clear_event()` was added to clear specific events.
+  - `clear_events()` was added to clear all events at once.
+  - `is_event_triggered()` can check if an `Event` is triggered.
+  - `triggered_events` returns an `EnumSet` of triggered events.
 
 ## [v0.7.0] - 2021-06-18
 
@@ -374,6 +418,7 @@ let clocks = rcc
 [#259]: https://github.com/stm32-rs/stm32f3xx-hal/pull/259
 [#257]: https://github.com/stm32-rs/stm32f3xx-hal/pull/257
 [#255]: https://github.com/stm32-rs/stm32f3xx-hal/pull/255
+[#253]: https://github.com/stm32-rs/stm32f3xx-hal/pull/253
 [#252]: https://github.com/stm32-rs/stm32f3xx-hal/pull/252
 [#251]: https://github.com/stm32-rs/stm32f3xx-hal/pull/251
 [#247]: https://github.com/stm32-rs/stm32f3xx-hal/pull/247

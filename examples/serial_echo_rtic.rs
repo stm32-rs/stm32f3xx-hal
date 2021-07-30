@@ -12,6 +12,7 @@ mod app {
         pac,
         prelude::*,
         serial::{Event, Serial},
+        Toggle,
     };
 
     #[monotonic(binds = SysTick, default = true)]
@@ -65,9 +66,12 @@ mod app {
         pins.1.internal_pull_up(&mut gpioa.pupdr, true);
         let mut serial: SerialType =
             Serial::new(cx.device.USART1, pins, 19200.Bd(), clocks, &mut rcc.apb2);
-        serial.listen(Event::Rxne);
+        serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Toggle::On);
 
         rprintln!("post init");
+
+        // A kick of for the infitinte loop in protocol_serial_task()
+        nb::block!(serial.write(b'c')).unwrap();
 
         task1::spawn().unwrap();
 
@@ -79,22 +83,33 @@ mod app {
         let serial = cx.local.serial;
         let dir = cx.local.dir;
 
-        if serial.is_rxne() {
+        if serial.is_event_triggered(Event::ReceiveDataRegisterNotEmpty) {
             dir.set_high().unwrap();
-            serial.unlisten(Event::Rxne);
+            serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Toggle::Off);
             match serial.read() {
                 Ok(byte) => {
                     serial.write(byte).unwrap();
-                    serial.listen(Event::Tc);
+                    rprintln!("{:?}", char::from_u32(byte.into()).unwrap_or('?'));
+                    serial.configure_interrupt(Event::TransmissionComplete, Toggle::On);
                 }
                 Err(_error) => rprintln!("irq error"),
             };
         }
 
-        if serial.is_tc() {
+        // It is perfectly viable to just use `is_event_triggered` here,
+        // but this is a showcase, to also be able to used `triggered_events`
+        // and other functions enabled by the "enumset" feature.
+        let events = serial.triggered_events();
+        if events.contains(Event::TransmissionComplete) {
             dir.set_low().unwrap();
-            serial.unlisten(Event::Tc);
-            serial.listen(Event::Rxne);
+            let interrupts = {
+                let mut interrupts = enumset::EnumSet::new();
+                interrupts.insert(Event::ReceiveDataRegisterNotEmpty);
+                interrupts
+            };
+            serial.clear_event(Event::TransmissionComplete);
+            // Disable all interrupts, except ReceiveDataRegisterNotEmpty.
+            serial.configure_interrupts(interrupts);
         }
     }
 
