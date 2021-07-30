@@ -14,31 +14,14 @@
 
  Please select one of the following (`x` denotes any character in [a-z]):
 
- * stm32f301x6
- * stm32f301x8
- * stm32f318x8
- * stm32f302x6
- * stm32f302x8
- * stm32f302xb
- * stm32f302xc
- * stm32f302xd
- * stm32f302xe
- * stm32f303x6
- * stm32f303x8
- * stm32f303xb
- * stm32f303xc
- * stm32f303xd
- * stm32f303xe
+ * stm32f301x6, stm32f301x8, stm32f318x8
+ * stm32f302x6, stm32f302x8, stm32f302xb, stm32f302xc, stm32f302xd, stm32f302xe
+ * stm32f303x6, stm32f303x8, stm32f303xb, stm32f303xc, stm32f303xd, stm32f303xe
  * stm32f328x8
  * stm32f358xc
  * stm32f398xe
- * stm32f373x8
- * stm32f373xb
- * stm32f373xc
- * stm32f378xc
- * stm32f334x4
- * stm32f334x6
- * stm32f334x8
+ * stm32f373x8, stm32f373xb, stm32f373xc, stm32f378xc
+ * stm32f334x4, stm32f334x6, stm32f334x8
 
  Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
  So you need to specify `stm32f303xc` in your `Cargo.toml` (note that VC → xc).

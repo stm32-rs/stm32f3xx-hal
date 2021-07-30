@@ -7,7 +7,7 @@
 `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
 peripheral access API for the STMicro STM32F3 series microcontrollers. The
 selection of the MCU is done by feature gates, typically specified by board
-support crates. Currently supported configurations are:
+support crates. An excerpt of supported chip variants:
 
 * stm32f301
 * stm32f318
@@ -77,37 +77,16 @@ This crate requires you to specify your target chip as a feature.
 [user manual][]. So you need to specify `stm32f303xc` in your `Cargo.toml`
 (note that VC → xc).*
 
-#### Possible chips
+All possible chip variants are selectable via cargo features.
+You can find a list [here, in the docs][chip-features].
 
-[comment]: # (Any changes here should be mirrored in src/lib.rs)
+#### Note
 
-Please select one of the following (`x` denotes any character in [a-z]):
+1. This features are mutually exclusive. Only one feature / chip variant can be
+chosen.
+2. You **have** to choose exactly **one** feature to build this crate at all.
 
-* stm32f301x6
-* stm32f301x8
-* stm32f318x8
-* stm32f302x6
-* stm32f302x8
-* stm32f302xb
-* stm32f302xc
-* stm32f302xd
-* stm32f302xe
-* stm32f303x6
-* stm32f303x8
-* stm32f303xb
-* stm32f303xc
-* stm32f303xd
-* stm32f303xe
-* stm32f328x8
-* stm32f358xc
-* stm32f398xe
-* stm32f373x8
-* stm32f373xb
-* stm32f373xc
-* stm32f378xc
-* stm32f334x4
-* stm32f334x6
-* stm32f334x8
+[chip-features]: https://docs.rs/stm32f3xx-hal/latest/stm32f3xx_hal/#target-chip-selection
 
 #### Background
 
@@ -168,7 +147,4 @@ compile with older versions but that may change in any new patch release.
 
 ## Contributing
 
-### Running Tests
-
-See [`testsuite/README.md`](testsuite/README.md) for how to set up and run
-tests on the target.
+See [CONTRIBUTING.md](CONTRIBUTING.md)
