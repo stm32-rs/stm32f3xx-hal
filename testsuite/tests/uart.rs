@@ -12,7 +12,7 @@ use hal::pac;
 use hal::prelude::*;
 use hal::serial::{
     config::{Config, Parity, StopBits},
-    Error, Event, Instance, Serial, TxPin, RxPin,
+    Error, Event, Instance, Serial,
 };
 use hal::time::rate::Baud;
 use hal::{
@@ -58,14 +58,12 @@ fn test_test_msg_loopback(state: &mut State, config: impl Into<Config>) {
     state.serial1 = Some(serial);
 }
 
-fn trigger_event<Usart, Tx, Rx>(
+fn trigger_event<Usart, Pins>(
     event: Event,
-    serial: &mut Serial<Usart, (Tx, Rx)>,
-    mut trigger: impl FnMut(&mut Serial<Usart, (Tx, Rx)>),
+    serial: &mut Serial<Usart, Pins>,
+    mut trigger: impl FnMut(&mut Serial<Usart, Pins>),
 ) where
     Usart: Instance,
-    Tx: TxPin<Usart>,
-    Rx: RxPin<Usart>,
 {
     // Create an enumset of events with only one
     // event. Applying it disabled all other interrupts.

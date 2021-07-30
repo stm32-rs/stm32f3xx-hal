@@ -45,6 +45,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   detection of the `Serial`. If overrun is disabled (enabled by default), than
   newly arrived bytes are overwriting the current data in the read receive
   register without throwing any event. ([#253]).
+- Lift generic constraint of most `Serial` method on `TxPin` and `RxPin`.
+  This should make it easier to generically use the `Serial` peripheral. ([#253])
 
 [`enumset`]: https://crates.io/crates/enumset
 

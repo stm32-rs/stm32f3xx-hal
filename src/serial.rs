@@ -444,6 +444,16 @@ mod split {
             Tx { usart, pin }
         }
 
+        /// Destruct [`Tx`] to regain access to underlying USART and pin.
+        pub(crate) fn free(self) -> (Usart, Pin) {
+            (self.usart, self.pin)
+        }
+    }
+
+    impl<Usart, Pin> Tx<Usart, Pin>
+    where
+        Usart: Instance,
+    {
         /// Get a reference to internal usart peripheral
         ///
         /// # Safety
@@ -472,11 +482,6 @@ mod split {
         pub(crate) unsafe fn usart_mut(&mut self) -> &mut Usart {
             &mut self.usart
         }
-
-        /// Destruct [`Tx`] to regain access to underlying USART and pin.
-        pub(crate) fn free(self) -> (Usart, Pin) {
-            (self.usart, self.pin)
-        }
     }
 
     impl<Usart, Pin> Rx<Usart, Pin>
@@ -488,6 +493,20 @@ mod split {
             Rx { usart, pin }
         }
 
+        /// Destruct [`Rx`] to regain access to the underlying pin.
+        ///
+        /// The USART is omitted, as it is returnend from Tx already to avoid
+        /// beeing able to crate a duplicate reference to the same underlying
+        /// peripheral.
+        pub(crate) fn free(self) -> Pin {
+            self.pin
+        }
+    }
+
+    impl<Usart, Pin> Rx<Usart, Pin>
+    where
+        Usart: Instance,
+    {
         /// Get a reference to internal usart peripheral
         ///
         /// # Safety
@@ -514,15 +533,6 @@ mod split {
         /// Same as in [`Self::usart()`].
         pub(crate) unsafe fn usart_mut(&mut self) -> &mut Usart {
             &mut self.usart
-        }
-
-        /// Destruct [`Rx`] to regain access to the underlying pin.
-        ///
-        /// The USART is omitted, as it is returnend from Tx already to avoid
-        /// beeing able to crate a duplicate reference to the same underlying
-        /// peripheral.
-        pub(crate) fn free(self) -> Pin {
-            self.pin
         }
     }
 }
@@ -586,6 +596,48 @@ where
         Self { usart, pins }
     }
 
+    /// Releases the USART peripheral and associated pins
+    pub fn free(self) -> (Usart, (Tx, Rx)) {
+        self.usart
+            .cr1
+            .modify(|_, w| w.ue().disabled().re().disabled().te().disabled());
+        (self.usart, self.pins)
+    }
+
+    /// Joins previously [`Serial::split()`] serial.
+    ///
+    /// This is often needed to access methods only implemented for [`Serial`]
+    /// but not for [`Tx`] nor [`Rx`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let dp = pac::Peripherals::take().unwrap();
+    ///
+    /// (tx, rx) = Serial::new(dp.USART1, ...).split();
+    ///
+    /// // Do something with tx and rx
+    ///
+    /// serial = Serial::join(tx, rx);
+    /// ```
+    pub fn join(tx: split::Tx<Usart, Tx>, rx: split::Rx<Usart, Rx>) -> Self
+    where
+        Tx: TxPin<Usart>,
+        Rx: RxPin<Usart>,
+    {
+        let (usart, tx_pin) = tx.free();
+        let rx_pin = rx.free();
+        Self {
+            usart,
+            pins: (tx_pin, rx_pin),
+        }
+    }
+}
+
+impl<Usart, Pins> Serial<Usart, Pins>
+where
+    Usart: Instance,
+{
     /// Serial read out of the read register
     ///
     /// No error handling and no additional side-effects, besides the implied
@@ -806,43 +858,6 @@ where
     pub fn match_character(&self) -> u8 {
         self.usart.cr2.read().add().bits()
     }
-
-    /// Releases the USART peripheral and associated pins
-    pub fn free(self) -> (Usart, (Tx, Rx)) {
-        self.usart
-            .cr1
-            .modify(|_, w| w.ue().disabled().re().disabled().te().disabled());
-        (self.usart, self.pins)
-    }
-
-    /// Joins previously [`Serial::split()`] serial.
-    ///
-    /// This is often needed to access methods only implemented for [`Serial`]
-    /// but not for [`Tx`] nor [`Rx`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let dp = pac::Peripherals::take().unwrap();
-    ///
-    /// (tx, rx) = Serial::new(dp.USART1, ...).split();
-    ///
-    /// // Do something with tx and rx
-    ///
-    /// serial = Serial::join(tx, rx);
-    /// ```
-    pub fn join(tx: split::Tx<Usart, Tx>, rx: split::Rx<Usart, Rx>) -> Self
-    where
-        Tx: TxPin<Usart>,
-        Rx: RxPin<Usart>,
-    {
-        let (usart, tx_pin) = tx.free();
-        let rx_pin = rx.free();
-        Self {
-            usart,
-            pins: (tx_pin, rx_pin),
-        }
-    }
 }
 
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
@@ -1057,7 +1072,6 @@ where
 impl<Usart, Pin> Rx<Usart, Pin>
 where
     Usart: Instance + Dma,
-    Pin: RxPin<Usart>,
 {
     /// Fill the buffer with received data using DMA.
     pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -1112,7 +1126,6 @@ where
 impl<Usart, Pin> dma::Target for Rx<Usart, Pin>
 where
     Usart: Instance + Dma,
-    Pin: RxPin<Usart>,
 {
     fn enable_dma(&mut self) {
         // NOTE(unsafe) critical section prevents races
@@ -1149,11 +1162,9 @@ where
     }
 }
 
-impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
+impl<Usart, Pins> Serial<Usart, Pins>
 where
     Usart: Instance + Dma,
-    Rx: RxPin<Usart>,
-    Tx: TxPin<Usart>,
 {
     /// Fill the buffer with received data using DMA.
     pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
@@ -1188,7 +1199,7 @@ where
     }
 }
 
-impl<Usart, Tx, Rx> dma::Target for Serial<Usart, (Tx, Rx)>
+impl<Usart, Pins> dma::Target for Serial<Usart, Pins>
 where
     Usart: Instance + Dma,
 {
