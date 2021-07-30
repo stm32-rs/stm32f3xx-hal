@@ -570,6 +570,11 @@ where
     Mode: marker::Active,
 {
     /// NVIC interrupt number of interrupt from this pin
+    ///
+    /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`].
+    /// This is also useful for all other [`cortex_m::peripheral::NVIC`] functions.
+    // TODO(Sh3rm4n): It would be cool to have this either const or have a const function.
+    // But this is currenlty not possible, because index() is runtime defined.
     pub fn nvic(&self) -> Interrupt {
         match self.index.index() {
             0 => Interrupt::EXTI0,
