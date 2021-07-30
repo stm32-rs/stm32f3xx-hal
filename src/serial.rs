@@ -9,6 +9,7 @@
 
 use core::{
     convert::{Infallible, TryFrom},
+    fmt,
     ops::Deref,
 };
 
@@ -424,12 +425,16 @@ pub struct Serial<Usart, Pins> {
 mod split {
     use super::Instance;
     /// Serial receiver
+    #[derive(Debug)]
+    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
     pub struct Rx<Usart, Pin> {
         usart: Usart,
         pub(crate) pin: Pin,
     }
 
     /// Serial transmitter
+    #[derive(Debug)]
+    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
     pub struct Tx<Usart, Pin> {
         usart: Usart,
         pub(crate) pin: Pin,
@@ -1306,6 +1311,31 @@ macro_rules! usart {
                         )
                     };
                     (split::Tx::new(tx, self.pins.0), split::Rx::new(rx, self.pins.1))
+                }
+            }
+
+            #[cfg(feature = "defmt")]
+            impl<Pins> defmt::Format for Serial<$USARTX, Pins> {
+                fn format(&self, f: defmt::Formatter) {
+                    // Omitting pins makes it:
+                    // 1. Easier.
+                    // 2. Not to specialized to use it ergonimically for users
+                    //    even in a generic context.
+                    // 3. Not require specialization.
+                    defmt::write!(
+                        f,
+                        "Serial {{ usart: {}, pins: ? }}",
+                        stringify!($USARTX),
+                    );
+                }
+            }
+
+            impl<Pins> fmt::Debug for Serial<$USARTX, Pins> {
+                fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    f.debug_struct(stringify!(Serial))
+                        .field("usart", &stringify!($USARTX))
+                        .field("pins", &"?")
+                        .finish()
                 }
             }
         )+

@@ -177,9 +177,17 @@ pub mod marker {
 }
 
 /// Runtime defined GPIO port (type state)
+#[derive(Debug)]
 pub struct Gpiox {
     ptr: *const dyn GpioRegExt,
     index: u8,
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for Gpiox {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(f, "Gpiox {{ ptr: GpioRegExt , index: {:?} }}", self.index);
+    }
 }
 
 // # SAFETY
@@ -212,6 +220,8 @@ impl marker::Gpio for Gpiox {}
 // TODO(Sh3Rm4n): If the pin number wouldn't be runtime defined, the implementation for all
 // statically defined pins would be much easier (and withless overhead). What could be the
 // solution?
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Ux(u8);
 
 impl marker::Index for Ux {
@@ -221,6 +231,8 @@ impl marker::Index for Ux {
 }
 
 /// Compile time defined pin number (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct U<const X: u8>;
 
 impl<const X: u8> marker::Index for U<X> {
@@ -231,17 +243,29 @@ impl<const X: u8> marker::Index for U<X> {
 }
 
 /// Input mode (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Input;
 /// Output mode (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Output<Otype>(PhantomData<Otype>);
 /// Alternate function (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Alternate<Otype, const AF: u8>(PhantomData<Otype>);
 /// Analog mode (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Analog;
 
 /// Push-pull output (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct PushPull;
 /// Open-drain output (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct OpenDrain;
 
 impl marker::Readable for Input {}
@@ -277,7 +301,7 @@ pub enum Resistor {
 }
 
 /// GPIO interrupt trigger edge selection
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Edge {
     /// Rising edge of voltage
@@ -289,6 +313,8 @@ pub enum Edge {
 }
 
 /// Generic pin
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Pin<Gpio, Index, Mode> {
     pub(crate) gpio: Gpio,
     pub(crate) index: Index,
@@ -769,6 +795,8 @@ macro_rules! gpio {
     }) => {
         paste::paste! {
             #[doc = "GPIO port " $GPIOX " (type state)"]
+            #[derive(Debug)]
+            #[cfg_attr(feature = "defmt", derive(defmt::Format))]
             pub struct $Gpiox;
 
             impl private::Gpio for $Gpiox {

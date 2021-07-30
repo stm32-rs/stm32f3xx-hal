@@ -1,5 +1,6 @@
 //! # System configuration controller
 
+use core::fmt;
 use core::ops::Deref;
 
 use crate::gpio::{marker, Pin};
@@ -31,6 +32,19 @@ impl SysCfgExt for SYSCFG {
 /// let syscfg = dp.SYSCFG.constrain(&mut rcc.apb2);
 /// ```
 pub struct SysCfg(SYSCFG);
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for SysCfg {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(f, "SysCfg(SYSCFG)");
+    }
+}
+
+impl fmt::Debug for SysCfg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SysCfg").finish()
+    }
+}
 
 impl Deref for SysCfg {
     type Target = SYSCFG;

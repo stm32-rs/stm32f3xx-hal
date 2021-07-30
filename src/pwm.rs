@@ -208,30 +208,52 @@ use crate::gpio::gpioe;
 use crate::gpio::{gpioc, gpiof};
 
 /// Output Compare Channel 1 of Timer 1 (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TIM2_CH1 {}
 /// Output Compare Channel 2 of Timer 1 (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TIM2_CH2 {}
 /// Output Compare Channel 3 of Timer 1 (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TIM2_CH3 {}
 /// Output Compare Channel 4 of Timer 1 (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TIM2_CH4 {}
 
 /// Output Compare Channel 1 of Timer 15 (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TIM15_CH1 {}
 /// Output Compare Channel 2 of Timer 15 (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TIM15_CH2 {}
 
 /// Output Compare Channel 1 of Timer 16 (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TIM16_CH1 {}
 
 /// Output Compare Channel 1 of Timer 17 (type state)
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct TIM17_CH1 {}
 
 /// Type state used to represent a channel that has no pins yet
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct NoPins {}
 /// Type state used to represent a channel is using regular pins
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct WithPins {}
 /// Type state used to represent a channel is using (only) complementary pins
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct WithNPins {}
 
 /// Representation of a Channel for an abritary timer channel,
@@ -239,6 +261,8 @@ pub struct WithNPins {}
 /// is using any pins yet.
 ///
 /// If there are no pins supplied, it cannot be enabled.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct PwmChannel<X, T> {
     timx_chy: PhantomData<X>,
     pin_status: PhantomData<T>,

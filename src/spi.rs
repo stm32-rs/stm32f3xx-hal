@@ -137,7 +137,8 @@ use crate::time::rate::*;
 use core::marker::PhantomData;
 
 /// SPI error
-#[derive(Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
 pub enum Error {
     /// Overrun occurred

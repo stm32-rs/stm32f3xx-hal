@@ -6,6 +6,7 @@
 //!
 //! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.7.0/examples/can.rs
 
+use core::fmt;
 use embedded_time::fixed_point::FixedPoint;
 
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
@@ -23,6 +24,21 @@ const MAX_RELOAD: u32 = 0x0FFF;
 /// Independent Watchdog Peripheral
 pub struct IndependentWatchDog {
     iwdg: IWDG,
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for IndependentWatchDog {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(f, "IndependentWatchDog {{ iwdg: IWDG }}");
+    }
+}
+
+impl fmt::Debug for IndependentWatchDog {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IndependentWatchDog")
+            .field("iwdg", &"IWDG")
+            .finish()
+    }
 }
 
 fn into_division_value(psc: PR_A) -> u32 {

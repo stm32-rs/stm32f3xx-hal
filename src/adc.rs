@@ -45,6 +45,8 @@ pub struct Adc<ADC> {
 /// There is always an overhead of 13 ADC clock cycles.
 /// E.g. For Sampletime T_19 the total conversion time (in ADC clock cycles) is
 /// 13 + 19 = 32 ADC Clock Cycles
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum SampleTime {
     /// 1.5 ADC clock cycles
     T_1,
@@ -87,9 +89,10 @@ impl SampleTime {
     }
 }
 
-#[derive(Clone, Copy, PartialEq)]
 /// ADC operation mode
 // TODO: Implement other modes (DMA, Differential,…)
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum OperationMode {
     /// OneShot Mode
     OneShot,
@@ -128,6 +131,8 @@ impl From<CkMode> for CKMODE_A {
 }
 
 /// ADC data register alignment
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Align {
     /// Right alignment of output data
     Right,

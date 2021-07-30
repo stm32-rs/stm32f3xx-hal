@@ -6,6 +6,7 @@
 //! [DelayUs]: embedded_hal::blocking::delay::DelayUs
 
 use core::convert::From;
+use core::fmt;
 
 use cortex_m::peripheral::syst::SystClkSource;
 use cortex_m::peripheral::SYST;
@@ -19,6 +20,22 @@ use crate::time::fixed_point::FixedPoint;
 pub struct Delay {
     clocks: Clocks,
     syst: SYST,
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for Delay {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(f, "Delay {{ clocks: {} , syst: SYST }}", self.clocks);
+    }
+}
+
+impl fmt::Debug for Delay {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Delay")
+            .field("clocks", &self.clocks)
+            .field("syst", &"SYST")
+            .finish()
+    }
 }
 
 impl Delay {

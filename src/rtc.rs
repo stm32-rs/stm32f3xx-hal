@@ -8,10 +8,12 @@
 use crate::pac::{PWR, RTC};
 use crate::rcc::{APB1, BDCR};
 use core::convert::TryInto;
+use core::fmt;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
 /// RTC error type
-#[derive(Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
     /// Invalid input error
     InvalidInputData,
@@ -21,6 +23,19 @@ pub enum Error {
 pub struct Rtc {
     /// RTC Peripheral register definition
     pub regs: RTC,
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for Rtc {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(f, "Rtc {{ rtc: RTC }}");
+    }
+}
+
+impl fmt::Debug for Rtc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Rtc").field("rtc", &"RTC").finish()
+    }
 }
 
 impl Rtc {

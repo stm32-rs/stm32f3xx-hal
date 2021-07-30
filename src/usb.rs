@@ -8,6 +8,8 @@
 //!
 //! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.7.0/examples/usb_serial.rs
 
+use core::fmt;
+
 use crate::pac::{RCC, USB};
 use stm32_usbd::UsbPeripheral;
 
@@ -44,6 +46,32 @@ pub struct Peripheral<Dm: DmPin, Dp: DpPin> {
     pub pin_dm: Dm,
     /// Data Positiv Pin
     pub pin_dp: Dp,
+}
+
+#[cfg(feature = "defmt")]
+impl<Dm: DmPin, Dp: DpPin> defmt::Format for Peripheral<Dm, Dp> {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "Peripheral {{ usb: USB, pin_dm: {}, pin_dp: {}}}",
+            self.pin_dm,
+            self.pin_dp
+        );
+    }
+}
+
+impl<Dm, Dp> fmt::Debug for Peripheral<Dm, Dp>
+where
+    Dm: DmPin + fmt::Debug,
+    Dp: DpPin + fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Peripheral")
+            .field("usb", &"USB")
+            .field("pin_dm", &self.pin_dm)
+            .field("pin_dp", &self.pin_dp)
+            .finish()
+    }
 }
 
 unsafe impl<Dm: DmPin, Dp: DpPin> Sync for Peripheral<Dm, Dp> {}
