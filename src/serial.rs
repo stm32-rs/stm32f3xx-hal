@@ -786,7 +786,6 @@ where
         }
     }
 
-
     /// Configuring the UART to match each received character,
     /// with the configured one.
     ///

@@ -11,7 +11,7 @@ use hal::prelude::*;
 use hal::serial::Serial;
 use hal::serial::{
     config::{Config, Parity, StopBits},
-    Error,
+    Error, Event,
 };
 use hal::time::rate::Baud;
 use hal::{
@@ -36,7 +36,7 @@ struct State {
 
 const BAUD_FAST: Baud = Baud(115_200);
 const BAUD_SLOW: Baud = Baud(57_600);
-const TEST_MSG: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
+const TEST_MSG: [u8; 8] = [0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xaa, 0xbb];
 
 fn test_test_msg_loopback(state: &mut State, config: impl Into<Config>) {
     let (usart, pins) = unwrap!(state.serial1.take()).free();
@@ -123,21 +123,36 @@ mod tests {
     #[test]
     fn send_receive_split(state: &mut super::State) {
         let (mut tx, mut rx) = unwrap!(state.serial1.take()).split();
+
         for i in IntoIter::new(TEST_MSG) {
             defmt::unwrap!(nb::block!(tx.write(i)));
             let c = unwrap!(nb::block!(rx.read()));
             assert_eq!(c, i);
         }
 
-        // now provoke an overrun
-        // send 5 u8 bytes, which do not fit in the 32 bit buffer
-        for i in &TEST_MSG[..5] {
-            defmt::unwrap!(nb::block!(tx.write(*i)));
-        }
-        let c = nb::block!(rx.read());
-        assert!(matches!(c, Err(Error::Overrun)));
-
         state.serial1 = Some(Serial::join(tx, rx));
+    }
+
+    #[test]
+    fn test_overrun(state: &mut super::State) {
+        let (usart, pins) = unwrap!(state.serial1.take()).free();
+        let mut serial = Serial::new(usart, pins, 115200.Bd(), state.clocks, &mut state.apb2);
+        // Provoke an overrun
+        unwrap!(serial.bwrite_all(&TEST_MSG));
+
+        // Very important, to have a fix blocking point.
+        // Waiting for the transfer to be finished - this implementation is
+        // now independent of the choosen baudrate.
+        unwrap!(serial.bflush());
+        let c = nb::block!(serial.read());
+        assert!(matches!(c, Err(Error::Overrun)));
+        // Ensure that the receiver data reigster is empty.
+        // Another nb::block!(serial.read()) should block forever.
+        while serial.is_busy() {}
+        assert!(!serial.is_event_triggered(Event::ReceiveDataRegisterNotEmpty));
+        serial.clear_events();
+
+        state.serial1 = Some(serial);
     }
 
     #[test]
