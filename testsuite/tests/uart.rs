@@ -411,6 +411,28 @@ mod tests {
 
         state.serial1 = Some(serial);
     }
+
+    #[test]
+    fn test_disabled_overrun(state: &mut super::State) {
+        let mut serial = state.serial1.take().unwrap();
+
+        serial.detect_overrun(false);
+        while serial.is_busy() {}
+
+        // Writ the whole TEST_MSG content and check if the last bit
+        // is in the register.
+        unwrap!(serial.bwrite_all(&TEST_MSG));
+        unwrap!(serial.bflush());
+        assert_eq!(
+            unwrap!(nb::block!(serial.read())),
+            *TEST_MSG.iter().rev().next().unwrap()
+        );
+
+        // enable overrun again.
+        serial.detect_overrun(true);
+
+        state.serial1 = Some(serial);
+    }
 }
 
 // TODO: This maybe can be moved into a function inside the
