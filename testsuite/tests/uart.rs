@@ -214,14 +214,14 @@ mod tests {
         let built_1 = Config::default()
             .baudrate(123_456.Bd())
             .parity(Parity::Even)
-            .stopbits(StopBits::STOP0P5);
+            .stopbits(StopBits::Stop0P5);
         assert!(built_1.baudrate == 123_456.Bd());
         assert!(built_1.parity == Parity::Even);
-        assert!(built_1.stopbits == StopBits::STOP0P5);
+        assert!(built_1.stopbits == StopBits::Stop0P5);
 
         let built_1_different_order = Config::default()
             .baudrate(42.Bd())
-            .stopbits(StopBits::STOP0P5)
+            .stopbits(StopBits::Stop0P5)
             .parity(Parity::Even)
             .baudrate(123_456.Bd());
         assert!(built_1 == built_1_different_order);
@@ -268,10 +268,10 @@ mod tests {
     #[test]
     fn stopbits_loopback(state: &mut super::State) {
         for stopbits in &[
-            StopBits::STOP0P5,
-            StopBits::STOP1,
-            StopBits::STOP1P5,
-            StopBits::STOP2,
+            StopBits::Stop0P5,
+            StopBits::Stop1,
+            StopBits::Stop1P5,
+            StopBits::Stop2,
         ] {
             let config = Config::default().stopbits(*stopbits);
             test_test_msg_loopback(state, config);
