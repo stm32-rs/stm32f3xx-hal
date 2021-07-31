@@ -9,6 +9,8 @@
 use core::convert::{From, TryFrom};
 
 use cortex_m::peripheral::DWT;
+#[cfg(feature = "enumset")]
+use enumset::{EnumSet, EnumSetType};
 use void::Void;
 
 use crate::hal::timer::{CountDown, Periodic};
@@ -120,6 +122,11 @@ pub struct Timer<TIM> {
 }
 
 /// Interrupt events
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "enumset", derive(EnumSetType))]
+#[cfg_attr(not(feature = "enumset"), derive(Copy, Clone, PartialEq, Eq))]
+#[non_exhaustive]
 pub enum Event {
     /// Timer timed out / count down ended
     Update,
@@ -169,7 +176,7 @@ macro_rules! hal {
                     // The above line raises an update event which will indicate
                     // that the timer is already finished. Since this is not the case,
                     // it should be cleared
-                    self.clear_update_interrupt_flag();
+                    self.clear_event(Event::Update);
 
                     // start counter
                     self.tim.cr1.modify(|_, w| w.cen().enabled());
@@ -179,7 +186,7 @@ macro_rules! hal {
                     if self.tim.sr.read().uif().is_clear() {
                         Err(nb::Error::WouldBlock)
                     } else {
-                        self.clear_update_interrupt_flag();
+                        self.clear_event(Event::Update);
                         Ok(())
                     }
                 }
@@ -202,28 +209,90 @@ macro_rules! hal {
                     timer
                 }
 
-                /// Starts listening for an `event`
-                pub fn listen(&mut self, event: Event) {
-                    match event {
-                        Event::Update => self.tim.dier.write(|w| w.uie().enabled()),
-                    }
-                }
-
-                /// Stops listening for an `event`
-                pub fn unlisten(&mut self, event: Event) {
-                    match event {
-                        Event::Update => self.tim.dier.write(|w| w.uie().disabled()),
-                    }
-                }
-
                 /// Stops the timer
+                #[inline]
                 pub fn stop(&mut self) {
                     self.tim.cr1.modify(|_, w| w.cen().disabled());
                 }
 
-                /// Clears Update Interrupt Flag
-                pub fn clear_update_interrupt_flag(&mut self) {
-                    self.tim.sr.modify(|_, w| w.uif().clear());
+                /// Enable or disable the interrupt for the specified [`Event`].
+                #[inline]
+                pub fn enable_interrupt(&mut self, event: Event) {
+                    self.configure_interrupt(event, true);
+                }
+
+                /// Enable or disable the interrupt for the specified [`Event`].
+                #[inline]
+                pub fn disable_interrupt(&mut self, event: Event) {
+                    self.configure_interrupt(event, false);
+                }
+
+
+                // TODO(Sh3Rm4n): After macro -> Instance refactor introduce associated const INTERRUPT.
+                // /// Get the correspoing Interrupt number
+                // // pub fn nvic() -> Interrupt { }
+
+                /// Enable or disable the interrupt for the specified [`Event`].
+                #[inline]
+                pub fn configure_interrupt(&mut self, event: Event, enable: bool) {
+                    match event {
+                        Event::Update => self.tim.dier.write(|w| w.uie().bit(enable)),
+                    }
+                }
+
+                /// Enable or disable interrupt for the specified [`Event`]s.
+                ///
+                /// Like [`Timer::configure_interrupt`], but instead using an enumset. The corresponding
+                /// interrupt for every [`Event`] in the set will be enabled, every other interrupt will be
+                /// **disabled**.
+                #[cfg(feature = "enumset")]
+                #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
+                pub fn configure_interrupts(&mut self, events: EnumSet<Event>) -> &mut Self {
+                    for event in events.complement().iter() {
+                        self.configure_interrupt(event, false);
+                    }
+                    for event in events.iter() {
+                        self.configure_interrupt(event, true);
+                    }
+
+                    self
+                }
+
+                /// Check if an interrupt event happend.
+                pub fn is_event_triggered(&self, event: Event) -> bool {
+                    match event {
+                        Event::Update => self.tim.sr.read().uif().bit(),
+                    }
+                }
+
+                /// Get an [`EnumSet`] of all fired interrupt events.
+                #[cfg(feature = "enumset")]
+                #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
+                pub fn triggered_events(&self) -> EnumSet<Event> {
+                    let mut events = EnumSet::new();
+
+                    for event in EnumSet::<Event>::all().iter() {
+                        if self.is_event_triggered(event) {
+                            events |= event;
+                        }
+                    }
+
+                    events
+                }
+
+                /// Clear the given interrupt event flag.
+                #[inline]
+                pub fn clear_event(&mut self, event: Event) {
+                    match event {
+                        Event::Update => self.tim.sr.modify(|_, w| w.uif().clear()),
+                    }
+                }
+
+                /// Clear **all** interrupt events.
+                #[inline]
+                pub fn clear_events(&mut self) {
+                    // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
+                    self.tim.sr.write(|w| unsafe { w.bits(0) });
                 }
 
                 /// Releases the TIM peripheral

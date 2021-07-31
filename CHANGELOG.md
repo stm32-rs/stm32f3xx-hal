@@ -97,6 +97,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   Change `make_interrupt_source()` to `SysCfg::select_exti_interrupt_source()`.
 - Change dma interrupt API to be more in line with the new serial interrupt
   API. ([#263])
+- Change timer interrupt API to the same of the serial interface. ([#264])
+- Make timer Events `#[non_exhaustive]`. ([#264])
 
 ## [v0.7.0] - 2021-06-18
 
@@ -422,6 +424,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#264]: https://github.com/stm32-rs/stm32f3xx-hal/pull/264
 [#263]: https://github.com/stm32-rs/stm32f3xx-hal/pull/263
 [#262]: https://github.com/stm32-rs/stm32f3xx-hal/pull/262
 [#260]: https://github.com/stm32-rs/stm32f3xx-hal/pull/260
