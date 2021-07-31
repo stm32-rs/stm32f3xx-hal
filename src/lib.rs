@@ -159,8 +159,9 @@ pub use stm32f3::stm32f373 as pac;
 #[cfg(feature = "svd-f3x4")]
 pub use stm32f3::stm32f3x4 as pac;
 
-/// Enable use of interrupt macro. (Requires feature `rt`)
+/// Enable use of interrupt macro.
 #[cfg(feature = "rt")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rt")))]
 pub use crate::pac::interrupt;
 
 #[cfg(feature = "stm32f303")]
