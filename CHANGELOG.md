@@ -99,6 +99,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   API. ([#263])
 - Change timer interrupt API to the same of the serial interface. ([#264])
 - Make timer Events `#[non_exhaustive]`. ([#264])
+- Renames timers `release()` function to `free()` to be more in line with the
+  rest of this crate. ([#264])
 
 ## [v0.7.0] - 2021-06-18
 

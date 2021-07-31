@@ -296,7 +296,8 @@ macro_rules! hal {
                 }
 
                 /// Releases the TIM peripheral
-                pub fn release(mut self) -> $TIMX {
+                #[inline]
+                pub fn free(mut self) -> $TIMX {
                     self.stop();
                     self.tim
                 }
