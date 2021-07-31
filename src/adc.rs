@@ -35,6 +35,7 @@ const MAX_ADVREGEN_STARTUP_US: u32 = 10;
 /// Analog Digital Converter Peripheral
 // TODO: Remove `pub` from the register block once all functionalities are implemented.
 // Leave it here until then as it allows easy access to the registers.
+// TODO(Sh3Rm4n) Add configuration and other things like in the `stm32f4xx-hal` crate
 pub struct Adc<ADC> {
     /// ADC Register
     pub rb: ADC,
@@ -109,6 +110,8 @@ impl From<SampleTime> for SMP18_A {
 
 /// ADC operation mode
 // TODO: Implement other modes (DMA, Differential,…)
+// TODO(Sh3Rm4n): Maybe make operation modes to type states to better
+// integrate with embedded-hal crates?
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[non_exhaustive]
