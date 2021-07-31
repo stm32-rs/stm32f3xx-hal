@@ -65,9 +65,21 @@ use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::rate::*;
 
 /// A monotonic nondecreasing timer.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct MonoTimer {
     frequency: Hertz,
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for MonoTimer {
+    fn format(&self, f: defmt::Formatter) {
+        // Format as hexadecimal.
+        defmt::write!(
+            f,
+            "MonoTimer {{ frequency: {} Hz }}",
+            self.frequency.integer(),
+        );
+    }
 }
 
 impl MonoTimer {
@@ -97,7 +109,8 @@ impl MonoTimer {
 }
 
 /// A measurement of a monotonically nondecreasing clock
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Instant {
     now: u32,
 }
@@ -116,6 +129,8 @@ pub trait PclkSrc {
 }
 
 /// Hardware timers
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Timer<TIM> {
     clocks: Clocks,
     tim: TIM,

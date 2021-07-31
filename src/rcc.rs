@@ -778,7 +778,8 @@ impl CFGR {
 ///
 /// The existence of this value indicates that the clock configuration can no longer be changed.
 /// This struct can be obtained via the [freeze](CFGR::freeze) method of the [CFGR](CFGR) struct.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
+// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Clocks {
     hclk: Hertz,
     pclk1: Hertz,
@@ -787,6 +788,25 @@ pub struct Clocks {
     ppre2: u8,
     sysclk: Hertz,
     usbclk_valid: bool,
+}
+
+// TODO(Sh3Rm4n) Add defmt support for embedded-time!
+#[cfg(feature = "defmt")]
+impl defmt::Format for Clocks {
+    fn format(&self, f: defmt::Formatter) {
+        // Format as hexadecimal.
+        defmt::write!(
+            f,
+            "Clocks {{ hclk: {} Hz, pclk1: {} Hz, pclk2: {} Hz, ppre1: {:b}, ppre2: {:b}, sysclk: {} Hz, usbclk_valid: {} }}",
+            self.hclk.integer(),
+            self.pclk1.integer(),
+            self.pclk2.integer(),
+            self.ppre1,
+            self.ppre2,
+            self.sysclk.integer(),
+            self.usbclk_valid,
+        );
+    }
 }
 
 impl Clocks {

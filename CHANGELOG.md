@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   register without throwing any event. ([#253]).
 - Lift generic constraint of most `Serial` method on `TxPin` and `RxPin`.
   This should make it easier to generically use the `Serial` peripheral. ([#253])
+- Greatly increase coverage of `Debug` and `defmt::Format` implementations.
+  Almost all important types should now be supported. ([#265])
 
 [`enumset`]: https://crates.io/crates/enumset
 
@@ -426,6 +428,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#265]: https://github.com/stm32-rs/stm32f3xx-hal/pull/265
 [#264]: https://github.com/stm32-rs/stm32f3xx-hal/pull/264
 [#263]: https://github.com/stm32-rs/stm32f3xx-hal/pull/263
 [#262]: https://github.com/stm32-rs/stm32f3xx-hal/pull/262
