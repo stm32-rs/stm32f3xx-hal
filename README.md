@@ -91,9 +91,9 @@ chosen.
 #### Background
 
 For some of the stm32f3xx chips there are sub-variants that differ in
-functionality, peripheral use and hence 'under the hood' implementation.  To
-allow the full use of all peripherals on certain subvariants without
-allowing for code that just doesn't run on other sub-vairants, they are
+functionality, peripheral use and hence 'under the hood' implementation.
+To allow the full use of all peripherals on certain sub-variants without
+allowing for code that just doesn't run on other sub-variants, they are
 distinct features that need to be specified.
 
 [user manual]: https://www.st.com/content/ccc/resource/technical/document/user_manual/8a/56/97/63/8d/56/41/73/DM00063382.pdf/files/DM00063382.pdf/jcr:content/translations/en.DM00063382.pdf
@@ -141,10 +141,8 @@ compile with older versions but that may change in any new patch release.
 
 <!-- Don't forget to also adjust the MSVR version in `.github/workflows/ci.yml` -->
 
+## [Contributing](CONTRIBUTING.md)
+
 ## License
 
 [0-clause BSD license](LICENSE-0BSD.txt).
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md)
