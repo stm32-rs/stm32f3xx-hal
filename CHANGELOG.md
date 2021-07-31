@@ -105,6 +105,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   rest of this crate. ([#264])
 - rtc's `Error` type and `OperationMode` and `CkMode` of adc are now `#[non_exhaustive]`.
   ([#266])
+- All non-camel-case types are chaged to be consistently camel-case types.
+  Types which do not follow these rules are re-exported types by `stm32f3` for
+  example. ([#266])
 
 ## [v0.7.0] - 2021-06-18
 
