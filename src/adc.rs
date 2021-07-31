@@ -191,7 +191,7 @@ macro_rules! adc_pins {
 // # ADC1 Pin/Channel mapping
 // ## f303
 
-#[cfg(feature = "stm32f303")]
+#[cfg(feature = "svd-f303")]
 adc_pins!(ADC1,
     gpio::PA0<Analog> => 1,
     gpio::PA1<Analog> => 2,
@@ -203,19 +203,14 @@ adc_pins!(ADC1,
     gpio::PC3<Analog> => 9,
 );
 
-#[cfg(any(feature = "stm32f303x6", feature = "stm32f303x8"))]
+#[cfg(feature = "gpio-f333")]
 adc_pins!(ADC1,
     gpio::PB0<Analog> => 11,
     gpio::PB1<Analog> => 12,
     gpio::PB13<Analog> => 13,
 );
 
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e"))]
 adc_pins!(ADC1,
     gpio::PF4<Analog> => 5,
     gpio::PF2<Analog> => 10,
@@ -224,7 +219,7 @@ adc_pins!(ADC1,
 // # ADC2 Pin/Channel mapping
 // ## f303
 
-#[cfg(feature = "stm32f303")]
+#[cfg(feature = "svd-f303")]
 adc_pins!(ADC2,
     gpio::PA4<Analog> => 1,
     gpio::PA5<Analog> => 2,
@@ -239,19 +234,14 @@ adc_pins!(ADC2,
     gpio::PB2<Analog> => 12,
 );
 
-#[cfg(any(feature = "stm32f303x6", feature = "stm32f303x8"))]
+#[cfg(feature = "gpio-f333")]
 adc_pins!(ADC2,
     gpio::PB12<Analog> => 13,
     gpio::PB14<Analog> => 14,
     gpio::PB15<Analog> => 15,
 );
 
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
 adc_pins!(ADC2,
     gpio::PF2<Analog> => 10,
 );
@@ -259,12 +249,7 @@ adc_pins!(ADC2,
 // # ADC3 Pin/Channel mapping
 // ## f303
 
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
 adc_pins!(ADC3,
     gpio::PB1<Analog> => 1,
     gpio::PE9<Analog> => 2,
@@ -287,12 +272,7 @@ adc_pins!(ADC3,
 // # ADC4 Pin/Channel mapping
 // ## f303
 
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
 adc_pins!(ADC4,
     gpio::PE14<Analog> => 1,
     gpio::PE15<Analog> => 2,
@@ -577,12 +557,7 @@ macro_rules! adc12_hal {
 
 // Macro to implement ADC functionallity for ADC3 and ADC4
 // TODO: Extend/differentiate beyond f303.
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
 macro_rules! adc34_hal {
     ($(
             $ADC:ident: ($adcx:ident),
@@ -610,17 +585,12 @@ macro_rules! adc34_hal {
     }
 }
 
-#[cfg(feature = "stm32f303")]
+#[cfg(feature = "svd-f303")]
 adc12_hal! {
     ADC1: (adc1),
     ADC2: (adc2),
 }
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
 adc34_hal! {
     ADC3: (adc3),
     ADC4: (adc4),
