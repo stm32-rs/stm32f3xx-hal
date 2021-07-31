@@ -108,6 +108,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - All non-camel-case types are chaged to be consistently camel-case types.
   Types which do not follow these rules are re-exported types by `stm32f3` for
   example. ([#266])
+- Adc's `SampleTime` type has been reworked and is now a consistent wrapper around
+  the underlying types for `stm32f3`'s `SMP9_A` and `SMP18_A` type. ([#266])
 
 ## [v0.7.0] - 2021-06-18
 

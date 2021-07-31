@@ -53,41 +53,41 @@ pub struct Adc<ADC> {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum SampleTime {
     /// 1.5 ADC clock cycles
-    T_1,
+    Cycles1C5,
     /// 2.5 ADC clock cycles
-    T_2,
+    Cycles2C5,
     /// 4.5 ADC clock cycles
-    T_4,
+    Cycles4C5,
     /// 7.5 ADC clock cycles
-    T_7,
+    Cycles7C5,
     /// 19.5 ADC clock cycles
-    T_19,
+    Cycles19C5,
     /// 61.5 ADC clock cycles
-    T_61,
+    Cycles61C5,
     /// 181.5 ADC clock cycles
-    T_181,
+    Cycles181C5,
     /// 601.5 ADC clock cycles
-    T_601,
+    Cycles601C5,
 }
 
 impl Default for SampleTime {
-    /// T_1 is also the reset value.
+    /// [`SampelTime::Cycles1C5`] is also the reset value.
     fn default() -> Self {
-        SampleTime::T_1
+        SampleTime::Cycles1C5
     }
 }
 
 impl From<SampleTime> for SMP9_A {
     fn from(t: SampleTime) -> Self {
         match t {
-            SampleTime::T_1 => Self::CYCLES1_5,
-            SampleTime::T_2 => Self::CYCLES2_5,
-            SampleTime::T_4 => Self::CYCLES4_5,
-            SampleTime::T_7 => Self::CYCLES7_5,
-            SampleTime::T_19 => Self::CYCLES19_5,
-            SampleTime::T_61 => Self::CYCLES61_5,
-            SampleTime::T_181 => Self::CYCLES181_5,
-            SampleTime::T_601 => Self::CYCLES601_5,
+            SampleTime::Cycles1C5 => Self::CYCLES1_5,
+            SampleTime::Cycles2C5 => Self::CYCLES2_5,
+            SampleTime::Cycles4C5 => Self::CYCLES4_5,
+            SampleTime::Cycles7C5 => Self::CYCLES7_5,
+            SampleTime::Cycles19C5 => Self::CYCLES19_5,
+            SampleTime::Cycles61C5 => Self::CYCLES61_5,
+            SampleTime::Cycles181C5 => Self::CYCLES181_5,
+            SampleTime::Cycles601C5 => Self::CYCLES601_5,
         }
     }
 }
@@ -95,14 +95,14 @@ impl From<SampleTime> for SMP9_A {
 impl From<SampleTime> for SMP18_A {
     fn from(t: SampleTime) -> Self {
         match t {
-            SampleTime::T_1 => Self::CYCLES1_5,
-            SampleTime::T_2 => Self::CYCLES2_5,
-            SampleTime::T_4 => Self::CYCLES4_5,
-            SampleTime::T_7 => Self::CYCLES7_5,
-            SampleTime::T_19 => Self::CYCLES19_5,
-            SampleTime::T_61 => Self::CYCLES61_5,
-            SampleTime::T_181 => Self::CYCLES181_5,
-            SampleTime::T_601 => Self::CYCLES601_5,
+            SampleTime::Cycles1C5 => Self::CYCLES1_5,
+            SampleTime::Cycles2C5 => Self::CYCLES2_5,
+            SampleTime::Cycles4C5 => Self::CYCLES4_5,
+            SampleTime::Cycles7C5 => Self::CYCLES7_5,
+            SampleTime::Cycles19C5 => Self::CYCLES19_5,
+            SampleTime::Cycles61C5 => Self::CYCLES61_5,
+            SampleTime::Cycles181C5 => Self::CYCLES181_5,
+            SampleTime::Cycles601C5 => Self::CYCLES601_5,
         }
     }
 }
