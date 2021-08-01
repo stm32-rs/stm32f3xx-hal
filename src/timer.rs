@@ -185,6 +185,12 @@ macro_rules! hal {
                     // self.tim.arr.write(|w| { w.arr().bits(arr) });
                     self.tim.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
 
+                    // Ensure that the below procedure does not create an unexpected interrupt.
+                    let is_update_interrupt_active = self.tim.dier.read().uie().bit();
+                    if is_update_interrupt_active {
+                        self.tim.dier.modify(|_, w| w.uie().disabled());
+                    }
+
                     // Trigger an update event to load the prescaler value to the clock
                     // NOTE(write): uses all bits in this register.
                     self.tim.egr.write(|w| w.ug().update());
@@ -192,6 +198,10 @@ macro_rules! hal {
                     // that the timer is already finished. Since this is not the case,
                     // it should be cleared
                     self.clear_event(Event::Update);
+
+                    if is_update_interrupt_active {
+                        self.tim.dier.modify(|_, w| w.uie().bit(is_update_interrupt_active));
+                    }
 
                     // start counter
                     self.tim.cr1.modify(|_, w| w.cen().enabled());
