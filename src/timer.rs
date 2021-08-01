@@ -8,7 +8,7 @@
 
 use core::convert::{From, TryFrom};
 
-use cortex_m::peripheral::DWT;
+use cortex_m::peripheral::{DCB, DWT};
 #[cfg(feature = "enumset")]
 use enumset::{EnumSet, EnumSetType};
 use void::Void;
@@ -84,7 +84,9 @@ impl defmt::Format for MonoTimer {
 
 impl MonoTimer {
     /// Creates a new `Monotonic` timer
-    pub fn new(mut dwt: DWT, clocks: Clocks) -> Self {
+    pub fn new(mut dwt: DWT, clocks: Clocks, dcb: &mut DCB) -> Self {
+        // This is needed, so that the DWT timer starts to count.
+        dcb.enable_trace();
         dwt.enable_cycle_counter();
 
         // now the CYCCNT counter can't be stopped or resetted
