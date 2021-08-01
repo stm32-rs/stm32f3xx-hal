@@ -86,6 +86,7 @@ impl Rtc {
 
     /// Release the RTC peripheral
     pub fn free(self) -> RTC {
+        // TODO(Sh3Rm4n): Disable peripheral before releasing it.
         self.regs
     }
 
