@@ -20,6 +20,10 @@ name = "rcc"
 harness = false
 
 [[test]]
+name = "timer"
+harness = false
+
+[[test]]
 name = "gpio_input"
 harness = false
 
