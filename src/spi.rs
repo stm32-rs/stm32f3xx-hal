@@ -149,19 +149,18 @@ pub enum Error {
     Crc,
 }
 
-// FIXME these should be "closed" traits
-/// SCK pin -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait SckPin<SPI> {}
+/// SCK pin
+pub trait SckPin<SPI>: crate::private::Sealed {}
 
-/// MISO pin -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait MisoPin<SPI> {}
+/// MISO pin
+pub trait MisoPin<SPI>: crate::private::Sealed {}
 
-/// MOSI pin -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait MosiPin<SPI> {}
+/// MOSI pin
+pub trait MosiPin<SPI>: crate::private::Sealed {}
 
-unsafe impl SckPin<SPI1> for PA5<AF5<PushPull>> {}
+impl SckPin<SPI1> for PA5<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl SckPin<SPI1> for PA12<AF6<PushPull>> {}
+impl SckPin<SPI1> for PA12<AF6<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302xb",
     feature = "stm32f302xc",
@@ -175,16 +174,16 @@ unsafe impl SckPin<SPI1> for PA12<AF6<PushPull>> {}
     feature = "stm32f378",
     feature = "stm32f398",
 ))]
-unsafe impl SckPin<SPI1> for PB3<AF5<PushPull>> {}
+impl SckPin<SPI1> for PB3<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl SckPin<SPI1> for PC7<AF5<PushPull>> {}
+impl SckPin<SPI1> for PC7<AF5<PushPull>> {}
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl SckPin<SPI2> for PA8<AF5<PushPull>> {}
+impl SckPin<SPI2> for PA8<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl SckPin<SPI2> for PB8<AF5<PushPull>> {}
+impl SckPin<SPI2> for PB8<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl SckPin<SPI2> for PB10<AF5<PushPull>> {}
+impl SckPin<SPI2> for PB10<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f301",
     feature = "stm32f302",
@@ -194,11 +193,11 @@ unsafe impl SckPin<SPI2> for PB10<AF5<PushPull>> {}
     feature = "stm32f358",
     feature = "stm32f398"
 ))]
-unsafe impl SckPin<SPI2> for PB13<AF5<PushPull>> {}
+impl SckPin<SPI2> for PB13<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl SckPin<SPI2> for PD7<AF5<PushPull>> {}
+impl SckPin<SPI2> for PD7<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl SckPin<SPI2> for PD8<AF5<PushPull>> {}
+impl SckPin<SPI2> for PD8<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302x6",
     feature = "stm32f302x8",
@@ -209,7 +208,7 @@ unsafe impl SckPin<SPI2> for PD8<AF5<PushPull>> {}
     feature = "stm32f318",
     feature = "stm32f398",
 ))]
-unsafe impl SckPin<SPI2> for PF1<AF5<PushPull>> {}
+impl SckPin<SPI2> for PF1<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302xb",
     feature = "stm32f302xc",
@@ -222,7 +221,7 @@ unsafe impl SckPin<SPI2> for PF1<AF5<PushPull>> {}
     feature = "stm32f358",
     feature = "stm32f398",
 ))]
-unsafe impl SckPin<SPI2> for PF9<AF5<PushPull>> {}
+impl SckPin<SPI2> for PF9<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302xb",
     feature = "stm32f302xc",
@@ -235,10 +234,10 @@ unsafe impl SckPin<SPI2> for PF9<AF5<PushPull>> {}
     feature = "stm32f358",
     feature = "stm32f398",
 ))]
-unsafe impl SckPin<SPI2> for PF10<AF5<PushPull>> {}
+impl SckPin<SPI2> for PF10<AF5<PushPull>> {}
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl SckPin<SPI3> for PA1<AF6<PushPull>> {}
+impl SckPin<SPI3> for PA1<AF6<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xd",
@@ -248,8 +247,8 @@ unsafe impl SckPin<SPI3> for PA1<AF6<PushPull>> {}
     feature = "stm32f378",
     feature = "stm32f398",
 ))]
-unsafe impl SckPin<SPI3> for PB3<AF6<PushPull>> {}
-unsafe impl SckPin<SPI3> for PC10<AF6<PushPull>> {}
+impl SckPin<SPI3> for PB3<AF6<PushPull>> {}
+impl SckPin<SPI3> for PC10<AF6<PushPull>> {}
 
 #[cfg(any(
     feature = "stm32f302xd",
@@ -258,7 +257,7 @@ unsafe impl SckPin<SPI3> for PC10<AF6<PushPull>> {}
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-unsafe impl SckPin<SPI4> for PE2<AF5<PushPull>> {}
+impl SckPin<SPI4> for PE2<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302xd",
     feature = "stm32f302xe",
@@ -266,11 +265,11 @@ unsafe impl SckPin<SPI4> for PE2<AF5<PushPull>> {}
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-unsafe impl SckPin<SPI4> for PE12<AF5<PushPull>> {}
+impl SckPin<SPI4> for PE12<AF5<PushPull>> {}
 
-unsafe impl MisoPin<SPI1> for PA6<AF5<PushPull>> {}
+impl MisoPin<SPI1> for PA6<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI1> for PA13<AF6<PushPull>> {}
+impl MisoPin<SPI1> for PA13<AF6<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302xb",
     feature = "stm32f302xc",
@@ -284,12 +283,12 @@ unsafe impl MisoPin<SPI1> for PA13<AF6<PushPull>> {}
     feature = "stm32f378",
     feature = "stm32f398",
 ))]
-unsafe impl MisoPin<SPI1> for PB4<AF5<PushPull>> {}
+impl MisoPin<SPI1> for PB4<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI1> for PC8<AF5<PushPull>> {}
+impl MisoPin<SPI1> for PC8<AF5<PushPull>> {}
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI2> for PA9<AF5<PushPull>> {}
+impl MisoPin<SPI2> for PA9<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302x6",
     feature = "stm32f302x8",
@@ -300,15 +299,15 @@ unsafe impl MisoPin<SPI2> for PA9<AF5<PushPull>> {}
     feature = "stm32f318",
     feature = "stm32f398",
 ))]
-unsafe impl MisoPin<SPI2> for PA10<AF5<PushPull>> {}
-unsafe impl MisoPin<SPI2> for PB14<AF5<PushPull>> {}
+impl MisoPin<SPI2> for PA10<AF5<PushPull>> {}
+impl MisoPin<SPI2> for PB14<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI2> for PC2<AF5<PushPull>> {}
+impl MisoPin<SPI2> for PC2<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI2> for PD3<AF5<PushPull>> {}
+impl MisoPin<SPI2> for PD3<AF5<PushPull>> {}
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI3> for PA2<AF6<PushPull>> {}
+impl MisoPin<SPI3> for PA2<AF6<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302",
     feature = "stm32f303xd",
@@ -318,8 +317,8 @@ unsafe impl MisoPin<SPI3> for PA2<AF6<PushPull>> {}
     feature = "stm32f378",
     feature = "stm32f398",
 ))]
-unsafe impl MisoPin<SPI3> for PB4<AF6<PushPull>> {}
-unsafe impl MisoPin<SPI3> for PC11<AF6<PushPull>> {}
+impl MisoPin<SPI3> for PB4<AF6<PushPull>> {}
+impl MisoPin<SPI3> for PC11<AF6<PushPull>> {}
 
 #[cfg(any(
     feature = "stm32f302xd",
@@ -328,7 +327,7 @@ unsafe impl MisoPin<SPI3> for PC11<AF6<PushPull>> {}
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-unsafe impl MisoPin<SPI4> for PE5<AF5<PushPull>> {}
+impl MisoPin<SPI4> for PE5<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302xd",
     feature = "stm32f302xe",
@@ -336,19 +335,19 @@ unsafe impl MisoPin<SPI4> for PE5<AF5<PushPull>> {}
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-unsafe impl MisoPin<SPI4> for PE13<AF5<PushPull>> {}
+impl MisoPin<SPI4> for PE13<AF5<PushPull>> {}
 
-unsafe impl MosiPin<SPI1> for PA7<AF5<PushPull>> {}
+impl MosiPin<SPI1> for PA7<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MosiPin<SPI1> for PB0<AF5<PushPull>> {}
-unsafe impl MosiPin<SPI1> for PB5<AF5<PushPull>> {}
+impl MosiPin<SPI1> for PB0<AF5<PushPull>> {}
+impl MosiPin<SPI1> for PB5<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MosiPin<SPI1> for PC9<AF5<PushPull>> {}
+impl MosiPin<SPI1> for PC9<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MosiPin<SPI1> for PF6<AF5<PushPull>> {}
+impl MosiPin<SPI1> for PF6<AF5<PushPull>> {}
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MosiPin<SPI2> for PA10<AF5<PushPull>> {}
+impl MosiPin<SPI2> for PA10<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302x6",
     feature = "stm32f302x8",
@@ -359,17 +358,17 @@ unsafe impl MosiPin<SPI2> for PA10<AF5<PushPull>> {}
     feature = "stm32f318",
     feature = "stm32f398",
 ))]
-unsafe impl MosiPin<SPI2> for PA11<AF5<PushPull>> {}
-unsafe impl MosiPin<SPI2> for PB15<AF5<PushPull>> {}
+impl MosiPin<SPI2> for PA11<AF5<PushPull>> {}
+impl MosiPin<SPI2> for PB15<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI2> for PC3<AF5<PushPull>> {}
+impl MisoPin<SPI2> for PC3<AF5<PushPull>> {}
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI2> for PD4<AF5<PushPull>> {}
+impl MisoPin<SPI2> for PD4<AF5<PushPull>> {}
 
 #[cfg(any(feature = "stm32f373", feature = "stm32f378"))]
-unsafe impl MisoPin<SPI3> for PA3<AF6<PushPull>> {}
-unsafe impl MosiPin<SPI3> for PB5<AF6<PushPull>> {}
-unsafe impl MosiPin<SPI3> for PC12<AF6<PushPull>> {}
+impl MisoPin<SPI3> for PA3<AF6<PushPull>> {}
+impl MosiPin<SPI3> for PB5<AF6<PushPull>> {}
+impl MosiPin<SPI3> for PC12<AF6<PushPull>> {}
 
 #[cfg(any(
     feature = "stm32f302xd",
@@ -378,7 +377,7 @@ unsafe impl MosiPin<SPI3> for PC12<AF6<PushPull>> {}
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-unsafe impl MosiPin<SPI4> for PE6<AF5<PushPull>> {}
+impl MosiPin<SPI4> for PE6<AF5<PushPull>> {}
 #[cfg(any(
     feature = "stm32f302xd",
     feature = "stm32f302xe",
@@ -386,7 +385,7 @@ unsafe impl MosiPin<SPI4> for PE6<AF5<PushPull>> {}
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-unsafe impl MosiPin<SPI4> for PE14<AF5<PushPull>> {}
+impl MosiPin<SPI4> for PE14<AF5<PushPull>> {}
 
 /// Configuration trait for the Word Size
 /// used by the SPI peripheral
