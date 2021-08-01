@@ -49,6 +49,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   This should make it easier to generically use the `Serial` peripheral. ([#253])
 - Greatly increase coverage of `Debug` and `defmt::Format` implementations.
   Almost all important types should now be supported. ([#265])
+- Add a `free()` function to the RTC implementation to retrieve the passed-in
+  peripheral. ([#266])
 
 [`enumset`]: https://crates.io/crates/enumset
 
@@ -103,6 +105,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Make timer Events `#[non_exhaustive]`. ([#264])
 - Renames timers `release()` function to `free()` to be more in line with the
   rest of this crate. ([#264])
+- rtc's `Error` type and `OperationMode` and `CkMode` of adc are now `#[non_exhaustive]`.
+  ([#266])
+- All non-camel-case types are chaged to be consistently camel-case types.
+  Types which do not follow these rules are re-exported types by `stm32f3` for
+  example. ([#266])
+- Adc's `SampleTime` type has been reworked and is now a consistent wrapper around
+  the underlying types for `stm32f3`'s `SMP9_A` and `SMP18_A` type. ([#266])
+- Rename `CkMode` to `ClockMode` ([#266])
 
 ## [v0.7.0] - 2021-06-18
 
@@ -428,6 +438,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#266]: https://github.com/stm32-rs/stm32f3xx-hal/pull/266
 [#265]: https://github.com/stm32-rs/stm32f3xx-hal/pull/265
 [#264]: https://github.com/stm32-rs/stm32f3xx-hal/pull/264
 [#263]: https://github.com/stm32-rs/stm32f3xx-hal/pull/263

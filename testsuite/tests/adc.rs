@@ -52,7 +52,7 @@ mod tests {
                 dp.ADC1,
                 &mut dp.ADC1_2,
                 &mut rcc.ahb,
-                adc::CkMode::default(),
+                adc::ClockMode::default(),
                 clocks,
             )),
             analog: pair.0,
@@ -94,7 +94,7 @@ mod tests {
             adc1,
             &mut state.adc1_2,
             &mut state.ahb,
-            adc::CkMode::default(),
+            adc::ClockMode::default(),
             state.clocks,
         );
 

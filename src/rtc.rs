@@ -14,6 +14,7 @@ use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike}
 /// RTC error type
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
 pub enum Error {
     /// Invalid input error
     InvalidInputData,
@@ -81,6 +82,11 @@ impl Rtc {
     /// Reads current hour format selection
     pub fn is_24h_fmt(&self) -> bool {
         self.regs.cr.read().fmt().bit()
+    }
+
+    /// Release the RTC peripheral
+    pub fn free(self) -> RTC {
+        self.regs
     }
 
     /// As described in Section 27.3.7 in RM0316,
