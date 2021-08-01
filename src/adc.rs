@@ -40,7 +40,7 @@ pub struct Adc<ADC> {
     /// ADC Register
     pub rb: ADC,
     clocks: Clocks,
-    ckmode: CkMode,
+    clock_mode: ClockMode,
     operation_mode: Option<OperationMode>,
 }
 
@@ -121,10 +121,10 @@ pub enum OperationMode {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-/// ADC CkMode
-// TODO: Add ASYNCHRONOUS mode
+/// ADC Clock Mode
+// TODO: Add Asynchronous mode
 #[non_exhaustive]
-pub enum CkMode {
+pub enum ClockMode {
     // /// Use Kernel Clock adc_ker_ck_input divided by PRESC. Asynchronous to AHB clock
     // Asynchronous,
     /// Use AHB clock rcc_hclk3. In this case rcc_hclk must equal sys_d1cpre_ck
@@ -135,20 +135,20 @@ pub enum CkMode {
     SyncDiv4,
 }
 
-impl Default for CkMode {
+impl Default for ClockMode {
     fn default() -> Self {
-        CkMode::SyncDiv2
+        ClockMode::SyncDiv2
     }
 }
 
 // ADC3_2 returns a pointer to a adc1_2 type, so this from is ok for both.
-impl From<CkMode> for CKMODE_A {
-    fn from(ckmode: CkMode) -> Self {
-        match ckmode {
-            //CkMode::Asynchronous => CKMODE_A::ASYNCHRONOUS,
-            CkMode::SyncDiv1 => CKMODE_A::SYNCDIV1,
-            CkMode::SyncDiv2 => CKMODE_A::SYNCDIV2,
-            CkMode::SyncDiv4 => CKMODE_A::SYNCDIV4,
+impl From<ClockMode> for CKMODE_A {
+    fn from(clock_mode: ClockMode) -> Self {
+        match clock_mode {
+            //ClockMode::Asynchronous => CKMODE_A::ASYNCHRONOUS,
+            ClockMode::SyncDiv1 => CKMODE_A::SYNCDIV1,
+            ClockMode::SyncDiv2 => CKMODE_A::SYNCDIV2,
+            ClockMode::SyncDiv4 => CKMODE_A::SYNCDIV4,
         }
     }
 }
@@ -315,13 +315,13 @@ macro_rules! adc_hal {
                     rb: $ADC,
                     adc_common : &mut $ADC_COMMON,
                     ahb: &mut AHB,
-                    ckmode: CkMode,
+                    clock_mode: ClockMode,
                     clocks: Clocks,
                 ) -> Self {
                     let mut this_adc = Self {
                         rb,
                         clocks,
-                        ckmode,
+                        clock_mode,
                         operation_mode: None,
                     };
                     if !(this_adc.clocks_welldefined(clocks)) {
@@ -347,10 +347,10 @@ macro_rules! adc_hal {
                     self.rb
                 }
 
-                /// Software can use CkMode::SyncDiv1 only if
+                /// Software can use ClockMode::SyncDiv1 only if
                 /// hclk and sysclk are the same. (see reference manual 15.3.3)
                 fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    if (self.ckmode == CkMode::SyncDiv1) {
+                    if (self.clock_mode == ClockMode::SyncDiv1) {
                         clocks.hclk().0 == clocks.sysclk().0
                     } else {
                         true
@@ -441,10 +441,10 @@ macro_rules! adc_hal {
                     // using a match statement here so compilation will fail once asynchronous clk
                     // mode is implemented (CKMODE[1:0] = 00b).  This will force whoever is working
                     // on it to rethink what needs to be done here :)
-                    let adc_per_cpu_cycles = match self.ckmode {
-                        CkMode::SyncDiv1 => 1,
-                        CkMode::SyncDiv2 => 2,
-                        CkMode::SyncDiv4 => 4,
+                    let adc_per_cpu_cycles = match self.clock_mode {
+                        ClockMode::SyncDiv1 => 1,
+                        ClockMode::SyncDiv2 => 2,
+                        ClockMode::SyncDiv4 => 4,
                     };
                     asm::delay(adc_per_cpu_cycles * cycles);
                 }
@@ -542,11 +542,11 @@ macro_rules! adc12_hal {
                 ///  or the clock was already enabled with the same settings
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) -> bool {
                     if ahb.enr().read().adc12en().is_enabled() {
-                        return (adc_common.ccr.read().ckmode().variant() == self.ckmode.into());
+                        return (adc_common.ccr.read().ckmode().variant() == self.clock_mode.into());
                     }
                     ahb.enr().modify(|_, w| w.adc12en().enabled());
                     adc_common.ccr.modify(|_, w| w
-                        .ckmode().variant(self.ckmode.into())
+                        .ckmode().variant(self.clock_mode.into())
                     );
                     true
                 }
@@ -572,11 +572,11 @@ macro_rules! adc34_hal {
                 ///  or the clock was already enabled with the same settings
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) -> bool {
                     if ahb.enr().read().adc34en().is_enabled() {
-                        return (adc_common.ccr.read().ckmode().variant() == self.ckmode.into());
+                        return (adc_common.ccr.read().ckmode().variant() == self.clock_mode.into());
                     }
                     ahb.enr().modify(|_, w| w.adc34en().enabled());
                     adc_common.ccr.modify(|_, w| w
-                        .ckmode().variant(self.ckmode.into())
+                        .ckmode().variant(self.clock_mode.into())
                     );
                     true
                 }
