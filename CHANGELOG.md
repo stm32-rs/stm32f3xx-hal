@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Readd MonoTimer. This was accidentally removed before. ([#247])
+  - Different to before, frequency() and now() now do not consume the MonoTimer.
+    `&self` is used instead. ([#267])
 - Basic serial implementation also available for UART4 and UART5 ([#246])
 - Implement serial DMA also for Serial ([#246])
 - Add [`enumset`][] as a optional dependency, which allow more ergonomic functions
@@ -444,6 +446,7 @@ let clocks = rcc
 
 [#271]: https://github.com/stm32-rs/stm32f3xx-hal/pull/271
 [#270]: https://github.com/stm32-rs/stm32f3xx-hal/pull/270
+[#267]: https://github.com/stm32-rs/stm32f3xx-hal/pull/267
 [#266]: https://github.com/stm32-rs/stm32f3xx-hal/pull/266
 [#265]: https://github.com/stm32-rs/stm32f3xx-hal/pull/265
 [#264]: https://github.com/stm32-rs/stm32f3xx-hal/pull/264
