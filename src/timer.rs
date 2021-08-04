@@ -136,9 +136,9 @@ where
         self.configure_interrupt(event, false);
     }
 
-    /// Obtain the assocated intterupt number for the serial peripheral.
+    /// Obtain the associated interupt number for the serial peripheral.
     ///
-    /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`]
+    /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`].
     /// This is useful for all `cortex_m::peripheral::INTERRUPT` functions.
     ///
     /// # Note
