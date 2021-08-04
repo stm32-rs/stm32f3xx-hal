@@ -28,7 +28,7 @@ members = [
 ]
 
 [package.metadata.docs.rs]
-features = ["stm32f303xc", "rt", "stm32-usbd", "can"]
+features = ["stm32f303xc", "rt", "usb", "can"]
 targets = ["thumbv7em-none-eabihf"]
 rustc-args = ["--cfg", "docsrs"]
 
@@ -73,6 +73,7 @@ direct-call-deprecated = []
 ld = []
 rt = ["stm32f3/rt"]
 can = ["bxcan"]
+usb = ["stm32-usbd"]
 
 svd-f301 = ["stm32f3/stm32f301"]
 svd-f302 = ["stm32f3/stm32f302"]
@@ -170,7 +171,7 @@ required-features = ["ld", "stm32f303xc"]
 
 [[example]]
 name = "usb_serial"
-required-features = ["ld", "stm32f303xc", "stm32-usbd"]
+required-features = ["ld", "stm32f303xc", "usb"]
 
 [[example]]
 name = "spi"
