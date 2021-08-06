@@ -45,6 +45,10 @@ Almost all of the implementation was shamelessly adapted from the
 Cargo.toml:
 
 ```toml
+[package]
+# ...
+resolver = "2"
+
 [dependencies]
 cortex-m = "0.7.2"
 cortex-m-rt = { version = "0.6.13", features = ["device"] }
