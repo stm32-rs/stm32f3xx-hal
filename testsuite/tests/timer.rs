@@ -3,13 +3,14 @@
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
+use cortex_m::interrupt::InterruptNumber;
 use defmt_rtt as _;
 use panic_probe as _;
 
 use stm32f3xx_hal as hal;
 
 use hal::rcc::{Clocks, APB1};
-use hal::timer::{Event, Instance, MonoTimer, Timer};
+use hal::timer::{self, Event, Instance, MonoTimer, Timer};
 use hal::{interrupt, pac, prelude::*};
 
 use pac::TIM2;
@@ -118,7 +119,6 @@ fn TIM2() {
     //
     // This is all needed, to clear the fired interrupt.
     assert!(cortex_m::peripheral::NVIC::is_active(
-        <pac::TIM2 as Instance>::INTERRUPT
+        <pac::TIM2 as timer::interrupts::InterruptNumber>::INTERRUPT
     ));
-    cortex_m::peripheral::NVIC::mask(<pac::TIM2 as Instance>::INTERRUPT);
-}
+    cortex_m::peripheral::NVIC::mask(<pac::TIM2 as timer::interrupts::InterruptNumber>::INTERRUPT); }

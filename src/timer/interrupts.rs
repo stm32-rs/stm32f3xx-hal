@@ -21,6 +21,7 @@ pub struct InterruptTypes {
 // FIXME: This super-trait constrained makes it difficult to use this trait
 // without cfg(feature...)
 // pub trait InterruptNumber: crate::private::Sealed {
+// TODO: Rename, because in conflict with: use cortex_m::interrupt::InterruptNumber;
 pub trait InterruptNumber {
     type Interrupt;
     const INTERRUPT: Self::Interrupt;

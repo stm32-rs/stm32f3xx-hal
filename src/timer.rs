@@ -18,7 +18,7 @@ use crate::pac::{Interrupt, RCC};
 use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::rate::*;
 
-mod interrupts;
+pub mod interrupts;
 
 /// A monotonic nondecreasing timer.
 #[derive(Debug, Clone, Copy)]
@@ -63,33 +63,6 @@ impl MonoTimer {
             now: DWT::get_cycle_count(),
         }
     }
-}
-
-// #[non_exhaustive]
-// // TODO: ...
-// pub struct CommonRegisterBlock {
-//     cr1: i32,
-//     // ...
-// }
-
-/// Wrapper around interrupt types for the timers.
-#[derive(Copy, Clone, Debug)]
-// FIXME: Interrupt is not formattable?
-// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-// TODO: Does it make sense to introduce an enum for that?
-// enum ItrTypes {Global, Break, Update, Trigger, CaptureCompare}
-#[non_exhaustive] // To make the type non-creatable but still accessable.
-pub struct InterruptTypes {
-    /// Global Interrupt
-    global: Option<Interrupt>,
-    /// Break Interrupt
-    r#break: Option<Interrupt>,
-    /// Update Interrupt
-    update: Option<Interrupt>,
-    /// Trigger and communication Interrupt
-    trigger: Option<Interrupt>,
-    /// Capture and compare interupt
-    capture_compare: Option<Interrupt>,
 }
 
 /// A measurement of a monotonically nondecreasing clock
@@ -181,9 +154,7 @@ where
     /// ```
     ///
     /// though this function can not be used in a const context.
-    // TODO: Maybe this function should be implemented as a trait:
-    // Like extended timer and normal / simple timer?
-    pub fn nvic() -> <TIM as self::interrupts::InterruptNumber>::Interrupt {
+    pub fn nvic(&self) -> <TIM as self::interrupts::InterruptNumber>::Interrupt {
         <TIM as self::interrupts::InterruptNumber>::INTERRUPT
     }
 
@@ -344,11 +315,6 @@ pub trait Instance:
     /// Peripheral bus instance which is responsible for the peripheral
     type APB;
 
-    /// The associated interrupt number, used to unmask / enable the interrupt
-    /// with [`cortex_m::peripheral::NVIC::unmask()`]
-    // const INTERRUPT: InterruptTypes;
-    const INTERRUPT: Interrupt = Interrupt::TIM2;
-
     #[doc(hidden)]
     fn enable_clock(apb: &mut Self::APB);
     #[doc(hidden)]
@@ -425,8 +391,6 @@ macro_rules! timer {
             impl crate::private::Sealed for crate::pac::$TIMX {}
             impl Instance for crate::pac::$TIMX {
                 type APB = $APB;
-                // TODO: This has to be variable.
-                const INTERRUPT: Interrupt = Interrupt::TIM2;
 
                 #[inline]
                 fn enable_clock(apb: &mut Self::APB) {

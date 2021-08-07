@@ -142,16 +142,18 @@ mod tests {
                 .into_af7_open_drain(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
         };
 
-        unsafe { cortex_m::peripheral::NVIC::unmask(<pac::USART1 as Instance>::INTERRUPT) }
+        let serial1 = Serial::new(
+            dp.USART1,
+            (serial_pair.0, serial_pair.1),
+            9600.Bd(),
+            clocks,
+            &mut rcc.apb2,
+        );
+
+        unsafe { cortex_m::peripheral::NVIC::unmask(serial1.nvic()) }
 
         super::State {
-            serial1: Some(Serial::new(
-                dp.USART1,
-                (serial_pair.0, serial_pair.1),
-                9600.Bd(),
-                clocks,
-                &mut rcc.apb2,
-            )),
+            serial1: Some(serial1),
             serial_slow: Some(Serial::new(
                 dp.USART2,
                 (cs_pair_1.0, cs_pair_2.1),

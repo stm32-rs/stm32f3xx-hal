@@ -741,7 +741,7 @@ where
     ///
     /// though this function can not be used in a const context.
     #[doc(alias = "unmask")]
-    pub fn nvic() -> Interrupt {
+    pub fn nvic(&self) -> Interrupt {
         <Usart as Instance>::INTERRUPT
     }
 
