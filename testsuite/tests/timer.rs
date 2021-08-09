@@ -8,8 +8,9 @@ use panic_probe as _;
 
 use stm32f3xx_hal as hal;
 
+use hal::interrupts::InterruptNumber;
 use hal::rcc::{Clocks, APB1};
-use hal::timer::{self, Event, MonoTimer, Timer};
+use hal::timer::{Event, MonoTimer, Timer};
 use hal::{interrupt, pac, prelude::*};
 
 use pac::TIM2;
@@ -44,7 +45,7 @@ mod tests {
 
         assert!(mono_timer.frequency() == clocks.hclk());
 
-        unsafe { cortex_m::peripheral::NVIC::unmask(timer.nvic()) };
+        unsafe { cortex_m::peripheral::NVIC::unmask(timer.interrupt()) };
 
         State {
             timer: Some(timer),
@@ -123,7 +124,7 @@ fn TIM2() {
     //
     // This is all needed, to clear the fired interrupt.
     assert!(cortex_m::peripheral::NVIC::is_active(
-        <pac::TIM2 as timer::interrupts::InterruptNumber>::INTERRUPT
+        <pac::TIM2 as InterruptNumber>::INTERRUPT
     ));
-    cortex_m::peripheral::NVIC::mask(<pac::TIM2 as timer::interrupts::InterruptNumber>::INTERRUPT);
+    cortex_m::peripheral::NVIC::mask(<pac::TIM2 as InterruptNumber>::INTERRUPT);
 }

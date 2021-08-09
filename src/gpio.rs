@@ -592,7 +592,7 @@ where
     /// This is also useful for all other [`cortex_m::peripheral::NVIC`] functions.
     // TODO(Sh3rm4n): It would be cool to have this either const or have a const function.
     // But this is currenlty not possible, because index() is runtime defined.
-    pub fn nvic(&self) -> Interrupt {
+    pub fn interrupt(&self) -> Interrupt {
         match self.index.index() {
             0 => Interrupt::EXTI0,
             1 => Interrupt::EXTI1,

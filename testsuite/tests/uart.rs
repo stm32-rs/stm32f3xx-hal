@@ -8,6 +8,7 @@ use enumset::EnumSet;
 use stm32f3xx_hal as hal;
 
 use hal::gpio::{OpenDrain, PushPull, AF7};
+use hal::interrupts::InterruptNumber;
 use hal::pac;
 use hal::prelude::*;
 use hal::serial::{
@@ -86,10 +87,10 @@ fn trigger_event<Usart, Pins>(
     assert!(!serial.triggered_events().contains(event));
     // TODO: Is that true?: Unpend any pending interrupts - more than one could be pending,
     // because of the late clearing of the interrupt
-    cortex_m::peripheral::NVIC::unpend(<pac::USART1 as Instance>::INTERRUPT);
+    cortex_m::peripheral::NVIC::unpend(<pac::USART1 as InterruptNumber>::INTERRUPT);
     // Now unmask all interrupts again, which where masks in the iterrupt rountine,
     // as a measurement to disable all interrupts.
-    unsafe { cortex_m::peripheral::NVIC::unmask(<pac::USART1 as Instance>::INTERRUPT) }
+    unsafe { cortex_m::peripheral::NVIC::unmask(<pac::USART1 as InterruptNumber>::INTERRUPT) }
     // Clear the interrupt flag again. And make double sure, that no interrupt
     // fired again.
     INTERRUPT_FIRED.store(false, Ordering::SeqCst);
@@ -150,7 +151,7 @@ mod tests {
             &mut rcc.apb2,
         );
 
-        unsafe { cortex_m::peripheral::NVIC::unmask(serial1.nvic()) }
+        unsafe { cortex_m::peripheral::NVIC::unmask(serial1.interrupt()) }
 
         super::State {
             serial1: Some(serial1),
@@ -453,7 +454,7 @@ fn USART1_EXTI25() {
     //
     // This is all needed, to clear the fired interrupt.
     assert!(cortex_m::peripheral::NVIC::is_active(
-        <pac::USART1 as Instance>::INTERRUPT
+        <pac::USART1 as InterruptNumber>::INTERRUPT
     ));
-    cortex_m::peripheral::NVIC::mask(<pac::USART1 as Instance>::INTERRUPT);
+    cortex_m::peripheral::NVIC::mask(<pac::USART1 as InterruptNumber>::INTERRUPT);
 }

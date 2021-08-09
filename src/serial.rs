@@ -735,15 +735,15 @@ where
     /// ```
     /// use cortex_m::peripheral::INTERRUPT;
     /// use stm32f3xx_hal::pac::USART1;
-    /// use stm32f3xx_hal::serial::Instance;
+    /// use stm32f3xx_hal::interrupt::InterruptNumber;
     ///
-    /// const interrupt: INTERRUPT = <USART1 as Instance>::INTERRUPT;
+    /// const INTERRUPT: Interrupt = <USART1 as InterruptNumber>::INTERRUPT;
     /// ```
     ///
     /// though this function can not be used in a const context.
     #[doc(alias = "unmask")]
-    pub fn nvic(&self) -> Interrupt {
-        <Usart as Instance>::INTERRUPT
+    pub fn interrupt(&self) -> <Usart as crate::interrupts::InterruptNumber>::Interrupt {
+        <Usart as crate::interrupts::InterruptNumber>::INTERRUPT
     }
 
     /// Enable the interrupt for the specified [`Event`].
@@ -1291,13 +1291,11 @@ impl ReceiverTimeoutExt for USART2 {}
 impl ReceiverTimeoutExt for USART3 {}
 
 /// UART instance
-pub trait Instance: Deref<Target = RegisterBlock> + crate::private::Sealed {
+pub trait Instance:
+    Deref<Target = RegisterBlock> + crate::interrupts::InterruptNumber + crate::private::Sealed
+{
     /// Peripheral bus instance which is responsible for the peripheral
     type APB;
-
-    /// The associated interrupt number, used to unmask / enable the interrupt
-    /// with [`cortex_m::peripheral::NVIC::unmask()`]
-    const INTERRUPT: Interrupt;
 
     #[doc(hidden)]
     fn enable_clock(apb1: &mut Self::APB);
@@ -1321,9 +1319,13 @@ macro_rules! usart {
     ) => {
         $(
             impl crate::private::Sealed for $USARTX {}
+            impl crate::interrupts::InterruptNumber for $USARTX {
+                type Interrupt = Interrupt;
+                const INTERRUPT: Interrupt = $INTERRUPT;
+            }
+
             impl Instance for $USARTX {
                 type APB = $APB;
-                const INTERRUPT: Interrupt = $INTERRUPT;
                 fn enable_clock(apb: &mut Self::APB) {
                     apb.enr().modify(|_, w| w.$usartXen().enabled());
                     apb.rstr().modify(|_, w| w.$usartXrst().reset());

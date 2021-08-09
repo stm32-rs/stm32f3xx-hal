@@ -18,7 +18,7 @@ use crate::pac::RCC;
 use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::{duration, fixed_point::FixedPoint, rate::Hertz};
 
-pub mod interrupts;
+mod interrupts;
 
 /// A monotonic nondecreasing timer.
 #[derive(Debug, Clone, Copy)]
@@ -146,8 +146,9 @@ where
     /// ```
     ///
     /// though this function can not be used in a const context.
-    pub fn nvic(&self) -> <TIM as self::interrupts::InterruptNumber>::Interrupt {
-        <TIM as self::interrupts::InterruptNumber>::INTERRUPT
+    #[doc(alias = "unmask")]
+    pub fn interrupt(&self) -> <TIM as crate::interrupts::InterruptNumber>::Interrupt {
+        <TIM as crate::interrupts::InterruptNumber>::INTERRUPT
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
@@ -324,7 +325,7 @@ pub trait CommonRegisterBlock: crate::private::Sealed {
 
 /// Associated clocks with timers
 pub trait Instance:
-    CommonRegisterBlock + self::interrupts::InterruptNumber + crate::private::Sealed
+    CommonRegisterBlock + crate::interrupts::InterruptNumber + crate::private::Sealed
 {
     /// Peripheral bus instance which is responsible for the peripheral
     type APB;

@@ -2,11 +2,8 @@ use crate::pac::Interrupt;
 
 /// Wrapper around interrupt types for the timers.
 #[derive(Copy, Clone, Debug)]
-// FIXME: Interrupt is not formattable?
-// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-// TODO: Does it make sense to introduce an enum for that?
-// enum ItrTypes {Global, Break, Update, Trigger, CaptureCompare}
-#[non_exhaustive] // To make the type non-creatable but still accessable.
+// To make the type non-creatable but still accessable.
+#[non_exhaustive]
 pub struct InterruptTypes {
     /// Break Interrupt
     r#break: Interrupt,
@@ -16,16 +13,6 @@ pub struct InterruptTypes {
     trigger: Interrupt,
     /// Capture and compare interupt
     capture_compare: Interrupt,
-}
-
-// FIXME: This super-trait constrained makes it difficult to use this trait
-// without cfg(feature...)
-// pub trait InterruptNumber: crate::private::Sealed {
-// TODO: Rename, because in conflict with: use cortex_m::interrupt::InterruptNumber;
-pub trait InterruptNumber {
-    type Interrupt;
-    const INTERRUPT: Self::Interrupt;
-    fn nvic() -> Self::Interrupt;
 }
 
 // FIXME: Use conditional feature compilation to make this compialble for all chip families.
@@ -112,12 +99,9 @@ macro_rules! single {
     ([ $($X:literal),+ ]) => {
         paste::paste! {
             $(
-                impl InterruptNumber for crate::pac::[<TIM $X>] {
+                impl crate::interrupts::InterruptNumber for crate::pac::[<TIM $X>] {
                     type Interrupt = crate::timer::interrupts::Interrupt;
                     const INTERRUPT: Self::Interrupt = crate::timer::interrupts::[<TIM $X>];
-                    fn nvic() -> Self::Interrupt {
-                        [<TIM $X>]
-                    }
                 }
             )+
         }
@@ -128,12 +112,9 @@ macro_rules! multi {
     ([ $($X:literal),+ ]) => {
         paste::paste! {
             $(
-                impl InterruptNumber for crate::pac::[<TIM $X>] {
+                impl crate::interrupts::InterruptNumber for crate::pac::[<TIM $X>] {
                     type Interrupt = crate::timer::interrupts::InterruptTypes;
                     const INTERRUPT: Self::Interrupt = crate::timer::interrupts::[<TIM $X _TYPES>];
-                    fn nvic() -> Self::Interrupt {
-                        [<TIM $X _TYPES>]
-                    }
                 }
             )+
         }
