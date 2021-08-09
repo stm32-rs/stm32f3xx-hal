@@ -13,8 +13,8 @@ use crate::pac::{DCB, DWT};
 use enumset::{EnumSet, EnumSetType};
 use void::Void;
 
-use crate::hal::timer::{CountDown, Periodic};
-use crate::pac::{Interrupt, RCC};
+use crate::hal::timer::{Cancel, CountDown, Periodic};
+use crate::pac::RCC;
 use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::{duration, fixed_point::FixedPoint, rate::Hertz};
 
@@ -275,6 +275,26 @@ where
     }
 }
 
+/// Error if a [`Cancel`]-ble [`Timer`] was cancled already or never been started.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct AlreadyCancled;
+
+impl<TIM> Cancel for Timer<TIM>
+where
+    TIM: Instance,
+{
+    type Error = AlreadyCancled;
+    fn cancel(&mut self) -> Result<(), Self::Error> {
+        // If timer is already stopped.
+        if !self.tim.is_cr1_cen_set() {
+            return Err(AlreadyCancled);
+        }
+        self.stop();
+        Ok(())
+    }
+}
+
 /// Common functionalities of all timer `RegisterBlock` types
 /// based on [`crate::pac::tim6::RegisterBlock`].
 ///
@@ -282,6 +302,8 @@ where
 pub trait CommonRegisterBlock: crate::private::Sealed {
     #[doc(hidden)]
     fn set_cr1_cen(&mut self, enable: bool);
+    #[doc(hidden)]
+    fn is_cr1_cen_set(&mut self) -> bool;
     #[doc(hidden)]
     fn set_dier_uie(&mut self, enable: bool);
     #[doc(hidden)]
@@ -332,6 +354,11 @@ macro_rules! timer {
                 #[inline]
                 fn set_cr1_cen(&mut self, enable: bool) {
                     self.cr1.modify(|_, w| w.cen().bit(enable));
+                }
+
+                #[inline]
+                fn is_cr1_cen_set(&mut self) -> bool {
+                    self.cr1.read().cen().bit()
                 }
 
                 #[inline]

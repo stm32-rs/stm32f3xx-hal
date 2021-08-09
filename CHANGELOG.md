@@ -60,6 +60,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
     returned.
   - On the bases of these interrupts, the interrupt controller (NVIC) can
     be set to mask or unmask these interrupts.
+- Implement the `embedded-hal::timer::Cancel` trait for timers. ([#267])
 
 [`enumset`]: https://crates.io/crates/enumset
 
