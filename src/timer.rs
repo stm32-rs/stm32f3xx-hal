@@ -472,15 +472,15 @@ macro_rules! timer_var_clock {
                             clocks.$pclkX()
                         }
                     }
-                    // TODO: Implement PLL in Rcc
-                    // 1: PLL vco output (running up to 144 MHz)
-                    // TODO: Make sure that * 2 is always correct
-                    crate::pac::rcc::cfgr3::TIM1SW_A::PLL /* if $PLL */ => clocks.$pclkX() * 2,
-                    // This state should not be posslbe.
-                    // TODO: Check if this assumption is correct.
-                    // TODO: Because of the way the it is created in the macro,
-                    // // this disticntion is not really needed anymore?
-                    // _ => crate::panic!("Invalid timer clock source."),
+                    crate::pac::rcc::cfgr3::TIM1SW_A::PLL => {
+                        if let Some(pllclk) = clocks.pllclk() {
+                            pllclk * 2
+                        } else {
+                            // This state should currently not be possible,
+                            // because the software source can not be configured right now.
+                            crate::panic!("Invalid timer clock source.");
+                        }
+                    }
                 }
             }
         )+

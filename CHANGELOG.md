@@ -61,6 +61,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - On the bases of these interrupts, the interrupt controller (NVIC) can
     be set to mask or unmask these interrupts.
 - Implement the `embedded-hal::timer::Cancel` trait for timers. ([#267])
+- Add `use_pll` to `CFGR` - the clock configuration - to force to use the PLL
+  source for the systemclock. Also `Clocks::pllclk()` was introduced to be able
+  to check, whether PLL is used.
 
 [`enumset`]: https://crates.io/crates/enumset
 
