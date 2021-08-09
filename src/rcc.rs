@@ -779,7 +779,6 @@ impl CFGR {
 /// The existence of this value indicates that the clock configuration can no longer be changed.
 /// This struct can be obtained via the [freeze](CFGR::freeze) method of the [CFGR](CFGR) struct.
 #[derive(Debug, Clone, Copy)]
-// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Clocks {
     hclk: Hertz,
     pclk1: Hertz,
