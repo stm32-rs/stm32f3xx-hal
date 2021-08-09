@@ -118,6 +118,7 @@ pub struct Timer<TIM> {
 #[cfg_attr(feature = "enumset", derive(EnumSetType))]
 #[cfg_attr(not(feature = "enumset"), derive(Copy, Clone, PartialEq, Eq))]
 #[non_exhaustive]
+// TODO(Sh3Rm4n): What to do about events, which not all timers support?
 pub enum Event {
     /// Timer timed out / count down ended
     Update,
