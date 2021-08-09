@@ -4,11 +4,38 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-use cargo_metadata::MetadataCommand;
 // TODO(Sh3Rm4n - 2021-04-28):
 // Remove when [feature="slice_group_by"] is stable.
 // See with https://github.com/rust-lang/rust/issues/80552.
 use slice_group_by::GroupBy;
+
+const DEVICE_VARIANTS: [&str; 25] = [
+    "stm32f301x6",
+    "stm32f301x8",
+    "stm32f318x8",
+    "stm32f302x6",
+    "stm32f302x8",
+    "stm32f302xb",
+    "stm32f302xc",
+    "stm32f302xd",
+    "stm32f302xe",
+    "stm32f303x6",
+    "stm32f303x8",
+    "stm32f303xb",
+    "stm32f303xc",
+    "stm32f303xd",
+    "stm32f303xe",
+    "stm32f328x8",
+    "stm32f358xc",
+    "stm32f398xe",
+    "stm32f373x8",
+    "stm32f373xb",
+    "stm32f373xc",
+    "stm32f378xc",
+    "stm32f334x4",
+    "stm32f334x6",
+    "stm32f334x8",
+];
 
 fn main() {
     check_device_feature();
@@ -36,20 +63,7 @@ fn check_device_feature() {
         std::process::exit(1);
     }
 
-    // get all device variants from the metadata
-    let metadata = MetadataCommand::new().exec().unwrap();
-    let device_variants: HashSet<String> = metadata
-        .root_package()
-        .unwrap()
-        .features
-        .iter()
-        .filter_map(|(feature, dependent_features)| {
-            dependent_features
-                .iter()
-                .any(|dependent_feature| dependent_feature == "device-selected")
-                .then(|| feature.clone())
-        })
-        .collect();
+    let device_variants: HashSet<String> = DEVICE_VARIANTS.iter().map(|s| s.to_string()).collect();
 
     // get all selected features via env variables
     let selected_features: HashSet<String> = env::vars()
