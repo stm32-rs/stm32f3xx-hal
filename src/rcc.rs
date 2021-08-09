@@ -464,13 +464,7 @@ impl CFGR {
     ///
     /// `HSI` is simpler to calculate, but the possible system clocks are less than `HSE`, because the
     /// division is not configurable.
-    #[cfg(not(any(
-        feature = "stm32f302xd",
-        feature = "stm32f302xe",
-        feature = "stm32f303xd",
-        feature = "stm32f303xe",
-        feature = "stm32f398"
-    )))]
+    #[cfg(not(feature = "gpio-f303e"))]
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
         let pllsrcclk = self.hse.unwrap_or(HSI.integer() / 2);
         // Get the optimal value for the pll divisor (PLL_DIV) and multiplier (PLL_MUL)
@@ -540,13 +534,7 @@ impl CFGR {
     ///
     /// To determine the optimal values, the greatest common divisor is calculated and the
     /// limitations of the possible values are taken into considiration.
-    #[cfg(any(
-        feature = "stm32f302xd",
-        feature = "stm32f302xe",
-        feature = "stm32f303xd",
-        feature = "stm32f303xe",
-        feature = "stm32f398",
-    ))]
+    #[cfg(feature = "gpio-f303e")]
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
         let pllsrcclk = self.hse.unwrap_or(HSI.integer());
 
