@@ -173,15 +173,13 @@ where
     /// **disabled**.
     #[cfg(feature = "enumset")]
     #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
-    pub fn configure_interrupts(&mut self, events: EnumSet<Event>) -> &mut Self {
+    pub fn configure_interrupts(&mut self, events: EnumSet<Event>) {
         for event in events.complement().iter() {
             self.configure_interrupt(event, false);
         }
         for event in events.iter() {
             self.configure_interrupt(event, true);
         }
-
-        self
     }
 
     /// Check if an interrupt event happend.

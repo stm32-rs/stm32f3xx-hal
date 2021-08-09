@@ -760,7 +760,7 @@ where
 
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
-    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) -> &mut Self {
+    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) {
         // Do a round way trip to be convert Into<Toggle> -> bool
         let enable: Toggle = enable.into();
         let enable: bool = enable.into();
@@ -782,7 +782,6 @@ where
             // Event::EndOfBlock => self.usart.cr1.modify(|_, w| w.eobie().bit(enable)),
             // Event::WakeupFromStopMode => self.usart.cr3.modify(|_, w| w.wufie().bit(enable)),
         };
-        self
     }
 
     /// Enable or disable interrupt for the specified [`Event`]s.
@@ -792,15 +791,13 @@ where
     /// **disabled**.
     #[cfg(feature = "enumset")]
     #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
-    pub fn configure_interrupts(&mut self, events: EnumSet<Event>) -> &mut Self {
+    pub fn configure_interrupts(&mut self, events: EnumSet<Event>) {
         for event in events.complement().iter() {
             self.configure_interrupt(event, false);
         }
         for event in events.iter() {
             self.configure_interrupt(event, true);
         }
-
-        self
     }
 
     /// Check if an interrupt event happend.
