@@ -119,6 +119,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Rename `CkMode` to `ClockMode` ([#266])
 - Rename `stm32-usbd` feature to `usb`. `stm32-usbd` is still used as a
   dependency. ([#271])
+- Rework the timer implementation: ([#267])
+  - `PclkSrc` trait was removed in favor of generic `Instance` trait, which
+    is a common ground for all available timers.
+  - `Timer::tim1` and so on are renamed to `Timer::new`
+  - The implementation of the timers are corrected to better represent the
+    avaibilities of timers of the hardware.
 
 ## [v0.7.0] - 2021-06-18
 
