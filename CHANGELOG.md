@@ -53,6 +53,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   Almost all important types should now be supported. ([#265])
 - Add a `free()` function to the RTC implementation to retrieve the passed-in
   peripheral. ([#266])
+- Implement an API to return the corresponding interrupt number of timer through
+  the newly introduced `InterruptNumber` trait, where the `Interrupt` is held
+  as an associated const. ([#267])
+  - Depending on the timer one `Interrupt` or a bundle of `InterruptTypes` is
+      returned.
+  - On the bases of these interrupts, the interrupt controller (NVIC) can
+      be set to mask or unmask these interrupts.
 
 [`enumset`]: https://crates.io/crates/enumset
 
