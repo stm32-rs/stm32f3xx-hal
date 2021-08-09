@@ -808,6 +808,9 @@ impl defmt::Format for Clocks {
     }
 }
 
+// TODO(Sh3Rm4n): Think of some way to generlize APB1 and APB2 as types to then implement a method,
+// with which the ppre or pclk can be obtained by passing in the type of APB.
+// With that in place, some places of macro magic are not needed anymore.
 impl Clocks {
     /// Returns the frequency of the AHB
     pub fn hclk(&self) -> Hertz {
