@@ -57,9 +57,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   the newly introduced `InterruptNumber` trait, where the `Interrupt` is held
   as an associated const. ([#267])
   - Depending on the timer one `Interrupt` or a bundle of `InterruptTypes` is
-      returned.
+    returned.
   - On the bases of these interrupts, the interrupt controller (NVIC) can
-      be set to mask or unmask these interrupts.
+    be set to mask or unmask these interrupts.
 
 [`enumset`]: https://crates.io/crates/enumset
 
@@ -132,6 +132,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - `Timer::tim1` and so on are renamed to `Timer::new`
   - The implementation of the timers are corrected to better represent the
     avaibilities of timers of the hardware.
+  - `Timer::new` now does not take a timeout value. This means, that the
+    timer will now not be started automatically and one has to explicitly call
+    `start()`.
 
 ## [v0.7.0] - 2021-06-18
 

@@ -40,7 +40,7 @@ mod tests {
         let clocks = rcc.cfgr.freeze(&mut flash.acr);
 
         // Let's use a timer, which is avaliable for every chip
-        let timer = Timer::new(dp.TIM2, 1.Hz(), clocks, &mut rcc.apb1);
+        let timer = Timer::new(dp.TIM2, clocks, &mut rcc.apb1);
         let mono_timer = MonoTimer::new(cp.DWT, clocks, &mut cp.DCB);
 
         assert!(mono_timer.frequency() == clocks.hclk());
@@ -59,7 +59,7 @@ mod tests {
     fn test_stop_and_free(state: &mut State) {
         let timer = state.timer.take().unwrap().free();
 
-        let timer = Timer::new(timer, 100.Hz(), state.clocks, &mut state.apb1);
+        let timer = Timer::new(timer, state.clocks, &mut state.apb1);
 
         state.timer = Some(timer);
     }

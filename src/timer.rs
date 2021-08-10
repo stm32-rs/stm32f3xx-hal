@@ -104,18 +104,10 @@ where
     TIM: Instance,
 {
     /// Configures a TIM peripheral as a periodic count down timer
-    pub fn new<T>(tim: TIM, timeout: T, clocks: Clocks, apb: &mut <TIM as Instance>::APB) -> Self
-    where
-        T: Into<Hertz>,
-    {
+    pub fn new(tim: TIM, clocks: Clocks, apb: &mut <TIM as Instance>::APB) -> Self {
         TIM::enable_clock(apb);
 
-        let mut timer = Timer { clocks, tim };
-
-        // Should we really start the timer here?
-        timer.start(timeout);
-
-        timer
+        Timer { clocks, tim }
     }
 
     /// Stops the timer
