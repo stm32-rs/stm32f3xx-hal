@@ -65,7 +65,6 @@ panic-rtt-target = { version = "0.1", features = ["cortex-m"] }
 rtt-target = { version = "0.3.0", features = ["cortex-m"] }
 
 [build-dependencies]
-cargo_metadata = "0.13.1"
 slice-group-by = "0.2.6"
 
 [features]

@@ -62,6 +62,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `embedded-hal` Read implementation of `Serial` does now return `WoudBlock`
   if the peripheral is busy. Also if an `Overrun` occured the receive data
   register (RDR) is flushed to have a more consistent API. ([#253])
+- Remove `cargo-metadata` as a build dependency to cut down dependencies and 
+  the reliance on `resolver = "2"`. ([#270])
 
 ### Fixed
 
@@ -438,6 +440,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#270]: https://github.com/stm32-rs/stm32f3xx-hal/pull/270
 [#266]: https://github.com/stm32-rs/stm32f3xx-hal/pull/266
 [#265]: https://github.com/stm32-rs/stm32f3xx-hal/pull/265
 [#264]: https://github.com/stm32-rs/stm32f3xx-hal/pull/264
