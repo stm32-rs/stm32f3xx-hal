@@ -86,7 +86,7 @@
 
  Enable functions, which leverage [`enumset`](https://crates.io/crates/enumset).
  This is especially usefull to get all set status events at once,
- see for example [`serial::Serial::triggered_events()`]
+ see for example [`crate::serial::Serial::triggered_events()`]
 
  ### `defmt`
 

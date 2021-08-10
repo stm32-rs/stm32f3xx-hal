@@ -28,7 +28,7 @@ members = [
 ]
 
 [package.metadata.docs.rs]
-features = ["stm32f303xc", "rt", "usb", "can"]
+features = ["stm32f303xc", "rt", "usb", "can", "enumset"]
 targets = ["thumbv7em-none-eabihf"]
 rustc-args = ["--cfg", "docsrs"]
 
