@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The `embedded-hal` Read implementation of `Serial` does now return `WoudBlock`
   if the peripheral is busy. Also if an `Overrun` occured the receive data
   register (RDR) is flushed to have a more consistent API. ([#253])
-- Remove `cargo-metadata` as a build dependency to cut down dependencies and 
+- Remove `cargo-metadata` as a build dependency to cut down dependencies and
   the reliance on `resolver = "2"`. ([#270])
 
 ### Fixed
@@ -115,6 +115,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Adc's `SampleTime` type has been reworked and is now a consistent wrapper around
   the underlying types for `stm32f3`'s `SMP9_A` and `SMP18_A` type. ([#266])
 - Rename `CkMode` to `ClockMode` ([#266])
+- Rename `stm32-usbd` feature to `usb`. `stm32-usbd` is still used as a
+  dependency. ([#271])
 
 ## [v0.7.0] - 2021-06-18
 
@@ -440,6 +442,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#271]: https://github.com/stm32-rs/stm32f3xx-hal/pull/271
 [#270]: https://github.com/stm32-rs/stm32f3xx-hal/pull/270
 [#266]: https://github.com/stm32-rs/stm32f3xx-hal/pull/266
 [#265]: https://github.com/stm32-rs/stm32f3xx-hal/pull/265

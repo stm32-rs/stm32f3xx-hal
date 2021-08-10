@@ -76,10 +76,11 @@
  ### `can`
 
  Enable CAN peripherals on supported targets.
+ The can implementation of the interface is backed by  [`bxcan`](https://crates.io/crates/bxcan)
 
- ### `stm32-usbd`
+ ### `usb`
 
- Enable USB peripherals on supported targets.
+ Enable USB peripherals on supported targets via the [`stm32-usbd`](https://crates.io/crates/sttm32-usbd) crate.
 
  ### `enumset`
 
@@ -184,7 +185,7 @@ pub mod spi;
 pub mod syscfg;
 pub mod timer;
 #[cfg(all(
-    feature = "stm32-usbd",
+    feature = "usb",
     any(
         feature = "stm32f303xb",
         feature = "stm32f303xc",
@@ -192,7 +193,7 @@ pub mod timer;
         feature = "stm32f303xe",
     ),
 ))]
-#[cfg_attr(docsrs, doc(cfg(feature = "stm32-usbd")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "usb")))]
 pub mod usb;
 pub mod watchdog;
 
