@@ -14,31 +14,7 @@ use enumset::{EnumSet, EnumSetType};
 use void::Void;
 
 use crate::hal::timer::{CountDown, Periodic};
-#[cfg(not(feature = "gpio-f373"))]
-use crate::pac::TIM1;
-#[cfg(any(
-    feature = "stm32f303",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398"
-))]
-use crate::pac::TIM20;
-#[cfg(not(feature = "svd-f301"))]
-use crate::pac::TIM3;
-#[cfg(not(any(feature = "svd-f301", feature = "svd-f3x4")))]
-use crate::pac::TIM4;
-use crate::pac::TIM7;
-#[cfg(any(
-    feature = "stm32f303",
-    feature = "stm32f328",
-    feature = "stm32f358",
-    feature = "stm32f398",
-))]
-use crate::pac::TIM8;
-use crate::pac::{rcc::cfgr3::TIM1SW_A, Interrupt, RCC};
-#[cfg(feature = "gpio-f373")]
-use crate::pac::{TIM12, TIM13, TIM14, TIM18, TIM19, TIM5};
-use crate::pac::{TIM15, TIM16, TIM17, TIM2, TIM6};
+use crate::pac::{Interrupt, RCC};
 use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::rate::*;
 
@@ -362,7 +338,9 @@ pub trait CommonRegisterBlock: crate::private::Sealed {
 }
 
 /// Associated clocks with timers
-pub trait Instance: CommonRegisterBlock + self::interrupts::InterruptNumber + crate::private::Sealed {
+pub trait Instance:
+    CommonRegisterBlock + self::interrupts::InterruptNumber + crate::private::Sealed
+{
     /// Peripheral bus instance which is responsible for the peripheral
     type APB;
 
@@ -392,7 +370,7 @@ macro_rules! timer {
         ),
     },)+) => {
         $(
-            impl CommonRegisterBlock for $TIMX {
+            impl CommonRegisterBlock for crate::pac::$TIMX {
                 #[inline]
                 fn set_cr1_cen(&mut self, enable: bool) {
                     self.cr1.modify(|_, w| w.cen().bit(enable));
@@ -444,8 +422,8 @@ macro_rules! timer {
                 }
             }
 
-            impl crate::private::Sealed for $TIMX {}
-            impl Instance for $TIMX {
+            impl crate::private::Sealed for crate::pac::$TIMX {}
+            impl Instance for crate::pac::$TIMX {
                 type APB = $APB;
                 // TODO: This has to be variable.
                 const INTERRUPT: Interrupt = Interrupt::TIM2;
@@ -501,7 +479,7 @@ macro_rules! timer_var_clock {
                 match unsafe {(*RCC::ptr()).cfgr3.read().$timXsw().variant()} {
                     // PCLK2 is really the wrong name, as depending on the type of chip, it is
                     // pclk1 or pclk2. This distinction is however not made in stm32f3.
-                    TIM1SW_A::PCLK2 =>  {
+                    crate::pac::rcc::cfgr3::TIM1SW_A::PCLK2 =>  {
                         // Conditional mutliplier after APB prescaler is used.
                         // See RM0316 Fig 13.
                         if clocks.$ppreX() > 1 {
@@ -513,7 +491,7 @@ macro_rules! timer_var_clock {
                     // TODO: Implement PLL in Rcc
                     // 1: PLL vco output (running up to 144 MHz)
                     // TODO: Make sure that * 2 is always correct
-                    TIM1SW_A::PLL /* if $PLL */ => clocks.$pclkX() * 2,
+                    crate::pac::rcc::cfgr3::TIM1SW_A::PLL /* if $PLL */ => clocks.$pclkX() * 2,
                     // This state should not be posslbe.
                     // TODO: Check if this assumption is correct.
                     // TODO: Because of the way the it is created in the macro,
@@ -528,7 +506,13 @@ macro_rules! timer_var_clock {
             timer_var_clock!(
                 $([<timer $X clock>], [<tim $Y sw>], [<pclk $APB>], [<ppre $APB>]),+
             );
+
         }
+
+        timer!([$(($X, $APB)),+]);
+    };
+    ([ $(($X:literal, $APB:literal)),+ ]) => {
+        timer_var_clock!([$(($X, $X, $APB)),+]);
     };
 }
 
@@ -552,315 +536,155 @@ macro_rules! timer_static_clock {
                 $([<timer $X clock>], [<pclk $APB>], [<ppre $APB>]),+
             );
         }
+
+        timer!([$(($X, $APB)),+]);
     };
 }
 
-// #[cfg(any(feature = "stm32f301", feature = "stm32f318"))]
-// hal! {
-//     {
-//         TIM1: (tim1, tim1en, tim1rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM2: (tim2, tim2en, tim2rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM6: (tim6, tim6en, tim6rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM15: (tim15, tim15en, tim15rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM16: (tim16, tim16en, tim16rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM17: (tim17, tim17en, tim17rst),
-//         APB2: (apb2, pclk2),
-//     },
-// }
+// NOTE: Most informations are read out of the clock tree (example RM0316 Fig. 13)
+// This gives us the following information:
+// - To which APB is the timer connected
+// - Which timers are really supported by the chip family
+// - Which timers have a static clock and which can also be connected to the PLL clock line
+cfg_if::cfg_if! {
+    // RM0366 Fig. 11
+    //
+    // NOTE: Even though timer 7 appears in the clock tree and an interrupt exists for 7
+    // (Interrupt::TIM7_IRQ), TIM7 has no chapter is nowwhere to be mentioned. Also tim7sw() does
+    // not exsist.
+    if #[cfg(feature = "svd-f301")] {
+        timer_static_clock!([(2, 1), (6, 1)]);
+        timer_var_clock!([(1, 2), (15, 2), (16, 2), (17, 2)]);
+    }
+}
 
-// #[cfg(feature = "stm32f302")]
-// hal! {
-//     {
-//         TIM1: (tim1, tim1en, tim1rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM2: (tim2, tim2en, tim2rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM6: (tim6, tim6en, tim6rst),
-//         APB1: (apb1,pclk1),
-//     },
-//     {
-//         TIM15: (tim15, tim15en, tim15rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM16: (tim16, tim16en, tim16rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM17: (tim17, tim17en, tim17rst),
-//         APB2: (apb2, pclk2),
-//     },
-// ;
+cfg_if::cfg_if! {
+    // RM0365 Fig. 12
+    if #[cfg(all(feature = "svd-f302", feature = "gpio-f303"))] {
+        timer_static_clock!([
+            (2, 1),
+            (3, 1),
+            (4, 1),
+            (6, 1),
+            (15, 2),
+            (16, 2),
+            (17, 2)
+        ]);
+        timer_var_clock!([(1, 2)]);
+    }
 
-// FIXME: We have to be more finegrained in the feature chip selection!
+    // RM0365 Fig. 13
+    else if #[cfg(all(feature = "svd-f302", feature = "gpio-f303e"))] {
+        timer_static_clock!([
+            (6, 1)
+        ]);
+        timer_var_clock!([
+            (1, 2),
+            (2, 1),
+            (15, 2),
+            (16, 2),
+            (17, 2)
+        ]);
+        timer_var_clock!([(3, 34, 1), (4, 34, 1)]);
+    }
 
-#[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
-timer_static_clock!([
-    (2, 1),
-    (3, 1),
-    (4, 1),
-    (6, 1),
-    (7, 1),
-    (15, 2),
-    (16, 2),
-    (17, 2)
-]);
+    // RM0365 Fig. 14
+    //
+    // NOTE: Even though timer 7 appears in the clock tree and an interrupt exists for 7
+    // (Interrupt::TIM7_IRQ), TIM7 has no chapter is nowhere to be mentioned. Also tim7sw() does
+    // not exsist.
+    else if #[cfg(all(feature = "svd-f302", feature = "gpio-f302"))] {
+        timer_static_clock!([
+            (2, 1),
+            (6, 1)
+        ]);
+        timer_var_clock!([
+            (1, 2),
+            (15, 2),
+            (16, 2),
+            (17, 2)
+        ]);
+    }
 
-#[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
-timer_var_clock!([(1, 1, 2), (8, 8, 2)]);
-#[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
-timer!([
-    // FIXME: The interrupts are more finegrained, we have to introduce a new API
-    (1, 2),
-    (2, 1),
-    (3, 1),
-    (4, 1),
-    (6, 1),
-    (7, 1),
-    (8, 2),
-    (15, 2),
-    (16, 2),
-    (17, 2)
-]);
+    // RM0316 Fig. 13
+    else if #[cfg(all(feature = "svd-f303", feature = "gpio-f303"))] {
+        timer_static_clock!([
+            (2, 1),
+            (3, 1),
+            (4, 1),
+            (6, 1),
+            (7, 1),
+            (15, 2),
+            (16, 2),
+            (17, 2)
+        ]);
+        timer_var_clock!([(1, 2), (8, 2)]);
+    }
 
-#[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
-timer_static_clock!([(6, 1), (7, 1)]);
+    // RM0316 Fig. 14
+    else if #[cfg(all(feature = "svd-f303", feature = "gpio-f303e"))] {
+        timer_static_clock!([(6, 1), (7, 1)]);
+        timer_var_clock!([
+            (1, 2),
+            (2, 1),
+            (8, 2),
+            (15, 2),
+            (16, 2),
+            (17, 2),
+            (20, 2)
+        ]);
+        timer_var_clock!([(3, 34, 1), (4, 34, 1)]);
+    }
 
-#[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
-timer_var_clock!([
-    (1, 1, 2),
-    (2, 2, 1),
-    (3, 34, 1),
-    (4, 34, 1),
-    (8, 8, 2),
-    (15, 15, 2),
-    (16, 16, 2),
-    (17, 17, 2),
-    (20, 20, 2)
-]);
-#[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
-timer!([
-    // FIXME: The interrupts are more finegrained, we have to introduce a new API
-    (1, 2),
-    (2, 1),
-    (3, 1),
-    (4, 1),
-    (6, 1),
-    (7, 1),
-    (8, 2),
-    (15, 2),
-    (16, 2),
-    (17, 2),
-    (20, 2)
-]);
+    // RM0316 Fig. 15
+    else if #[cfg(all(feature = "svd-f303", feature = "gpio-f333e"))] {
+        timer_static_clock!([
+            (2, 1),
+            (3, 1),
+            (6, 1),
+            (7, 1),
+            (15, 2),
+            (16, 2),
+            (17, 2)
+        ]);
+        timer_var_clock!([(1, 2)]);
+    }
 
-// #[cfg(feature = "stm32f303")]
-// hal! {
-//     {
-//         TIM1: (tim1, tim1en, tim1rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM2: (tim2, tim2en, tim2rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM3: (tim3, tim3en, tim3rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM4: (tim4, tim4en, tim4rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM6: (tim6, tim6en, tim6rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM7: (tim7, tim7en, tim7rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM8: (tim8, tim8en, tim8rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM15: (tim15, tim15en, tim15rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM16: (tim16, tim16en, tim16rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM17: (tim17, tim17en, tim17rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM20: (tim20, tim20en, tim20rst),
-//         APB2: (apb2, pclk2),
-//     },
-// }
+    // RM0313 Fig. 12 - this clock does not deliver the information about the timers.
+    //
+    // This information is from chapter 16, 17 and 18 of RM0313.
+    // The information, which APB is connected to the timer, is only avaliable while looking
+    // at the apb[1,2]rst registers.
+    else if #[cfg(feature = "gpio-f373")] {
+        timer_static_clock!([
+            (2, 1),
+            (3, 1),
+            (4, 1),
+            (5, 1),
+            (6, 1),
+            (7, 1),
+            (12, 1),
+            (13, 1),
+            (14, 1),
+            (15, 2),
+            (16, 2),
+            (17, 2),
+            (18, 1),
+            (19, 2)
+        ]);
+    }
 
-// #[cfg(feature = "stm32f334")]
-// hal! {
-//     {
-//         TIM1: (tim1, tim1en, tim1rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM2: (tim2, tim2en, tim2rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM3: (tim3, tim3en, tim3rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM6: (tim6, tim6en, tim6rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM7: (tim7, tim7en, tim7rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM15: (tim15, tim15en, tim15rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM16: (tim16, tim16en, tim16rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM17: (tim17, tim17en, tim17rst),
-//         APB2: (apb2, pclk2),
-//     },
-// }
-
-// #[cfg(feature = "gpio-f373")]
-// hal! {
-//     {
-//         TIM2: (tim2, tim2en, tim2rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM3: (tim3, tim3en, tim3rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM4: (tim4, tim4en, tim4rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM5: (tim5, tim5en, tim5rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM6: (tim6, tim6en, tim6rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM7: (tim7, tim7en, tim7rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM12: (tim12, tim12en, tim12rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM13: (tim13, tim13en, tim13rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM14: (tim14, tim14en, tim14rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM15: (tim15, tim15en, tim15rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM16: (tim16, tim16en, tim16rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM17: (tim17, tim17en, tim17rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM18: (tim18, tim18en, tim18rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM19: (tim19, tim19en, tim19rst),
-//         APB2: (apb2, pclk2),
-//     },
-// }
-
-// #[cfg(any(feature = "stm32f328", feature = "stm32f358", feature = "stm32f398"))]
-// hal! {
-//     {
-//         TIM1: (tim1, tim1en, tim1rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM2: (tim2, tim2en, tim2rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM3: (tim3, tim3en, tim3rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM4: (tim4, tim4en, tim4rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM6: (tim6, tim6en, tim6rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM7: (tim7, tim7en, tim7rst),
-//         APB1: (apb1, pclk1),
-//     },
-//     {
-//         TIM8: (tim8, tim8en, tim8rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM15: (tim15, tim15en, tim15rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM16: (tim16, tim16en, tim16rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM17: (tim17, tim17en, tim17rst),
-//         APB2: (apb2, pclk2),
-//     },
-//     {
-//         TIM20: (tim20, tim20en, tim20rst),
-//         APB2: (apb2, pclk2),
-//     },
-// }
+    // RM0364 Fig. 10
+    else if #[cfg(all(feature = "svd-f3x4", feature = "gpio-f333"))] {
+        timer_static_clock!([
+            (2, 1),
+            (3, 1),
+            (6, 1),
+            (7, 1),
+            (15, 2),
+            (16, 2),
+            (17, 2)
+        ]);
+        timer_var_clock!([(1, 2)]);
+    }
+}
