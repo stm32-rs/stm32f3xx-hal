@@ -108,6 +108,7 @@ macro_rules! single {
     };
 }
 
+#[allow(unused)]
 macro_rules! multi {
     ([ $($X:literal),+ ]) => {
         paste::paste! {

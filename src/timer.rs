@@ -14,6 +14,7 @@ use enumset::{EnumSet, EnumSetType};
 use void::Void;
 
 use crate::hal::timer::{Cancel, CountDown, Periodic};
+#[allow(unused)]
 use crate::pac::RCC;
 use crate::rcc::{Clocks, APB1, APB2};
 use crate::time::{duration, fixed_point::FixedPoint, rate::Hertz};
@@ -453,6 +454,7 @@ macro_rules! timer {
     };
 }
 
+#[allow(unused)]
 macro_rules! timer_var_clock {
     ($($timerXclock:ident, $timXsw:ident, $pclkX:ident, $ppreX:ident),+) => {
         $(
