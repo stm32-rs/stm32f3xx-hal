@@ -138,7 +138,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --features=stm32f303xc,rt,stm32-usbd,can
+          args: --features=stm32f303xc,rt,stm32-usbd,can,enumset
 
   clippy:
     name: Clippy
