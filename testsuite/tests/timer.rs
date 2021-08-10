@@ -71,7 +71,7 @@ mod tests {
         let freqcyc = state.mono_timer.frequency().integer();
 
         let instant = state.mono_timer.now();
-        timer.start(1.Hz());
+        timer.start(1.seconds());
         assert!(!timer.is_event_triggered(Event::Update));
         unwrap!(nb::block!(timer.wait()).ok());
         let elapsed = instant.elapsed();
@@ -79,7 +79,12 @@ mod tests {
         defmt::info!("elapsed: {}", elapsed);
         // TODO: Test multiple frequencies and change the cycle counter window to a percentage
         // to measure the overhead of start?
-        assert!(((freqcyc - 1000)..(freqcyc + 1000)).contains(&elapsed));
+
+        // Differentiate between releas and debug build.
+        #[cfg(not(debug_assertions))]
+        assert!(((freqcyc - 500)..(freqcyc + 500)).contains(&elapsed));
+        #[cfg(debug_assertions)]
+        assert!(((freqcyc - 2000)..(freqcyc + 2000)).contains(&elapsed));
 
         state.timer = Some(timer);
     }
@@ -96,7 +101,7 @@ mod tests {
 
         assert!(!INTERRUPT_FIRED.load(Ordering::SeqCst));
         timer.enable_interrupt(Event::Update);
-        timer.start(100_000.Hz());
+        timer.start(1.milliseconds());
 
         while !INTERRUPT_FIRED.load(Ordering::SeqCst) {}
 

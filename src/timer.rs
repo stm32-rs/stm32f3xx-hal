@@ -16,7 +16,7 @@ use void::Void;
 use crate::hal::timer::{CountDown, Periodic};
 use crate::pac::{Interrupt, RCC};
 use crate::rcc::{Clocks, APB1, APB2};
-use crate::time::rate::*;
+use crate::time::{duration, fixed_point::FixedPoint, rate::Hertz};
 
 pub mod interrupts;
 
@@ -224,7 +224,7 @@ impl<TIM> CountDown for Timer<TIM>
 where
     TIM: Instance,
 {
-    type Time = Hertz;
+    type Time = duration::Generic<u32>;
 
     fn start<T>(&mut self, timeout: T)
     where
@@ -232,13 +232,15 @@ where
     {
         self.stop();
 
-        let ticks = TIM::clock(&self.clocks).0 / timeout.into().0;
-        let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
+        let timeout: Self::Time = timeout.into();
+        let clock = TIM::clock(&self.clocks);
 
+        let ticks = clock.integer() * *timeout.scaling_factor() * timeout.integer();
+
+        let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
         self.tim.set_psc(psc);
 
         let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
-
         self.tim.set_arr(arr);
 
         // Ensure that the below procedure does not create an unexpected interrupt.
