@@ -6,14 +6,14 @@
 //!
 //! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/spi.rs
 
-use core::ptr;
+use core::{fmt, ops::Deref, ptr};
 
 use crate::hal::spi::FullDuplex;
 pub use crate::hal::spi::{Mode, Phase, Polarity};
 use crate::pac::{
     spi1,
     spi1::cr2::{DS_A, FRXTH_A},
-    SPI1, SPI2, SPI3,
+    Interrupt, SPI1, SPI2, SPI3,
 };
 
 #[cfg(feature = "gpio-f303e")]
@@ -56,7 +56,7 @@ use crate::rcc::Clocks;
 use crate::rcc::APB1;
 #[cfg(not(feature = "gpio-f302"))]
 use crate::rcc::APB2;
-use crate::time::rate::*;
+use crate::time::rate::Hertz;
 use core::marker::PhantomData;
 
 /// SPI error
@@ -214,10 +214,10 @@ impl Word for u16 {
 }
 
 /// SPI peripheral operating in full duplex master mode
-pub struct Spi<SPI, PINS, WORD = u8> {
+pub struct Spi<SPI, Pins, Word = u8> {
     spi: SPI,
-    pins: PINS,
-    _word: PhantomData<WORD>,
+    pins: Pins,
+    _word: PhantomData<Word>,
 }
 
 macro_rules! hal {
@@ -375,15 +375,91 @@ macro_rules! hal {
     }
 }
 
+/// SPI instance
+pub trait Instance:
+    Deref<Target = spi1::RegisterBlock> + crate::interrupts::InterruptNumber + crate::private::Sealed
+{
+    /// Peripheral bus instance which is responsible for the peripheral
+    type APB;
+
+    #[doc(hidden)]
+    fn enable_clock(apb1: &mut Self::APB);
+    #[doc(hidden)]
+    fn clock(clocks: &Clocks) -> Hertz;
+}
+
+macro_rules! spi {
+    ($($SPIX:ident: ($APBX:ident, $spiXen:ident, $spiXrst:ident, $pclkX:ident),)+) => {
+        $(
+            impl crate::private::Sealed for $SPIX {}
+            impl crate::interrupts::InterruptNumber for $SPIX {
+                type Interrupt = Interrupt;
+                const INTERRUPT: Self::Interrupt = Interrupt::$SPIX;
+            }
+
+            impl Instance for $SPIX {
+                type APB = $APBX;
+                fn enable_clock(apb: &mut Self::APB) {
+                    apb.enr().modify(|_, w| w.$spiXen().enabled());
+                    apb.rstr().modify(|_, w| w.$spiXrst().reset());
+                    apb.rstr().modify(|_, w| w.$spiXrst().clear_bit());
+                }
+
+                fn clock(clocks: &Clocks) -> Hertz {
+                    clocks.$pclkX()
+                }
+            }
+
+            #[cfg(feature = "defmt")]
+            impl<Pins> defmt::Format for Spi<$SPIX, Pins> {
+                fn format(&self, f: defmt::Formatter) {
+                    // Omitting pins makes it:
+                    // 1. Easier.
+                    // 2. Not to specialized to use it ergonimically for users
+                    //    even in a generic context.
+                    // 3. Not require specialization.
+                    defmt::write!(
+                        f,
+                        "SPI {{ spi: {}, pins: ? }}",
+                        stringify!($USARTX),
+                    );
+                }
+            }
+
+            impl<Pins> fmt::Debug for Spi<$SPIX, Pins> {
+                fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                    f.debug_struct(stringify!(Serial))
+                        .field("spi", &stringify!($USARTX))
+                        .field("pins", &"?")
+                        .finish()
+                }
+            }
+        )+
+    };
+
+    ([ $(($X:literal, $APB:literal)),+ ]) => {
+        paste::paste! {
+            spi!(
+                $(
+                    [<SPI $X>]: (
+                        [<APB $APB>],
+                        [<spi $X en>],
+                        [<spi $X rst>],
+                        [<pclk $APB>]
+                    ),
+                )+
+            );
+        }
+    };
+}
+
 #[cfg(any(
     feature = "stm32f303x6",
     feature = "stm32f303x8",
     feature = "stm32f328",
     feature = "stm32f334",
 ))]
-hal! {
-    SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
-}
+spi!([(1, 2)]);
 
 #[cfg(any(
     feature = "stm32f301",
@@ -391,10 +467,7 @@ hal! {
     feature = "stm32f302x8",
     feature = "stm32f318",
 ))]
-hal! {
-    SPI2: (spi2, APB1, spi2en, spi2rst, pclk1),
-    SPI3: (spi3, APB1, spi3en, spi3rst, pclk1),
-}
+spi!([(2, 1), (3, 1)]);
 
 #[cfg(any(
     feature = "stm32f302xb",
@@ -405,11 +478,7 @@ hal! {
     feature = "stm32f373",
     feature = "stm32f378",
 ))]
-hal! {
-    SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
-    SPI2: (spi2, APB1, spi2en, spi2rst, pclk1),
-    SPI3: (spi3, APB1, spi3en, spi3rst, pclk1),
-}
+spi!([(1, 2), (2, 1), (3, 1)]);
 
 #[cfg(any(
     feature = "stm32f302xd",
@@ -418,9 +487,4 @@ hal! {
     feature = "stm32f303xe",
     feature = "stm32f398",
 ))]
-hal! {
-    SPI1: (spi1, APB2, spi1en, spi1rst, pclk2),
-    SPI2: (spi2, APB1, spi2en, spi2rst, pclk1),
-    SPI3: (spi3, APB1, spi3en, spi3rst, pclk1),
-    SPI4: (spi4, APB2, spi4en, spi4rst, pclk2),
-}
+spi!([(1, 2), (2, 1), (3, 1), (4, 2)]);
