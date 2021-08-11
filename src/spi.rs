@@ -50,44 +50,53 @@ pub trait MosiPin<SPI>: crate::private::Sealed {}
 impl SckPin<SPI1> for gpio::PA5<AF5<PushPull>> {}
 impl MisoPin<SPI1> for gpio::PA6<AF5<PushPull>> {}
 impl MosiPin<SPI1> for gpio::PA7<AF5<PushPull>> {}
-impl MosiPin<SPI1> for gpio::PB5<AF5<PushPull>> {}
 
+#[cfg(not(feature = "gpio-f373"))]
+impl SckPin<SPI2> for gpio::PB13<AF5<PushPull>> {}
+#[cfg(feature = "gpio-f373")]
+impl SckPin<SPI2> for gpio::PB10<AF5<PushPull>> {}
 impl MisoPin<SPI2> for gpio::PB14<AF5<PushPull>> {}
 impl MosiPin<SPI2> for gpio::PB15<AF5<PushPull>> {}
 
 impl MosiPin<SPI3> for gpio::PB5<AF6<PushPull>> {}
+
 impl SckPin<SPI3> for gpio::PC10<AF6<PushPull>> {}
 impl MisoPin<SPI3> for gpio::PC11<AF6<PushPull>> {}
 impl MosiPin<SPI3> for gpio::PC12<AF6<PushPull>> {}
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "gpio-f373")] {
-        impl SckPin<SPI1> for gpio::PA12<AF6<PushPull>> {}
-        impl SckPin<SPI1> for gpio::PC7<AF5<PushPull>> {}
-        impl MisoPin<SPI1> for gpio::PA13<AF6<PushPull>> {}
-        impl MisoPin<SPI1> for gpio::PC8<AF5<PushPull>> {}
-        impl MosiPin<SPI1> for gpio::PB0<AF5<PushPull>> {}
-        impl MosiPin<SPI1> for gpio::PC9<AF5<PushPull>> {}
-        impl MosiPin<SPI1> for gpio::PF6<AF5<PushPull>> {}
-
-        impl SckPin<SPI2> for gpio::PA8<AF5<PushPull>> {}
         impl SckPin<SPI2> for gpio::PB8<AF5<PushPull>> {}
-        impl SckPin<SPI2> for gpio::PB10<AF5<PushPull>> {}
         impl SckPin<SPI2> for gpio::PD7<AF5<PushPull>> {}
         impl SckPin<SPI2> for gpio::PD8<AF5<PushPull>> {}
+
+        impl SckPin<SPI1> for gpio::PA12<AF6<PushPull>> {}
+        impl MisoPin<SPI1> for gpio::PA13<AF6<PushPull>> {}
+
+        impl MosiPin<SPI1> for gpio::PB0<AF5<PushPull>> {}
+        impl MosiPin<SPI1> for gpio::PF6<AF5<PushPull>> {}
+
+        impl SckPin<SPI1> for gpio::PC7<AF5<PushPull>> {}
+        impl MisoPin<SPI1> for gpio::PC8<AF5<PushPull>> {}
+        impl MosiPin<SPI1> for gpio::PC9<AF5<PushPull>> {}
+
+
+        impl SckPin<SPI2> for gpio::PA8<AF5<PushPull>> {}
         impl MisoPin<SPI2> for gpio::PA9<AF5<PushPull>> {}
-        impl MisoPin<SPI2> for gpio::PC2<AF5<PushPull>> {}
-        impl MisoPin<SPI2> for gpio::PD3<AF5<PushPull>> {}
         impl MosiPin<SPI2> for gpio::PA10<AF5<PushPull>> {}
+
+        impl MisoPin<SPI2> for gpio::PC2<AF5<PushPull>> {}
         impl MisoPin<SPI2> for gpio::PC3<AF5<PushPull>> {}
+
+        impl MisoPin<SPI2> for gpio::PD3<AF5<PushPull>> {}
         impl MisoPin<SPI2> for gpio::PD4<AF5<PushPull>> {}
 
         impl SckPin<SPI3> for gpio::PA1<AF6<PushPull>> {}
         impl MisoPin<SPI3> for gpio::PA2<AF6<PushPull>> {}
         impl MisoPin<SPI3> for gpio::PA3<AF6<PushPull>> {}
+
+        impl SckPin<SPI3> for gpio::PB3<AF6<PushPull>> {}
         impl MisoPin<SPI3> for gpio::PB4<AF6<PushPull>> {}
-    } else {
-        impl SckPin<SPI2> for gpio::PB13<AF5<PushPull>> {}
     }
 }
 
@@ -101,10 +110,11 @@ cfg_if::cfg_if! {
 cfg_if::cfg_if! {
     if #[cfg(feature = "gpio-f303e")] {
         impl SckPin<SPI4> for gpio::PE2<AF5<PushPull>> {}
-        impl SckPin<SPI4> for gpio::PE12<AF5<PushPull>> {}
         impl MisoPin<SPI4> for gpio::PE5<AF5<PushPull>> {}
-        impl MisoPin<SPI4> for gpio::PE13<AF5<PushPull>> {}
         impl MosiPin<SPI4> for gpio::PE6<AF5<PushPull>> {}
+
+        impl SckPin<SPI4> for gpio::PE12<AF5<PushPull>> {}
+        impl MisoPin<SPI4> for gpio::PE13<AF5<PushPull>> {}
         impl MosiPin<SPI4> for gpio::PE14<AF5<PushPull>> {}
     }
 }
@@ -127,18 +137,15 @@ cfg_if::cfg_if! {
     }
 }
 
-#[cfg(all(
-    not(feature = "stm32f301"),
-    not(feature = "gpio-f333"),
-    not(feature = "gpio-f303"),
-))]
-impl SckPin<SPI3> for gpio::PB3<AF6<PushPull>> {}
-
-#[cfg(all(
-    not(feature = "stm32f301"),
-    any(feature = "gpio-f302", feature = "gpio-f303e"),
-))]
-impl MisoPin<SPI3> for gpio::PB4<AF6<PushPull>> {}
+cfg_if::cfg_if! {
+    if #[cfg(all(
+        not(feature = "stm32f301"),
+        any(feature = "gpio-f302", feature = "gpio-f303e"),
+    ))] {
+        impl SckPin<SPI3> for gpio::PB3<AF6<PushPull>> {}
+        impl MisoPin<SPI3> for gpio::PB4<AF6<PushPull>> {}
+    }
+}
 
 /// Configuration trait for the Word Size
 /// used by the SPI peripheral
@@ -433,7 +440,6 @@ mod interrupts {
             pub(crate) const SPI3: Interrupt = Interrupt::SPI3;
         }
     }
-
 
     cfg_if::cfg_if! {
         if #[cfg(any(feature = "gpio-f303e", feature = "svd-f302"))] {
