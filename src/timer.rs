@@ -623,7 +623,7 @@ cfg_if::cfg_if! {
     }
 
     // RM0316 Fig. 15
-    else if #[cfg(all(feature = "svd-f303", feature = "gpio-f333e"))] {
+    else if #[cfg(all(feature = "svd-f303", feature = "gpio-f333"))] {
         timer_static_clock!([
             (2, 1),
             (3, 1),
