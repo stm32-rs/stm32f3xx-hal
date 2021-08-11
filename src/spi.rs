@@ -11,6 +11,8 @@ use core::{fmt, marker::PhantomData, ops::Deref, ptr};
 use crate::hal::blocking::spi;
 use crate::hal::spi::FullDuplex;
 pub use crate::hal::spi::{Mode, Phase, Polarity};
+#[cfg(feature = "gpio-f303e")]
+use crate::pac::SPI4;
 use crate::pac::{
     self, spi1,
     spi1::cr2::{DS_A, FRXTH_A},
@@ -350,7 +352,7 @@ macro_rules! spi {
             impl crate::private::Sealed for pac::$SPIX {}
             impl crate::interrupts::InterruptNumber for pac::$SPIX {
                 type Interrupt = Interrupt;
-                const INTERRUPT: Self::Interrupt = Interrupt::$SPIX;
+                const INTERRUPT: Self::Interrupt = interrupts::$SPIX;
             }
 
             impl Instance for pac::$SPIX {
@@ -407,6 +409,33 @@ macro_rules! spi {
             );
         }
     };
+}
+
+mod interrupts {
+    use crate::pac::Interrupt;
+
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "svd-f301")] {
+            #[allow(unused)]
+            pub(crate) const SPI1: Interrupt = Interrupt::SPI1_IRQ;
+            #[allow(unused)]
+            pub(crate) const SPI2: Interrupt = Interrupt::SPI2_IRQ;
+            #[allow(unused)]
+            pub(crate) const SPI3: Interrupt = Interrupt::SPI3_IRQ;
+        } else if #[cfg(feature = "svd-f3x4")] {
+            pub(crate) const SPI1: Interrupt = Interrupt::SPI1;
+        } else {
+            #[allow(unused)]
+            pub(crate) const SPI1: Interrupt = Interrupt::SPI1;
+            #[allow(unused)]
+            pub(crate) const SPI2: Interrupt = Interrupt::SPI2;
+            #[allow(unused)]
+            pub(crate) const SPI3: Interrupt = Interrupt::SPI3;
+        }
+    }
+
+    #[cfg(feature = "gpio-f303e")]
+    pub(crate) const SPI4: Interrupt = Interrupt::SPI4;
 }
 
 #[cfg(any(
