@@ -434,8 +434,19 @@ mod interrupts {
         }
     }
 
-    #[cfg(feature = "gpio-f303e")]
-    pub(crate) const SPI4: Interrupt = Interrupt::SPI4;
+
+    cfg_if::cfg_if! {
+        if #[cfg(any(feature = "gpio-f303e", feature = "svd-f302"))] {
+            // XXX This is a hack.
+            // SPI4 should have a corresponding nvic interrupt number. But the svd does not
+            // generated an enum-number for that. The RM0365 does also not list it as an interrupt.
+            // Strangly though, the Stm32CubeMx program let's us choose to enable the NVIC
+            // interrupt. This is probably a documentation bug.
+            pub(crate) const SPI4: Interrupt = Interrupt::SPI3;
+        } else if #[cfg(feature = "gpio-f303e")] {
+            pub(crate) const SPI4: Interrupt = Interrupt::SPI4;
+        }
+    }
 }
 
 #[cfg(any(
