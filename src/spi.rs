@@ -449,38 +449,14 @@ mod interrupts {
     }
 }
 
-#[cfg(any(
-    feature = "stm32f303x6",
-    feature = "stm32f303x8",
-    feature = "stm32f328",
-    feature = "stm32f334",
-))]
+#[cfg(feature = "gpio-f333")]
 spi!([(1, 2)]);
 
-#[cfg(any(
-    feature = "stm32f301",
-    feature = "stm32f302x6",
-    feature = "stm32f302x8",
-    feature = "stm32f318",
-))]
+#[cfg(feature = "gpio-f302")]
 spi!([(2, 1), (3, 1)]);
 
-#[cfg(any(
-    feature = "stm32f302xb",
-    feature = "stm32f302xc",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f358",
-    feature = "stm32f373",
-    feature = "stm32f378",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f373",))]
 spi!([(1, 2), (2, 1), (3, 1)]);
 
-#[cfg(any(
-    feature = "stm32f302xd",
-    feature = "stm32f302xe",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-    feature = "stm32f398",
-))]
+#[cfg(feature = "gpio-f303e")]
 spi!([(1, 2), (2, 1), (3, 1), (4, 2)]);
