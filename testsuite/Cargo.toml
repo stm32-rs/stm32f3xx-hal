@@ -20,6 +20,10 @@ name = "rcc"
 harness = false
 
 [[test]]
+name = "timer"
+harness = false
+
+[[test]]
 name = "gpio_input"
 harness = false
 
@@ -51,6 +55,7 @@ enumset = { version = "1.0.6" }
 stm32f3xx-hal = { path = "..", features = ["rt", "defmt-trace", "can", "ld", "enumset"]}
 panic-probe = { version = "0.2.0", features = ["print-defmt"] }
 nb = "1.0.0"
+num-traits = { version = "0.2.14", default-features = false }
 
 [features]
 # enable all defmt logging levels

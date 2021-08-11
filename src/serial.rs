@@ -722,9 +722,10 @@ where
         self.usart.isr.read().busy().bit_is_set()
     }
 
-    /// Obtain the assocated intterupt number for the serial peripheral.
+    /// Obtain the associated interrupt number for the serial peripheral.
     ///
-    /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`]
+    ///
+    /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`].
     /// This is useful for all `cortex_m::peripheral::INTERRUPT` functions.
     ///
     /// # Note
@@ -734,15 +735,15 @@ where
     /// ```
     /// use cortex_m::peripheral::INTERRUPT;
     /// use stm32f3xx_hal::pac::USART1;
-    /// use stm32f3xx_hal::serial::Instance;
+    /// use stm32f3xx_hal::interrupt::InterruptNumber;
     ///
-    /// const interrupt: INTERRUPT = <USART1 as Instance>::INTERRUPT;
+    /// const INTERRUPT: Interrupt = <USART1 as InterruptNumber>::INTERRUPT;
     /// ```
     ///
     /// though this function can not be used in a const context.
     #[doc(alias = "unmask")]
-    pub fn nvic() -> Interrupt {
-        <Usart as Instance>::INTERRUPT
+    pub fn interrupt(&self) -> <Usart as crate::interrupts::InterruptNumber>::Interrupt {
+        <Usart as crate::interrupts::InterruptNumber>::INTERRUPT
     }
 
     /// Enable the interrupt for the specified [`Event`].
@@ -759,7 +760,7 @@ where
 
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
-    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) -> &mut Self {
+    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) {
         // Do a round way trip to be convert Into<Toggle> -> bool
         let enable: Toggle = enable.into();
         let enable: bool = enable.into();
@@ -781,7 +782,6 @@ where
             // Event::EndOfBlock => self.usart.cr1.modify(|_, w| w.eobie().bit(enable)),
             // Event::WakeupFromStopMode => self.usart.cr3.modify(|_, w| w.wufie().bit(enable)),
         };
-        self
     }
 
     /// Enable or disable interrupt for the specified [`Event`]s.
@@ -791,15 +791,13 @@ where
     /// **disabled**.
     #[cfg(feature = "enumset")]
     #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
-    pub fn configure_interrupts(&mut self, events: EnumSet<Event>) -> &mut Self {
+    pub fn configure_interrupts(&mut self, events: EnumSet<Event>) {
         for event in events.complement().iter() {
             self.configure_interrupt(event, false);
         }
         for event in events.iter() {
             self.configure_interrupt(event, true);
         }
-
-        self
     }
 
     /// Check if an interrupt event happend.
@@ -1293,13 +1291,11 @@ impl ReceiverTimeoutExt for USART2 {}
 impl ReceiverTimeoutExt for USART3 {}
 
 /// UART instance
-pub trait Instance: Deref<Target = RegisterBlock> + crate::private::Sealed {
+pub trait Instance:
+    Deref<Target = RegisterBlock> + crate::interrupts::InterruptNumber + crate::private::Sealed
+{
     /// Peripheral bus instance which is responsible for the peripheral
     type APB;
-
-    /// The associated interrupt number, used to unmask / enable the interrupt
-    /// with [`cortex_m::peripheral::NVIC::unmask()`]
-    const INTERRUPT: Interrupt;
 
     #[doc(hidden)]
     fn enable_clock(apb1: &mut Self::APB);
@@ -1323,9 +1319,13 @@ macro_rules! usart {
     ) => {
         $(
             impl crate::private::Sealed for $USARTX {}
+            impl crate::interrupts::InterruptNumber for $USARTX {
+                type Interrupt = Interrupt;
+                const INTERRUPT: Interrupt = $INTERRUPT;
+            }
+
             impl Instance for $USARTX {
                 type APB = $APB;
-                const INTERRUPT: Interrupt = $INTERRUPT;
                 fn enable_clock(apb: &mut Self::APB) {
                     apb.enr().modify(|_, w| w.$usartXen().enabled());
                     apb.rstr().modify(|_, w| w.$usartXrst().reset());

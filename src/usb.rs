@@ -49,7 +49,7 @@ pub struct Peripheral<Dm: DmPin, Dp: DpPin> {
 }
 
 #[cfg(feature = "defmt")]
-impl<Dm: DmPin, Dp: DpPin> defmt::Format for Peripheral<Dm, Dp> {
+impl<Dm: DmPin + defmt::Format, Dp: DpPin + defmt::Format> defmt::Format for Peripheral<Dm, Dp> {
     fn format(&self, f: defmt::Formatter) {
         defmt::write!(
             f,

@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Readd MonoTimer. This was accidentally removed before. ([#247])
+  - Different to before, frequency() and now() now do not consume the MonoTimer.
+    `&self` is used instead. ([#267])
 - Basic serial implementation also available for UART4 and UART5 ([#246])
 - Implement serial DMA also for Serial ([#246])
 - Add [`enumset`][] as a optional dependency, which allow more ergonomic functions
@@ -36,7 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   for configuration purposes. ([#253])
 - Add an associated const to `serial::Instance` to return the corresponding
   `pac::Interrupt`-number, which is useful to `unmask()` interrupts.
-  An `nvic()` function to `Serial` was also added for convinience. ([#253])
+  An `interrupt()` function to `Serial` was also added for convinience. ([#253])
 - Add a `Serial::is_busy()` function to check, if the serial device is busy.
   Useful to block on this function, e.g. `while serial.is_busy() {}`. ([#253])
 - Add `BaudTable` a convinience wrapper around `Baud` to configure the `Serial`
@@ -51,6 +53,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   Almost all important types should now be supported. ([#265])
 - Add a `free()` function to the RTC implementation to retrieve the passed-in
   peripheral. ([#266])
+- Implement an API to return the corresponding interrupt number of timer through
+  the newly introduced `InterruptNumber` trait, where the `Interrupt` is held
+  as an associated const. ([#267])
+  - Depending on the timer one `Interrupt` or a bundle of `InterruptTypes` is
+    returned.
+  - On the bases of these interrupts, the interrupt controller (NVIC) can
+    be set to mask or unmask these interrupts.
+- Implement the `embedded-hal::timer::Cancel` trait for timers. ([#267])
+- Add `use_pll` to `CFGR` - the clock configuration - to force to use the PLL
+  source for the systemclock. Also `Clocks::pllclk()` was introduced to be able
+  to check, whether PLL is used.
 
 [`enumset`]: https://crates.io/crates/enumset
 
@@ -117,6 +130,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Rename `CkMode` to `ClockMode` ([#266])
 - Rename `stm32-usbd` feature to `usb`. `stm32-usbd` is still used as a
   dependency. ([#271])
+- Rework the timer implementation: ([#267])
+  - `PclkSrc` trait was removed in favor of generic `Instance` trait, which
+    is a common ground for all available timers.
+  - `Timer::tim1` and so on are renamed to `Timer::new`
+  - The implementation of the timers are corrected to better represent the
+    avaibilities of timers of the hardware.
+  - `Timer::new` now does not take a timeout value. This means, that the
+    timer will now not be started automatically and one has to explicitly call
+    `start()`.
 
 ## [v0.7.0] - 2021-06-18
 
@@ -444,6 +466,7 @@ let clocks = rcc
 
 [#271]: https://github.com/stm32-rs/stm32f3xx-hal/pull/271
 [#270]: https://github.com/stm32-rs/stm32f3xx-hal/pull/270
+[#267]: https://github.com/stm32-rs/stm32f3xx-hal/pull/267
 [#266]: https://github.com/stm32-rs/stm32f3xx-hal/pull/266
 [#265]: https://github.com/stm32-rs/stm32f3xx-hal/pull/265
 [#264]: https://github.com/stm32-rs/stm32f3xx-hal/pull/264

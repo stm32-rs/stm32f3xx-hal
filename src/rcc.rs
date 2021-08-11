@@ -261,15 +261,30 @@ impl BDCR {
 /// let rcc = dp.RCC.constrain();
 /// use_cfgr(&mut rcc.cfgr)
 /// ```
-#[derive(Default)]
 pub struct CFGR {
     hse: Option<u32>,
     hse_bypass: bool,
+    pll_bypass: bool,
     css: bool,
     hclk: Option<u32>,
     pclk1: Option<u32>,
     pclk2: Option<u32>,
     sysclk: Option<u32>,
+}
+
+impl Default for CFGR {
+    fn default() -> Self {
+        Self {
+            hse: None,
+            hse_bypass: false,
+            pll_bypass: true,
+            css: false,
+            hclk: None,
+            pclk1: None,
+            pclk2: None,
+            sysclk: None,
+        }
+    }
 }
 
 pub(crate) struct PllConfig {
@@ -347,6 +362,12 @@ impl CFGR {
     pub fn use_hse(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.hse = Some(freq.integer());
+        self
+    }
+
+    /// Set this to disallow bypass the PLLCLK for the systemclock generation.
+    pub fn use_pll(mut self) -> Self {
+        self.pll_bypass = false;
         self
     }
 
@@ -464,13 +485,7 @@ impl CFGR {
     ///
     /// `HSI` is simpler to calculate, but the possible system clocks are less than `HSE`, because the
     /// division is not configurable.
-    #[cfg(not(any(
-        feature = "stm32f302xd",
-        feature = "stm32f302xe",
-        feature = "stm32f303xd",
-        feature = "stm32f303xe",
-        feature = "stm32f398"
-    )))]
+    #[cfg(not(feature = "gpio-f303e"))]
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
         let pllsrcclk = self.hse.unwrap_or(HSI.integer() / 2);
         // Get the optimal value for the pll divisor (PLL_DIV) and multiplier (PLL_MUL)
@@ -540,13 +555,7 @@ impl CFGR {
     ///
     /// To determine the optimal values, the greatest common divisor is calculated and the
     /// limitations of the possible values are taken into considiration.
-    #[cfg(any(
-        feature = "stm32f302xd",
-        feature = "stm32f302xe",
-        feature = "stm32f303xd",
-        feature = "stm32f303xe",
-        feature = "stm32f398",
-    ))]
+    #[cfg(feature = "gpio-f303e")]
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
         let pllsrcclk = self.hse.unwrap_or(HSI.integer());
 
@@ -614,9 +623,11 @@ impl CFGR {
             // because the two valid USB clocks, 72 Mhz and 48 Mhz, can't be generated
             // directly from neither the internal rc (8 Mhz)  nor the external
             // Oscillator (max 32 Mhz), without using the PLL.
-            (Some(sysclk), Some(hse)) if sysclk == hse => (hse, cfgr::SW_A::HSE, None),
+            (Some(sysclk), Some(hse)) if sysclk == hse && self.pll_bypass => {
+                (hse, cfgr::SW_A::HSE, None)
+            }
             // No need to use the PLL
-            (Some(sysclk), None) if sysclk == HSI.integer() => {
+            (Some(sysclk), None) if sysclk == HSI.integer() && self.pll_bypass => {
                 (HSI.integer(), cfgr::SW_A::HSI, None)
             }
             (Some(sysclk), _) => {
@@ -770,6 +781,7 @@ impl CFGR {
             ppre2,
             sysclk: Hertz(sysclk),
             usbclk_valid,
+            pll_bypass: self.pll_bypass,
         }
     }
 }
@@ -779,7 +791,6 @@ impl CFGR {
 /// The existence of this value indicates that the clock configuration can no longer be changed.
 /// This struct can be obtained via the [freeze](CFGR::freeze) method of the [CFGR](CFGR) struct.
 #[derive(Debug, Clone, Copy)]
-// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Clocks {
     hclk: Hertz,
     pclk1: Hertz,
@@ -788,6 +799,7 @@ pub struct Clocks {
     ppre2: u8,
     sysclk: Hertz,
     usbclk_valid: bool,
+    pll_bypass: bool,
 }
 
 // TODO(Sh3Rm4n) Add defmt support for embedded-time!
@@ -797,7 +809,7 @@ impl defmt::Format for Clocks {
         // Format as hexadecimal.
         defmt::write!(
             f,
-            "Clocks {{ hclk: {} Hz, pclk1: {} Hz, pclk2: {} Hz, ppre1: {:b}, ppre2: {:b}, sysclk: {} Hz, usbclk_valid: {} }}",
+            "Clocks {{ hclk: {} Hz, pclk1: {} Hz, pclk2: {} Hz, ppre1: {:b}, ppre2: {:b}, sysclk: {} Hz, usbclk_valid: {}, pll_bypass: {} }}",
             self.hclk.integer(),
             self.pclk1.integer(),
             self.pclk2.integer(),
@@ -805,10 +817,14 @@ impl defmt::Format for Clocks {
             self.ppre2,
             self.sysclk.integer(),
             self.usbclk_valid,
+            self.pll_bypass,
         );
     }
 }
 
+// TODO(Sh3Rm4n): Think of some way to generlize APB1 and APB2 as types to then implement a method,
+// with which the ppre or pclk can be obtained by passing in the type of APB.
+// With that in place, some places of macro magic are not needed anymore.
 impl Clocks {
     /// Returns the frequency of the AHB
     pub fn hclk(&self) -> Hertz {
@@ -838,6 +854,19 @@ impl Clocks {
     /// Returns the system (core) frequency
     pub fn sysclk(&self) -> Hertz {
         self.sysclk
+    }
+
+    /// Returns the PLL clock if configured, else it returns `None`.
+    ///
+    /// The PLL clock is a source of the system clock, but it is not necessarily configured to be one.
+    pub fn pllclk(&self) -> Option<Hertz> {
+        if self.pll_bypass {
+            None
+        } else {
+            // The PLLCLK is the same as the sysclk, beccause
+            // the sysclk is using it as a source.
+            Some(self.sysclk())
+        }
     }
 
     /// Returns whether the USBCLK clock frequency is valid for the USB peripheral

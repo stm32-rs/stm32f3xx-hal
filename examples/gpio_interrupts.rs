@@ -47,7 +47,7 @@ fn main() -> ! {
     syscfg.select_exti_interrupt_source(&user_button);
     user_button.trigger_on_edge(&mut exti, Edge::Rising);
     user_button.enable_interrupt(&mut exti);
-    let interrupt_num = user_button.nvic(); // hal::pac::Interrupt::EXTI0
+    let interrupt_num = user_button.interrupt(); // hal::pac::Interrupt::EXTI0
 
     // Moving ownership to the global BUTTON so we can clear the interrupt pending bit.
     cortex_m::interrupt::free(|cs| *BUTTON.borrow(cs).borrow_mut() = Some(user_button));
