@@ -139,6 +139,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - `Timer::new` now does not take a timeout value. This means, that the
     timer will now not be started automatically and one has to explicitly call
     `start()`.
+- Rework SPI implementation: ([#273])
+  - A generic `Instance` trait now represents all Spi peripherals.
+  - `Spi::spi1` and so on are renamed to `Spi::new`.
 
 ## [v0.7.0] - 2021-06-18
 
@@ -464,6 +467,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#273]: https://github.com/stm32-rs/stm32f3xx-hal/pull/273
 [#271]: https://github.com/stm32-rs/stm32f3xx-hal/pull/271
 [#270]: https://github.com/stm32-rs/stm32f3xx-hal/pull/270
 [#267]: https://github.com/stm32-rs/stm32f3xx-hal/pull/267

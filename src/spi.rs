@@ -8,19 +8,19 @@
 
 use core::{fmt, marker::PhantomData, ops::Deref, ptr};
 
+use crate::hal::blocking::spi;
 use crate::hal::spi::FullDuplex;
 pub use crate::hal::spi::{Mode, Phase, Polarity};
 use crate::pac::{
-    spi1,
+    self, spi1,
     spi1::cr2::{DS_A, FRXTH_A},
     Interrupt, SPI1, SPI2, SPI3,
 };
 
 use crate::{
     gpio::{self, PushPull, AF5, AF6},
-    pac,
     rcc::{self, Clocks},
-    time::rate::Hertz,
+    time::{fixed_point::FixedPoint, rate::Hertz},
 };
 
 /// SPI error
@@ -138,7 +138,6 @@ impl SckPin<SPI3> for gpio::PB3<AF6<PushPull>> {}
 ))]
 impl MisoPin<SPI3> for gpio::PB4<AF6<PushPull>> {}
 
-
 /// Configuration trait for the Word Size
 /// used by the SPI peripheral
 pub trait Word {
@@ -166,160 +165,162 @@ pub struct Spi<SPI, Pins, Word = u8> {
     _word: PhantomData<Word>,
 }
 
-macro_rules! hal {
-    ($($SPIX:ident: ($spiX:ident, $APBX:ident, $spiXen:ident, $spiXrst:ident, $pclkX:ident),)+) => {
-        $(
-            impl<SCK, MISO, MOSI, WORD> Spi<$SPIX, (SCK, MISO, MOSI), WORD> {
-                /// Configures the SPI peripheral to operate in full duplex master mode
-                pub fn $spiX(
-                    spi: $SPIX,
-                    pins: (SCK, MISO, MOSI),
-                    mode: Mode,
-                    freq: Hertz,
-                    clocks: Clocks,
-                    apb2: &mut $APBX,
-                ) -> Self
-                where
-                    SCK: SckPin<$SPIX>,
-                    MISO: MisoPin<$SPIX>,
-                    MOSI: MosiPin<$SPIX>,
-                    WORD: Word,
-                {
-                    // enable or reset $SPIX
-                    apb2.enr().modify(|_, w| w.$spiXen().enabled());
-                    apb2.rstr().modify(|_, w| w.$spiXrst().reset());
-                    apb2.rstr().modify(|_, w| w.$spiXrst().clear_bit());
+impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
+    /// Configures the SPI peripheral to operate in full duplex master mode
+    pub fn new(
+        spi: SPI,
+        pins: (Sck, Miso, Mosi),
+        mode: Mode,
+        freq: Hertz,
+        clocks: Clocks,
+        apb: &mut <SPI as Instance>::APB,
+    ) -> Self
+    where
+        SPI: Instance,
+        Sck: SckPin<SPI>,
+        Miso: MisoPin<SPI>,
+        Mosi: MosiPin<SPI>,
+        WORD: Word,
+    {
+        SPI::enable_clock(apb);
 
-                    let (frxth, ds) = WORD::register_config();
-                    spi.cr2.write(|w| {
-                        w.frxth().variant(frxth);
-                        w.ds().variant(ds);
-                        // Slave Select output disabled
-                        w.ssoe().disabled()
-                    });
+        let (frxth, ds) = WORD::register_config();
+        spi.cr2.write(|w| {
+            w.frxth().variant(frxth);
+            w.ds().variant(ds);
+            // Slave Select output disabled
+            w.ssoe().disabled()
+        });
 
-                    // CPHA: phase
-                    // CPOL: polarity
-                    // MSTR: master mode
-                    // BR: 1 MHz
-                    // SPE: SPI disabled
-                    // LSBFIRST: MSB first
-                    // SSM: enable software slave management (NSS pin free for other uses)
-                    // SSI: set nss high = master mode
-                    // CRCEN: hardware CRC calculation disabled
-                    // BIDIMODE: 2 line unidirectional (full duplex)
-                    spi.cr1.write(|w| {
-                        w.mstr().master();
+        // CPHA: phase
+        // CPOL: polarity
+        // MSTR: master mode
+        // BR: 1 MHz
+        // SPE: SPI disabled
+        // LSBFIRST: MSB first
+        // SSM: enable software slave management (NSS pin free for other uses)
+        // SSI: set nss high = master mode
+        // CRCEN: hardware CRC calculation disabled
+        // BIDIMODE: 2 line unidirectional (full duplex)
+        spi.cr1.write(|w| {
+            w.mstr().master();
 
-                        match mode.phase {
-                            Phase::CaptureOnFirstTransition => w.cpha().first_edge(),
-                            Phase::CaptureOnSecondTransition => w.cpha().second_edge(),
-                        };
+            match mode.phase {
+                Phase::CaptureOnFirstTransition => w.cpha().first_edge(),
+                Phase::CaptureOnSecondTransition => w.cpha().second_edge(),
+            };
 
-                        match mode.polarity {
-                            Polarity::IdleLow => w.cpol().idle_low(),
-                            Polarity::IdleHigh => w.cpol().idle_high(),
-                        };
+            match mode.polarity {
+                Polarity::IdleLow => w.cpol().idle_low(),
+                Polarity::IdleHigh => w.cpol().idle_high(),
+            };
 
-                        w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq));
+            w.br().variant(Self::compute_baud_rate(clocks, freq));
 
-                        w.spe()
-                            .enabled()
-                            .lsbfirst()
-                            .msbfirst()
-                            .ssi()
-                            .slave_not_selected()
-                            .ssm()
-                            .enabled()
-                            .crcen()
-                            .disabled()
-                            .bidimode()
-                            .unidirectional()
-                    });
+            w.spe()
+                .enabled()
+                .lsbfirst()
+                .msbfirst()
+                .ssi()
+                .slave_not_selected()
+                .ssm()
+                .enabled()
+                .crcen()
+                .disabled()
+                .bidimode()
+                .unidirectional()
+        });
 
-                    Spi { spi, pins, _word: PhantomData }
-                }
+        Spi {
+            spi,
+            pins,
+            _word: PhantomData,
+        }
+    }
 
-                /// Releases the SPI peripheral and associated pins
-                pub fn free(self) -> ($SPIX, (SCK, MISO, MOSI)) {
-                    (self.spi, self.pins)
-                }
-
-                /// Change the baud rate of the SPI
-                pub fn reclock(&mut self, freq: Hertz, clocks: Clocks) {
-                    self.spi.cr1.modify(|_, w| w.spe().disabled());
-
-                    self.spi.cr1.modify(|_, w| {
-                        w.br().variant(Self::compute_baud_rate(clocks.$pclkX(), freq));
-                        w.spe().enabled()
-                    });
-                }
-
-                fn compute_baud_rate(clocks: Hertz, freq: Hertz) -> spi1::cr1::BR_A {
-                    use spi1::cr1::BR_A;
-                    match clocks.0 / freq.integer() {
-                        0 => crate::unreachable!(),
-                        1..=2 => BR_A::DIV2,
-                        3..=5 => BR_A::DIV4,
-                        6..=11 => BR_A::DIV8,
-                        12..=23 => BR_A::DIV16,
-                        24..=39 => BR_A::DIV32,
-                        40..=95 => BR_A::DIV64,
-                        96..=191 => BR_A::DIV128,
-                        _ => BR_A::DIV256,
-                    }
-                }
-
-
-            }
-
-            impl<PINS, WORD> FullDuplex<WORD> for Spi<$SPIX, PINS, WORD> {
-                type Error = Error;
-
-                fn read(&mut self) -> nb::Result<WORD, Error> {
-                    let sr = self.spi.sr.read();
-
-                    Err(if sr.ovr().is_overrun() {
-                        nb::Error::Other(Error::Overrun)
-                    } else if sr.modf().is_fault() {
-                        nb::Error::Other(Error::ModeFault)
-                    } else if sr.crcerr().is_no_match() {
-                        nb::Error::Other(Error::Crc)
-                    } else if sr.rxne().is_not_empty() {
-                        let read_ptr = &self.spi.dr as *const _ as *const WORD;
-                        // NOTE(unsafe) read from register owned by this Spi struct
-                        let value = unsafe { ptr::read_volatile(read_ptr) };
-                        return Ok(value);
-                    } else {
-                        nb::Error::WouldBlock
-                    })
-                }
-
-                fn send(&mut self, word: WORD) -> nb::Result<(), Error> {
-                    let sr = self.spi.sr.read();
-
-                    Err(if sr.ovr().is_overrun() {
-                        nb::Error::Other(Error::Overrun)
-                    } else if sr.modf().is_fault() {
-                        nb::Error::Other(Error::ModeFault)
-                    } else if sr.crcerr().is_no_match() {
-                        nb::Error::Other(Error::Crc)
-                    } else if sr.txe().is_empty() {
-                        let write_ptr = &self.spi.dr as *const _ as *mut WORD;
-                        // NOTE(unsafe) write to register owned by this Spi struct
-                        unsafe { ptr::write_volatile(write_ptr, word) };
-                        return Ok(());
-                    } else {
-                        nb::Error::WouldBlock
-                    })
-                }
-            }
-
-            impl<PINS, WORD> crate::hal::blocking::spi::transfer::Default<WORD> for Spi<$SPIX, PINS, WORD> {}
-            impl<PINS, WORD> crate::hal::blocking::spi::write::Default<WORD> for Spi<$SPIX, PINS, WORD> {}
-        )+
+    /// Releases the SPI peripheral and associated pins
+    pub fn free(self) -> (SPI, (Sck, Miso, Mosi)) {
+        (self.spi, self.pins)
     }
 }
+
+impl<SPI, Pins, Word> Spi<SPI, Pins, Word>
+where
+    SPI: Instance,
+{
+    /// Change the baud rate of the SPI
+    pub fn reclock(&mut self, freq: Hertz, clocks: Clocks) {
+        self.spi.cr1.modify(|_, w| w.spe().disabled());
+
+        self.spi.cr1.modify(|_, w| {
+            w.br().variant(Self::compute_baud_rate(clocks, freq));
+            w.spe().enabled()
+        });
+    }
+
+    fn compute_baud_rate(clocks: Clocks, freq: Hertz) -> spi1::cr1::BR_A {
+        use spi1::cr1::BR_A;
+        match SPI::clock(&clocks).0 / freq.integer() {
+            0 => crate::unreachable!(),
+            1..=2 => BR_A::DIV2,
+            3..=5 => BR_A::DIV4,
+            6..=11 => BR_A::DIV8,
+            12..=23 => BR_A::DIV16,
+            24..=39 => BR_A::DIV32,
+            40..=95 => BR_A::DIV64,
+            96..=191 => BR_A::DIV128,
+            _ => BR_A::DIV256,
+        }
+    }
+}
+
+impl<SPI, Pins, Word> FullDuplex<Word> for Spi<SPI, Pins, Word>
+where
+    SPI: Instance,
+{
+    type Error = Error;
+
+    fn read(&mut self) -> nb::Result<Word, Error> {
+        let sr = self.spi.sr.read();
+
+        Err(if sr.ovr().is_overrun() {
+            nb::Error::Other(Error::Overrun)
+        } else if sr.modf().is_fault() {
+            nb::Error::Other(Error::ModeFault)
+        } else if sr.crcerr().is_no_match() {
+            nb::Error::Other(Error::Crc)
+        } else if sr.rxne().is_not_empty() {
+            let read_ptr = &self.spi.dr as *const _ as *const Word;
+            // NOTE(unsafe) read from register owned by this Spi struct
+            let value = unsafe { ptr::read_volatile(read_ptr) };
+            return Ok(value);
+        } else {
+            nb::Error::WouldBlock
+        })
+    }
+
+    fn send(&mut self, word: Word) -> nb::Result<(), Error> {
+        let sr = self.spi.sr.read();
+
+        Err(if sr.ovr().is_overrun() {
+            nb::Error::Other(Error::Overrun)
+        } else if sr.modf().is_fault() {
+            nb::Error::Other(Error::ModeFault)
+        } else if sr.crcerr().is_no_match() {
+            nb::Error::Other(Error::Crc)
+        } else if sr.txe().is_empty() {
+            let write_ptr = &self.spi.dr as *const _ as *mut Word;
+            // NOTE(unsafe) write to register owned by this Spi struct
+            unsafe { ptr::write_volatile(write_ptr, word) };
+            return Ok(());
+        } else {
+            nb::Error::WouldBlock
+        })
+    }
+}
+
+impl<SPI, Pins, Word> spi::transfer::Default<Word> for Spi<SPI, Pins, Word> where SPI: Instance {}
+impl<SPI, Pins, Word> spi::write::Default<Word> for Spi<SPI, Pins, Word> where SPI: Instance {}
 
 /// SPI instance
 pub trait Instance:
@@ -367,7 +368,7 @@ macro_rules! spi {
                     defmt::write!(
                         f,
                         "SPI {{ spi: {}, pins: ? }}",
-                        stringify!($USARTX),
+                        stringify!($SPIX),
                     );
                 }
             }
