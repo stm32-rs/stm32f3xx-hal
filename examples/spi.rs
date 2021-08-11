@@ -3,8 +3,6 @@
 #![no_std]
 #![no_main]
 
-use core::convert::TryInto;
-
 use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
@@ -47,11 +45,11 @@ fn main() -> ! {
         phase: Phase::CaptureOnFirstTransition,
     };
 
-    let mut spi = Spi::spi1(
+    let mut spi = Spi::new(
         dp.SPI1,
         (sck, miso, mosi),
         spi_mode,
-        3u32.MHz().try_into().unwrap(),
+        3_000_000.Hz(),
         clocks,
         &mut rcc.apb2,
     );
