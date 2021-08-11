@@ -272,6 +272,15 @@ where
             _ => BR_A::DIV256,
         }
     }
+
+    /// Obtain the associated interrupt number for the serial peripheral.
+    ///
+    /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`].
+    /// This is useful for all `cortex_m::peripheral::INTERRUPT` functions.
+    #[doc(alias = "unmask")]
+    pub fn interrupt(&self) -> <SPI as crate::interrupts::InterruptNumber>::Interrupt {
+        <SPI as crate::interrupts::InterruptNumber>::INTERRUPT
+    }
 }
 
 impl<SPI, Pins, Word> FullDuplex<Word> for Spi<SPI, Pins, Word>

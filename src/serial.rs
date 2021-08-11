@@ -724,7 +724,6 @@ where
 
     /// Obtain the associated interrupt number for the serial peripheral.
     ///
-    ///
     /// Used to unmask / enable the interrupt with [`cortex_m::peripheral::NVIC::unmask()`].
     /// This is useful for all `cortex_m::peripheral::INTERRUPT` functions.
     ///
