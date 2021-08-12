@@ -315,9 +315,13 @@ where
     }
 }
 
-impl<SPI, Pins, Word> FullDuplex<Word> for Spi<SPI, Pins, Word>
+impl<SPI, Sck, Miso, Mosi, Word> FullDuplex<Word> for Spi<SPI, (Sck, Miso, Mosi), Word>
 where
     SPI: Instance,
+    // Full Duplex needs the Miso and Mosi pins.
+    // SckPin could technically be omitted, though not advisable.
+    Miso: MisoPin<SPI>,
+    Mosi: MosiPin<SPI>,
 {
     type Error = Error;
 
@@ -360,8 +364,21 @@ where
     }
 }
 
-impl<SPI, Pins, Word> spi::transfer::Default<Word> for Spi<SPI, Pins, Word> where SPI: Instance {}
-impl<SPI, Pins, Word> spi::write::Default<Word> for Spi<SPI, Pins, Word> where SPI: Instance {}
+impl<SPI, Sck, Miso, Mosi, Word> spi::transfer::Default<Word> for Spi<SPI, (Sck, Miso, Mosi), Word>
+where
+    SPI: Instance,
+    Miso: MisoPin<SPI>,
+    Mosi: MosiPin<SPI>,
+{
+}
+
+impl<SPI, Sck, Miso, Mosi, Word> spi::write::Default<Word> for Spi<SPI, (Sck, Miso, Mosi), Word>
+where
+    SPI: Instance,
+    Miso: MisoPin<SPI>,
+    Mosi: MosiPin<SPI>,
+{
+}
 
 /// SPI instance
 pub trait Instance:
