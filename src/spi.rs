@@ -179,6 +179,7 @@ pub struct Spi<SPI, Pins, Word = u8> {
 
 impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
     /// Configures the SPI peripheral to operate in full duplex master mode
+    // TODO(Sh3Rm4n): See alternative modes provided besides FullDuplex (as listed in Stm32CubeMx).
     pub fn new(
         spi: SPI,
         pins: (Sck, Miso, Mosi),
