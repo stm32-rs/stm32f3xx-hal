@@ -3,6 +3,8 @@
 [![Build Status](https://github.com/stm32-rs/stm32f3xx-hal/workflows/CI/badge.svg)](https://github.com/stm32-rs/stm32f3xx-hal/actions)
 [![Crate](https://img.shields.io/crates/v/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
 [![Docs](https://docs.rs/stm32f3xx-hal/badge.svg)](https://docs.rs/stm32f3xx-hal)
+[![Crates.io](https://img.shields.io/crates/d/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.51+-blue.svg)
 
 `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
 peripheral access API for the STMicro STM32F3 series microcontrollers. The
