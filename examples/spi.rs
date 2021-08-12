@@ -20,7 +20,7 @@ fn main() -> ! {
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
     let clocks = rcc
         .cfgr
@@ -30,15 +30,15 @@ fn main() -> ! {
         .freeze(&mut flash.acr);
 
     // Configure pins for SPI
-    let sck = gpioa
-        .pa5
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let miso = gpioa
-        .pa6
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let mosi = gpioa
-        .pa7
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let sck = gpioc
+        .pc10
+        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+    let miso = gpioc
+        .pc11
+        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+    let mosi = gpioc
+        .pc12
+        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
 
     let spi_mode = Mode {
         polarity: Polarity::IdleLow,
@@ -46,12 +46,12 @@ fn main() -> ! {
     };
 
     let mut spi = Spi::new(
-        dp.SPI1,
+        dp.SPI3,
         (sck, miso, mosi),
         spi_mode,
         3_000_000.Hz(),
         clocks,
-        &mut rcc.apb2,
+        &mut rcc.apb1,
     );
 
     // Create an `u8` array, which can be transfered via SPI.
