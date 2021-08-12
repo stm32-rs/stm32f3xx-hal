@@ -470,7 +470,7 @@ where
         Rx: RxPin<Usart>,
         Config: Into<config::Config>,
     {
-        use self::config::*;
+        use config::*;
 
         let config = config.into();
 

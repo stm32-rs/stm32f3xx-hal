@@ -22,7 +22,7 @@ use crate::pac::{
 use crate::{
     gpio::{self, PushPull, AF5, AF6},
     rcc::{self, Clocks},
-    time::{fixed_point::FixedPoint, rate::Hertz},
+    time::rate::{self, Hertz},
 };
 
 /// SPI error
@@ -177,14 +177,30 @@ pub struct Spi<SPI, Pins, Word = u8> {
     _word: PhantomData<Word>,
 }
 
+pub mod config;
+
 impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
-    /// Configures the SPI peripheral to operate in full duplex master mode
+    /// Configures the SPI peripheral to operate in full duplex master mode.
+    ///
+    /// The most convinient way to get a device is like that:
+    ///
+    /// ```ignore
+    /// use stm32f3xx_hal::prelude::*;
+    /// use stm32f3xx_hal::spi::Spi;
+    ///
+    /// // ...
+    ///
+    /// let spi = Spi::new(dp.SPI1, (sck_pin, mosi_pin, miso_pin), 1.MHz, clocks, &mut dp.abp1);
+    ///
+    /// ```
+    ///
+    /// To get a better example, look [here](https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.7.0/examples/spi.rs).
+    ///
     // TODO(Sh3Rm4n): See alternative modes provided besides FullDuplex (as listed in Stm32CubeMx).
-    pub fn new(
+    pub fn new<Config>(
         spi: SPI,
         pins: (Sck, Miso, Mosi),
-        mode: Mode,
-        freq: Hertz,
+        config: Config,
         clocks: Clocks,
         apb: &mut <SPI as Instance>::APB,
     ) -> Self
@@ -194,7 +210,9 @@ impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
         Miso: MisoPin<SPI>,
         Mosi: MosiPin<SPI>,
         WORD: Word,
+        Config: Into<config::Config>,
     {
+        let config = config.into();
         SPI::enable_clock(apb);
 
         let (frxth, ds) = WORD::register_config();
@@ -218,17 +236,18 @@ impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
         spi.cr1.write(|w| {
             w.mstr().master();
 
-            match mode.phase {
+            match config.mode.phase {
                 Phase::CaptureOnFirstTransition => w.cpha().first_edge(),
                 Phase::CaptureOnSecondTransition => w.cpha().second_edge(),
             };
 
-            match mode.polarity {
+            match config.mode.polarity {
                 Polarity::IdleLow => w.cpol().idle_low(),
                 Polarity::IdleHigh => w.cpol().idle_high(),
             };
 
-            w.br().variant(Self::compute_baud_rate(clocks, freq));
+            w.br()
+                .variant(Self::compute_baud_rate(clocks, config.frequency));
 
             w.spe()
                 .enabled()
@@ -262,18 +281,18 @@ where
     SPI: Instance,
 {
     /// Change the baud rate of the SPI
-    pub fn reclock(&mut self, freq: Hertz, clocks: Clocks) {
+    pub fn reclock(&mut self, freq: impl Into<rate::Generic<u32>>, clocks: Clocks) {
         self.spi.cr1.modify(|_, w| w.spe().disabled());
 
         self.spi.cr1.modify(|_, w| {
-            w.br().variant(Self::compute_baud_rate(clocks, freq));
+            w.br().variant(Self::compute_baud_rate(clocks, freq.into()));
             w.spe().enabled()
         });
     }
 
-    fn compute_baud_rate(clocks: Clocks, freq: Hertz) -> spi1::cr1::BR_A {
+    fn compute_baud_rate(clocks: Clocks, freq: rate::Generic<u32>) -> spi1::cr1::BR_A {
         use spi1::cr1::BR_A;
-        match SPI::clock(&clocks).0 / freq.integer() {
+        match SPI::clock(&clocks).0 / (freq.integer() * *freq.scaling_factor()) {
             0 => crate::unreachable!(),
             1..=2 => BR_A::DIV2,
             3..=5 => BR_A::DIV4,

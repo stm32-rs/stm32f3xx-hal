@@ -58,7 +58,7 @@ pub enum Parity {
 }
 
 /// Configuration struct for [`Serial`](super::Serial) providing all
-/// communication-related / parameters. `Serial` always uses eight data
+/// communication-related / parameters. [`Serial`](super::Serial) always uses eight data
 /// bits plus the parity bit - if selected.
 ///
 /// Create a configuration by using `default` in combination with the

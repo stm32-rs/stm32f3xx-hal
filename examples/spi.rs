@@ -12,7 +12,7 @@ use cortex_m_rt::entry;
 
 use hal::pac;
 use hal::prelude::*;
-use hal::spi::{Mode, Phase, Polarity, Spi};
+use hal::spi::Spi;
 
 #[entry]
 fn main() -> ! {
@@ -40,19 +40,7 @@ fn main() -> ! {
         .pc12
         .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
 
-    let spi_mode = Mode {
-        polarity: Polarity::IdleLow,
-        phase: Phase::CaptureOnFirstTransition,
-    };
-
-    let mut spi = Spi::new(
-        dp.SPI3,
-        (sck, miso, mosi),
-        spi_mode,
-        3_000_000.Hz(),
-        clocks,
-        &mut rcc.apb1,
-    );
+    let mut spi = Spi::new(dp.SPI3, (sck, miso, mosi), 3.MHz(), clocks, &mut rcc.apb1);
 
     // Create an `u8` array, which can be transfered via SPI.
     let msg_send: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];

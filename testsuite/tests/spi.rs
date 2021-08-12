@@ -4,18 +4,16 @@
 use hal::rcc::{Clocks, APB1};
 use testsuite as _;
 
-use core::convert::TryInto;
-
 use stm32f3xx_hal as hal;
 
 use hal::prelude::*;
 
 use hal::gpio::{PushPull, AF6};
 use hal::gpio::{PC10, PC11, PC12};
-use hal::hal::spi::MODE_0;
 use hal::pac;
 use hal::pac::SPI3;
 use hal::spi::Spi;
+use hal::time::rate::{self, Extensions};
 
 const TEST_MSG: [u8; 8] = [0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xaa, 0xbb];
 
@@ -65,8 +63,7 @@ mod tests {
         let spi = Spi::new(
             dp.SPI3,
             (spi_pins.0, spi_pins.1, spi_pins.2),
-            MODE_0,
-            10.MHz().try_into().unwrap(),
+            10.MHz(),
             clocks,
             &mut rcc.apb1,
         );
@@ -80,10 +77,16 @@ mod tests {
 
     #[test]
     fn test_transfer(state: &mut super::State) {
-        for freq in [100.Hz(), 100_000.Hz(), 10_000_000.Hz(), 32_000_000.Hz()] {
+        let rates: [rate::Generic<u32>; 4] = [
+            100.Hz().into(),
+            100.kHz().into(),
+            10.MHz().into(),
+            32.MHz().into(),
+        ];
+        for freq in rates {
             let (spi, pins) = unwrap!(state.spi.take()).free();
 
-            let mut spi = Spi::new(spi, pins, MODE_0, freq, state.clocks, &mut state.apb1);
+            let mut spi = Spi::new(spi, pins, freq, state.clocks, &mut state.apb1);
             let mut transfer_buffer = TEST_MSG;
 
             unwrap!(spi.transfer(&mut transfer_buffer));

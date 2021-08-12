@@ -142,6 +142,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Rework SPI implementation: ([#273])
   - A generic `Instance` trait now represents all Spi peripherals.
   - `Spi::spi1` and so on are renamed to `Spi::new`.
+  - Add SPI configuration type to be passed into `Spi::new`
 
 ## [v0.7.0] - 2021-06-18
 
