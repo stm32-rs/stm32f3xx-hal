@@ -53,7 +53,43 @@ replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
 
 [[pre-release-replacements]]
 min = 0
+file = "src/timer.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/timer/interrupts.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/spi.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/spi/config.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
 file = "src/serial.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/serial/config.rs"
+search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
+replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
+
+[[pre-release-replacements]]
+min = 0
+file = "src/interrupts.rs"
 search = "https://github.com/stm32-rs/stm32f3xx-hal/blob/[a-z0-9\\.-]+/"
 replace = "https://github.com/stm32-rs/stm32f3xx-hal/blob/v{{version}}/"
 
