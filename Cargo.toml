@@ -175,7 +175,7 @@ required-features = ["ld", "stm32f303xc", "usb"]
 
 [[example]]
 name = "spi"
-required-features = ["ld", "stm32f303"]
+required-features = ["ld", "stm32f303xc"]
 
 [[example]]
 name = "can"
