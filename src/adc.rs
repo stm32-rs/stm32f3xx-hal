@@ -72,7 +72,7 @@ pub enum SampleTime {
 }
 
 impl Default for SampleTime {
-    /// [`SampelTime::Cycles1C5`] is also the reset value.
+    /// [`SampleTime::Cycles1C5`] is also the reset value.
     fn default() -> Self {
         SampleTime::Cycles1C5
     }

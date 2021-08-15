@@ -20,7 +20,9 @@ pub struct InterruptTypes {
 pub(crate) const TIM2: Interrupt = Interrupt::TIM2;
 cfg_if::cfg_if! {
     if #[cfg(feature = "svd-f301")] {
+        #[allow(unused)]
         pub(crate) const TIM3: Interrupt = Interrupt::TIM3_IRQ;
+        #[allow(unused)]
         pub(crate) const TIM4: Interrupt = Interrupt::TIM4_IRQ;
     } else if #[cfg(any(feature = "svd-f303", feature = "svd-f302", feature = "svd-f373"))] {
         pub(crate) const TIM3: Interrupt = Interrupt::TIM3;

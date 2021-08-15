@@ -20,6 +20,10 @@ name = "rcc"
 harness = false
 
 [[test]]
+name = "spi"
+harness = false
+
+[[test]]
 name = "timer"
 harness = false
 

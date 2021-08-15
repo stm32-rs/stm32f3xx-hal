@@ -3,8 +3,6 @@
 #![no_std]
 #![no_main]
 
-use core::convert::TryInto;
-
 use panic_semihosting as _;
 
 use stm32f3xx_hal as hal;
@@ -14,7 +12,7 @@ use cortex_m_rt::entry;
 
 use hal::pac;
 use hal::prelude::*;
-use hal::spi::{Mode, Phase, Polarity, Spi};
+use hal::spi::Spi;
 
 #[entry]
 fn main() -> ! {
@@ -22,7 +20,7 @@ fn main() -> ! {
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
     let clocks = rcc
         .cfgr
@@ -32,29 +30,17 @@ fn main() -> ! {
         .freeze(&mut flash.acr);
 
     // Configure pins for SPI
-    let sck = gpioa
-        .pa5
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let miso = gpioa
-        .pa6
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let mosi = gpioa
-        .pa7
-        .into_af5_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let sck = gpioc
+        .pc10
+        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+    let miso = gpioc
+        .pc11
+        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+    let mosi = gpioc
+        .pc12
+        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
 
-    let spi_mode = Mode {
-        polarity: Polarity::IdleLow,
-        phase: Phase::CaptureOnFirstTransition,
-    };
-
-    let mut spi = Spi::spi1(
-        dp.SPI1,
-        (sck, miso, mosi),
-        spi_mode,
-        3u32.MHz().try_into().unwrap(),
-        clocks,
-        &mut rcc.apb2,
-    );
+    let mut spi = Spi::new(dp.SPI3, (sck, miso, mosi), 3.MHz(), clocks, &mut rcc.apb1);
 
     // Create an `u8` array, which can be transfered via SPI.
     let msg_send: [u8; 8] = [0xD, 0xE, 0xA, 0xD, 0xB, 0xE, 0xE, 0xF];
