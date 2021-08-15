@@ -38,7 +38,7 @@ const MAX_ADVREGEN_STARTUP_US: u32 = 10;
 // TODO(Sh3Rm4n) Add configuration and other things like in the `stm32f4xx-hal` crate
 pub struct Adc<ADC> {
     /// ADC Register
-    pub rb: ADC,
+    adc: ADC,
     clocks: Clocks,
     clock_mode: ClockMode,
     operation_mode: Option<OperationMode>,
@@ -312,14 +312,14 @@ macro_rules! adc_hal {
                 /// * the clock was already enabled with a different setting
                 ///
                 pub fn $adcx(
-                    rb: $ADC,
+                    adc: $ADC,
                     adc_common : &mut $ADC_COMMON,
                     ahb: &mut AHB,
                     clock_mode: ClockMode,
                     clocks: Clocks,
                 ) -> Self {
                     let mut this_adc = Self {
-                        rb,
+                        adc,
                         clocks,
                         clock_mode,
                         operation_mode: None,
@@ -344,7 +344,7 @@ macro_rules! adc_hal {
                 /// Releases the ADC peripheral and associated pins
                 pub fn free(mut self) -> $ADC {
                     self.disable();
-                    self.rb
+                    self.adc
                 }
 
                 /// Software can use ClockMode::SyncDiv1 only if
@@ -359,10 +359,10 @@ macro_rules! adc_hal {
 
                 /// sets up adc in one shot mode for a single channel
                 pub fn setup_oneshot(&mut self) {
-                    self.rb.cr.modify(|_, w| w.adstp().stop());
-                    self.rb.isr.modify(|_, w| w.ovr().clear());
+                    self.adc.cr.modify(|_, w| w.adstp().stop());
+                    self.adc.isr.modify(|_, w| w.ovr().clear());
 
-                    self.rb.cfgr.modify(|_, w| w
+                    self.adc.cfgr.modify(|_, w| w
                         .cont().single()
                         .ovrmod().preserve()
                     );
@@ -374,11 +374,11 @@ macro_rules! adc_hal {
 
                 fn set_sequence_len(&mut self, len: u8) {
                     crate::assert!(len - 1 < 16, "ADC sequence length must be in 1..=16");
-                    self.rb.sqr1.modify(|_, w| w.l().bits(len - 1));
+                    self.adc.sqr1.modify(|_, w| w.l().bits(len - 1));
                 }
 
                 fn set_align(&self, align: Align) {
-                    self.rb.cfgr.modify(|_, w| w.align().variant(align.into()));
+                    self.adc.cfgr.modify(|_, w| w.align().variant(align.into()));
                 }
 
                 /// Software procedure to enable the ADC
@@ -388,12 +388,12 @@ macro_rules! adc_hal {
                     // ADRDY=1 was set.
                     // This assumption is true, if the peripheral was initially enabled through
                     // this method.
-                    if !self.rb.cr.read().aden().is_enable() {
+                    if !self.adc.cr.read().aden().is_enable() {
                         // Set ADEN=1
-                        self.rb.cr.modify(|_, w| w.aden().enable());
+                        self.adc.cr.modify(|_, w| w.aden().enable());
                         // Wait until ADRDY=1 (ADRDY is set after the ADC startup time). This can be
                         // done using the associated interrupt (setting ADRDYIE=1).
-                        while self.rb.isr.read().adrdy().is_not_ready() {}
+                        while self.adc.isr.read().adrdy().is_not_ready() {}
                     }
                 }
 
@@ -402,39 +402,39 @@ macro_rules! adc_hal {
                     // NOTE: Software is allowed to set ADSTP only when ADSTART=1 and ADDIS=0
                     // (ADC is enabled and eventually converting a regular conversion and there is no
                     // pending request to disable the ADC)
-                    if self.rb.cr.read().addis().bit() == false
-                        && (self.rb.cr.read().adstart().bit() || self.rb.cr.read().jadstart().bit()) {
-                        self.rb.cr.modify(|_, w| w.adstp().stop());
+                    if self.adc.cr.read().addis().bit() == false
+                        && (self.adc.cr.read().adstart().bit() || self.adc.cr.read().jadstart().bit()) {
+                        self.adc.cr.modify(|_, w| w.adstp().stop());
                         // NOTE: In auto-injection mode (JAUTO=1), setting ADSTP bit aborts both
                         // regular and injected conversions (do not use JADSTP)
-                        if !self.rb.cfgr.read().jauto().is_enabled() {
-                            self.rb.cr.modify(|_, w| w.jadstp().stop());
+                        if !self.adc.cfgr.read().jauto().is_enabled() {
+                            self.adc.cr.modify(|_, w| w.jadstp().stop());
                         }
-                        while self.rb.cr.read().adstp().bit() || self.rb.cr.read().jadstp().bit() { }
+                        while self.adc.cr.read().adstp().bit() || self.adc.cr.read().jadstp().bit() { }
                     }
 
                     // NOTE: Software is allowed to set ADDIS only when ADEN=1 and both ADSTART=0
                     // and JADSTART=0 (which ensures that no conversion is ongoing)
-                    if self.rb.cr.read().aden().is_enable() {
-                        self.rb.cr.modify(|_, w| w.addis().disable());
-                        while self.rb.cr.read().addis().bit() { }
+                    if self.adc.cr.read().aden().is_enable() {
+                        self.adc.cr.modify(|_, w| w.addis().disable());
+                        while self.adc.cr.read().addis().bit() { }
                     }
                 }
 
                 /// Calibrate according to RM0316 15.3.8
                 fn calibrate(&mut self) {
-                    if !self.rb.cr.read().advregen().is_enabled() {
+                    if !self.adc.cr.read().advregen().is_enabled() {
                         self.advregen_enable();
                         self.wait_advregen_startup();
                     }
 
                     self.disable();
 
-                    self.rb.cr.modify(|_, w| w
+                    self.adc.cr.modify(|_, w| w
                         .adcaldif().single_ended()
                         .adcal()   .calibration());
 
-                    while self.rb.cr.read().adcal().is_calibration() {}
+                    while self.adc.cr.read().adcal().is_calibration() {}
                 }
 
                 fn wait_adc_clk_cycles(&self, cycles: u32) {
@@ -451,8 +451,8 @@ macro_rules! adc_hal {
 
                 fn advregen_enable(&mut self){
                     // need to go through intermediate first
-                    self.rb.cr.modify(|_, w| w.advregen().intermediate());
-                    self.rb.cr.modify(|_, w| w.advregen().enabled());
+                    self.adc.cr.modify(|_, w| w.advregen().intermediate());
+                    self.adc.cr.modify(|_, w| w.advregen().enabled());
                 }
 
                 /// wait for the advregen to startup.
@@ -470,16 +470,16 @@ macro_rules! adc_hal {
                     self.set_chan_smps(chan, SampleTime::default());
                     self.select_single_chan(chan);
 
-                    self.rb.cr.modify(|_, w| w.adstart().start());
-                    while self.rb.isr.read().eos().is_not_complete() {}
-                    self.rb.isr.modify(|_, w| w.eos().clear());
-                    return self.rb.dr.read().rdata().bits();
+                    self.adc.cr.modify(|_, w| w.adstart().start());
+                    while self.adc.isr.read().eos().is_not_complete() {}
+                    self.adc.isr.modify(|_, w| w.eos().clear());
+                    return self.adc.dr.read().rdata().bits();
                 }
 
                 /// This should only be invoked with the defined channels for the particular
                 /// device. (See Pin/Channel mapping above)
                 fn select_single_chan(&self, chan: u8) {
-                    self.rb.sqr1.modify(|_, w|
+                    self.adc.sqr1.modify(|_, w|
                         // NOTE(unsafe): chan is the x in ADCn_INx
                         unsafe { w.sq1().bits(chan) }
                     );
@@ -489,23 +489,23 @@ macro_rules! adc_hal {
                 // TODO: there are boundaries on how this can be set depending on the hardware.
                 fn set_chan_smps(&self, chan: u8, smp: SampleTime) {
                     match chan {
-                        1 => self.rb.smpr1.modify(|_, w| w.smp1().variant(smp.into())),
-                        2 => self.rb.smpr1.modify(|_, w| w.smp2().variant(smp.into())),
-                        3 => self.rb.smpr1.modify(|_, w| w.smp3().variant(smp.into())),
-                        4 => self.rb.smpr1.modify(|_, w| w.smp4().variant(smp.into())),
-                        5 => self.rb.smpr1.modify(|_, w| w.smp5().variant(smp.into())),
-                        6 => self.rb.smpr1.modify(|_, w| w.smp6().variant(smp.into())),
-                        7 => self.rb.smpr1.modify(|_, w| w.smp7().variant(smp.into())),
-                        8 => self.rb.smpr1.modify(|_, w| w.smp8().variant(smp.into())),
-                        9 => self.rb.smpr1.modify(|_, w| w.smp9().variant(smp.into())),
-                        11 => self.rb.smpr2.modify(|_, w| w.smp10().variant(smp.into())),
-                        12 => self.rb.smpr2.modify(|_, w| w.smp12().variant(smp.into())),
-                        13 => self.rb.smpr2.modify(|_, w| w.smp13().variant(smp.into())),
-                        14 => self.rb.smpr2.modify(|_, w| w.smp14().variant(smp.into())),
-                        15 => self.rb.smpr2.modify(|_, w| w.smp15().variant(smp.into())),
-                        16 => self.rb.smpr2.modify(|_, w| w.smp16().variant(smp.into())),
-                        17 => self.rb.smpr2.modify(|_, w| w.smp17().variant(smp.into())),
-                        18 => self.rb.smpr2.modify(|_, w| w.smp18().variant(smp.into())),
+                        1 => self.adc.smpr1.modify(|_, w| w.smp1().variant(smp.into())),
+                        2 => self.adc.smpr1.modify(|_, w| w.smp2().variant(smp.into())),
+                        3 => self.adc.smpr1.modify(|_, w| w.smp3().variant(smp.into())),
+                        4 => self.adc.smpr1.modify(|_, w| w.smp4().variant(smp.into())),
+                        5 => self.adc.smpr1.modify(|_, w| w.smp5().variant(smp.into())),
+                        6 => self.adc.smpr1.modify(|_, w| w.smp6().variant(smp.into())),
+                        7 => self.adc.smpr1.modify(|_, w| w.smp7().variant(smp.into())),
+                        8 => self.adc.smpr1.modify(|_, w| w.smp8().variant(smp.into())),
+                        9 => self.adc.smpr1.modify(|_, w| w.smp9().variant(smp.into())),
+                        11 => self.adc.smpr2.modify(|_, w| w.smp10().variant(smp.into())),
+                        12 => self.adc.smpr2.modify(|_, w| w.smp12().variant(smp.into())),
+                        13 => self.adc.smpr2.modify(|_, w| w.smp13().variant(smp.into())),
+                        14 => self.adc.smpr2.modify(|_, w| w.smp14().variant(smp.into())),
+                        15 => self.adc.smpr2.modify(|_, w| w.smp15().variant(smp.into())),
+                        16 => self.adc.smpr2.modify(|_, w| w.smp16().variant(smp.into())),
+                        17 => self.adc.smpr2.modify(|_, w| w.smp17().variant(smp.into())),
+                        18 => self.adc.smpr2.modify(|_, w| w.smp18().variant(smp.into())),
                         _ => crate::unreachable!(),
                     };
                 }
