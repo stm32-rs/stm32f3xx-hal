@@ -510,6 +510,19 @@ macro_rules! adc_hal {
                     };
                 }
 
+                /// Get access to the underlying register block.
+                ///
+                /// # Safety
+                ///
+                /// This function is not _memory_ unsafe per se, but does not guarantee
+                /// anything about assumptions of invariants made in this implementation.
+                ///
+                /// Changing specific options can lead to un-expected behavior and nothing
+                /// is guaranteed.
+                pub unsafe fn peripheral(&mut self) -> &mut $ADC {
+                    &mut self.adc
+                }
+
             }
 
             impl<Word, Pin> OneShot<$ADC, Word, Pin> for Adc<$ADC>
