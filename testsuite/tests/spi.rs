@@ -10,9 +10,10 @@ use hal::prelude::*;
 
 use hal::gpio::{PushPull, AF6};
 use hal::gpio::{PC10, PC11, PC12};
+use hal::hal::spi::MODE_0;
 use hal::pac;
 use hal::pac::SPI3;
-use hal::spi::Spi;
+use hal::spi::{config::Config, Mode, Phase, Polarity, Spi};
 use hal::time::rate::{self, Extensions};
 
 const TEST_MSG: [u8; 8] = [0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xaa, 0xbb];
@@ -94,5 +95,20 @@ mod tests {
 
             state.spi = Some(spi);
         }
+    }
+
+    #[test]
+    fn config_builder() {
+        let config = Config::default();
+
+        assert!(config.frequency == 1.MHz().into());
+        assert!(config.mode == MODE_0);
+
+        let config = config.frequency(1.MHz()).mode(Mode {
+            polarity: Polarity::IdleLow,
+            phase: Phase::CaptureOnFirstTransition,
+        });
+
+        assert!(config == Config::default());
     }
 }

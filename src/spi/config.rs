@@ -4,6 +4,7 @@ use crate::time::rate::{self, Extensions};
 use core::fmt;
 
 use crate::hal::spi::{self, Mode};
+use crate::time::rate::Generic;
 
 /// Configuration struct for [`Spi`](super::Spi) providing all
 /// communication-related / parameters.
@@ -41,6 +42,19 @@ pub struct Config {
     pub frequency: rate::Generic<u32>,
     /// Operation Mode as defined by the [`embedded-hal`]
     pub mode: Mode,
+}
+
+impl Config {
+    /// Set the operating frequency of the SPI
+    pub fn frequency(mut self, frequency: impl Into<Generic<u32>>) -> Self {
+        self.frequency = frequency.into();
+        self
+    }
+    /// Set the Operation Mode
+    pub fn mode(mut self, mode: Mode) -> Self {
+        self.mode = mode;
+        self
+    }
 }
 
 impl fmt::Debug for Config {
