@@ -20,20 +20,18 @@ fn main() -> ! {
     let clocks = rcc.cfgr.freeze(&mut dp.FLASH.constrain().acr);
 
     // set up adc1
-    let mut adc1 = adc::Adc::adc1(
+    let mut adc = adc::Adc::new(
         dp.ADC1, // The ADC we are going to control
         // The following is only needed to make sure the clock signal for the ADC is set up
         // correctly.
-        &mut dp.ADC1_2,
-        &mut rcc.ahb,
-        adc::ClockMode::default(),
         clocks,
+        &mut rcc.ahb,
     );
 
     // Set up pin PA0 as analog pin.
     // This pin is connected to the user button on the stm32f3discovery board.
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    let mut adc1_in1_pin = gpioa.pa0.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
+    let mut analog_pin = gpioa.pa0.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
 
     // Be aware that the values in the table below depend on the input of VREF.
     // To have a stable VREF input, put a condensator and a volt limiting diode in front of it.
@@ -54,8 +52,8 @@ fn main() -> ! {
     ").expect("Error using hprintln.");
 
     loop {
-        let adc1_in1_data: u16 = adc1.read(&mut adc1_in1_pin).expect("Error reading adc1.");
-        hprintln!("PA0 reads {}", adc1_in1_data).ok();
+        let adc_data: u16 = adc.read(&mut analog_pin).expect("Error reading adc1.");
+        hprintln!("PA0 reads {}", adc_data).ok();
         asm::delay(2_000_000);
     }
 }

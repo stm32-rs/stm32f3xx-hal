@@ -9,38 +9,29 @@
 //!
 //! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.8.1/examples/adc.rs
 
+use core::ops::Deref;
+
 use cortex_m::asm;
 use embedded_hal::adc::{Channel, OneShot};
 
 use crate::{
     gpio::{self, Analog},
     pac::{
-        adc1::{cfgr::ALIGN_A, smpr1::SMP9_A, smpr2::SMP18_A},
+        self,
+        adc1::{self, cfgr::ALIGN_A, smpr1::SMP9_A, smpr2::SMP18_A},
         adc1_2::ccr::CKMODE_A,
-        ADC1, ADC1_2, ADC2,
     },
     rcc::{Clocks, Enable, AHB},
+    time::rate::Hertz,
 };
-
-#[cfg(any(
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
-use crate::pac::{ADC3, ADC3_4, ADC4};
 
 const MAX_ADVREGEN_STARTUP_US: u32 = 10;
 
 /// Analog Digital Converter Peripheral
-// TODO: Remove `pub` from the register block once all functionalities are implemented.
-// Leave it here until then as it allows easy access to the registers.
 // TODO(Sh3Rm4n) Add configuration and other things like in the `stm32f4xx-hal` crate
 pub struct Adc<ADC> {
     /// ADC Register
     adc: ADC,
-    clocks: Clocks,
-    clock_mode: ClockMode,
     operation_mode: Option<OperationMode>,
 }
 
@@ -120,39 +111,6 @@ pub enum OperationMode {
     OneShot,
 }
 
-#[derive(Clone, Copy, PartialEq)]
-/// ADC Clock Mode
-// TODO: Add Asynchronous mode
-#[non_exhaustive]
-pub enum ClockMode {
-    // /// Use Kernel Clock adc_ker_ck_input divided by PRESC. Asynchronous to AHB clock
-    // Asynchronous,
-    /// Use AHB clock rcc_hclk3. In this case rcc_hclk must equal sys_d1cpre_ck
-    SyncDiv1,
-    /// Use AHB clock rcc_hclk3 divided by 2
-    SyncDiv2,
-    /// Use AHB clock rcc_hclk3 divided by 4
-    SyncDiv4,
-}
-
-impl Default for ClockMode {
-    fn default() -> Self {
-        ClockMode::SyncDiv2
-    }
-}
-
-// ADC3_2 returns a pointer to a adc1_2 type, so this from is ok for both.
-impl From<ClockMode> for CKMODE_A {
-    fn from(clock_mode: ClockMode) -> Self {
-        match clock_mode {
-            //ClockMode::Asynchronous => CKMODE_A::ASYNCHRONOUS,
-            ClockMode::SyncDiv1 => CKMODE_A::SYNCDIV1,
-            ClockMode::SyncDiv2 => CKMODE_A::SYNCDIV2,
-            ClockMode::SyncDiv4 => CKMODE_A::SYNCDIV4,
-        }
-    }
-}
-
 /// ADC data register alignment
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -182,7 +140,7 @@ impl From<Align> for ALIGN_A {
 macro_rules! adc_pins {
     ($ADC:ident, $($pin:ty => $chan:expr),+ $(,)*) => {
         $(
-            impl Channel<$ADC> for $pin {
+            impl Channel<pac::$ADC> for $pin {
                 type ID = u8;
 
                 fn channel() -> u8 { $chan }
@@ -292,323 +250,313 @@ adc_pins!(ADC4,
     gpio::PD9<Analog> => 13,
 );
 
-// Abstract implementation of ADC functionality
-// Do not use directly. See adc12_hal for a applicable Macro.
-// TODO: Extend/generalize beyond f303
-macro_rules! adc_hal {
-    ($(
-            $ADC:ident: ($adcx:ident, $ADC_COMMON:ident),
-    )+) => {
-        $(
-            impl Adc<$ADC> {
+impl<ADC> Adc<ADC>
+where
+    ADC: Instance,
+{
+    /// Initialize a new ADC peripheral.
+    ///
+    /// Enables the clock, performs a calibration and enables the ADC
+    pub fn new(
+        adc: ADC,
+        // TODO: frequency is not a possible input
+        // Frequency can not be set per ADC peripheral, and therefor
+        // is no option for Adc::new()
+        // This has doe be configured with an external function,
+        // and thus is maybe a candidate for a more general RccClocksManangement thingy.
+        // frequency: impl Into<Generic<u32>>,
+        clocks: Clocks,
+        // adc_shared : &mut <ADC as Instance>::SharedInstance,
+        ahb: &mut AHB,
+    ) -> Self {
+        let mut adc = Self {
+            adc,
+            operation_mode: None,
+        };
 
-                /// Init a new ADC
-                ///
-                /// Enables the clock, performs a calibration and enables the ADC
-                ///
-                /// # Panics
-                /// If one of the following occurs:
-                /// * the clocksetting is not well defined.
-                /// * the clock was already enabled with a different setting
-                ///
-                pub fn $adcx(
-                    adc: $ADC,
-                    adc_common : &mut $ADC_COMMON,
-                    ahb: &mut AHB,
-                    clock_mode: ClockMode,
-                    clocks: Clocks,
-                ) -> Self {
-                    let mut this_adc = Self {
-                        adc,
-                        clocks,
-                        clock_mode,
-                        operation_mode: None,
-                    };
-                    if !(this_adc.clocks_welldefined(clocks)) {
-                        crate::panic!("Clock settings not well defined");
-                    }
-                    if !(this_adc.enable_clock(ahb, adc_common)){
-                        crate::panic!("Clock already enabled with a different setting");
-                    }
-                    this_adc.set_align(Align::default());
-                    this_adc.calibrate();
-                    // ADEN bit cannot be set during ADCAL=1
-                    // and 4 ADC clock cycle after the ADCAL
-                    // bit is cleared by hardware
-                    this_adc.wait_adc_clk_cycles(4);
-                    this_adc.enable();
+        ADC::enable_clock(ahb);
 
-                    this_adc
-                }
+        adc.set_align(Align::default());
+        adc.calibrate(clocks);
+        // ADEN bit cannot be set during ADCAL=1
+        // and 4 ADC clock cycle after the ADCAL
+        // bit is cleared by hardware
+        adc.wait_adc_clk_cycles(4, clocks);
+        adc.enable();
 
-                /// Releases the ADC peripheral and associated pins
-                pub fn free(mut self) -> $ADC {
-                    self.disable();
-                    self.adc
-                }
-
-                /// Software can use ClockMode::SyncDiv1 only if
-                /// hclk and sysclk are the same. (see reference manual 15.3.3)
-                fn clocks_welldefined(&self, clocks: Clocks) -> bool {
-                    if (self.clock_mode == ClockMode::SyncDiv1) {
-                        clocks.hclk().0 == clocks.sysclk().0
-                    } else {
-                        true
-                    }
-                }
-
-                /// sets up adc in one shot mode for a single channel
-                pub fn setup_oneshot(&mut self) {
-                    self.adc.cr.modify(|_, w| w.adstp().stop());
-                    self.adc.isr.modify(|_, w| w.ovr().clear());
-
-                    self.adc.cfgr.modify(|_, w| w
-                        .cont().single()
-                        .ovrmod().preserve()
-                    );
-
-                    self.set_sequence_len(1);
-
-                    self.operation_mode = Some(OperationMode::OneShot);
-                }
-
-                fn set_sequence_len(&mut self, len: u8) {
-                    crate::assert!(len - 1 < 16, "ADC sequence length must be in 1..=16");
-                    self.adc.sqr1.modify(|_, w| w.l().bits(len - 1));
-                }
-
-                fn set_align(&self, align: Align) {
-                    self.adc.cfgr.modify(|_, w| w.align().variant(align.into()));
-                }
-
-                /// Software procedure to enable the ADC
-                /// According to RM0316 15.3.9
-                fn enable(&mut self) {
-                    // This check assumes, that the ADC was enabled before and it was waited until
-                    // ADRDY=1 was set.
-                    // This assumption is true, if the peripheral was initially enabled through
-                    // this method.
-                    if !self.adc.cr.read().aden().is_enable() {
-                        // Set ADEN=1
-                        self.adc.cr.modify(|_, w| w.aden().enable());
-                        // Wait until ADRDY=1 (ADRDY is set after the ADC startup time). This can be
-                        // done using the associated interrupt (setting ADRDYIE=1).
-                        while self.adc.isr.read().adrdy().is_not_ready() {}
-                    }
-                }
-
-                /// Disable according to RM0316 15.3.9
-                fn disable(&mut self) {
-                    // NOTE: Software is allowed to set ADSTP only when ADSTART=1 and ADDIS=0
-                    // (ADC is enabled and eventually converting a regular conversion and there is no
-                    // pending request to disable the ADC)
-                    if self.adc.cr.read().addis().bit() == false
-                        && (self.adc.cr.read().adstart().bit() || self.adc.cr.read().jadstart().bit()) {
-                        self.adc.cr.modify(|_, w| w.adstp().stop());
-                        // NOTE: In auto-injection mode (JAUTO=1), setting ADSTP bit aborts both
-                        // regular and injected conversions (do not use JADSTP)
-                        if !self.adc.cfgr.read().jauto().is_enabled() {
-                            self.adc.cr.modify(|_, w| w.jadstp().stop());
-                        }
-                        while self.adc.cr.read().adstp().bit() || self.adc.cr.read().jadstp().bit() { }
-                    }
-
-                    // NOTE: Software is allowed to set ADDIS only when ADEN=1 and both ADSTART=0
-                    // and JADSTART=0 (which ensures that no conversion is ongoing)
-                    if self.adc.cr.read().aden().is_enable() {
-                        self.adc.cr.modify(|_, w| w.addis().disable());
-                        while self.adc.cr.read().addis().bit() { }
-                    }
-                }
-
-                /// Calibrate according to RM0316 15.3.8
-                fn calibrate(&mut self) {
-                    if !self.adc.cr.read().advregen().is_enabled() {
-                        self.advregen_enable();
-                        self.wait_advregen_startup();
-                    }
-
-                    self.disable();
-
-                    self.adc.cr.modify(|_, w| w
-                        .adcaldif().single_ended()
-                        .adcal()   .calibration());
-
-                    while self.adc.cr.read().adcal().is_calibration() {}
-                }
-
-                fn wait_adc_clk_cycles(&self, cycles: u32) {
-                    // using a match statement here so compilation will fail once asynchronous clk
-                    // mode is implemented (CKMODE[1:0] = 00b).  This will force whoever is working
-                    // on it to rethink what needs to be done here :)
-                    let adc_per_cpu_cycles = match self.clock_mode {
-                        ClockMode::SyncDiv1 => 1,
-                        ClockMode::SyncDiv2 => 2,
-                        ClockMode::SyncDiv4 => 4,
-                    };
-                    asm::delay(adc_per_cpu_cycles * cycles);
-                }
-
-                fn advregen_enable(&mut self){
-                    // need to go through intermediate first
-                    self.adc.cr.modify(|_, w| w.advregen().intermediate());
-                    self.adc.cr.modify(|_, w| w.advregen().enabled());
-                }
-
-                /// wait for the advregen to startup.
-                ///
-                /// This is based on the MAX_ADVREGEN_STARTUP_US of the device.
-                fn wait_advregen_startup(&self) {
-                    asm::delay((MAX_ADVREGEN_STARTUP_US * 1_000_000) / self.clocks.sysclk().0);
-                }
-
-                /// busy ADC read
-                fn convert_one(&mut self, chan: u8) -> u16 {
-                    if self.operation_mode != Some(OperationMode::OneShot) {
-                        self.setup_oneshot();
-                    }
-                    self.set_chan_smps(chan, SampleTime::default());
-                    self.select_single_chan(chan);
-
-                    self.adc.cr.modify(|_, w| w.adstart().start());
-                    while self.adc.isr.read().eos().is_not_complete() {}
-                    self.adc.isr.modify(|_, w| w.eos().clear());
-                    return self.adc.dr.read().rdata().bits();
-                }
-
-                /// This should only be invoked with the defined channels for the particular
-                /// device. (See Pin/Channel mapping above)
-                fn select_single_chan(&self, chan: u8) {
-                    self.adc.sqr1.modify(|_, w|
-                        // NOTE(unsafe): chan is the x in ADCn_INx
-                        unsafe { w.sq1().bits(chan) }
-                    );
-                }
-
-                /// Note: only allowed when ADSTART = 0
-                // TODO: there are boundaries on how this can be set depending on the hardware.
-                fn set_chan_smps(&self, chan: u8, smp: SampleTime) {
-                    match chan {
-                        1 => self.adc.smpr1.modify(|_, w| w.smp1().variant(smp.into())),
-                        2 => self.adc.smpr1.modify(|_, w| w.smp2().variant(smp.into())),
-                        3 => self.adc.smpr1.modify(|_, w| w.smp3().variant(smp.into())),
-                        4 => self.adc.smpr1.modify(|_, w| w.smp4().variant(smp.into())),
-                        5 => self.adc.smpr1.modify(|_, w| w.smp5().variant(smp.into())),
-                        6 => self.adc.smpr1.modify(|_, w| w.smp6().variant(smp.into())),
-                        7 => self.adc.smpr1.modify(|_, w| w.smp7().variant(smp.into())),
-                        8 => self.adc.smpr1.modify(|_, w| w.smp8().variant(smp.into())),
-                        9 => self.adc.smpr1.modify(|_, w| w.smp9().variant(smp.into())),
-                        10 => self.adc.smpr2.modify(|_, w| w.smp10().variant(smp.into())),
-                        11 => self.adc.smpr2.modify(|_, w| w.smp11().variant(smp.into())),
-                        12 => self.adc.smpr2.modify(|_, w| w.smp12().variant(smp.into())),
-                        13 => self.adc.smpr2.modify(|_, w| w.smp13().variant(smp.into())),
-                        14 => self.adc.smpr2.modify(|_, w| w.smp14().variant(smp.into())),
-                        15 => self.adc.smpr2.modify(|_, w| w.smp15().variant(smp.into())),
-                        16 => self.adc.smpr2.modify(|_, w| w.smp16().variant(smp.into())),
-                        17 => self.adc.smpr2.modify(|_, w| w.smp17().variant(smp.into())),
-                        18 => self.adc.smpr2.modify(|_, w| w.smp18().variant(smp.into())),
-                        _ => crate::unreachable!(),
-                    };
-                }
-
-                /// Get access to the underlying register block.
-                ///
-                /// # Safety
-                ///
-                /// This function is not _memory_ unsafe per se, but does not guarantee
-                /// anything about assumptions of invariants made in this implementation.
-                ///
-                /// Changing specific options can lead to un-expected behavior and nothing
-                /// is guaranteed.
-                pub unsafe fn peripheral(&mut self) -> &mut $ADC {
-                    &mut self.adc
-                }
-
-            }
-
-            impl<Word, Pin> OneShot<$ADC, Word, Pin> for Adc<$ADC>
-            where
-                Word: From<u16>,
-                Pin: Channel<$ADC, ID = u8>,
-                {
-                    type Error = ();
-
-                    fn read(&mut self, _pin: &mut Pin) -> nb::Result<Word, Self::Error> {
-                        // TODO: Convert back to previous mode after use.
-                        let res = self.convert_one(Pin::channel());
-                        return Ok(res.into());
-                    }
-                }
-        )+
+        adc
     }
+
+    /// Releases the ADC peripheral and associated pins
+    pub fn free(mut self) -> ADC {
+        self.disable();
+        self.adc
+    }
+
+    /// Sets up ADC in one shot mode for a single channel
+    pub fn setup_oneshot(&mut self) {
+        self.adc.cr.modify(|_, w| w.adstp().stop());
+        self.adc.isr.modify(|_, w| w.ovr().clear());
+
+        self.adc
+            .cfgr
+            .modify(|_, w| w.cont().single().ovrmod().preserve());
+
+        self.set_sequence_len(1);
+
+        self.operation_mode = Some(OperationMode::OneShot);
+    }
+
+    fn set_sequence_len(&mut self, len: u8) {
+        crate::assert!(len - 1 < 16, "ADC sequence length must be in 1..=16");
+        self.adc.sqr1.modify(|_, w| w.l().bits(len - 1));
+    }
+
+    fn set_align(&self, align: Align) {
+        self.adc.cfgr.modify(|_, w| w.align().variant(align.into()));
+    }
+
+    /// Software procedure to enable the ADC
+    /// According to RM0316 15.3.9
+    fn enable(&mut self) {
+        // This check assumes, that the ADC was enabled before and it was waited until
+        // ADRDY=1 was set.
+        // This assumption is true, if the peripheral was initially enabled through
+        // this method.
+        if !self.adc.cr.read().aden().is_enable() {
+            // Set ADEN=1
+            self.adc.cr.modify(|_, w| w.aden().enable());
+            // Wait until ADRDY=1 (ADRDY is set after the ADC startup time). This can be
+            // done using the associated interrupt (setting ADRDYIE=1).
+            while self.adc.isr.read().adrdy().is_not_ready() {}
+        }
+    }
+
+    /// Disable according to RM0316 15.3.9
+    fn disable(&mut self) {
+        // NOTE: Software is allowed to set ADSTP only when ADSTART=1 and ADDIS=0
+        // (ADC is enabled and eventually converting a regular conversion and there is no
+        // pending request to disable the ADC)
+        if !self.adc.cr.read().addis().bit()
+            && (self.adc.cr.read().adstart().bit() || self.adc.cr.read().jadstart().bit())
+        {
+            self.adc.cr.modify(|_, w| w.adstp().stop());
+            // NOTE: In auto-injection mode (JAUTO=1), setting ADSTP bit aborts both
+            // regular and injected conversions (do not use JADSTP)
+            if !self.adc.cfgr.read().jauto().is_enabled() {
+                self.adc.cr.modify(|_, w| w.jadstp().stop());
+            }
+            while self.adc.cr.read().adstp().bit() || self.adc.cr.read().jadstp().bit() {}
+        }
+
+        // NOTE: Software is allowed to set ADDIS only when ADEN=1 and both ADSTART=0
+        // and JADSTART=0 (which ensures that no conversion is ongoing)
+        if self.adc.cr.read().aden().is_enable() {
+            self.adc.cr.modify(|_, w| w.addis().disable());
+            while self.adc.cr.read().addis().bit() {}
+        }
+    }
+
+    /// Calibrate according to RM0316 15.3.8
+    fn calibrate(&mut self, clocks: Clocks) {
+        if !self.adc.cr.read().advregen().is_enabled() {
+            self.advregen_enable();
+            self.wait_advregen_startup(clocks);
+        }
+
+        self.disable();
+
+        self.adc
+            .cr
+            .modify(|_, w| w.adcaldif().single_ended().adcal().calibration());
+
+        while self.adc.cr.read().adcal().is_calibration() {}
+    }
+
+    fn wait_adc_clk_cycles(&self, cycles: u32, clocks: Clocks) {
+        let frequency = ADC::clock(&clocks);
+        let cpu_cycles = cycles * clocks.sysclk().0 / frequency.0;
+
+        asm::delay(cpu_cycles);
+    }
+
+    fn advregen_enable(&mut self) {
+        // need to go through intermediate first
+        self.adc.cr.modify(|_, w| w.advregen().intermediate());
+        self.adc.cr.modify(|_, w| w.advregen().enabled());
+    }
+
+    /// wait for the advregen to startup.
+    ///
+    /// This is based on the MAX_ADVREGEN_STARTUP_US of the device.
+    fn wait_advregen_startup(&self, clocks: Clocks) {
+        asm::delay((MAX_ADVREGEN_STARTUP_US * 1_000_000) / clocks.sysclk().0);
+    }
+
+    /// busy ADC read
+    fn convert_one(&mut self, chan: u8) -> u16 {
+        if self.operation_mode != Some(OperationMode::OneShot) {
+            self.setup_oneshot();
+        }
+        self.set_chan_smps(chan, SampleTime::default());
+        self.select_single_chan(chan);
+
+        self.adc.cr.modify(|_, w| w.adstart().start());
+        while self.adc.isr.read().eos().is_not_complete() {}
+        self.adc.isr.modify(|_, w| w.eos().clear());
+        self.adc.dr.read().rdata().bits()
+    }
+
+    /// This should only be invoked with the defined channels for the particular
+    /// device. (See Pin/Channel mapping above)
+    fn select_single_chan(&self, chan: u8) {
+        self.adc.sqr1.modify(|_, w|
+            // NOTE(unsafe): chan is the x in ADCn_INx
+            unsafe { w.sq1().bits(chan) });
+    }
+
+    /// Note: only allowed when ADSTART = 0
+    // TODO: there are boundaries on how this can be set depending on the hardware.
+    fn set_chan_smps(&self, chan: u8, smp: SampleTime) {
+        match chan {
+            1 => self.adc.smpr1.modify(|_, w| w.smp1().variant(smp.into())),
+            2 => self.adc.smpr1.modify(|_, w| w.smp2().variant(smp.into())),
+            3 => self.adc.smpr1.modify(|_, w| w.smp3().variant(smp.into())),
+            4 => self.adc.smpr1.modify(|_, w| w.smp4().variant(smp.into())),
+            5 => self.adc.smpr1.modify(|_, w| w.smp5().variant(smp.into())),
+            6 => self.adc.smpr1.modify(|_, w| w.smp6().variant(smp.into())),
+            7 => self.adc.smpr1.modify(|_, w| w.smp7().variant(smp.into())),
+            8 => self.adc.smpr1.modify(|_, w| w.smp8().variant(smp.into())),
+            9 => self.adc.smpr1.modify(|_, w| w.smp9().variant(smp.into())),
+            10 => self.adc.smpr2.modify(|_, w| w.smp10().variant(smp.into())),
+            11 => self.adc.smpr2.modify(|_, w| w.smp11().variant(smp.into())),
+            12 => self.adc.smpr2.modify(|_, w| w.smp12().variant(smp.into())),
+            13 => self.adc.smpr2.modify(|_, w| w.smp13().variant(smp.into())),
+            14 => self.adc.smpr2.modify(|_, w| w.smp14().variant(smp.into())),
+            15 => self.adc.smpr2.modify(|_, w| w.smp15().variant(smp.into())),
+            16 => self.adc.smpr2.modify(|_, w| w.smp16().variant(smp.into())),
+            17 => self.adc.smpr2.modify(|_, w| w.smp17().variant(smp.into())),
+            18 => self.adc.smpr2.modify(|_, w| w.smp18().variant(smp.into())),
+            _ => crate::unreachable!(),
+        };
+    }
+
+    /// Get access to the underlying register block.
+    ///
+    /// # Safety
+    ///
+    /// This function is not _memory_ unsafe per se, but does not guarantee
+    /// anything about assumptions of invariants made in this implementation.
+    ///
+    /// Changing specific options can lead to un-expected behavior and nothing
+    /// is guaranteed.
+    pub unsafe fn peripheral(&mut self) -> &mut ADC {
+        &mut self.adc
+    }
+}
+
+impl<ADC, Word, Pin> OneShot<ADC, Word, Pin> for Adc<ADC>
+where
+    ADC: Instance,
+    Word: From<u16>,
+    Pin: Channel<ADC, ID = u8>,
+{
+    type Error = ();
+
+    fn read(&mut self, _pin: &mut Pin) -> nb::Result<Word, Self::Error> {
+        // TODO: Convert back to previous mode after use.
+        let res = self.convert_one(Pin::channel());
+        Ok(res.into())
+    }
+}
+
+/// ADC Instance
+pub trait Instance: Deref<Target = adc1::RegisterBlock> + crate::private::Sealed {
+    /// Shared Instance / Registerblock between multiple ADCs
+    type SharedInstance;
+    #[doc(hidden)]
+    fn enable_clock(ahb: &mut AHB);
+    #[doc(hidden)]
+    fn clock(clocks: &Clocks) -> Hertz;
 }
 
 // Macro to implement ADC functionallity for ADC1 and ADC2
-// TODO: Extend/differentiate beyond f303.
-macro_rules! adc12_hal {
+macro_rules! adc {
     ($(
-            $ADC:ident: ($adcx:ident),
+        $ADC:ident: (
+            $ADCX_Y:ident,
+            $ADCXYPRES_A:ident,
+            $adcXYen:ident,
+            $adcXYpres:ident
+        ),
     )+) => {
         $(
-            impl Adc<$ADC> {
-                /// Returns true iff
-                ///     the clock can be enabled with the given settings
-                ///  or the clock was already enabled with the same settings
-                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) -> bool {
-                    if ADC1_2::is_enabled() {
-                        return (adc_common.ccr.read().ckmode().variant() == self.clock_mode.into());
-                    }
-                    ADC1_2::enable(ahb);
-                    adc_common.ccr.modify(|_, w| w
-                        .ckmode().variant(self.clock_mode.into())
-                    );
-                    true
+            impl crate::private::Sealed for pac::$ADC {}
+            impl Instance for pac::$ADC {
+                type SharedInstance = pac::$ADCX_Y;
+                fn enable_clock(ahb: &mut AHB) {
+                    pac::$ADCX_Y::enable(ahb);
                 }
-            }
-            adc_hal! {
-                $ADC: ($adcx, ADC1_2),
-            }
-        )+
-    }
-}
 
-// Macro to implement ADC functionallity for ADC3 and ADC4
-// TODO: Extend/differentiate beyond f303.
-#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
-macro_rules! adc34_hal {
-    ($(
-            $ADC:ident: ($adcx:ident),
-    )+) => {
-        $(
-            impl Adc<$ADC> {
-                /// Returns true iff
-                ///     the clock can be enabled with the given settings
-                ///  or the clock was already enabled with the same settings
-                fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) -> bool {
-                    if ADC3_4::is_enabled() {
-                        return (adc_common.ccr.read().ckmode().variant() == self.clock_mode.into());
+                fn clock(clocks: &Clocks) -> Hertz {
+                    use crate::pac::rcc::cfgr2::$ADCXYPRES_A;
+                    use crate::pac::RCC;
+                    // SAFETY: atomic read with no side effects
+                    let adc_pres = unsafe { &(*RCC::ptr()).cfgr2.read().$adcXYpres() };
+                    let common_adc = unsafe { &(*Self::SharedInstance::ptr()) };
+
+                    match clocks.pllclk() {
+                        Some(pllclk) if !adc_pres.is_no_clock() => {
+                            pllclk
+                                / match adc_pres.variant() {
+                                    Some($ADCXYPRES_A::DIV1) => 1,
+                                    Some($ADCXYPRES_A::DIV2) => 2,
+                                    Some($ADCXYPRES_A::DIV4) => 4,
+                                    Some($ADCXYPRES_A::DIV6) => 6,
+                                    Some($ADCXYPRES_A::DIV8) => 8,
+                                    Some($ADCXYPRES_A::DIV10) => 10,
+                                    Some($ADCXYPRES_A::DIV12) => 12,
+                                    Some($ADCXYPRES_A::DIV16) => 16,
+                                    Some($ADCXYPRES_A::DIV32) => 32,
+                                    Some($ADCXYPRES_A::DIV64) => 64,
+                                    Some($ADCXYPRES_A::DIV128) => 128,
+                                    Some($ADCXYPRES_A::DIV256) => 256,
+                                    Some($ADCXYPRES_A::NOCLOCK) | None => 1,
+                                }
+                        }
+                        _ => {
+                            clocks.sysclk()
+                                / match common_adc.ccr.read().ckmode().variant() {
+                                    CKMODE_A::SYNCDIV1 => 1,
+                                    CKMODE_A::SYNCDIV2 => 2,
+                                    CKMODE_A::SYNCDIV4 => 4,
+                                    CKMODE_A::ASYNCHRONOUS => crate::panic!("No ADC clock"),
+                                }
+                        }
                     }
-                    ADC3_4::enable(ahb);
-                    adc_common.ccr.modify(|_, w| w
-                        .ckmode().variant(self.clock_mode.into())
-                    );
-                    true
                 }
             }
-            adc_hal! {
-                $ADC: ($adcx, ADC3_4),
-            }
         )+
-    }
+    };
+
+    ([ $(($A:literal, $X:literal, $Y:literal)),+ ]) => {
+        paste::paste! {
+            adc!(
+                $(
+                    [<ADC $A>]: (
+                        [<ADC $X _ $Y>],
+                        [<ADC $X $Y PRES_A>],
+                        [<adc $X $Y en>],
+                        [<adc $X $Y pres>]
+                    ),
+                )+
+            );
+        }
+    };
 }
 
 #[cfg(feature = "svd-f303")]
-adc12_hal! {
-    ADC1: (adc1),
-    ADC2: (adc2),
-}
+adc!([(1, 1, 2), (2, 1, 2)]);
+
 #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
-adc34_hal! {
-    ADC3: (adc3),
-    ADC4: (adc4),
-}
+adc!([(3, 3, 4), (4, 3, 4)]);

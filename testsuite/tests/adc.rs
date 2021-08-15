@@ -34,7 +34,6 @@ mod tests {
     #[init]
     fn init() -> State {
         let mut dp = unwrap!(pac::Peripherals::take());
-
         let mut rcc = dp.RCC.constrain();
         let mut flash = dp.FLASH.constrain();
         let clocks = rcc.cfgr.freeze(&mut flash.acr);
@@ -48,13 +47,7 @@ mod tests {
         };
 
         State {
-            adc: Some(adc::Adc::adc1(
-                dp.ADC1,
-                &mut dp.ADC1_2,
-                &mut rcc.ahb,
-                adc::ClockMode::default(),
-                clocks,
-            )),
+            adc: Some(adc::Adc::new(dp.ADC1, clocks, &mut rcc.ahb)),
             analog: pair.0,
             output: pair.1,
             ahb: rcc.ahb,
@@ -90,13 +83,7 @@ mod tests {
         let adc1 = adc.free();
 
         defmt::debug!("Reconfigure");
-        let new_adc = adc::Adc::adc1(
-            adc1,
-            &mut state.adc1_2,
-            &mut state.ahb,
-            adc::ClockMode::default(),
-            state.clocks,
-        );
+        let new_adc = adc::Adc::new(adc1, state.clocks, &mut state.ahb);
 
         defmt::debug!("Replace");
         // put adc back in place
