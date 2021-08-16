@@ -4,7 +4,7 @@
 //!
 //! A usage example of the watchdog can be found at [examples/can.rs]
 //!
-//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.7.0/examples/can.rs
+//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.8.0/examples/can.rs
 
 use core::fmt;
 use embedded_time::fixed_point::FixedPoint;
