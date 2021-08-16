@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Add `use_pll` to `CFGR` - the clock configuration - to force to use the PLL
   source for the systemclock. Also `Clocks::pllclk()` was introduced to be able
   to check, whether PLL is used.
+- Add unsafe peripheral function to access underlying peripheral ([#277])
 
 [`enumset`]: https://crates.io/crates/enumset
 
@@ -143,6 +144,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - A generic `Instance` trait now represents all Spi peripherals.
   - `Spi::spi1` and so on are renamed to `Spi::new`.
   - Add SPI configuration type to be passed into `Spi::new`
+- Remove public fields from `Adc` and `Rtc` ([#277])
 
 ## [v0.7.0] - 2021-06-18
 
@@ -468,6 +470,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#277]: https://github.com/stm32-rs/stm32f3xx-hal/pull/277
 [#273]: https://github.com/stm32-rs/stm32f3xx-hal/pull/273
 [#271]: https://github.com/stm32-rs/stm32f3xx-hal/pull/271
 [#270]: https://github.com/stm32-rs/stm32f3xx-hal/pull/270

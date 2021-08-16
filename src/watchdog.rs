@@ -106,6 +106,19 @@ impl IndependentWatchDog {
         // pub fn free(self) -> IWDG {}
     }
 
+    /// Get access to the underlying register block.
+    ///
+    /// # Safety
+    ///
+    /// This function is not _memory_ unsafe per se, but does not guarantee
+    /// anything about assumptions of invariants made in this implementation.
+    ///
+    /// Changing specific options can lead to un-expected behavior and nothing
+    /// is guaranteed.
+    pub unsafe fn peripheral(&mut self) -> &mut IWDG {
+        &mut self.iwdg
+    }
+
     /// Returns the currently set interval
     pub fn interval(&self) -> Milliseconds {
         // If the prescaler was changed wait until the change procedure is finished.

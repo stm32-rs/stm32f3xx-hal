@@ -195,6 +195,19 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         Self { i2c, pins }
     }
 
+    /// Get access to the underlying register block.
+    ///
+    /// # Safety
+    ///
+    /// This function is not _memory_ unsafe per se, but does not guarantee
+    /// anything about assumptions of invariants made in this implementation.
+    ///
+    /// Changing specific options can lead to un-expected behavior and nothing
+    /// is guaranteed.
+    pub unsafe fn peripheral(&mut self) -> &mut I2C {
+        &mut self.i2c
+    }
+
     /// Releases the I2C peripheral and associated pins
     pub fn free(self) -> (I2C, (SCL, SDA)) {
         (self.i2c, self.pins)
