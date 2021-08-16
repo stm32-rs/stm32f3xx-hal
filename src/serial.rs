@@ -15,7 +15,7 @@ use core::{
 
 use crate::{
     gpio::{gpioa, gpiob, gpioc, AF7},
-    hal::{blocking, serial},
+    hal::{blocking, serial, serial::Write},
     pac::{
         self,
         rcc::cfgr3::USART1SW_A,
@@ -926,7 +926,7 @@ where
     }
 }
 
-impl<Usart, Tx, Rx> serial::Write<u8> for Serial<Usart, (Tx, Rx)>
+impl<Usart, Pins> serial::Write<u8> for Serial<Usart, Pins>
 where
     Usart: Instance,
 {
@@ -951,6 +951,17 @@ where
         } else {
             Err(nb::Error::WouldBlock)
         }
+    }
+}
+
+impl<Usart, Pins> fmt::Write for Serial<Usart, Pins>
+where
+    Serial<Usart, Pins>: serial::Write<u8>,
+{
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        s.bytes()
+            .try_for_each(|c| nb::block!(self.write(c)))
+            .map_err(|_| fmt::Error)
     }
 }
 
@@ -991,6 +1002,17 @@ where
         } else {
             Err(nb::Error::WouldBlock)
         }
+    }
+}
+
+impl<Usart, Pin> fmt::Write for Tx<Usart, Pin>
+where
+    Tx<Usart, Pin>: serial::Write<u8>,
+{
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        s.bytes()
+            .try_for_each(|c| nb::block!(self.write(c)))
+            .map_err(|_| fmt::Error)
     }
 }
 

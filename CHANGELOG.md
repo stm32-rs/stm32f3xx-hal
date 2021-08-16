@@ -65,6 +65,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   source for the systemclock. Also `Clocks::pllclk()` was introduced to be able
   to check, whether PLL is used.
 - Add unsafe peripheral function to access underlying peripheral ([#277])
+- Implement `fmt::Write` for `Serial` ([#278])
+  - This allowes using `writeln!` in combination with `Serial`.
 
 [`enumset`]: https://crates.io/crates/enumset
 
@@ -470,6 +472,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#278]: https://github.com/stm32-rs/stm32f3xx-hal/pull/278
 [#277]: https://github.com/stm32-rs/stm32f3xx-hal/pull/277
 [#273]: https://github.com/stm32-rs/stm32f3xx-hal/pull/273
 [#271]: https://github.com/stm32-rs/stm32f3xx-hal/pull/271
