@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   not needed. ([#283])
 - Enable `rt`, `usb`, `can`, `rtc` and `ld` feature by default.
   To disable that behavior, set `default-features = false`. ([#283])
+- The MSRV was bumped to 1.52 ([#283])
 
 ## [v0.8.0] - 2021-08-16
 
