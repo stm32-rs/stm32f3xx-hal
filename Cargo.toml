@@ -67,6 +67,7 @@ rtt-target = { version = "0.3.0", features = ["cortex-m"] }
 slice-group-by = "0.2.6"
 
 [features]
+default = ["rt", "ld", "usb", "can", "rtc", "enumset"]
 device-selected = []
 direct-call-deprecated = []
 ld = []

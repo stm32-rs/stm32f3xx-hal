@@ -24,7 +24,7 @@ jobs:
           - stm32f303x6
           # - stm32f303x8
           - stm32f303xb
-          # - stm32f303xc
+          - stm32f303xc
           - stm32f303xd
           # - stm32f303xe
           - stm32f328x8
@@ -37,10 +37,6 @@ jobs:
           - stm32f334x4
           # - stm32f334x6
           # - stm32f334x8
-        features: ["rt"]
-        include:
-          - mcu: stm32f303xc
-            features: rt,can,stm32-usbd,enumset
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -49,7 +45,7 @@ jobs:
           target: thumbv7em-none-eabihf
           override: true
           profile: minimal
-      - run: cargo check --features=${{ matrix.mcu }},ld,${{ matrix.features }} --lib --examples
+      - run: cargo check --features=${{ matrix.mcu }} --lib --examples
 
   # This is our MSRV. However this is only for documentation
   # purposes and should be increased if newer features are used.
@@ -138,7 +134,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: doc
-          args: --features=stm32f303xc,rt,stm32-usbd,can,enumset
+          args: --features=stm32f303xc
 
   clippy:
     name: Clippy
@@ -156,7 +152,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: >
-            --features=stm32f303xc,ld,rt,stm32-usbd,can --lib --examples
+            --features=stm32f303xc --lib --examples
             -- -D warnings
 
   rustfmt:
