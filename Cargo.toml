@@ -180,7 +180,7 @@ required-features = ["ld", "stm32f303xc"]
 
 [[example]]
 name = "can"
-required-features = ["ld", "rt", "can", "stm32f302"]
+required-features = ["ld", "rt", "can", "stm32f302xc"]
 
 [[example]]
 name = "serial_dma"
@@ -192,7 +192,7 @@ required-features = ["ld", "rt", "stm32f303xc", "enumset"]
 
 [[example]]
 name = "adc"
-required-features = ["ld", "stm32f303"]
+required-features = ["ld", "stm32f303xc"]
 
 [[example]]
 name = "i2c_scanner"
