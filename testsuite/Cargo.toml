@@ -56,19 +56,19 @@ defmt-rtt = "0.2.0"
 defmt-test = "0.2.0"
 enumset = { version = "1.0.6" }
 # TODO: Set stm32f303xc as default, but make it overwritable
-stm32f3xx-hal = { path = "..", features = ["rt", "defmt-trace", "can", "ld", "enumset"]}
+stm32f3xx-hal = { path = "..", features = ["defmt-trace"]}
 panic-probe = { version = "0.2.0", features = ["print-defmt"] }
 nb = "1.0.0"
 num-traits = { version = "0.2.14", default-features = false }
 
 [features]
 # enable all defmt logging levels
-default = ["defmt-trace", "stm32f3xx-hal/stm32f303xc", "stm32f3xx-hal/ld"]
+default = ["stm32f3xx-hal/stm32f303xc"]
 
 # do not modify these features
-defmt-default = []
-defmt-trace = []
-defmt-debug = []
-defmt-info = []
-defmt-warn = []
-defmt-error = []
+defmt-default = ["defmt-info"]
+defmt-trace = ["stm32f3xx-hal/defmt-trace"]
+defmt-debug = ["stm32f3xx-hal/defmt-trace"]
+defmt-info = ["stm32f3xx-hal/defmt-trace"]
+defmt-warn = ["stm32f3xx-hal/defmt-trace"]
+defmt-error = ["stm32f3xx-hal/defmt-trace"]
