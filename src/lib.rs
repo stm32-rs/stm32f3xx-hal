@@ -82,6 +82,10 @@
 
  Enable USB peripherals on supported targets via the [`stm32-usbd`](https://crates.io/crates/sttm32-usbd) crate.
 
+ ### `rtc`
+
+ Enables RTC support, build upon [`rtcc`](https://crates.io/crates/rtcc) crate.
+
  ### `enumset`
 
  Enable functions, which leverage [`enumset`](https://crates.io/crates/enumset).
@@ -180,6 +184,8 @@ pub mod interrupts;
 pub mod prelude;
 pub mod pwm;
 pub mod rcc;
+#[cfg(feature = "rtc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rtc")))]
 pub mod rtc;
 pub mod serial;
 pub mod spi;

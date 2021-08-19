@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Support cortex-m-rt `v0.7.0` but still allow `v0.6.13` ([#283])
 
+### Breaking Changes
+
+- Make `rtc` an optional feature. Without that feature `rtcc` as a dependency is
+  not needed. ([#283])
+
 ## [v0.8.0] - 2021-08-16
 
 ### Added
