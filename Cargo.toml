@@ -43,7 +43,7 @@ embedded-time = "0.12.0"
 nb = "1.0.0"
 paste = "1.0.5"
 rtcc = "0.2.1"
-stm32f3 = "0.13.2"
+stm32f3 = { version = "0.13.2", default-features = false }
 bxcan = { version = ">=0.4, <0.6", optional = true }
 stm32-usbd = { version = "0.6.0", optional = true }
 void = { version = "1.0.2", default-features = false }
