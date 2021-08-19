@@ -22,33 +22,23 @@ use bxcan::RegisterBlock;
 
 use cfg_if::cfg_if;
 
-mod sealed {
-    pub trait Sealed {}
-}
-
 /// Marker trait for pins (with specific AF mode) that can be used as a CAN RX pin.
-pub trait RxPin: sealed::Sealed {}
+pub trait RxPin: crate::private::Sealed {}
 
 /// Marker trait for pins (with specific AF mode) that can be used as a CAN TX pin.
-pub trait TxPin: sealed::Sealed {}
+pub trait TxPin: crate::private::Sealed {}
 
 cfg_if! {
     if #[cfg(any(feature = "gpio-f302", feature = "gpio-f303"))] {
         use crate::gpio::gpiod;
 
-        impl sealed::Sealed for gpioa::PA11<AF9<PushPull>> {}
         impl RxPin for gpioa::PA11<AF9<PushPull>> {}
-        impl sealed::Sealed for gpioa::PA12<AF9<PushPull>> {}
         impl TxPin for gpioa::PA12<AF9<PushPull>> {}
 
-        impl sealed::Sealed for gpiob::PB8<AF9<PushPull>> {}
         impl RxPin for gpiob::PB8<AF9<PushPull>> {}
-        impl sealed::Sealed for gpiob::PB9<AF9<PushPull>> {}
         impl TxPin for gpiob::PB9<AF9<PushPull>> {}
 
-        impl sealed::Sealed for gpiod::PD0<AF7<PushPull>> {}
         impl RxPin for gpiod::PD0<AF7<PushPull>> {}
-        impl sealed::Sealed for gpiod::PD1<AF7<PushPull>> {}
         impl TxPin for gpiod::PD1<AF7<PushPull>> {}
     }
 }
