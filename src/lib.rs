@@ -80,7 +80,11 @@
 
  ### `usb`
 
- Enable USB peripherals on supported targets via the [`stm32-usbd`](https://crates.io/crates/sttm32-usbd) crate.
+ Enable USB peripherals on supported targets via the [`stm32-usbd`](https://crates.io/crates/stm32-usbd) crate.
+
+ ### `rtc`
+
+ Enables RTC support, build upon [`rtcc`](https://crates.io/crates/rtcc) crate.
 
  ### `enumset`
 
@@ -168,7 +172,7 @@ pub use crate::pac::interrupt;
 #[cfg(feature = "stm32f303")]
 #[cfg_attr(docsrs, doc(cfg(feature = "stm32f303")))]
 pub mod adc;
-#[cfg(feature = "can")]
+#[cfg(all(feature = "can", not(feature = "svd-f301")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "can")))]
 pub mod can;
 pub mod delay;
@@ -180,6 +184,8 @@ pub mod interrupts;
 pub mod prelude;
 pub mod pwm;
 pub mod rcc;
+#[cfg(feature = "rtc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "rtc")))]
 pub mod rtc;
 pub mod serial;
 pub mod spi;

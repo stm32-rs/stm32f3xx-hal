@@ -14,7 +14,23 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-No changes.
+### Added
+
+- Support cortex-m-rt `v0.7.0` but still allow `v0.6.13` ([#283])
+
+### Fixed
+
+- Fix `can` support. Can would not build for `stm32f302x6` for example.
+  Also support `can` for every chip other than `stm32f301` and `stm32f318`.
+  ([#283])
+
+### Breaking Changes
+
+- Make `rtc` an optional feature. Without that feature `rtcc` as a dependency is
+  not needed. ([#283])
+- Enable `rt`, `usb`, `can`, `rtc` and `ld` feature by default.
+  To disable that behavior, set `default-features = false`. ([#283])
+- The MSRV was bumped to 1.52 ([#283])
 
 ## [v0.8.0] - 2021-08-16
 
@@ -476,6 +492,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#283]: https://github.com/stm32-rs/stm32f3xx-hal/pull/283
 [#278]: https://github.com/stm32-rs/stm32f3xx-hal/pull/278
 [#277]: https://github.com/stm32-rs/stm32f3xx-hal/pull/277
 [#273]: https://github.com/stm32-rs/stm32f3xx-hal/pull/273
