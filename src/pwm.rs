@@ -1355,8 +1355,8 @@ pwm_timer_with_break!(
 );
 
 // Channels
-pwm_pin_for_pwm_n_channel!(TIM15, Tim15Ch1, u16, cc1e, cc1ne, ccr1, ccr1);
-pwm_pin_for_pwm_channel!(TIM15, Tim15Ch2, u16, cc2e, ccr2, ccr2);
+pwm_pin_for_pwm_n_channel!(TIM15, Tim15Ch1, u16, cc1e, cc1ne, ccr1, ccr);
+pwm_pin_for_pwm_channel!(TIM15, Tim15Ch2, u16, cc2e, ccr2, ccr);
 
 // Pins
 pwm_channel1_pin!(TIM15, Tim15Ch1, output_to_pa2, gpioa::PA2<AF9>);
@@ -1413,7 +1413,7 @@ pwm_timer_with_break!(
 );
 
 // Channels
-pwm_pin_for_pwm_n_channel!(TIM16, Tim16Ch1, u16, cc1e, cc1ne, ccr1, ccr1);
+pwm_pin_for_pwm_n_channel!(TIM16, Tim16Ch1, u16, cc1e, cc1ne, ccr1, ccr);
 
 // Pins
 pwm_channel1_pin!(TIM16, Tim16Ch1, output_to_pa9, gpioa::PA6<AF1>);
@@ -1453,7 +1453,7 @@ pwm_timer_with_break!(
 );
 
 // Channels
-pwm_pin_for_pwm_n_channel!(TIM17, Tim17Ch1, u16, cc1e, cc1ne, ccr1, ccr1);
+pwm_pin_for_pwm_n_channel!(TIM17, Tim17Ch1, u16, cc1e, cc1ne, ccr1, ccr);
 
 // Pins
 pwm_channel1_pin!(TIM17, Tim17Ch1, output_to_pa7, gpioa::PA7<AF1>);

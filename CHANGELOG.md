@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Enable `rt`, `usb`, `can`, `rtc` and `ld` feature by default.
   To disable that behavior, set `default-features = false`. ([#283])
 - The MSRV was bumped to 1.52 ([#283])
+- Update `stm32f3` pac to v0.14.0 ([#282])
 
 ## [v0.8.1] - 2021-10-27
 
@@ -501,6 +502,7 @@ let clocks = rcc
 
 [#291]: https://github.com/stm32-rs/stm32f3xx-hal/pull/291
 [#283]: https://github.com/stm32-rs/stm32f3xx-hal/pull/283
+[#282]: https://github.com/stm32-rs/stm32f3xx-hal/pull/282
 [#278]: https://github.com/stm32-rs/stm32f3xx-hal/pull/278
 [#277]: https://github.com/stm32-rs/stm32f3xx-hal/pull/277
 [#273]: https://github.com/stm32-rs/stm32f3xx-hal/pull/273
