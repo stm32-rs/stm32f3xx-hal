@@ -80,7 +80,7 @@
 
  ### `usb`
 
- Enable USB peripherals on supported targets via the [`stm32-usbd`](https://crates.io/crates/sttm32-usbd) crate.
+ Enable USB peripherals on supported targets via the [`stm32-usbd`](https://crates.io/crates/stm32-usbd) crate.
 
  ### `rtc`
 
