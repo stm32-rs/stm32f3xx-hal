@@ -172,7 +172,7 @@ pub use crate::pac::interrupt;
 #[cfg(feature = "stm32f303")]
 #[cfg_attr(docsrs, doc(cfg(feature = "stm32f303")))]
 pub mod adc;
-#[cfg(feature = "can")]
+#[cfg(all(feature = "can", not(feature = "svd-f301")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "can")))]
 pub mod can;
 pub mod delay;
