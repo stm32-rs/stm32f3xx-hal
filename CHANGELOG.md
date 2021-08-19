@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-No changes.
+### Added
+
+- Support cortex-m-rt `v0.7.0` but still allow `v0.6.13` ([#283])
 
 ## [v0.8.0] - 2021-08-16
 
@@ -476,6 +478,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#283]: https://github.com/stm32-rs/stm32f3xx-hal/pull/283
 [#278]: https://github.com/stm32-rs/stm32f3xx-hal/pull/278
 [#277]: https://github.com/stm32-rs/stm32f3xx-hal/pull/277
 [#273]: https://github.com/stm32-rs/stm32f3xx-hal/pull/273
