@@ -501,6 +501,7 @@ mod interrupts {
             // generated an enum-number for that. The RM0365 does also not list it as an interrupt.
             // Strangly though, the Stm32CubeMx program let's us choose to enable the NVIC
             // interrupt. This is probably a documentation bug.
+            #[allow(unused)]
             pub(crate) const SPI4: Interrupt = Interrupt::SPI3;
         } else if #[cfg(feature = "gpio-f303e")] {
             pub(crate) const SPI4: Interrupt = Interrupt::SPI4;
