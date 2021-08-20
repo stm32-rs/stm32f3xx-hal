@@ -22,10 +22,10 @@ use crate::{
         adc1_2::ccr::CKMODE_A,
     },
     rcc::{Clocks, Enable, AHB},
-    time::rate::Hertz,
+    time::{duration::Microseconds, fixed_point::FixedPoint, rate::Hertz},
 };
 
-const MAX_ADVREGEN_STARTUP_US: u32 = 10;
+const MAX_ADVREGEN_STARTUP: Microseconds = Microseconds(10);
 
 /// Analog Digital Converter Peripheral
 // TODO(Sh3Rm4n) Add configuration and other things like in the `stm32f4xx-hal` crate
@@ -390,7 +390,10 @@ where
     ///
     /// This is based on the MAX_ADVREGEN_STARTUP_US of the device.
     fn wait_advregen_startup(&self, clocks: Clocks) {
-        asm::delay((MAX_ADVREGEN_STARTUP_US * 1_000_000) / clocks.sysclk().0);
+        let wait = MAX_ADVREGEN_STARTUP.integer()
+            * clocks.sysclk().integer()
+            * <Microseconds as FixedPoint>::SCALING_FACTOR;
+        asm::delay(wait);
     }
 
     /// busy ADC read

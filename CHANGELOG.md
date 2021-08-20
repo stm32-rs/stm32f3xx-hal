@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fix `can` support. Can would not build for `stm32f302x6` for example.
   Also support `can` for every chip other than `stm32f301` and `stm32f318`.
   ([#283])
+- Fix wrong ADC votlage regulator startup time calculation effecting
+  calibration. ([#281])
 
 ### Breaking Changes
 
