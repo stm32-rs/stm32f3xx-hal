@@ -45,7 +45,7 @@ jobs:
           target: thumbv7em-none-eabihf
           override: true
           profile: minimal
-      - run: cargo check --features=${{ matrix.mcu }} --lib --examples
+      - run: cargo build --features=${{ matrix.mcu }} --lib --examples
 
   # This is our MSRV. However this is only for documentation
   # purposes and should be increased if newer features are used.
