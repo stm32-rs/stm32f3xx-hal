@@ -111,8 +111,8 @@ jobs:
           command: check
           args: --no-default-features --features=stm32f303xc --lib --examples
 
-  build-testsuite:
-    name: Build Testsuite
+  check-testsuite:
+    name: Check Testsuite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
