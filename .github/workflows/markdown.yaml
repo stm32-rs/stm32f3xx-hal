@@ -1,0 +1,20 @@
+name: Markdown CI 
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - '**.md'
+
+jobs:
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: nosborn/github-action-markdown-cli@v2.0.0
+        with:
+          files: .
+          config_file: .markdownlint.yml
+          ignore_files: target/

@@ -1,0 +1,22 @@
+name: Link Checker CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - '**.md'
+      - '**.rs'
+      - '**.toml'
+
+jobs:
+  link-checker:
+    name: Link Checker
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Check URLs in documentation
+      uses: lycheeverse/lychee-action@v1.0.8
+      with:
+        args: --verbose --no-progress "**/*.md" "**/*.rs" "Cargo.toml" "**/Cargo.toml" -h accept=text/html

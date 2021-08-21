@@ -1,0 +1,25 @@
+name: Testsuite CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - 'testsuite/'
+
+jobs:
+  build-testsuite:
+    name: Build Testsuite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p testsuite --no-run
