@@ -402,6 +402,8 @@ pub(crate) struct PllConfig {
 /// Determine the [greatest common divisor](https://en.wikipedia.org/wiki/Greatest_common_divisor)
 ///
 /// This function is based on the [Euclidean algorithm](https://en.wikipedia.org/wiki/Euclidean_algorithm).
+// TODO(Sh3Rm4n): As num-traits is a indirecty dependecy of this crate through embedded-time,
+// use its implementation instead.
 fn gcd(mut a: u32, mut b: u32) -> u32 {
     while b != 0 {
         let r = a % b;
