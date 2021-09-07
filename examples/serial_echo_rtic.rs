@@ -3,6 +3,14 @@
 
 use panic_rtt_target as _;
 
+// This example application prints all characters it receives via Serial and sends them back.
+//
+// NOTES:
+// - Depending on the board you're using, `Serial` might need different Tx and Rx pins instead of
+//   pa9 and pa10 (for example, the STM32f3DISCOVERY board uses pc4 and pc5).
+//   Check your boards' schematic and adjust the code accordingly.
+// - https://docs.rust-embedded.org/discovery/10-serial-communication/nix-tooling.html?highlight=*nix#nix-tooling
+//   has instructions on how to connect to your Serial device (make sure to adjust the baud rate)
 #[rtic::app(device = stm32f3xx_hal::pac, dispatchers = [TIM20_BRK, TIM20_UP, TIM20_TRG_COM])]
 mod app {
     use dwt_systick_monotonic::DwtSystick;
@@ -19,6 +27,7 @@ mod app {
     type DwtMono = DwtSystick<48_000_000>;
 
     type SerialType = Serial<pac::USART1, (gpio::PA9<AF7<PushPull>>, gpio::PA10<AF7<PushPull>>)>;
+    // The LED that will light up when data is received via serial
     type DirType = gpio::PE13<Output<PushPull>>;
 
     #[shared]
@@ -46,7 +55,7 @@ mod app {
         let mono = DwtSystick::new(&mut dcb, dwt, systick, clocks.sysclk().0);
 
         // Initialize the peripherals
-        // DIR
+        // DIR (the LED that lights up during serial rx)
         let mut gpioe = cx.device.GPIOE.split(&mut rcc.ahb);
         let mut dir: DirType = gpioe
             .pe13
@@ -57,10 +66,18 @@ mod app {
         let mut gpioa = cx.device.GPIOA.split(&mut rcc.ahb);
         let mut pins = (
             gpioa
+                // Tx pin
                 .pa9
+                // configure this pin to make use of its `USART1_TX` alternative function
+                // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
+                //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
                 .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
             gpioa
+                // Rx pin
                 .pa10
+                // configure this pin to make use of its `USART1_RX` alternative function
+                // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
+                //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
                 .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
         );
         pins.1.internal_pull_up(&mut gpioa.pupdr, true);
