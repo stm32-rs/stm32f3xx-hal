@@ -187,6 +187,7 @@ pub mod adc;
 #[cfg(all(feature = "can", not(feature = "svd-f301")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "can")))]
 pub mod can;
+pub mod dac;
 pub mod delay;
 pub mod dma;
 pub mod flash;
