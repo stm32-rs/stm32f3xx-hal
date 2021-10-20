@@ -64,7 +64,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
+          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib
 
   check-min-deps:
     name: Check Minimal Dependency Versions
