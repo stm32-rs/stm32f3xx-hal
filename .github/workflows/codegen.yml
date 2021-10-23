@@ -1,0 +1,22 @@
+name: Codegen CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    paths:
+      - 'codegen/**'
+
+jobs:
+  codegen:
+    name: Check Codegen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+          components: rustfmt
+      - run: cargo check --target "x86_64-unknown-linux-gnu" -p codegen
