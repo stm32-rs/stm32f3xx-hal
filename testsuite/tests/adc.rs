@@ -72,11 +72,11 @@ mod tests {
             defmt::debug!("{}", adc_level);
             defmt::unwrap!(state.output.set_low());
             // Vref is 3V so output should reach the maximum.
-            assert!(adc_level >= 3900 && adc_level <= 4100);
+            assert!(adc_level >= 3500 && adc_level <= 4100);
             let adc_level: u16 = defmt::unwrap!(adc.read(&mut state.analog).ok());
             defmt::debug!("{}", adc_level);
             // nearly zero (always zero can not be guaranteed)
-            assert!(adc_level <= 100);
+            assert!(adc_level <= 300);
         }
 
         // put adc back in place
