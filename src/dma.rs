@@ -514,7 +514,7 @@ macro_rules! dma {
 
                             // NOTE(unsafe) atomic write to a stateless register
                             unsafe {
-                                &(*$DMAx::ptr()).ifcr.write(|w| match event {
+                                (*$DMAx::ptr()).ifcr.write(|w| match event {
                                     HalfTransfer => w.$chtifi().set_bit(),
                                     TransferComplete => w.$ctcifi().set_bit(),
                                     TransferError => w.$cteifi().set_bit(),
