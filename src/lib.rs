@@ -136,7 +136,7 @@ mod private {
                 let mask = !(u32::MAX >> (32 - $bitwidth) << ($bitwidth * $index));
                 let value = $value << ($bitwidth * $index);
                 w.bits(r.bits() & mask | value)
-            });
+            })
         };
     }
     pub(crate) use modify_at;
