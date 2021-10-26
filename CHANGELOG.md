@@ -32,6 +32,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   To disable that behavior, set `default-features = false`. ([#283])
 - The MSRV was bumped to 1.52 ([#283])
 
+### Fixed
+
+- ADC Channel SMP Register mismatch. ([#291])
+  - While `read()`ing a Pin mapped to channel `10` and unexpected panic happened.
+
 ## [v0.8.0] - 2021-08-16
 
 ### Added
@@ -492,6 +497,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#291]: https://github.com/stm32-rs/stm32f3xx-hal/pull/291
 [#283]: https://github.com/stm32-rs/stm32f3xx-hal/pull/283
 [#278]: https://github.com/stm32-rs/stm32f3xx-hal/pull/278
 [#277]: https://github.com/stm32-rs/stm32f3xx-hal/pull/277
