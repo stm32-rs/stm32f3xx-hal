@@ -57,7 +57,7 @@
 
  For more information, see the [README][].
 
- [README]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.8.0/README.md#selecting-the-right-chip
+ [README]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.8.1/README.md#selecting-the-right-chip
 
  ### `ld`
 
