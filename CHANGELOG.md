@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   To disable that behavior, set `default-features = false`. ([#283])
 - The MSRV was bumped to 1.52 ([#283])
 
+## [v0.8.1] - 2021-10-27
+
 ### Fixed
 
 - ADC Channel SMP Register mismatch. ([#291])
@@ -590,6 +592,7 @@ let clocks = rcc
 [#2]: https://github.com/stm32-rs/stm32f3xx-hal/pull/2
 
 <!-- cargo-release: latest tag -->
+[v0.8.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.1
 [v0.8.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.0
 [v0.7.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.7.0
 [v0.6.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.6.1
