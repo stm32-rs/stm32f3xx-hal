@@ -1,7 +1,7 @@
 # cargo-release configuration
 
 tag-message = "{{version}}"
-no-dev-version = true
+dev-version = false
 pre-release-commit-message = "Release v{{version}}"
 push-remote = "upstream"
 
