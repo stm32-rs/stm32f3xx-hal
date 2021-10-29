@@ -16,7 +16,7 @@ use void::Void;
 use crate::hal::timer::{Cancel, CountDown, Periodic};
 #[allow(unused)]
 use crate::pac::RCC;
-use crate::rcc::{Clocks, APB1, APB2};
+use crate::rcc::{self, Clocks};
 use crate::time::{duration, fixed_point::FixedPoint, rate::Hertz};
 
 mod interrupts;
@@ -105,8 +105,9 @@ where
     TIM: Instance,
 {
     /// Configures a TIM peripheral as a periodic count down timer
-    pub fn new(tim: TIM, clocks: Clocks, apb: &mut <TIM as Instance>::APB) -> Self {
-        TIM::enable_clock(apb);
+    pub fn new(tim: TIM, clocks: Clocks, apb: &mut <TIM as rcc::RccBus>::Bus) -> Self {
+        TIM::enable(apb);
+        TIM::reset(apb);
 
         Timer { clocks, tim }
     }
@@ -339,13 +340,12 @@ pub trait CommonRegisterBlock: crate::private::Sealed {
 
 /// Associated clocks with timers
 pub trait Instance:
-    CommonRegisterBlock + crate::interrupts::InterruptNumber + crate::private::Sealed
+    CommonRegisterBlock
+    + crate::interrupts::InterruptNumber
+    + crate::private::Sealed
+    + rcc::Enable
+    + rcc::Reset
 {
-    /// Peripheral bus instance which is responsible for the peripheral
-    type APB;
-
-    #[doc(hidden)]
-    fn enable_clock(apb: &mut Self::APB);
     #[doc(hidden)]
     fn clock(clocks: &Clocks) -> Hertz;
 }
@@ -353,11 +353,8 @@ pub trait Instance:
 macro_rules! timer {
     ($({
         $TIMX:ident: (
-            $timXen:ident,
-            $timXrst:ident,
             $timXsw:ident,
             $timerXclock:ident,
-            $APB:ident,
             $pclkX:ident,
             $PCLKX:ident,
             $ppreX:ident,
@@ -422,18 +419,7 @@ macro_rules! timer {
                 }
             }
 
-            impl crate::private::Sealed for crate::pac::$TIMX {}
             impl Instance for crate::pac::$TIMX {
-                type APB = $APB;
-
-                #[inline]
-                fn enable_clock(apb: &mut Self::APB) {
-                    // enable and reset peripheral to a clean slate state
-                    apb.enr().modify(|_, w| w.$timXen().enabled());
-                    apb.rstr().modify(|_, w| w.$timXrst().reset());
-                    apb.rstr().modify(|_, w| w.$timXrst().clear_bit());
-                }
-
                 #[inline]
                 fn clock(clocks: &Clocks) -> Hertz {
                     $timerXclock(clocks)
@@ -450,11 +436,8 @@ macro_rules! timer {
                 $(
                     {
                         [<TIM $X>]: (
-                            [<tim $X en>],
-                            [<tim $X rst>],
                             [<tim $X sw>],
                             [<timer $X clock>],
-                            [<APB $APB>],
                             [<pclk $APB>],
                             [<PCLK $APB>],
                             [<ppre $APB>],

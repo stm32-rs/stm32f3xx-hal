@@ -15,7 +15,7 @@ use crate::gpio::{gpioa, gpiob};
 use crate::gpio::{PushPull, AF9};
 use crate::pac;
 
-use crate::rcc::APB1;
+use crate::rcc::{Enable, Reset, APB1};
 
 pub use bxcan;
 use bxcan::RegisterBlock;
@@ -62,9 +62,8 @@ where
     /// before the peripheral can be enabled.
     /// See the CAN example, for a more thorough example of the full setup process.
     pub fn new(can: pac::CAN, tx: Tx, rx: Rx, apb1: &mut APB1) -> bxcan::Can<Self> {
-        apb1.enr().modify(|_, w| w.canen().enabled());
-        apb1.rstr().modify(|_, w| w.canrst().set_bit());
-        apb1.rstr().modify(|_, w| w.canrst().clear_bit());
+        pac::CAN::enable(apb1);
+        pac::CAN::reset(apb1);
 
         bxcan::Can::new(Can { can, tx, rx })
     }

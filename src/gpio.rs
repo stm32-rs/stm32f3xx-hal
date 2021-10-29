@@ -784,8 +784,6 @@ macro_rules! gpio {
         Gpio: $Gpiox:ty,
         port_index: $port_index:literal,
         gpio_mapped: $gpioy:ident,
-        iopen: $iopxen:ident,
-        ioprst: $iopxrst:ident,
         partially_erased_pin: $PXx:ident,
         pins: [$(
             $i:literal => (
@@ -842,7 +840,7 @@ macro_rules! gpio {
 
                 use crate::{
                     pac::{$gpioy, $GPIOX},
-                    rcc::AHB,
+                    rcc::{AHB, Enable, Reset},
                 };
 
                 use super::{Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pupdr, U};
@@ -884,9 +882,8 @@ macro_rules! gpio {
                     type Parts = Parts;
 
                     fn split(self, ahb: &mut AHB) -> Parts {
-                        ahb.enr().modify(|_, w| w.$iopxen().set_bit());
-                        ahb.rstr().modify(|_, w| w.$iopxrst().set_bit());
-                        ahb.rstr().modify(|_, w| w.$iopxrst().clear_bit());
+                        <$GPIOX>::enable(ahb);
+                        <$GPIOX>::reset(ahb);
 
                         Parts {
                             afrh: AFRH(()),
@@ -1003,8 +1000,6 @@ macro_rules! gpio {
                     Gpio: [<Gpio $x>],
                     port_index: $port_index,
                     gpio_mapped: $gpioy,
-                    iopen: [<iop $x en>],
-                    ioprst: [<iop $x rst>],
                     partially_erased_pin: [<P $X x>],
                     pins: [$(
                         $i => (

@@ -72,6 +72,8 @@ pub trait RccExt {
     fn constrain(self) -> Rcc;
 }
 
+mod enable;
+
 impl RccExt for RCC {
     fn constrain(self) -> Rcc {
         Rcc {
@@ -120,18 +122,6 @@ pub struct AHB {
     _0: (),
 }
 
-impl AHB {
-    pub(crate) fn enr(&mut self) -> &rcc::AHBENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahbenr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::AHBRSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahbrstr }
-    }
-}
-
 /// Advanced Peripheral Bus 1 (APB1) registers
 ///
 /// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
@@ -143,18 +133,6 @@ impl AHB {
 /// ```
 pub struct APB1 {
     _0: (),
-}
-
-impl APB1 {
-    pub(crate) fn enr(&mut self) -> &rcc::APB1ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb1enr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::APB1RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb1rstr }
-    }
 }
 
 /// Advanced Peripheral Bus 2 (APB2) registers
@@ -170,16 +148,82 @@ pub struct APB2 {
     _0: (),
 }
 
-impl APB2 {
-    pub(crate) fn enr(&mut self) -> &rcc::APB2ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb2enr }
-    }
+macro_rules! bus_struct {
+    ($($busX:ident => ($EN:ident, $en:ident, $RST:ident, $rst:ident),)+) => {
+        $(
+            impl $busX {
+                fn new() -> Self {
+                    Self { _0: () }
+                }
 
-    pub(crate) fn rstr(&mut self) -> &rcc::APB2RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb2rstr }
-    }
+                #[allow(unused)]
+                fn enr(&self) -> &rcc::$EN {
+                    // NOTE(unsafe) this proxy grants exclusive access to this register
+                    unsafe { &(*RCC::ptr()).$en }
+                }
+
+                #[allow(unused)]
+                fn rstr(&self) -> &rcc::$RST {
+                    // NOTE(unsafe) this proxy grants exclusive access to this register
+                    unsafe { &(*RCC::ptr()).$rst }
+                }
+            }
+        )+
+    };
+}
+
+bus_struct! {
+    AHB => (AHBENR, ahbenr, AHBRSTR, ahbrstr),
+    APB1 => (APB1ENR, apb1enr, APB1RSTR, apb1rstr),
+    APB2 => (APB2ENR, apb2enr, APB2RSTR, apb2rstr),
+}
+
+/// Bus associated to peripheral
+pub trait RccBus: crate::Sealed {
+    /// The underlying bus peripheral
+    type Bus;
+}
+
+/// Enable/disable peripheral
+pub trait Enable: RccBus {
+    /// Enables peripheral
+    fn enable(bus: &mut Self::Bus);
+
+    /// Disables peripheral
+    fn disable(bus: &mut Self::Bus);
+
+    /// Check if peripheral enabled
+    fn is_enabled() -> bool;
+
+    /// Check if peripheral disabled
+    fn is_disabled() -> bool;
+
+    /// Enables peripheral
+    ///
+    /// # Safety
+    ///
+    /// Takes access to RCC internally, so you have to make sure
+    /// you don't have race condition accessing RCC registers
+    unsafe fn enable_unchecked();
+
+    /// Disables peripheral
+    ///
+    /// # Safety
+    ///
+    /// Takes access to RCC internally, so you have to make sure
+    /// you don't have race condition accessing RCC registers
+    unsafe fn disable_unchecked();
+}
+
+/// Reset peripheral
+pub trait Reset: RccBus {
+    /// Resets peripheral
+    fn reset(bus: &mut Self::Bus);
+
+    /// # Safety
+    ///
+    /// Resets peripheral. Takes access to RCC internally
+    unsafe fn reset_unchecked();
 }
 
 /// Frequency of interal hardware RC oscillator (HSI OSC)
