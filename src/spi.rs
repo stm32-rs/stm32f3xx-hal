@@ -22,7 +22,7 @@ use crate::pac::{
 use crate::{
     gpio::{self, PushPull, AF5, AF6},
     rcc::{self, Clocks},
-    time::rate::{self, Hertz},
+    time::rate,
 };
 
 /// SPI error
@@ -401,9 +401,8 @@ pub trait Instance:
     + crate::private::Sealed
     + rcc::Enable
     + rcc::Reset
+    + rcc::BusClock
 {
-    #[doc(hidden)]
-    fn clock(clocks: &Clocks) -> Hertz;
 }
 
 macro_rules! spi {
@@ -414,11 +413,7 @@ macro_rules! spi {
                 const INTERRUPT: Self::Interrupt = interrupts::$SPIX;
             }
 
-            impl Instance for pac::$SPIX {
-                fn clock(clocks: &Clocks) -> Hertz {
-                    clocks.$pclkX()
-                }
-            }
+            impl Instance for pac::$SPIX { }
 
             #[cfg(feature = "defmt")]
             impl<Pins> defmt::Format for Spi<pac::$SPIX, Pins> {
