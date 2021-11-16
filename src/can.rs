@@ -66,7 +66,7 @@ where
         apb1.rstr().modify(|_, w| w.canrst().set_bit());
         apb1.rstr().modify(|_, w| w.canrst().clear_bit());
 
-        bxcan::Can::new(Can { can, tx, rx })
+        bxcan::Can::builder(Can { can, tx, rx }).enable()
     }
 
     /// Releases the CAN peripheral and associated pins
