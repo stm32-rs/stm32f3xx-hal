@@ -76,7 +76,7 @@ mod tests {
             let adc_level: u16 = defmt::unwrap!(adc.read(&mut state.analog).ok());
             defmt::debug!("{}", adc_level);
             // nearly zero (always zero can not be guaranteed)
-            assert!(adc_level <= 300);
+            assert!(adc_level <= 500);
         }
 
         // put adc back in place
