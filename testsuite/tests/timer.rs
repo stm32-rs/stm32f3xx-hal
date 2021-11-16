@@ -107,7 +107,7 @@ mod tests {
 
             // Deviation is high for smaller timer durations. Higher duratinons are pretty accurate.
             // TODO: Maybe the allowed deviation should changed depending on the duration?
-            defmt::assert!(deviation < 40e-4);
+            defmt::assert!(deviation < 11e-02);
         }
         state.timer = Some(timer);
     }

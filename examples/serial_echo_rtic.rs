@@ -13,7 +13,6 @@ use panic_rtt_target as _;
 //   has instructions on how to connect to your Serial device (make sure to adjust the baud rate)
 #[rtic::app(device = stm32f3xx_hal::pac, dispatchers = [TIM20_BRK, TIM20_UP, TIM20_TRG_COM])]
 mod app {
-    use dwt_systick_monotonic::DwtSystick;
     use rtt_target::{rprintln, rtt_init_print};
     use stm32f3xx_hal::{
         gpio::{self, Output, PushPull, AF7},
@@ -22,9 +21,10 @@ mod app {
         serial::{Event, Serial},
         Toggle,
     };
+    use systick_monotonic::*;
 
     #[monotonic(binds = SysTick, default = true)]
-    type DwtMono = DwtSystick<48_000_000>;
+    type AppMono = Systick<100>; // 100 Hz / 10 ms granularity
 
     type SerialType = Serial<pac::USART1, (gpio::PA9<AF7<PushPull>>, gpio::PA10<AF7<PushPull>>)>;
     // The LED that will light up when data is received via serial
@@ -43,8 +43,6 @@ mod app {
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         let mut flash = cx.device.FLASH.constrain();
         let mut rcc = cx.device.RCC.constrain();
-        let mut dcb = cx.core.DCB;
-        let dwt = cx.core.DWT;
         let systick = cx.core.SYST;
 
         rtt_init_print!(NoBlockSkip, 4096);
@@ -52,7 +50,7 @@ mod app {
 
         // Initialize the clocks
         let clocks = rcc.cfgr.sysclk(48.MHz()).freeze(&mut flash.acr);
-        let mono = DwtSystick::new(&mut dcb, dwt, systick, clocks.sysclk().0);
+        let mono = Systick::new(systick, 48_000_000);
 
         // Initialize the peripherals
         // DIR (the LED that lights up during serial rx)
