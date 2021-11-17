@@ -6,7 +6,7 @@
 //! [ST AN4759]: https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h
 
 use crate::pac::{PWR, RTC};
-use crate::rcc::{APB1, BDCR};
+use crate::rcc::{Enable, APB1, BDCR};
 use core::convert::TryInto;
 use core::fmt;
 use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
@@ -424,12 +424,8 @@ fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
 }
 
 fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
-    apb1.enr().modify(|_, w| {
-        w
-            // Enable the backup interface by setting PWREN
-            .pwren()
-            .set_bit()
-    });
+    // Enable the backup interface by setting PWREN
+    PWR::enable(apb1);
     pwr.cr.modify(|_, w| {
         w
             // Enable access to the backup registers

@@ -10,7 +10,8 @@
 
 use core::fmt;
 
-use crate::pac::{RCC, USB};
+use crate::pac::USB;
+use crate::rcc::{Enable, Reset};
 use stm32_usbd::UsbPeripheral;
 
 use crate::gpio;
@@ -90,15 +91,11 @@ unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm,
     const EP_MEMORY_ACCESS_2X16: bool = true;
 
     fn enable() {
-        let rcc = unsafe { &*RCC::ptr() };
-
-        cortex_m::interrupt::free(|_| {
+        cortex_m::interrupt::free(|_| unsafe {
             // Enable USB peripheral
-            rcc.apb1enr.modify(|_, w| w.usben().enabled());
-
+            USB::enable_unchecked();
             // Reset USB peripheral
-            rcc.apb1rstr.modify(|_, w| w.usbrst().reset());
-            rcc.apb1rstr.modify(|_, w| w.usbrst().clear_bit());
+            USB::reset_unchecked();
         });
     }
 

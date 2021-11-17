@@ -142,7 +142,7 @@ mod private {
     pub(crate) use modify_at;
 }
 
-pub(crate) use private::modify_at;
+pub(crate) use private::{modify_at, Sealed};
 
 /// Peripheral access
 #[cfg(feature = "svd-f301")]

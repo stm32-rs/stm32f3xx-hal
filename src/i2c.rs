@@ -12,7 +12,7 @@ use crate::{
     gpio::{gpioa, gpiob, OpenDrain, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
     pac::{i2c1::RegisterBlock, rcc::cfgr3::I2C1SW_A, I2C1, RCC},
-    rcc::{Clocks, APB1},
+    rcc::{self, Clocks},
     time::rate::*,
 };
 
@@ -111,7 +111,13 @@ macro_rules! busy_wait {
 
 impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
     /// Configures the I2C peripheral to work in master mode
-    pub fn new(i2c: I2C, pins: (SCL, SDA), freq: Hertz, clocks: Clocks, apb1: &mut APB1) -> Self
+    pub fn new(
+        i2c: I2C,
+        pins: (SCL, SDA),
+        freq: Hertz,
+        clocks: Clocks,
+        bus: &mut <I2C as rcc::RccBus>::Bus,
+    ) -> Self
     where
         I2C: Instance,
         SCL: SclPin<I2C>,
@@ -119,7 +125,8 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
     {
         crate::assert!(freq.integer() <= 1_000_000);
 
-        I2C::enable_clock(apb1);
+        I2C::enable(bus);
+        I2C::reset(bus);
 
         // TODO review compliance with the timing requirements of I2C
         // t_I2CCLK = 1 / PCLK1
@@ -441,24 +448,17 @@ where
 }
 
 /// I2C instance
-pub trait Instance: Deref<Target = RegisterBlock> + crate::private::Sealed {
-    #[doc(hidden)]
-    fn enable_clock(apb1: &mut APB1);
+pub trait Instance:
+    Deref<Target = RegisterBlock> + crate::private::Sealed + rcc::Enable + rcc::Reset
+{
     #[doc(hidden)]
     fn clock(clocks: &Clocks) -> Hertz;
 }
 
 macro_rules! i2c {
-    ($($I2CX:ident: ($i2cXen:ident, $i2cXrst:ident, $i2cXsw:ident),)+) => {
+    ($($I2CX:ident: ($i2cXsw:ident),)+) => {
         $(
-            impl crate::private::Sealed for $I2CX {}
             impl Instance for $I2CX {
-                fn enable_clock(apb1: &mut APB1) {
-                    apb1.enr().modify(|_, w| w.$i2cXen().enabled());
-                    apb1.rstr().modify(|_, w| w.$i2cXrst().reset());
-                    apb1.rstr().modify(|_, w| w.$i2cXrst().clear_bit());
-                }
-
                 fn clock(clocks: &Clocks) -> Hertz {
                     // NOTE(unsafe) atomic read with no side effects
                     match unsafe { (*RCC::ptr()).cfgr3.read().$i2cXsw().variant() } {
@@ -473,7 +473,7 @@ macro_rules! i2c {
     ([ $($X:literal),+ ]) => {
         paste::paste! {
             i2c!(
-                $([<I2C $X>]: ([<i2c $X en>], [<i2c $X rst>], [<i2c $X sw>]),)+
+                $([<I2C $X>]: ([<i2c $X sw>]),)+
             );
         }
     };

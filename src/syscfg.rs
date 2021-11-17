@@ -4,7 +4,10 @@ use core::fmt;
 use core::ops::Deref;
 
 use crate::gpio::{marker, Pin};
-use crate::{pac::SYSCFG, rcc::APB2};
+use crate::{
+    pac::SYSCFG,
+    rcc::{Enable, APB2},
+};
 
 /// Extension trait that constrains the `SYSCFG` peripheral
 pub trait SysCfgExt {
@@ -14,7 +17,7 @@ pub trait SysCfgExt {
 
 impl SysCfgExt for SYSCFG {
     fn constrain(self, apb2: &mut APB2) -> SysCfg {
-        apb2.enr().modify(|_, w| w.syscfgen().enabled());
+        SYSCFG::enable(apb2);
 
         SysCfg(self)
     }

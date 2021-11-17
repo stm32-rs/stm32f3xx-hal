@@ -446,12 +446,13 @@ macro_rules! dma {
             pub mod $dmax {
                 use super::*;
                 use crate::pac::$DMAx;
+                use crate::rcc::Enable;
 
                 impl DmaExt for $DMAx {
                     type Channels = Channels;
 
                     fn split(self, ahb: &mut AHB) -> Channels {
-                        ahb.enr().modify(|_, w| w.$dmaxen().set_bit());
+                        <$DMAx>::enable(ahb);
 
                         let mut channels = Channels {
                             $( $chi: $Ci { _0: () }, )+

@@ -19,7 +19,7 @@ use crate::{
         adc1_2::ccr::CKMODE_A,
         ADC1, ADC1_2, ADC2,
     },
-    rcc::{Clocks, AHB},
+    rcc::{Clocks, Enable, AHB},
 };
 
 #[cfg(any(
@@ -555,10 +555,10 @@ macro_rules! adc12_hal {
                 ///     the clock can be enabled with the given settings
                 ///  or the clock was already enabled with the same settings
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC1_2) -> bool {
-                    if ahb.enr().read().adc12en().is_enabled() {
+                    if ADC1_2::is_enabled() {
                         return (adc_common.ccr.read().ckmode().variant() == self.clock_mode.into());
                     }
-                    ahb.enr().modify(|_, w| w.adc12en().enabled());
+                    ADC1_2::enable(ahb);
                     adc_common.ccr.modify(|_, w| w
                         .ckmode().variant(self.clock_mode.into())
                     );
@@ -585,10 +585,10 @@ macro_rules! adc34_hal {
                 ///     the clock can be enabled with the given settings
                 ///  or the clock was already enabled with the same settings
                 fn enable_clock(&self, ahb: &mut AHB, adc_common: &mut ADC3_4) -> bool {
-                    if ahb.enr().read().adc34en().is_enabled() {
+                    if ADC3_4::is_enabled() {
                         return (adc_common.ccr.read().ckmode().variant() == self.clock_mode.into());
                     }
-                    ahb.enr().modify(|_, w| w.adc34en().enabled());
+                    ADC3_4::enable(ahb);
                     adc_common.ccr.modify(|_, w| w
                         .ckmode().variant(self.clock_mode.into())
                     );

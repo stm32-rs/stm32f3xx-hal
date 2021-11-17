@@ -202,7 +202,7 @@ impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
         pins: (Sck, Miso, Mosi),
         config: Config,
         clocks: Clocks,
-        apb: &mut <SPI as Instance>::APB,
+        apb: &mut <SPI as rcc::RccBus>::Bus,
     ) -> Self
     where
         SPI: Instance,
@@ -213,7 +213,8 @@ impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
         Config: Into<config::Config>,
     {
         let config = config.into();
-        SPI::enable_clock(apb);
+        SPI::enable(apb);
+        SPI::reset(apb);
 
         let (frxth, ds) = WORD::register_config();
         spi.cr2.write(|w| {
@@ -395,34 +396,25 @@ where
 
 /// SPI instance
 pub trait Instance:
-    Deref<Target = spi1::RegisterBlock> + crate::interrupts::InterruptNumber + crate::private::Sealed
+    Deref<Target = spi1::RegisterBlock>
+    + crate::interrupts::InterruptNumber
+    + crate::private::Sealed
+    + rcc::Enable
+    + rcc::Reset
 {
-    /// Peripheral bus instance which is responsible for the peripheral
-    type APB;
-
-    #[doc(hidden)]
-    fn enable_clock(apb1: &mut Self::APB);
     #[doc(hidden)]
     fn clock(clocks: &Clocks) -> Hertz;
 }
 
 macro_rules! spi {
-    ($($SPIX:ident: ($APBX:ident, $spiXen:ident, $spiXrst:ident, $pclkX:ident),)+) => {
+    ($($SPIX:ident: ($APBX:ident, $pclkX:ident),)+) => {
         $(
-            impl crate::private::Sealed for pac::$SPIX {}
             impl crate::interrupts::InterruptNumber for pac::$SPIX {
                 type Interrupt = Interrupt;
                 const INTERRUPT: Self::Interrupt = interrupts::$SPIX;
             }
 
             impl Instance for pac::$SPIX {
-                type APB = rcc::$APBX;
-                fn enable_clock(apb: &mut Self::APB) {
-                    apb.enr().modify(|_, w| w.$spiXen().enabled());
-                    apb.rstr().modify(|_, w| w.$spiXrst().reset());
-                    apb.rstr().modify(|_, w| w.$spiXrst().clear_bit());
-                }
-
                 fn clock(clocks: &Clocks) -> Hertz {
                     clocks.$pclkX()
                 }
@@ -461,8 +453,6 @@ macro_rules! spi {
                 $(
                     [<SPI $X>]: (
                         [<APB $APB>],
-                        [<spi $X en>],
-                        [<spi $X rst>],
                         [<pclk $APB>]
                     ),
                 )+

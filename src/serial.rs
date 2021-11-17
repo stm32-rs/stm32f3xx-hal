@@ -22,7 +22,7 @@ use crate::{
         usart1::{cr1::M_A, cr1::PCE_A, cr1::PS_A, RegisterBlock},
         Interrupt, USART1, USART2, USART3,
     },
-    rcc::{Clocks, APB1, APB2},
+    rcc::{self, Clocks},
     time::rate::*,
     Toggle,
 };
@@ -462,7 +462,7 @@ where
         pins: (Tx, Rx),
         config: Config,
         clocks: Clocks,
-        apb: &mut <Usart as Instance>::APB,
+        apb: &mut <Usart as rcc::RccBus>::Bus,
     ) -> Self
     where
         Usart: Instance,
@@ -475,7 +475,8 @@ where
         let config = config.into();
 
         // Enable USART peripheral for any further interaction.
-        Usart::enable_clock(apb);
+        Usart::enable(apb);
+        Usart::reset(apb);
         // Disable USART because some configuration bits could only be written
         // in this state.
         usart.cr1.modify(|_, w| w.ue().disabled());
@@ -1181,13 +1182,12 @@ impl ReceiverTimeoutExt for USART3 {}
 
 /// UART instance
 pub trait Instance:
-    Deref<Target = RegisterBlock> + crate::interrupts::InterruptNumber + crate::private::Sealed
+    Deref<Target = RegisterBlock>
+    + crate::interrupts::InterruptNumber
+    + crate::private::Sealed
+    + rcc::Enable
+    + rcc::Reset
 {
-    /// Peripheral bus instance which is responsible for the peripheral
-    type APB;
-
-    #[doc(hidden)]
-    fn enable_clock(apb1: &mut Self::APB);
     #[doc(hidden)]
     fn clock(clocks: &Clocks) -> Hertz;
 }
@@ -1197,30 +1197,20 @@ macro_rules! usart {
         $(
             $USARTX:ident: (
                 $usartXen:ident,
-                $APB:ident,
                 $INTERRUPT:path,
                 $pclkX:ident,
-                $usartXrst:ident,
                 $usartXsw:ident,
                 $usartXclock:ident
             ),
         )+
     ) => {
         $(
-            impl crate::private::Sealed for $USARTX {}
             impl crate::interrupts::InterruptNumber for $USARTX {
                 type Interrupt = Interrupt;
                 const INTERRUPT: Interrupt = $INTERRUPT;
             }
 
             impl Instance for $USARTX {
-                type APB = $APB;
-                fn enable_clock(apb: &mut Self::APB) {
-                    apb.enr().modify(|_, w| w.$usartXen().enabled());
-                    apb.rstr().modify(|_, w| w.$usartXrst().reset());
-                    apb.rstr().modify(|_, w| w.$usartXrst().clear_bit());
-                }
-
                 fn clock(clocks: &Clocks) -> Hertz {
                     // Use the function created via another macro outside of this one,
                     // because the implementation is dependend on the type $USARTX.
@@ -1291,10 +1281,8 @@ macro_rules! usart {
                 $(
                     [<USART $X>]: (
                         [<usart $X en>],
-                        [<APB $APB>],
                         $INTERRUPT,
                         [<pclk $APB>],
-                        [<usart $X rst>],
                         [<usart $X sw>],
                         [<usart $X clock>]
                     ),
@@ -1402,10 +1390,8 @@ cfg_if::cfg_if! {
                         $(
                             [<UART $X>]: (
                                 [<uart $X en>],
-                                [<APB $APB>],
                                 $INTERRUPT,
                                 [<pclk $APB>],
-                                [<uart $X rst>],
                                 [<uart $X sw>],
                                 [<usart $X clock>]
                             ),
