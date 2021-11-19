@@ -1195,13 +1195,7 @@ pub trait Instance:
 macro_rules! usart {
     (
         $(
-            $USARTX:ident: (
-                $usartXen:ident,
-                $INTERRUPT:path,
-                $pclkX:ident,
-                $usartXsw:ident,
-                $usartXclock:ident
-            ),
+            $USARTX:ident: ($INTERRUPT:path),
         )+
     ) => {
         $(
@@ -1209,16 +1203,6 @@ macro_rules! usart {
                 type Interrupt = Interrupt;
                 const INTERRUPT: Interrupt = $INTERRUPT;
             }
-
-            impl Instance for $USARTX {
-                fn clock(clocks: &Clocks) -> Hertz {
-                    // Use the function created via another macro outside of this one,
-                    // because the implementation is dependend on the type $USARTX.
-                    // But macros can not differentiate between types.
-                    $usartXclock(clocks)
-                }
-            }
-
 
             impl<Tx, Rx> Serial<$USARTX, (Tx, Rx)>
                 where Tx: TxPin<$USARTX>, Rx: RxPin<$USARTX> {
@@ -1275,17 +1259,11 @@ macro_rules! usart {
         )+
     };
 
-    ([ $(($X:literal, $APB:literal, $INTERRUPT:path)),+ ]) => {
+    ([ $(($X:literal, $INTERRUPT:path)),+ ]) => {
         paste::paste! {
             usart!(
                 $(
-                    [<USART $X>]: (
-                        [<usart $X en>],
-                        $INTERRUPT,
-                        [<pclk $APB>],
-                        [<usart $X sw>],
-                        [<usart $X clock>]
-                    ),
+                    [<USART $X>]: ($INTERRUPT),
                 )+
             );
         }
@@ -1296,19 +1274,19 @@ macro_rules! usart {
 /// the only clock source can be the peripheral clock
 #[allow(unused_macros)]
 macro_rules! usart_static_clock {
-    ($($usartXclock:ident, $pclkX:ident),+) => {
+    ($($USARTX:ident),+) => {
         $(
-            /// Return the currently set source frequency the UART peripheral
-            /// depending on the clock source.
-            fn $usartXclock(clocks: &Clocks) -> Hertz {
-                clocks.$pclkX()
+            impl Instance for $USARTX {
+                fn clock(clocks: &Clocks) -> Hertz {
+                    <$USARTX as rcc::BusClock>::clock(clocks)
+                }
             }
         )+
     };
-    ([ $(($X:literal, $APB:literal)),+ ]) => {
+    ($($X:literal),+) => {
         paste::paste! {
             usart_static_clock!(
-                $([<usart $X clock>], [<pclk $APB>]),+
+                $([<USART $X>]),+
             );
         }
     };
@@ -1317,25 +1295,25 @@ macro_rules! usart_static_clock {
 /// Generates a clock function for UART Peripherals, where
 /// the clock source can vary.
 macro_rules! usart_var_clock {
-    ($($usartXclock:ident, $usartXsw:ident, $pclkX:ident),+) => {
+    ($($USARTX:ident, $usartXsw:ident),+) => {
         $(
-            /// Return the currently set source frequency for the UART peripheral
-            /// depending on the clock source.
-            fn $usartXclock(clocks: &Clocks) -> Hertz {
-                // NOTE(unsafe): atomic read with no side effects
-                match unsafe {(*RCC::ptr()).cfgr3.read().$usartXsw().variant()} {
-                    USART1SW_A::PCLK => clocks.$pclkX(),
-                    USART1SW_A::HSI => crate::rcc::HSI,
-                    USART1SW_A::SYSCLK => clocks.sysclk(),
-                    USART1SW_A::LSE => crate::rcc::LSE,
+            impl Instance for $USARTX {
+                fn clock(clocks: &Clocks) -> Hertz {
+                    // NOTE(unsafe): atomic read with no side effects
+                    match unsafe {(*RCC::ptr()).cfgr3.read().$usartXsw().variant()} {
+                        USART1SW_A::PCLK => <$USARTX as rcc::BusClock>::clock(clocks),
+                        USART1SW_A::HSI => crate::rcc::HSI,
+                        USART1SW_A::SYSCLK => clocks.sysclk(),
+                        USART1SW_A::LSE => crate::rcc::LSE,
+                    }
                 }
             }
         )+
     };
-    ([ $(($X:literal, $APB:literal)),+ ]) => {
+    ($($X:literal),+) => {
         paste::paste! {
             usart_var_clock!(
-                $([<usart $X clock>], [<usart $X sw>], [<pclk $APB>]),+
+                $([<USART $X>], [<usart $X sw>]),+
             );
         }
     };
@@ -1357,26 +1335,26 @@ cfg_if::cfg_if! {
     ))] {
         // USART1 is accessed through APB2,
         // but USART1SW_A::PCLK will connect its phy to PCLK1.
-        usart_var_clock!([(1,1)]);
+        usart_var_clock!(1);
         // These are uart peripherals, where the only clock source
         // is the PCLK (peripheral clock).
-        usart_static_clock!([(2,1), (3,1)]);
+        usart_static_clock!(2, 3);
     } else {
-        usart_var_clock!([(1, 2), (2, 1), (3, 1)]);
+        usart_var_clock!(1, 2, 3);
     }
 }
 
 #[cfg(not(feature = "svd-f373"))]
 usart!([
-    (1, 2, Interrupt::USART1_EXTI25),
-    (2, 1, Interrupt::USART2_EXTI26),
-    (3, 1, Interrupt::USART3_EXTI28)
+    (1, Interrupt::USART1_EXTI25),
+    (2, Interrupt::USART2_EXTI26),
+    (3, Interrupt::USART3_EXTI28)
 ]);
 #[cfg(feature = "svd-f373")]
 usart!([
-    (1, 2, Interrupt::USART1),
-    (2, 1, Interrupt::USART2),
-    (3, 1, Interrupt::USART3)
+    (1, Interrupt::USART1),
+    (2, Interrupt::USART2),
+    (3, Interrupt::USART3)
 ]);
 
 cfg_if::cfg_if! {
@@ -1384,17 +1362,11 @@ cfg_if::cfg_if! {
     if #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e"))] {
 
         macro_rules! uart {
-            ([ $(($X:literal, $APB:literal, $INTERRUPT:path)),+ ]) => {
+            ([ $(($X:literal, $INTERRUPT:path)),+ ]) => {
                 paste::paste! {
                     usart!(
                         $(
-                            [<UART $X>]: (
-                                [<uart $X en>],
-                                $INTERRUPT,
-                                [<pclk $APB>],
-                                [<uart $X sw>],
-                                [<usart $X clock>]
-                            ),
+                            [<UART $X>]: ($INTERRUPT),
                         )+
                     );
                 }
@@ -1402,17 +1374,17 @@ cfg_if::cfg_if! {
         }
 
         macro_rules! uart_var_clock {
-            ([ $(($X:literal, $APB:literal)),+ ]) => {
+            ($($X:literal),+) => {
                 paste::paste! {
                     usart_var_clock!(
-                        $([<usart $X clock>], [<uart $X sw>], [<pclk $APB>]),+
+                        $([<UART $X>], [<uart $X sw>]),+
                     );
                 }
             };
         }
 
-        uart_var_clock!([(4,1), (5,1)]);
-        uart!([(4,1, Interrupt::UART4_EXTI34), (5,1, Interrupt::UART5_EXTI35)]);
+        uart_var_clock!(4, 5);
+        uart!([(4, Interrupt::UART4_EXTI34), (5, Interrupt::UART5_EXTI35)]);
 
         impl Dma for UART4 {}
 

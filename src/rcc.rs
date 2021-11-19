@@ -226,6 +226,67 @@ pub trait Reset: RccBus {
     unsafe fn reset_unchecked();
 }
 
+/// Frequency on bus that peripheral is connected in
+pub trait BusClock {
+    /// Calculates frequency depending on `Clock` state
+    fn clock(clocks: &Clocks) -> Hertz;
+}
+
+impl<T> BusClock for T
+where
+    T: RccBus,
+    T::Bus: BusClock,
+{
+    fn clock(clocks: &Clocks) -> Hertz {
+        T::Bus::clock(clocks)
+    }
+}
+
+impl BusClock for AHB {
+    fn clock(clocks: &Clocks) -> Hertz {
+        clocks.hclk
+    }
+}
+impl BusClock for APB1 {
+    fn clock(clocks: &Clocks) -> Hertz {
+        clocks.pclk1
+    }
+}
+impl BusClock for APB2 {
+    fn clock(clocks: &Clocks) -> Hertz {
+        clocks.pclk2
+    }
+}
+
+/// Frequency on bus that timer is connected in
+pub trait BusTimerClock {
+    /// Calculates base frequency of timer depending on `Clock` state
+    fn timer_clock(clocks: &Clocks) -> Hertz;
+}
+
+impl<T> BusTimerClock for T
+where
+    T: RccBus,
+    T::Bus: BusTimerClock,
+{
+    fn timer_clock(clocks: &Clocks) -> Hertz {
+        T::Bus::timer_clock(clocks)
+    }
+}
+
+impl BusTimerClock for APB1 {
+    fn timer_clock(clocks: &Clocks) -> Hertz {
+        let pclk_mul = if clocks.ppre1 > 1 { 2 } else { 1 };
+        Hertz(clocks.pclk1.0 * pclk_mul)
+    }
+}
+impl BusTimerClock for APB2 {
+    fn timer_clock(clocks: &Clocks) -> Hertz {
+        let pclk_mul = if clocks.ppre2 > 1 { 2 } else { 1 };
+        Hertz(clocks.pclk2.0 * pclk_mul)
+    }
+}
+
 /// Frequency of interal hardware RC oscillator (HSI OSC)
 pub const HSI: Hertz = Hertz(8_000_000);
 /// Frequency of external 32.768 kHz oscillator (LSE OSC)
