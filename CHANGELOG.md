@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-No changes.
+- Add missing SPI impls for the `gpio-f303` device groups (e.g. stm32f303vc) ([#304])
 
 ## [v0.8.1] - 2021-10-27
 
@@ -483,6 +483,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#304]: https://github.com/stm32-rs/stm32f3xx-hal/pull/304
 [#291]: https://github.com/stm32-rs/stm32f3xx-hal/pull/291
 [#278]: https://github.com/stm32-rs/stm32f3xx-hal/pull/278
 [#277]: https://github.com/stm32-rs/stm32f3xx-hal/pull/277

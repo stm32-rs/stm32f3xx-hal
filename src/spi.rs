@@ -143,7 +143,7 @@ cfg_if::cfg_if! {
 cfg_if::cfg_if! {
     if #[cfg(all(
         not(feature = "stm32f301"),
-        any(feature = "gpio-f302", feature = "gpio-f303e"),
+        any(feature = "gpio-f302", feature = "gpio-f303", feature = "gpio-f303e"),
     ))] {
         impl SckPin<SPI3> for gpio::PB3<AF6<PushPull>> {}
         impl MisoPin<SPI3> for gpio::PB4<AF6<PushPull>> {}
