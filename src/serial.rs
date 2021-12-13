@@ -46,6 +46,7 @@ use cortex_m::interrupt;
 #[cfg_attr(feature = "enumset", derive(EnumSetType))]
 #[cfg_attr(not(feature = "enumset"), derive(Copy, Clone, PartialEq, Eq))]
 #[non_exhaustive]
+// TODO: Split up in transmission and reception events (RM0316 29.7)
 pub enum Event {
     /// Transmit data register empty / new data can be sent.
     ///
