@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   To disable that behavior, set `default-features = false`. ([#283])
 - The MSRV was bumped to 1.52 ([#283])
 - Update `stm32f3` pac to v0.14.0 ([#282])
-- Remove the `bxcan` re-export. ([#303])
+- Remove the `bxcan` re-export. ([#304])
 
 ## [v0.8.1] - 2021-10-27
 
@@ -505,7 +505,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
-[#303]: https://github.com/stm32-rs/stm32f3xx-hal/pull/303
+[#304]: https://github.com/stm32-rs/stm32f3xx-hal/pull/304
 [#302]: https://github.com/stm32-rs/stm32f3xx-hal/pull/302
 [#299]: https://github.com/stm32-rs/stm32f3xx-hal/pull/299
 [#291]: https://github.com/stm32-rs/stm32f3xx-hal/pull/291
