@@ -13,8 +13,8 @@ use hal::pac;
 use hal::prelude::*;
 use hal::watchdog::IndependentWatchDog;
 
-use hal::can::bxcan::filter::Mask32;
-use hal::can::bxcan::{Frame, StandardId};
+use bxcan::filter::Mask32;
+use bxcan::{Frame, StandardId};
 use hal::can::Can;
 use nb::block;
 

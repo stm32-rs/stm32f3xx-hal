@@ -6,13 +6,13 @@ use crate::pac::Interrupt;
 #[non_exhaustive]
 pub struct InterruptTypes {
     /// Break Interrupt
-    r#break: Interrupt,
+    pub r#break: Interrupt,
     /// Update Interrupt
-    update: Interrupt,
+    pub update: Interrupt,
     /// Trigger and communication Interrupt
-    trigger: Interrupt,
+    pub trigger: Interrupt,
     /// Capture and compare interupt
-    capture_compare: Interrupt,
+    pub capture_compare: Interrupt,
 }
 
 // FIXME: Use conditional feature compilation to make this compialble for all chip families.

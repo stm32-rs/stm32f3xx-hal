@@ -394,6 +394,9 @@ mod tests {
             unwrap!(nb::block!(serial.write(b'A')).ok());
         });
 
+        // FIXME: This test is sensitive to timing and the event might already be triggered by a
+        // previous transmission. (More details about IDLE event RM0316 29.8.1)
+        #[cfg(feature = "disabled")]
         trigger_event(Event::Idle, &mut serial, |serial| {
             // Note: The IDLE bit will not be set again until the RXNE bit has been set (i.e. a new
             // idle line occurs).

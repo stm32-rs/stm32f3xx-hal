@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `BusClock` and `BusTimerClock` traits ([#302])
 - `RccBus`, `Enable`, `Reset` traits and implementations for peripherals ([#299])
 - Support cortex-m-rt `v0.7.0` but still allow `v0.6.13` ([#283])
+- Add missing SPI impls for the `gpio-f303` device groups (e.g. stm32f303vc) ([#304])
+- Make timer `InterruptTypes` fields public to be useful. ([#304])
 
 ### Fixed
 
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   To disable that behavior, set `default-features = false`. ([#283])
 - The MSRV was bumped to 1.52 ([#283])
 - Update `stm32f3` pac to v0.14.0 ([#282])
+- Remove the `bxcan` re-export. ([#303])
 
 ## [v0.8.1] - 2021-10-27
 
@@ -502,6 +505,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#303]: https://github.com/stm32-rs/stm32f3xx-hal/pull/303
 [#302]: https://github.com/stm32-rs/stm32f3xx-hal/pull/302
 [#299]: https://github.com/stm32-rs/stm32f3xx-hal/pull/299
 [#291]: https://github.com/stm32-rs/stm32f3xx-hal/pull/291

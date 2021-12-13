@@ -17,7 +17,6 @@ use crate::pac;
 
 use crate::rcc::{Enable, Reset, APB1};
 
-pub use bxcan;
 use bxcan::RegisterBlock;
 
 use cfg_if::cfg_if;
@@ -55,12 +54,7 @@ where
     Tx: TxPin,
     Rx: RxPin,
 {
-    /// Create a new CAN instance, using the specified TX and RX pins.
-    ///
-    /// Note: this does not actually initialize the CAN bus.
-    /// You will need to first call [`bxcan::Can::new`] and  set the bus configuration and filters
-    /// before the peripheral can be enabled.
-    /// See the CAN example, for a more thorough example of the full setup process.
+    /// Create a new `bxcan::CAN` instance.
     pub fn new(can: pac::CAN, tx: Tx, rx: Rx, apb1: &mut APB1) -> bxcan::Can<Self> {
         pac::CAN::enable(apb1);
         pac::CAN::reset(apb1);
