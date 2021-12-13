@@ -351,6 +351,7 @@ pub struct BDCR {
 }
 
 impl BDCR {
+    #[allow(unused)]
     pub(crate) fn bdcr(&mut self) -> &rcc::BDCR {
         // NOTE(unsafe) this proxy grants exclusive access to this register
         unsafe { &(*RCC::ptr()).bdcr }
