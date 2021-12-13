@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   To disable that behavior, set `default-features = false`. ([#283])
 - The MSRV was bumped to 1.52 ([#283])
 - Update `stm32f3` pac to v0.14.0 ([#282])
+- Remove the `bxcan` re-export. ([#303])
 
 ## [v0.8.1] - 2021-10-27
 
