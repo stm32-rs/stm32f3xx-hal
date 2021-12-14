@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+No changes.
+
+## [v0.8.2] - 2021-12-14
+
 - Add missing SPI impls for the `gpio-f303` device groups (e.g. stm32f303vc) ([#304])
 
 ## [v0.8.1] - 2021-10-27
@@ -576,6 +580,7 @@ let clocks = rcc
 [#2]: https://github.com/stm32-rs/stm32f3xx-hal/pull/2
 
 <!-- cargo-release: latest tag -->
+[v0.8.2]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.2
 [v0.8.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.1
 [v0.8.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.0
 [v0.7.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.7.0

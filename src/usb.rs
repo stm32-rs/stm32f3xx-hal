@@ -6,7 +6,7 @@
 //!
 //! See [examples/usb_serial.rs] for a usage example.
 //!
-//! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.8.1/examples/usb_serial.rs
+//! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.8.2/examples/usb_serial.rs
 
 use core::fmt;
 
