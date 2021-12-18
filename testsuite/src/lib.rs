@@ -50,7 +50,5 @@ pub struct CrossSerialPair2<T1, T2>(pub PB10<T1>, pub PA3<T2>);
 /// This is used for SPI, where SPI3(TX) is connected to SPI3(RX)
 pub struct SpiPair<T>(pub PC10<T>, pub PC11<T>, pub PC12<T>);
 
-#[export_name = "main"]
-unsafe extern "C" fn __dummy_entry() -> ! {
-    defmt_test::export::exit()
-}
+#[defmt_test::tests]
+mod tests {}
