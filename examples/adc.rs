@@ -87,8 +87,8 @@ fn main() -> ! {
 
     // Set up pin PA0 as analog pin.
     // This pin is connected to the user button on the stm32f3discovery board.
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    let mut analog_pin = gpioa.pa0.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
+    let gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let mut analog_pin = gpioa.pa0.into_analog();
 
     let mut timer = timer::Timer::new(dp.TIM2, clocks, &mut rcc.apb1);
 

@@ -3,10 +3,11 @@
 use core::fmt;
 use core::ops::Deref;
 
-use crate::gpio::{marker, Pin};
 use crate::{
+    gpio::{marker, Pin},
     pac::SYSCFG,
     rcc::{Enable, APB2},
+    reg::modify_at,
 };
 
 /// Extension trait that constrains the `SYSCFG` peripheral
@@ -84,10 +85,10 @@ impl SysCfg {
         match pin.index.index() {
             // SAFETY: These are all unguarded writes directly to the register,
             // without leveraging the safety of stm32f3 generated values.
-            0..=3 => unsafe { crate::modify_at!(self.exticr1, BITWIDTH, index, extigpionr) },
-            4..=7 => unsafe { crate::modify_at!(self.exticr2, BITWIDTH, index, extigpionr) },
-            8..=11 => unsafe { crate::modify_at!(self.exticr3, BITWIDTH, index, extigpionr) },
-            12..=15 => unsafe { crate::modify_at!(self.exticr4, BITWIDTH, index, extigpionr) },
+            0..=3 => unsafe { modify_at!(self.exticr1, BITWIDTH, index, extigpionr) },
+            4..=7 => unsafe { modify_at!(self.exticr2, BITWIDTH, index, extigpionr) },
+            8..=11 => unsafe { modify_at!(self.exticr3, BITWIDTH, index, extigpionr) },
+            12..=15 => unsafe { modify_at!(self.exticr4, BITWIDTH, index, extigpionr) },
             _ => crate::unreachable!(),
         };
     }

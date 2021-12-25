@@ -131,12 +131,11 @@ fn get_port_pac_module(port: &Port, feature: &str) -> &'static str {
 fn gen_pin(pin: &gpio::Pin) -> Result<()> {
     let nr = pin.number()?;
     let reset_mode = get_pin_reset_mode(pin)?;
-    let afr = if nr < 8 { 'L' } else { 'H' };
     let af_numbers = get_pin_af_numbers(pin)?;
 
     println!(
-        "                {} => {{ reset: {}, afr: {}, af: {:?} }},",
-        nr, reset_mode, afr, af_numbers,
+        "                {} => {{ reset: {}, af: {:?} }},",
+        nr, reset_mode, af_numbers,
     );
 
     Ok(())

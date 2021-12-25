@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Deprecate `Toggle` enum and use `Switch` instead for better naming purposes
   ([#334])
   - Add `impl From<Toggle> for Switch` to reduce churn.
+- GPIO configuration functions no longer require registers as arguments ([#213])
+
+### Added
+
+- Implement `into_xxx` methods for erased pins ([#213])
 
 ## [v0.9.1] - 2022-09-07
 
@@ -617,6 +622,7 @@ let clocks = rcc
 [#220]: https://github.com/stm32-rs/stm32f3xx-hal/pull/220
 [#217]: https://github.com/stm32-rs/stm32f3xx-hal/pull/217
 [#216]: https://github.com/stm32-rs/stm32f3xx-hal/pull/216
+[#213]: https://github.com/stm32-rs/stm32f3xx-hal/pull/213
 [#212]: https://github.com/stm32-rs/stm32f3xx-hal/pull/212
 [#210]: https://github.com/stm32-rs/stm32f3xx-hal/pull/210
 [#208]: https://github.com/stm32-rs/stm32f3xx-hal/pull/208

@@ -33,11 +33,9 @@
        let dp = pac::Peripherals::take().unwrap();
 
        let mut rcc = dp.RCC.constrain();
-       let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
+       let gpioe = dp.GPIOE.split(&mut rcc.ahb);
 
-       let mut led = gpioe
-             .pe13
-             .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+       let mut led = gpioe.pe13.into_push_pull_output();
 
        loop {
              led.toggle().unwrap();
@@ -136,26 +134,6 @@ pub use nb::block;
 
 pub use embedded_time as time;
 
-mod private {
-    /// Private sealed trait to seal all GPIO implementations
-    /// which do implement peripheral functionalities.
-    pub trait Sealed {}
-
-    /// Modify specific index of array-like register
-    macro_rules! modify_at {
-        ($reg:expr, $bitwidth:expr, $index:expr, $value:expr) => {
-            $reg.modify(|r, w| {
-                let mask = !(u32::MAX >> (32 - $bitwidth) << ($bitwidth * $index));
-                let value = $value << ($bitwidth * $index);
-                w.bits(r.bits() & mask | value)
-            })
-        };
-    }
-    pub(crate) use modify_at;
-}
-
-pub(crate) use private::{modify_at, Sealed};
-
 /// Peripheral access
 #[cfg(feature = "svd-f301")]
 pub use stm32f3::stm32f301 as pac;
@@ -217,6 +195,16 @@ pub mod timer;
 #[cfg_attr(docsrs, doc(cfg(feature = "usb")))]
 pub mod usb;
 pub mod watchdog;
+
+pub(crate) mod reg;
+
+mod private {
+    /// Private sealed trait to seal all GPIO implementations
+    /// which do implement peripheral functionalities.
+    pub trait Sealed {}
+}
+
+pub(crate) use private::Sealed;
 
 cfg_if! {
     if #[cfg(feature = "defmt")] {

@@ -31,41 +31,21 @@ fn main() -> ! {
     let clocks = rcc.cfgr.sysclk(16.MHz()).freeze(&mut flash.acr);
 
     // Prep the pins we need in their correct alternate function
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    let pa4 = gpioa
-        .pa4
-        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let pa6 = gpioa
-        .pa6
-        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
-    let pa7 = gpioa
-        .pa7
-        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let pa4 = gpioa.pa4.into_af_push_pull();
+    let pa6 = gpioa.pa6.into_af_push_pull();
+    let pa7 = gpioa.pa7.into_af_push_pull();
 
-    let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
-    let pb0 = gpiob
-        .pb0
-        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
-    let pb1 = gpiob
-        .pb1
-        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
-    let pb4 = gpiob
-        .pb4
-        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
-    let pb5 = gpiob
-        .pb5
-        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
-    let pb8 = gpiob
-        .pb8
-        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh);
-    let pb10 = gpiob
-        .pb10
-        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh);
+    let gpiob = dp.GPIOB.split(&mut rcc.ahb);
+    let pb0 = gpiob.pb0.into_af_push_pull();
+    let pb1 = gpiob.pb1.into_af_push_pull();
+    let pb4 = gpiob.pb4.into_af_push_pull();
+    let pb5 = gpiob.pb5.into_af_push_pull();
+    let pb8 = gpiob.pb8.into_af_push_pull();
+    let pb10 = gpiob.pb10.into_af_push_pull();
 
-    let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
-    let pc10 = gpioc
-        .pc10
-        .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+    let gpioc = dp.GPIOC.split(&mut rcc.ahb);
+    let pc10 = gpioc.pc10.into_af_push_pull();
 
     // TIM3
     //
@@ -114,7 +94,7 @@ fn main() -> ! {
     // from the channel.
     //
     // DOES NOT COMPILE
-    // pb0.into_af15(&mut gpiob.moder, &mut gpiob.afrl);
+    // pb0.into_af15();
 
     // TIM2
     //
@@ -167,7 +147,7 @@ fn main() -> ! {
     // use).
     //
     // DOES NOT COMPILE
-    // tim8_ch1.output_to_pc6(gpioc.pc6.into_af4(&mut gpioc.moder, &mut gpioc.afrl));
+    // tim8_ch1.output_to_pc6(gpioc.pc6.into_af4());
 
     loop {
         asm::wfi();

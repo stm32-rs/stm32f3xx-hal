@@ -47,18 +47,12 @@ mod tests {
             .sysclk(72.MHz())
             .freeze(&mut flash.acr);
 
-        let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
+        let gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
         let spi_pins = SpiPair {
-            0: gpioc
-                .pc10
-                .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh),
-            1: gpioc
-                .pc11
-                .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh),
-            2: gpioc
-                .pc12
-                .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh),
+            0: gpioc.pc10.into_af_push_pull(),
+            1: gpioc.pc11.into_af_push_pull(),
+            2: gpioc.pc12.into_af_push_pull(),
         };
 
         let spi = Spi::new(

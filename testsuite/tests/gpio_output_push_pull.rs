@@ -25,15 +25,11 @@ mod tests {
         let dp = unwrap!(hal::pac::Peripherals::take());
 
         let mut rcc = dp.RCC.constrain();
-        let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
+        let gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
         let pair = GenericPair {
-            0: gpioc
-                .pc0
-                .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr),
-            1: gpioc
-                .pc1
-                .into_push_pull_output(&mut gpioc.moder, &mut gpioc.otyper),
+            0: gpioc.pc0.into_floating_input(),
+            1: gpioc.pc1.into_push_pull_output(),
         };
 
         super::State {
