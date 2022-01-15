@@ -663,6 +663,44 @@ where
     }
 }
 
+impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
+where
+    Gpio: marker::GpioStatic,
+    Index: marker::Index,
+{
+    /// Configures the pin to operate as an alternate function push-pull output pin
+    pub fn into_af_push_pull<const A: u8>(
+        self,
+        moder: &mut Gpio::MODER,
+        otyper: &mut Gpio::OTYPER,
+        afr: &mut <Self as marker::IntoAf<A>>::AFR,
+    ) -> Pin<Gpio, Index, Alternate<PushPull, A>>
+    where
+        Self: marker::IntoAf<A>,
+    {
+        moder.alternate(self.index.index());
+        otyper.push_pull(self.index.index());
+        afr.afx(self.index.index(), A);
+        self.into_mode()
+    }
+
+    /// Configures the pin to operate as an alternate function open-drain output pin
+    pub fn into_af_open_drain<const A: u8>(
+        self,
+        moder: &mut Gpio::MODER,
+        otyper: &mut Gpio::OTYPER,
+        afr: &mut <Self as marker::IntoAf<A>>::AFR,
+    ) -> Pin<Gpio, Index, Alternate<OpenDrain, A>>
+    where
+        Self: marker::IntoAf<A>,
+    {
+        moder.alternate(self.index.index());
+        otyper.open_drain(self.index.index());
+        afr.afx(self.index.index(), A);
+        self.into_mode()
+    }
+}
+
 macro_rules! af {
     ($i:literal, $AFi:ident, $into_afi_push_pull:ident, $into_afi_open_drain:ident) => {
         paste::paste! {
@@ -683,10 +721,7 @@ macro_rules! af {
                 otyper: &mut Gpio::OTYPER,
                 afr: &mut <Self as marker::IntoAf<$i>>::AFR,
             ) -> Pin<Gpio, Index, $AFi<PushPull>> {
-                moder.alternate(self.index.index());
-                otyper.push_pull(self.index.index());
-                afr.afx(self.index.index(), $i);
-                self.into_mode()
+                self.into_af_push_pull::<$i>(moder, otyper, afr)
             }
 
             /// Configures the pin to operate as an alternate function open-drain output pin
@@ -696,10 +731,7 @@ macro_rules! af {
                 otyper: &mut Gpio::OTYPER,
                 afr: &mut <Self as marker::IntoAf<$i>>::AFR,
             ) -> Pin<Gpio, Index, $AFi<OpenDrain>> {
-                moder.alternate(self.index.index());
-                otyper.open_drain(self.index.index());
-                afr.afx(self.index.index(), $i);
-                self.into_mode()
+                self.into_af_open_drain::<$i>(moder, otyper, afr)
             }
         }
     };
