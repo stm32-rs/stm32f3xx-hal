@@ -159,21 +159,11 @@ pub mod marker {
     /// Marker trait for active pin modes
     pub trait Active {}
 
-    macro_rules! af_marker_trait {
-        ([$($i:literal),+ $(,)?]) => {
-            paste::paste! {
-                $(
-                    #[doc = "Marker trait for pins with alternate function " $i " mapping"]
-                    pub trait [<IntoAf $i>] {
-                        /// Associated AFR register
-                        type AFR: super::Afr;
-                    }
-                )+
-            }
-        };
+    /// Marker trait for pins with alternate function `A` mapping
+    pub trait IntoAf<const A: u8> {
+        /// Associated AFR register
+        type AFR: super::Afr;
     }
-
-    af_marker_trait!([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 }
 
 /// Runtime defined GPIO port (type state)
@@ -674,7 +664,7 @@ where
 }
 
 macro_rules! af {
-    ($i:literal, $AFi:ident, $IntoAfi:ident, $into_afi_push_pull:ident, $into_afi_open_drain:ident) => {
+    ($i:literal, $AFi:ident, $into_afi_push_pull:ident, $into_afi_open_drain:ident) => {
         paste::paste! {
             #[doc = "Alternate function " $i " (type state)"]
             pub type $AFi<Otype> = Alternate<Otype, $i>;
@@ -682,7 +672,7 @@ macro_rules! af {
 
         impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
         where
-            Self: marker::$IntoAfi,
+            Self: marker::IntoAf<$i>,
             Gpio: marker::GpioStatic,
             Index: marker::Index,
         {
@@ -691,7 +681,7 @@ macro_rules! af {
                 self,
                 moder: &mut Gpio::MODER,
                 otyper: &mut Gpio::OTYPER,
-                afr: &mut <Self as marker::$IntoAfi>::AFR,
+                afr: &mut <Self as marker::IntoAf<$i>>::AFR,
             ) -> Pin<Gpio, Index, $AFi<PushPull>> {
                 moder.alternate(self.index.index());
                 otyper.push_pull(self.index.index());
@@ -704,7 +694,7 @@ macro_rules! af {
                 self,
                 moder: &mut Gpio::MODER,
                 otyper: &mut Gpio::OTYPER,
-                afr: &mut <Self as marker::$IntoAfi>::AFR,
+                afr: &mut <Self as marker::IntoAf<$i>>::AFR,
             ) -> Pin<Gpio, Index, $AFi<OpenDrain>> {
                 moder.alternate(self.index.index());
                 otyper.open_drain(self.index.index());
@@ -717,7 +707,7 @@ macro_rules! af {
     ([$($i:literal),+ $(,)?]) => {
         paste::paste! {
             $(
-                af!($i, [<AF $i>], [<IntoAf $i>],  [<into_af $i _push_pull>],  [<into_af $i _open_drain>]);
+                af!($i, [<AF $i>],  [<into_af $i _push_pull>],  [<into_af $i _open_drain>]);
             )+
         }
     };
@@ -787,7 +777,7 @@ macro_rules! gpio {
         partially_erased_pin: $PXx:ident,
         pins: [$(
             $i:literal => (
-                $PXi:ident, $pxi:ident, $MODE:ty, $AFR:ident, [$($IntoAfi:ident),*],
+                $PXi:ident, $pxi:ident, $MODE:ty, $AFR:ident, [$($af:literal),*],
             ),
         )+],
     }) => {
@@ -825,7 +815,7 @@ macro_rules! gpio {
                 pub type $PXi<Mode> = Pin<$Gpiox, U<$i>, Mode>;
 
                 $(
-                    impl<Mode> marker::$IntoAfi for $PXi<Mode> {
+                    impl<Mode> marker::IntoAf<$af> for $PXi<Mode> {
                         type AFR = $gpiox::$AFR;
                     }
                 )*
@@ -1003,7 +993,7 @@ macro_rules! gpio {
                     partially_erased_pin: [<P $X x>],
                     pins: [$(
                         $i => (
-                            [<P $X $i>], [<p $x $i>], $MODE, [<AFR $LH>], [$([<IntoAf $af>]),*],
+                            [<P $X $i>], [<p $x $i>], $MODE, [<AFR $LH>], [$($af),*],
                         ),
                     )+],
                 });
