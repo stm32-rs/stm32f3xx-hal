@@ -19,7 +19,7 @@ exclude = [
     ".markdownlint.yml"
 ]
 resolver = "2"
-rust-version = "1.52"
+rust-version = "1.54"
 
 [workspace]
 members = [

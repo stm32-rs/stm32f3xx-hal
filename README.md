@@ -4,7 +4,7 @@
 [![Crate](https://img.shields.io/crates/v/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
 [![Docs](https://docs.rs/stm32f3xx-hal/badge.svg)](https://docs.rs/stm32f3xx-hal)
 [![Crates.io](https://img.shields.io/crates/d/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
-![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.52+-blue.svg)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.54+-blue.svg)
 
 `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
 peripheral access API for the STMicro STM32F3 series microcontrollers. The
@@ -139,7 +139,7 @@ See the [examples folder](examples) for more example programs.
 
 ## Minimum Supported Rust Version (MSRV)
 
-This crate is guaranteed to compile on stable Rust 1.52.0 and up. It *might*
+This crate is guaranteed to compile on stable Rust 1.54.0 and up. It *might*
 compile with older versions but that may change in any new patch release.
 
 <!-- This should not prevent anyone to use newer features. -->
