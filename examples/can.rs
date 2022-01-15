@@ -43,21 +43,20 @@ fn main() -> ! {
     // Configure CAN RX and TX pins (AF9)
     let rx = gpioa
         .pa11
-        .into_af9_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
     let tx = gpioa
         .pa12
-        .into_af9_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     // Initialize the CAN peripheral
-    let mut can = Can::new(dp.CAN, tx, rx, &mut rcc.apb1);
-
     // Use loopback mode: No pins need to be assigned to peripheral.
     // APB1 (PCLK1): 64MHz, Bit rate: 500kBit/s, Sample Point 87.5%
     // Value was calculated with http://www.bittiming.can-wiki.info/
-    can.modify_config()
+    let mut can = bxcan::Can::builder(Can::new(dp.CAN, tx, rx, &mut rcc.apb1))
         .set_bit_timing(0x001c_0003)
         .set_loopback(false)
-        .set_silent(false);
+        .set_silent(false)
+        .leave_disabled();
 
     let mut filters = can.modify_filters();
 
@@ -67,7 +66,7 @@ fn main() -> ! {
     drop(filters);
 
     // Sync to the bus and start normal operation.
-    block!(can.enable()).ok();
+    block!(can.enable_non_blocking()).ok();
 
     let mut led0 = gpiob
         .pb15

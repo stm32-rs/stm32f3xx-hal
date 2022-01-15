@@ -53,11 +53,10 @@ fn main() -> ! {
     usb_dp.set_low().ok();
     delay(clocks.sysclk().0 / 100);
 
-    let usb_dm =
-        gpioa
-            .pa11
-            .into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let usb_dp = usb_dp.into_af14_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let usb_dm = gpioa
+        .pa11
+        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let usb_dp = usb_dp.into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
 
     let usb = Peripheral {
         usb: dp.USB,

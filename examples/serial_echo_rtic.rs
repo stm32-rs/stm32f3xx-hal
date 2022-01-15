@@ -69,14 +69,14 @@ mod app {
                 // configure this pin to make use of its `USART1_TX` alternative function
                 // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
                 //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
-                .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
             gpioa
                 // Rx pin
                 .pa10
                 // configure this pin to make use of its `USART1_RX` alternative function
                 // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
                 //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
-                .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
         );
         pins.1.internal_pull_up(&mut gpioa.pupdr, true);
         let mut serial: SerialType =

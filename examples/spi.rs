@@ -32,13 +32,13 @@ fn main() -> ! {
     // Configure pins for SPI
     let sck = gpioc
         .pc10
-        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+        .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
     let miso = gpioc
         .pc11
-        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+        .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
     let mosi = gpioc
         .pc12
-        .into_af6_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+        .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
 
     let mut spi = Spi::new(dp.SPI3, (sck, miso, mosi), 3.MHz(), clocks, &mut rcc.apb1);
 
