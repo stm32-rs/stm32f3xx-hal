@@ -31,11 +31,11 @@ fn main() -> ! {
     let mut scl =
         gpiob
             .pb6
-            .into_af4_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+            .into_af_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
     let mut sda =
         gpiob
             .pb7
-            .into_af4_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+            .into_af_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
     scl.internal_pull_up(&mut gpiob.pupdr, true);
     sda.internal_pull_up(&mut gpiob.pupdr, true);
     let mut i2c = hal::i2c::I2c::new(

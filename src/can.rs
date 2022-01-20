@@ -55,11 +55,11 @@ where
     Rx: RxPin,
 {
     /// Create a new `bxcan::CAN` instance.
-    pub fn new(can: pac::CAN, tx: Tx, rx: Rx, apb1: &mut APB1) -> bxcan::Can<Self> {
+    pub fn new(can: pac::CAN, tx: Tx, rx: Rx, apb1: &mut APB1) -> Self {
         pac::CAN::enable(apb1);
         pac::CAN::reset(apb1);
 
-        bxcan::Can::builder(Can { can, tx, rx }).enable()
+        Can { can, tx, rx }
     }
 
     /// Releases the CAN peripheral and associated pins

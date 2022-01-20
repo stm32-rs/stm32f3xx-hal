@@ -159,21 +159,11 @@ pub mod marker {
     /// Marker trait for active pin modes
     pub trait Active {}
 
-    macro_rules! af_marker_trait {
-        ([$($i:literal),+ $(,)?]) => {
-            paste::paste! {
-                $(
-                    #[doc = "Marker trait for pins with alternate function " $i " mapping"]
-                    pub trait [<IntoAf $i>] {
-                        /// Associated AFR register
-                        type AFR: super::Afr;
-                    }
-                )+
-            }
-        };
+    /// Marker trait for pins with alternate function `A` mapping
+    pub trait IntoAf<const A: u8> {
+        /// Associated AFR register
+        type AFR: super::Afr;
     }
-
-    af_marker_trait!([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
 }
 
 /// Runtime defined GPIO port (type state)
@@ -673,43 +663,75 @@ where
     }
 }
 
+impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
+where
+    Gpio: marker::GpioStatic,
+    Index: marker::Index,
+{
+    /// Configures the pin to operate as an alternate function push-pull output pin
+    pub fn into_af_push_pull<const A: u8>(
+        self,
+        moder: &mut Gpio::MODER,
+        otyper: &mut Gpio::OTYPER,
+        afr: &mut <Self as marker::IntoAf<A>>::AFR,
+    ) -> Pin<Gpio, Index, Alternate<PushPull, A>>
+    where
+        Self: marker::IntoAf<A>,
+    {
+        moder.alternate(self.index.index());
+        otyper.push_pull(self.index.index());
+        afr.afx(self.index.index(), A);
+        self.into_mode()
+    }
+
+    /// Configures the pin to operate as an alternate function open-drain output pin
+    pub fn into_af_open_drain<const A: u8>(
+        self,
+        moder: &mut Gpio::MODER,
+        otyper: &mut Gpio::OTYPER,
+        afr: &mut <Self as marker::IntoAf<A>>::AFR,
+    ) -> Pin<Gpio, Index, Alternate<OpenDrain, A>>
+    where
+        Self: marker::IntoAf<A>,
+    {
+        moder.alternate(self.index.index());
+        otyper.open_drain(self.index.index());
+        afr.afx(self.index.index(), A);
+        self.into_mode()
+    }
+}
+
 macro_rules! af {
-    ($i:literal, $AFi:ident, $IntoAfi:ident, $into_afi_push_pull:ident, $into_afi_open_drain:ident) => {
-        paste::paste! {
-            #[doc = "Alternate function " $i " (type state)"]
-            pub type $AFi<Otype> = Alternate<Otype, $i>;
-        }
+    ($i:literal, $AFi:ident, $into_afi_push_pull:ident, $into_afi_open_drain:ident) => {
+        #[doc = concat!("Alternate function ", $i, " (type state)" )]
+        pub type $AFi<Otype> = Alternate<Otype, $i>;
 
         impl<Gpio, Index, Mode> Pin<Gpio, Index, Mode>
         where
-            Self: marker::$IntoAfi,
+            Self: marker::IntoAf<$i>,
             Gpio: marker::GpioStatic,
             Index: marker::Index,
         {
             /// Configures the pin to operate as an alternate function push-pull output pin
+            #[deprecated(since = "0.9.0", note = "Will be removed with the next version. Use `info_af_push_pull()` instead")]
             pub fn $into_afi_push_pull(
                 self,
                 moder: &mut Gpio::MODER,
                 otyper: &mut Gpio::OTYPER,
-                afr: &mut <Self as marker::$IntoAfi>::AFR,
+                afr: &mut <Self as marker::IntoAf<$i>>::AFR,
             ) -> Pin<Gpio, Index, $AFi<PushPull>> {
-                moder.alternate(self.index.index());
-                otyper.push_pull(self.index.index());
-                afr.afx(self.index.index(), $i);
-                self.into_mode()
+                self.into_af_push_pull::<$i>(moder, otyper, afr)
             }
 
             /// Configures the pin to operate as an alternate function open-drain output pin
+            #[deprecated(since = "0.9.0", note = "Will be removed with the next version. Use `info_af_open_drain()` instead")]
             pub fn $into_afi_open_drain(
                 self,
                 moder: &mut Gpio::MODER,
                 otyper: &mut Gpio::OTYPER,
-                afr: &mut <Self as marker::$IntoAfi>::AFR,
+                afr: &mut <Self as marker::IntoAf<$i>>::AFR,
             ) -> Pin<Gpio, Index, $AFi<OpenDrain>> {
-                moder.alternate(self.index.index());
-                otyper.open_drain(self.index.index());
-                afr.afx(self.index.index(), $i);
-                self.into_mode()
+                self.into_af_open_drain::<$i>(moder, otyper, afr)
             }
         }
     };
@@ -717,7 +739,7 @@ macro_rules! af {
     ([$($i:literal),+ $(,)?]) => {
         paste::paste! {
             $(
-                af!($i, [<AF $i>], [<IntoAf $i>],  [<into_af $i _push_pull>],  [<into_af $i _open_drain>]);
+                af!($i, [<AF $i>],  [<into_af $i _push_pull>],  [<into_af $i _open_drain>]);
             )+
         }
     };
@@ -781,196 +803,194 @@ macro_rules! gpio {
     ({
         GPIO: $GPIOX:ident,
         gpio: $gpiox:ident,
-        Gpio: $Gpiox:ty,
+        Gpio: $Gpiox:ident,
         port_index: $port_index:literal,
         gpio_mapped: $gpioy:ident,
         partially_erased_pin: $PXx:ident,
         pins: [$(
             $i:literal => (
-                $PXi:ident, $pxi:ident, $MODE:ty, $AFR:ident, [$($IntoAfi:ident),*],
+                $PXi:ident, $pxi:ident, $MODE:ty, $AFR:ident, [$($af:literal),*],
             ),
         )+],
     }) => {
-        paste::paste! {
-            #[doc = "GPIO port " $GPIOX " (type state)"]
-            #[derive(Debug)]
-            #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-            pub struct $Gpiox;
+        #[doc = concat!("GPIO port ", stringify!($GPIOX), " (type state)")]
+        #[derive(Debug)]
+        #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+        pub struct $Gpiox;
 
-            impl private::Gpio for $Gpiox {
-                type Reg = crate::pac::$gpioy::RegisterBlock;
+        impl private::Gpio for $Gpiox {
+            type Reg = crate::pac::$gpioy::RegisterBlock;
 
-                #[inline(always)]
-                fn ptr(&self) -> *const Self::Reg {
-                    crate::pac::$GPIOX::ptr()
-                }
-
-                #[inline(always)]
-                fn port_index(&self) -> u8 {
-                    $port_index
-                }
+            #[inline(always)]
+            fn ptr(&self) -> *const Self::Reg {
+                crate::pac::$GPIOX::ptr()
             }
 
-            impl marker::Gpio for $Gpiox {}
-
-            impl marker::GpioStatic for $Gpiox {
-                type MODER = $gpiox::MODER;
-                type OTYPER = $gpiox::OTYPER;
-                type OSPEEDR = $gpiox::OSPEEDR;
-                type PUPDR = $gpiox::PUPDR;
+            #[inline(always)]
+            fn port_index(&self) -> u8 {
+                $port_index
             }
+        }
+
+        impl marker::Gpio for $Gpiox {}
+
+        impl marker::GpioStatic for $Gpiox {
+            type MODER = $gpiox::MODER;
+            type OTYPER = $gpiox::OTYPER;
+            type OSPEEDR = $gpiox::OSPEEDR;
+            type PUPDR = $gpiox::PUPDR;
+        }
+
+        $(
+            #[doc = concat!("Pin ", stringify!($PXi))]
+            pub type $PXi<Mode> = Pin<$Gpiox, U<$i>, Mode>;
 
             $(
-                #[doc = "Pin " $PXi]
-                pub type $PXi<Mode> = Pin<$Gpiox, U<$i>, Mode>;
+                impl<Mode> marker::IntoAf<$af> for $PXi<Mode> {
+                    type AFR = $gpiox::$AFR;
+                }
+            )*
+        )+
 
+        #[doc = concat!("Partially erased pin for ", stringify!($GPIOX))]
+        pub type $PXx<Mode> = Pin<$Gpiox, Ux, Mode>;
+
+        #[doc = concat!("All Pins and associated registers for GPIO port ", stringify!($GPIOX))]
+        pub mod $gpiox {
+            use core::marker::PhantomData;
+
+            use crate::{
+                pac::{$gpioy, $GPIOX},
+                rcc::{AHB, Enable, Reset},
+            };
+
+            use super::{Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pupdr, U};
+
+            #[allow(unused_imports)]
+            use super::{
+                Input, Output, Analog, PushPull, OpenDrain,
+                AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF13, AF14, AF15,
+            };
+
+            pub use super::{
+                $PXx,
                 $(
-                    impl<Mode> marker::$IntoAfi for $PXi<Mode> {
-                        type AFR = $gpiox::$AFR;
-                    }
-                )*
-            )+
+                    $PXi,
+                )+
+            };
 
-            #[doc = "Partially erased pin for " $GPIOX]
-            pub type $PXx<Mode> = Pin<$Gpiox, Ux, Mode>;
-
-            #[doc = "All Pins and associated registers for GPIO port " $GPIOX]
-            pub mod $gpiox {
-                use core::marker::PhantomData;
-
-                use crate::{
-                    pac::{$gpioy, $GPIOX},
-                    rcc::{AHB, Enable, Reset},
-                };
-
-                use super::{Afr, $Gpiox, GpioExt, Moder, Ospeedr, Otyper, Pupdr, U};
-
-                #[allow(unused_imports)]
-                use super::{
-                    Input, Output, Analog, PushPull, OpenDrain,
-                    AF0, AF1, AF2, AF3, AF4, AF5, AF6, AF7, AF8, AF9, AF10, AF11, AF12, AF13, AF14, AF15,
-                };
-
-                pub use super::{
-                    $PXx,
-                    $(
-                        $PXi,
-                    )+
-                };
-
-                /// GPIO parts
-                pub struct Parts {
-                    /// Opaque AFRH register
-                    pub afrh: AFRH,
-                    /// Opaque AFRL register
-                    pub afrl: AFRL,
-                    /// Opaque MODER register
-                    pub moder: MODER,
-                    /// Opaque OSPEEDR register
-                    pub ospeedr: OSPEEDR,
-                    /// Opaque OTYPER register
-                    pub otyper: OTYPER,
-                    /// Opaque PUPDR register
-                    pub pupdr: PUPDR,
-                    $(
-                        #[doc = "Pin " $PXi]
-                        pub $pxi: $PXi<$MODE>,
-                    )+
-                }
-
-                impl GpioExt for $GPIOX {
-                    type Parts = Parts;
-
-                    fn split(self, ahb: &mut AHB) -> Parts {
-                        <$GPIOX>::enable(ahb);
-                        <$GPIOX>::reset(ahb);
-
-                        Parts {
-                            afrh: AFRH(()),
-                            afrl: AFRL(()),
-                            moder: MODER(()),
-                            ospeedr: OSPEEDR(()),
-                            otyper: OTYPER(()),
-                            pupdr: PUPDR(()),
-                            $(
-                                $pxi: $PXi {
-                                    gpio: $Gpiox,
-                                    index: U::<$i>,
-                                    _mode: PhantomData,
-                                },
-                            )+
-                        }
-                    }
-                }
-
+            /// GPIO parts
+            pub struct Parts {
                 /// Opaque AFRH register
-                pub struct AFRH(());
-
-                impl Afr for AFRH {
-                    #[inline]
-                    fn afx(&mut self, i: u8, x: u8) {
-                        const BITWIDTH: u8 = 4;
-                        unsafe { crate::modify_at!((*$GPIOX::ptr()).afrh, BITWIDTH, i - 8, x as u32) };
-                    }
-                }
-
+                pub afrh: AFRH,
                 /// Opaque AFRL register
-                pub struct AFRL(());
-
-                impl Afr for AFRL {
-                    #[inline]
-                    fn afx(&mut self, i: u8, x: u8) {
-                        const BITWIDTH: u8 = 4;
-                        unsafe { crate::modify_at!((*$GPIOX::ptr()).afrl, BITWIDTH, i, x as u32) };
-                    }
-                }
-
+                pub afrl: AFRL,
                 /// Opaque MODER register
-                pub struct MODER(());
-
-                r_trait! {
-                    ($GPIOX, $gpioy::moder::MODER15_A, 2);
-                    impl Moder for MODER {
-                        fn input { INPUT }
-                        fn output { OUTPUT }
-                        fn alternate { ALTERNATE }
-                        fn analog { ANALOG }
-                    }
-                }
-
+                pub moder: MODER,
                 /// Opaque OSPEEDR register
-                pub struct OSPEEDR(());
-
-                r_trait! {
-                    ($GPIOX, $gpioy::ospeedr::OSPEEDR15_A, 2);
-                    impl Ospeedr for OSPEEDR {
-                        fn low { LOWSPEED }
-                        fn medium { MEDIUMSPEED }
-                        fn high { HIGHSPEED }
-                    }
-                }
-
+                pub ospeedr: OSPEEDR,
                 /// Opaque OTYPER register
-                pub struct OTYPER(());
+                pub otyper: OTYPER,
+                /// Opaque PUPDR register
+                pub pupdr: PUPDR,
+                $(
+                    #[doc = concat!("Pin ", stringify!($PXi))]
+                    pub $pxi: $PXi<$MODE>,
+                )+
+            }
 
-                r_trait! {
-                    ($GPIOX, $gpioy::otyper::OT15_A, 1);
-                    impl Otyper for OTYPER {
-                        fn push_pull { PUSHPULL }
-                        fn open_drain { OPENDRAIN }
+            impl GpioExt for $GPIOX {
+                type Parts = Parts;
+
+                fn split(self, ahb: &mut AHB) -> Parts {
+                    <$GPIOX>::enable(ahb);
+                    <$GPIOX>::reset(ahb);
+
+                    Parts {
+                        afrh: AFRH(()),
+                        afrl: AFRL(()),
+                        moder: MODER(()),
+                        ospeedr: OSPEEDR(()),
+                        otyper: OTYPER(()),
+                        pupdr: PUPDR(()),
+                        $(
+                            $pxi: $PXi {
+                                gpio: $Gpiox,
+                                index: U::<$i>,
+                                _mode: PhantomData,
+                            },
+                        )+
                     }
                 }
+            }
 
-                /// Opaque PUPDR register
-                pub struct PUPDR(());
+            /// Opaque AFRH register
+            pub struct AFRH(());
 
-                r_trait! {
-                    ($GPIOX, $gpioy::pupdr::PUPDR15_A, 2);
-                    impl Pupdr for PUPDR {
-                        fn floating { FLOATING }
-                        fn pull_up { PULLUP }
-                        fn pull_down { PULLDOWN }
-                    }
+            impl Afr for AFRH {
+                #[inline]
+                fn afx(&mut self, i: u8, x: u8) {
+                    const BITWIDTH: u8 = 4;
+                    unsafe { crate::modify_at!((*$GPIOX::ptr()).afrh, BITWIDTH, i - 8, x as u32) };
+                }
+            }
+
+            /// Opaque AFRL register
+            pub struct AFRL(());
+
+            impl Afr for AFRL {
+                #[inline]
+                fn afx(&mut self, i: u8, x: u8) {
+                    const BITWIDTH: u8 = 4;
+                    unsafe { crate::modify_at!((*$GPIOX::ptr()).afrl, BITWIDTH, i, x as u32) };
+                }
+            }
+
+            /// Opaque MODER register
+            pub struct MODER(());
+
+            r_trait! {
+                ($GPIOX, $gpioy::moder::MODER15_A, 2);
+                impl Moder for MODER {
+                    fn input { INPUT }
+                    fn output { OUTPUT }
+                    fn alternate { ALTERNATE }
+                    fn analog { ANALOG }
+                }
+            }
+
+            /// Opaque OSPEEDR register
+            pub struct OSPEEDR(());
+
+            r_trait! {
+                ($GPIOX, $gpioy::ospeedr::OSPEEDR15_A, 2);
+                impl Ospeedr for OSPEEDR {
+                    fn low { LOWSPEED }
+                    fn medium { MEDIUMSPEED }
+                    fn high { HIGHSPEED }
+                }
+            }
+
+            /// Opaque OTYPER register
+            pub struct OTYPER(());
+
+            r_trait! {
+                ($GPIOX, $gpioy::otyper::OT15_A, 1);
+                impl Otyper for OTYPER {
+                    fn push_pull { PUSHPULL }
+                    fn open_drain { OPENDRAIN }
+                }
+            }
+
+            /// Opaque PUPDR register
+            pub struct PUPDR(());
+
+            r_trait! {
+                ($GPIOX, $gpioy::pupdr::PUPDR15_A, 2);
+                impl Pupdr for PUPDR {
+                    fn floating { FLOATING }
+                    fn pull_up { PULLUP }
+                    fn pull_down { PULLDOWN }
                 }
             }
         }
@@ -1003,7 +1023,7 @@ macro_rules! gpio {
                     partially_erased_pin: [<P $X x>],
                     pins: [$(
                         $i => (
-                            [<P $X $i>], [<p $x $i>], $MODE, [<AFR $LH>], [$([<IntoAf $af>]),*],
+                            [<P $X $i>], [<p $x $i>], $MODE, [<AFR $LH>], [$($af),*],
                         ),
                     )+],
                 });
