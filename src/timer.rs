@@ -294,7 +294,7 @@ where
 /// Error if a [`Cancel`]-ble [`Timer`] was cancled already or never been started.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct AlreadyCancled;
+pub struct AlreadyCancled(pub(crate) ());
 
 impl<TIM> Cancel for Timer<TIM>
 where
@@ -304,7 +304,7 @@ where
     fn cancel(&mut self) -> Result<(), Self::Error> {
         // If timer is already stopped.
         if !self.tim.is_cr1_cen_set() {
-            return Err(AlreadyCancled);
+            return Err(AlreadyCancled(()));
         }
         self.stop();
         Ok(())
