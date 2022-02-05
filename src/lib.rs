@@ -259,6 +259,8 @@ cfg_if! {
 /// Convenience enum and wrapper around a bool, which more explicit about the intention to enable
 /// or disable something, in comparison to `true` or `false`.
 // TODO: Maybe move to some mod like "util"?
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Toggle {
     /// Toggle something on / enable a thing.
     On,
