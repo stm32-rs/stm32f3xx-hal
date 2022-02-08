@@ -205,3 +205,10 @@ jobs:
       uses: lycheeverse/lychee-action@v1.0.8
       with:
         args: --verbose --no-progress "**/*.md" "**/*.rs" "Cargo.toml" "**/Cargo.toml" -h accept=text/html
+
+  cargo-deny:
+    name: Cargo Deny
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: EmbarkStudios/cargo-deny-action@v1
