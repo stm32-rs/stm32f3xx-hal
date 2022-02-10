@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- The MSRV was bumped to 1.54 ([#308])
 - Generic `into_af_push_pull<A>` and `into_af_open_drain<A>` ([#308])
 - `BusClock` and `BusTimerClock` traits ([#302])
 - `RccBus`, `Enable`, `Reset` traits and implementations for peripherals ([#299])
@@ -35,7 +34,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   not needed. ([#283])
 - Enable `rt`, `usb`, `can`, `rtc` and `ld` feature by default.
   To disable that behavior, set `default-features = false`. ([#283])
-- The MSRV was bumped to 1.52 ([#283])
+- The MSRV was bumped to 1.54 ([#308])
 - Update `stm32f3` pac to v0.14.0 ([#282])
 - Remove the `bxcan` re-export. ([#304])
 
