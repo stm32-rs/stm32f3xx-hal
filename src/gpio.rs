@@ -713,7 +713,7 @@ macro_rules! af {
             Index: marker::Index,
         {
             /// Configures the pin to operate as an alternate function push-pull output pin
-            #[deprecated(since = "0.9.0", note = "Will be removed with the next version. Use `info_af_push_pull()` instead")]
+            #[deprecated(since = "0.9.0", note = "Will be removed with the next version. Use `into_af_push_pull()` instead")]
             pub fn $into_afi_push_pull(
                 self,
                 moder: &mut Gpio::MODER,
@@ -724,7 +724,7 @@ macro_rules! af {
             }
 
             /// Configures the pin to operate as an alternate function open-drain output pin
-            #[deprecated(since = "0.9.0", note = "Will be removed with the next version. Use `info_af_open_drain()` instead")]
+            #[deprecated(since = "0.9.0", note = "Will be removed with the next version. Use `into_af_open_drain()` instead")]
             pub fn $into_afi_open_drain(
                 self,
                 moder: &mut Gpio::MODER,

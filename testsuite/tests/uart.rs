@@ -121,26 +121,26 @@ mod tests {
         let serial_pair = SerialPair {
             0: gpioa
                 .pa9
-                .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
             1: gpioa
                 .pa10
-                .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
         };
         let cs_pair_1 = CrossSerialPair1 {
             0: gpioa
                 .pa2
-                .into_af7_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
+                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
             1: gpiob
                 .pb11
-                .into_af7_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
+                .into_af_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
         };
         let cs_pair_2 = CrossSerialPair2 {
             0: gpiob
                 .pb10
-                .into_af7_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
+                .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
             1: gpioa
                 .pa3
-                .into_af7_open_drain(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
+                .into_af_open_drain(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
         };
 
         let serial1 = Serial::new(
