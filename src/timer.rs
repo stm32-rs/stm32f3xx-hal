@@ -202,7 +202,7 @@ where
         events
     }
 
-    /// Check if an interrupt event happend.
+    /// Check if an interrupt event happened.
     pub fn is_event_triggered(&self, event: Event) -> bool {
         match event {
             Event::Update => self.tim.is_sr_uief_set(),
