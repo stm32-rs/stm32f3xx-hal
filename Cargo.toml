@@ -7,8 +7,8 @@ authors = [
 ]
 categories = ["embedded", "hardware-support", "no-std"]
 description = "Peripheral access API for STM32F3 series microcontrollers"
-keywords = ["arm", "cortex-m", "stm32f3xx", "hal"]
-license = "0BSD"
+keywords = ["arm", "cortex-m", "stm32", "stm32f3", "hal"]
+license = "MIT OR Apache-2.0"
 name = "stm32f3xx-hal"
 readme = "README.md"
 repository = "https://github.com/stm32-rs/stm32f3xx-hal"

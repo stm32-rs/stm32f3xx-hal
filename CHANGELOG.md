@@ -37,6 +37,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - The MSRV was bumped to 1.54 ([#308])
 - Update `stm32f3` pac to v0.14.0 ([#282])
 - Remove the `bxcan` re-export. ([#304])
+- The LICENSE has been changed from BSD 0-clause to the familiar dual license
+  MIT / Apache 2.0. This has been done, as this fits the ecosystem better and
+  the dependencies where using the MIT / Apache 2.0 dual licensing already,
+  which resulted into the situtation, that BSD 0-clause was not affectivly
+  0-clause as MIT conditions had to be met anyways. (🧂 IANAL). ([#309])
 
 ## [v0.8.2] - 2021-12-14
 
@@ -509,6 +514,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#309]: https://github.com/stm32-rs/stm32f3xx-hal/pull/309
 [#308]: https://github.com/stm32-rs/stm32f3xx-hal/pull/308
 [#304]: https://github.com/stm32-rs/stm32f3xx-hal/pull/304
 [#302]: https://github.com/stm32-rs/stm32f3xx-hal/pull/302
