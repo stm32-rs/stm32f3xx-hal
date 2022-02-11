@@ -3,8 +3,12 @@
 //! Abstractions of the internal timer peripherals
 //! The timer modules implements the [`CountDown`] and [`Periodic`] traits.
 //!
-//! [Read]: embedded_hal::timer::CountDown
-//! [Write]: embedded_hal::timer::Periodic
+//! ## Examples
+//!
+//! Check out [examples/adc.rs], where a [`Periodic`] timer is used to wake
+//! up the main-loop regularly.
+//!
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.8.1/examples/adc.rs
 
 use core::convert::{From, TryFrom};
 
