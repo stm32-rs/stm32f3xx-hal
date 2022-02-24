@@ -9,10 +9,10 @@
  HAL (meaning **H**ardware **A**bstraction **L**ayer) is a generic term used in many contexts,
  but in the specific context of this crate, it is meant to abstract away the control exposed
  by the devices "[peripheral access crate](`crate::pac`)" to simplify initialization routines,
- with a robust interface avoiding miss-configurations while still not abstracting to much away.
+ with a robust interface avoiding miss-configurations while still not abstracting away too much.
 
- Also this crate's goal is to integrate well with the rest of the rust embedded ecosystem,
- for example by implementing the [`embedded_hal`] traits or using crates, like [`embedded_time`],
+ Also, this crate's goal is to integrate well with the rest of the rust embedded ecosystem,
+ for example by implementing the [`embedded_hal`] traits or using crates like [`embedded_time`],
  or [`rtcc`].
 
  [stm]: https://www.st.com/en/microcontrollers-microprocessors/stm32f3-series.html
@@ -101,7 +101,7 @@
 
  Enable functions, which leverage [`enumset`](https://crates.io/crates/enumset).
  This is especially usefull to get all set status events at once,
- see for example [`crate::serial::Serial::triggered_events()`]
+ see for example [`serial::Serial::triggered_events()`]
 
  ### `defmt`
 
@@ -118,6 +118,7 @@
  [Application Setup]: https://defmt.ferrous-systems.com/setup-app.html
  [defmt]: https://github.com/knurling-rs/defmt
  [filter]: https://defmt.ferrous-systems.com/filtering.html
+ [`serial::Serial::triggered_events`]: `crate::serial::Serial::triggered_events`
 */
 #![no_std]
 #![allow(clippy::upper_case_acronyms)]
