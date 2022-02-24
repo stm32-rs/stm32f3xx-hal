@@ -102,6 +102,8 @@ pub struct Timer<TIM> {
 pub enum Event {
     /// Timer timed out / count down ended
     Update,
+    // CounterUnderflow,
+    // CounterOverflow,
 }
 
 impl<TIM> Timer<TIM>
@@ -109,6 +111,7 @@ where
     TIM: Instance,
 {
     /// Configures a TIM peripheral as a periodic count down timer
+    // TODO: CHange clocks to be a global variable
     pub fn new(tim: TIM, clocks: Clocks, apb: &mut <TIM as rcc::RccBus>::Bus) -> Self {
         TIM::enable(apb);
         TIM::reset(apb);
@@ -344,6 +347,9 @@ where
 /// based on [`crate::pac::tim6::RegisterBlock`].
 ///
 /// This is not meant to be used outside of this crate.
+// TODO: Maybe use transmute to create a real basic common register block
+// (e.g. pac::tim6::ReigsterBlock), as all blocks should be compatible to
+// each other ... (hopefully).
 pub trait CommonRegisterBlock: crate::private::Sealed {
     #[doc(hidden)]
     fn set_cr1_cen(&mut self, enable: bool);
@@ -581,4 +587,8 @@ cfg_if::cfg_if! {
         timer_static_clock!(2, 3, 6, 7, 15, 16, 17);
         timer_var_clock!(1);
     }
+}
+
+fn test(tim: pac::TIM16) {
+    let tim6: *const pac::tim6::RegisterBlock = unsafe {core::mem::transmute(pac::TIM16::ptr())};
 }
