@@ -597,7 +597,7 @@ fn test(tim: pac::TIM16) {
 
 struct BasicTimer<T> {
     _ptr: usize,
-    real_timer: PhantomData<T>,
+    real_timer: T,
 }
 
 impl<T> Deref for BasicTimer<T> {
@@ -613,7 +613,7 @@ impl From<pac::TIM6> for BasicTimer<pac::TIM6> {
     fn from(tim: pac::TIM6) -> Self {
         Self {
             _ptr: unsafe { pac::TIM6::ptr() as _ },
-            real_timer: PhantomData,
+            real_timer: tim,
         }
     }
 }
