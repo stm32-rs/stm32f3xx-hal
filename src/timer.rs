@@ -595,6 +595,8 @@ fn test(tim: pac::TIM16) {
     let tim6: *const pac::tim6::RegisterBlock = unsafe {core::mem::transmute(pac::TIM16::ptr())};
 }
 
+// TODO: Rename BasicTimer to BasicTimerPeripheral or similar to not be confusing
+// by the actual Timer??? or in general, this could replace the Timer implementation?
 struct BasicTimer<T> {
     _ptr: usize,
     real_timer: T,
