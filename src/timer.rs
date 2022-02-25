@@ -11,6 +11,8 @@
 //! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.0/examples/adc.rs
 
 use core::convert::{From, TryFrom};
+use core::marker::PhantomData;
+use core::ops::Deref;
 
 use crate::pac::{DCB, DWT};
 #[cfg(feature = "enumset")]
@@ -591,4 +593,46 @@ cfg_if::cfg_if! {
 
 fn test(tim: pac::TIM16) {
     let tim6: *const pac::tim6::RegisterBlock = unsafe {core::mem::transmute(pac::TIM16::ptr())};
+}
+
+struct BasicTimer<T> {
+    _ptr: usize,
+    real_timer: PhantomData<T>,
+}
+
+impl<T> Deref for BasicTimer<T> {
+    type Target = pac::tim6::RegisterBlock;
+
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*(self._ptr as *const Self::Target) }
+    }
+}
+
+impl From<pac::TIM6> for BasicTimer<pac::TIM6> {
+    fn from(tim: pac::TIM6) -> Self {
+        Self {
+            _ptr: unsafe { pac::TIM6::ptr() as _ },
+            real_timer: PhantomData,
+        }
+    }
+}
+
+impl<T> BasicTimer<T> {
+    pub fn free(self) -> T {
+        self.real_timer
+    }
+}
+
+// TODO: Is that trait needed, when we already have Into<BasicTimer>?
+pub trait BasicTimerInstance: Deref<Target = pac::tim6::RegisterBlock> {}
+impl<T> BasicTimerInstance for BasicTimer<T> {}
+
+fn test2<T>(tim: impl Into<BasicTimer<T>>) {
+    let tim: BasicTimer<T> = tim.into();
+    tim.cr1.read();
+}
+
+fn test3(tim: pac::TIM6) {
+    test2(tim);
 }
