@@ -177,6 +177,31 @@ where
         }
     }
 
+    /// Check if an interrupt is configured for the [`Event`]
+    #[inline]
+    pub fn is_interrupt_configured(&self, event: Event) -> bool {
+        match event {
+            Event::Update => self.tim.is_dier_uie_set(),
+        }
+    }
+
+    // TODO: Add to other implementations as well (Serial, ...)
+    /// Check which interrupts are enabled for all [`Event`]s
+    #[cfg(feature = "enumset")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
+    #[inline]
+    pub fn configured_interrupts(&mut self) -> EnumSet<Event> {
+        let mut events = EnumSet::new();
+
+        for event in EnumSet::<Event>::all().iter() {
+            if self.is_interrupt_configured(event) {
+                events |= event;
+            }
+        }
+
+        events
+    }
+
     /// Check if an interrupt event happend.
     pub fn is_event_triggered(&self, event: Event) -> bool {
         match event {
@@ -260,9 +285,9 @@ where
         self.tim.set_arr(arr);
 
         // Ensure that the below procedure does not create an unexpected interrupt.
-        let is_update_interrupt_active = self.tim.is_dier_uie_set();
+        let is_update_interrupt_active = self.is_interrupt_configured(Event::Update);
         if is_update_interrupt_active {
-            self.tim.set_dier_uie(false);
+            self.configure_interrupt(Event::Update, false);
         }
 
         // Trigger an update event to load the prescaler value to the clock The above line raises
@@ -272,7 +297,7 @@ where
         self.clear_event(Event::Update);
 
         if is_update_interrupt_active {
-            self.tim.set_dier_uie(true);
+            self.configure_interrupt(Event::Update, true)
         }
 
         // start counter

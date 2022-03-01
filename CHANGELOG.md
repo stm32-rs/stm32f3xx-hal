@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Make timer `InterruptTypes` fields public to be useful. ([#304])
 - Add support for the internal **signature** peripheral ([#281])
 - Add common derives to `Toggle`. ([#281])
+- Add `is_interrupt_configured` and `configured_interrupts` function to
+  `serial::Serial` and `timer::Timer`. ([#281])
 
 ### Fixed
 
