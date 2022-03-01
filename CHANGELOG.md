@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   0-clause as MIT conditions had to be met anyways. (🧂 IANAL). ([#309])
 - Renamed `Serial::raw_read` to `Serial::read_data_register`. ([#281])
 - Timer error type `AlreadyCancled` is no longer public constructable. ([#281])
+- Seal `FlashExt` and `RccExt` traits. These are no longer implementable by
+  a user of this crate. ([#281])
 - Move ADC from a macro to a generic implementation, meaning that
   it is possible to obtain an ADC instance via `Adc::new` instead of
   `Adc::adc1`. ([#281])

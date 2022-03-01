@@ -66,9 +66,17 @@ use core::convert::TryInto;
 use crate::flash::ACR;
 use crate::time::rate::*;
 
-/// Extension trait that constrains the `RCC` peripheral
-pub trait RccExt {
-    /// Constrains the `RCC` peripheral so it plays nicely with the other abstractions
+impl crate::private::Sealed for RCC {}
+
+/// Extension trait that constrains the []`RCC`] peripheral
+pub trait RccExt: crate::private::Sealed {
+    /// Constrains the [`RCC`] peripheral.
+    ///
+    /// Consumes the [`pac::RCC`] peripheral and converts it to a [`HAL`] internal type
+    /// constraining it's public access surface to fit the design of the `HAL`.
+    ///
+    /// [`pac::RCC`]: `crate::pac::RCC`
+    /// [`HAL`]: `crate`
     fn constrain(self) -> Rcc;
 }
 
@@ -88,9 +96,8 @@ impl RccExt for RCC {
 
 /// Constrained RCC peripheral
 ///
-/// An instance of this struct is acquired by calling the
-/// [`constrain`](RccExt::constrain) function on the
-/// [`RCC`](crate::pac::RCC) struct.
+/// An instance of this struct is acquired by calling the [`constrain`](RccExt::constrain) function
+/// on the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
