@@ -149,7 +149,8 @@ defmt-error = ["defmt"]
 # cargo build/run
 [profile.dev]
 debug = 2
-lto = true
+# Disabled until https://github.com/knurling-rs/defmt/issues/649 is fixed
+# lto = true
 
 # cargo test
 [profile.test]
@@ -159,7 +160,8 @@ opt-level = 3 # <-
 # cargo build/run --release
 [profile.release]
 debug = 2
-lto = true
+# Disabled until https://github.com/knurling-rs/defmt/issues/649 is fixed
+# lto = true
 opt-level = "s"
 
 # cargo test --release
