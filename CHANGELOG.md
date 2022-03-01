@@ -60,6 +60,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   and ADC2, which the old API did not resemble.
   - The API provides no clock configuration for ADC peripherals yet, but
   correctly acts upon changes done through the `pac`. ([#281])
+- Major rework of the ADC implementation: ([#281])
+  - Add `CommonAdc` support.
+  - Add internal sensor peripheral support like `TemeperaturSensor` and similar.
+  - Lift restriction of the ADC implementation for `stm32f303`, though
+  `stm32f373` is still not supported.
+  - Enable manual configuration of the Adc peripheral of most important features
+    - `ConversionMode`
+    - `Sequence` length
+    - `OverrunMode`
+    - etc.
+  - Leverage type states to:
+    - Allow a `Disabled` ADC, which can be manually calibrated.
+    - Allow a `OneShot` ADC implementation through `into_oneshot` with an
+    optimal configuration for the `OneShot` embedded-hal trait.
+  - Support every possible ADC channel.
+  - Add interrupt support.
 
 ## [v0.8.2] - 2021-12-14
 

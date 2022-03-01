@@ -180,8 +180,8 @@ pub use stm32f3::stm32f3x4 as pac;
 #[cfg_attr(docsrs, doc(cfg(feature = "rt")))]
 pub use crate::pac::interrupt;
 
-#[cfg(feature = "stm32f303")]
-#[cfg_attr(docsrs, doc(cfg(feature = "stm32f303")))]
+// TODO: Not yet supported for stm32f373 as this does not share a concept of a "shared ADC"
+#[cfg(not(feature = "svd-f373"))]
 pub mod adc;
 #[cfg(all(feature = "can", not(feature = "svd-f301")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "can")))]
@@ -293,3 +293,9 @@ impl From<bool> for Toggle {
         }
     }
 }
+
+/// A generic Error type for failable integer to enum conversions used
+/// in multiple occasions inside this crate.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct TryFromIntError(pub(crate) ());
