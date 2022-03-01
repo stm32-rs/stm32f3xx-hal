@@ -576,8 +576,13 @@ where
     /// the triggered events via [`Serial::triggered_events`].
     ///
     /// Returns `None` if the hardware is busy.
+    ///
+    /// ## Embedded HAL
+    ///
+    /// To have a more managed way to read from the serial use the [`embedded_hal::serial::Read`]
+    /// trait implementation.
     #[doc(alias = "RDR")]
-    pub fn raw_read(&self) -> Option<u8> {
+    pub fn read_data_register(&self) -> Option<u8> {
         if self.usart.isr.read().busy().bit_is_set() {
             return None;
         }
@@ -907,7 +912,7 @@ where
     /// up to the interrupt handler.
     ///
     /// To read out the content of the read register without internal error handling, use
-    /// [`Serial::raw_read()`].
+    /// [`Serial::read_data_register()`].
     /// ...
     // -> According to this API it should be skipped.
     fn read(&mut self) -> nb::Result<u8, Error> {
