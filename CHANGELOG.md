@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `RccBus`, `Enable`, `Reset` traits and implementations for peripherals ([#299])
 - Support cortex-m-rt `v0.7.0` but still allow `v0.6.13` ([#283])
 - Make timer `InterruptTypes` fields public to be useful. ([#304])
+- Add support for the internal **signature** peripheral ([#281])
 
 ### Fixed
 

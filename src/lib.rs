@@ -188,6 +188,7 @@ pub mod rcc;
 #[cfg_attr(docsrs, doc(cfg(feature = "rtc")))]
 pub mod rtc;
 pub mod serial;
+pub mod signature;
 pub mod spi;
 pub mod syscfg;
 pub mod timer;

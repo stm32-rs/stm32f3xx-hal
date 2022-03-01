@@ -47,6 +47,10 @@ harness = false
 name = "watchdog"
 harness = false
 
+[[test]]
+name = "signature"
+harness = false
+
 [dependencies]
 cfg-if = "1.0"
 cortex-m = "0.7.0"
