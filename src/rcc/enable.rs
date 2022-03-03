@@ -121,6 +121,11 @@ bus! {
     ADC1_2 => (AHB, adc1en, adc1rst), // 28
 }
 
+#[cfg(feature = "svd-f3x4")]
+bus! {
+    ADC_COMMON => (AHB, adc12en, adc12rst),
+}
+
 #[cfg(any(feature = "svd-f302", feature = "svd-f303"))]
 bus! {
     FMC => (AHB, fmcen, fmcrst), // 5

@@ -26,17 +26,21 @@ use hal::{
 
 use hal::interrupt;
 
-use core::array::IntoIter;
 use defmt::{assert, assert_eq, unwrap};
 
+use core::array::IntoIter;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 static INTERRUPT_FIRED: AtomicBool = AtomicBool::new(false);
 
+type Serial1 = Serial<pac::USART1, (PA9<AF7<PushPull>>, PA10<AF7<PushPull>>)>;
+type SerialSlow = Serial<pac::USART2, (PA2<AF7<PushPull>>, PA3<AF7<OpenDrain>>)>;
+type SerialFast = Serial<pac::USART3, (PB10<AF7<PushPull>>, PB11<AF7<OpenDrain>>)>;
+
 struct State {
-    serial1: Option<Serial<pac::USART1, (PA9<AF7<PushPull>>, PA10<AF7<PushPull>>)>>,
-    serial_slow: Option<Serial<pac::USART2, (PA2<AF7<PushPull>>, PA3<AF7<OpenDrain>>)>>,
-    serial_fast: Option<Serial<pac::USART3, (PB10<AF7<PushPull>>, PB11<AF7<OpenDrain>>)>>,
+    serial1: Option<Serial1>,
+    serial_slow: Option<SerialSlow>,
+    serial_fast: Option<SerialFast>,
     clocks: Clocks,
     apb1: APB1,
     apb2: APB2,

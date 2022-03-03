@@ -21,12 +21,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - `RccBus`, `Enable`, `Reset` traits and implementations for peripherals ([#299])
 - Support cortex-m-rt `v0.7.0` but still allow `v0.6.13` ([#283])
 - Make timer `InterruptTypes` fields public to be useful. ([#304])
+- Add support for the internal **signature** peripheral ([#281])
+- Add common derives to `Toggle`. ([#281])
+- Add `is_interrupt_configured` and `configured_interrupts` function to
+  `serial::Serial` and `timer::Timer`. ([#281])
 
 ### Fixed
 
 - Fix `can` support. Can would not build for `stm32f302x6` for example.
   Also support `can` for every chip other than `stm32f301` and `stm32f318`.
   ([#283])
+- Fix wrong ADC votlage regulator startup time calculation effecting
+  calibration. ([#281])
 
 ### Breaking Changes
 
@@ -42,6 +48,34 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   the dependencies where using the MIT / Apache 2.0 dual licensing already,
   which resulted into the situtation, that BSD 0-clause was not affectivly
   0-clause as MIT conditions had to be met anyways. (🧂 IANAL). ([#309])
+- Renamed `Serial::raw_read` to `Serial::read_data_register`. ([#281])
+- Timer error type `AlreadyCancled` is no longer public constructable. ([#281])
+- Seal `FlashExt` and `RccExt` traits. These are no longer implementable by
+  a user of this crate. ([#281])
+- Move ADC from a macro to a generic implementation, meaning that
+  it is possible to obtain an ADC instance via `Adc::new` instead of
+  `Adc::adc1`. ([#281])
+- Remove `adc::ClockMode` and the clock configuration of the ADC.
+  - Clock configuration effects the common ADC which inturn controls e.g. ADC1
+  and ADC2, which the old API did not resemble.
+  - The API provides no clock configuration for ADC peripherals yet, but
+  correctly acts upon changes done through the `pac`. ([#281])
+- Major rework of the ADC implementation: ([#281])
+  - Add `CommonAdc` support.
+  - Add internal sensor peripheral support like `TemeperaturSensor` and similar.
+  - Lift restriction of the ADC implementation for `stm32f303`, though
+  `stm32f373` is still not supported.
+  - Enable manual configuration of the Adc peripheral of most important features
+    - `ConversionMode`
+    - `Sequence` length
+    - `OverrunMode`
+    - etc.
+  - Leverage type states to:
+    - Allow a `Disabled` ADC, which can be manually calibrated.
+    - Allow a `OneShot` ADC implementation through `into_oneshot` with an
+    optimal configuration for the `OneShot` embedded-hal trait.
+  - Support every possible ADC channel.
+  - Add interrupt support.
 
 ## [v0.8.2] - 2021-12-14
 
@@ -522,6 +556,7 @@ let clocks = rcc
 [#291]: https://github.com/stm32-rs/stm32f3xx-hal/pull/291
 [#283]: https://github.com/stm32-rs/stm32f3xx-hal/pull/283
 [#282]: https://github.com/stm32-rs/stm32f3xx-hal/pull/282
+[#281]: https://github.com/stm32-rs/stm32f3xx-hal/pull/281
 [#278]: https://github.com/stm32-rs/stm32f3xx-hal/pull/278
 [#277]: https://github.com/stm32-rs/stm32f3xx-hal/pull/277
 [#273]: https://github.com/stm32-rs/stm32f3xx-hal/pull/273

@@ -3,8 +3,12 @@
 //! Abstractions of the internal timer peripherals
 //! The timer modules implements the [`CountDown`] and [`Periodic`] traits.
 //!
-//! [Read]: embedded_hal::timer::CountDown
-//! [Write]: embedded_hal::timer::Periodic
+//! ## Examples
+//!
+//! Check out [examples/adc.rs], where a [`Periodic`] timer is used to wake
+//! up the main-loop regularly.
+//!
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.8.1/examples/adc.rs
 
 use core::convert::{From, TryFrom};
 
@@ -177,7 +181,32 @@ where
         }
     }
 
-    /// Check if an interrupt event happend.
+    /// Check if an interrupt is configured for the [`Event`]
+    #[inline]
+    pub fn is_interrupt_configured(&self, event: Event) -> bool {
+        match event {
+            Event::Update => self.tim.is_dier_uie_set(),
+        }
+    }
+
+    // TODO: Add to other implementations as well (Serial, ...)
+    /// Check which interrupts are enabled for all [`Event`]s
+    #[cfg(feature = "enumset")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "enumset")))]
+    #[inline]
+    pub fn configured_interrupts(&mut self) -> EnumSet<Event> {
+        let mut events = EnumSet::new();
+
+        for event in EnumSet::<Event>::all().iter() {
+            if self.is_interrupt_configured(event) {
+                events |= event;
+            }
+        }
+
+        events
+    }
+
+    /// Check if an interrupt event happened.
     pub fn is_event_triggered(&self, event: Event) -> bool {
         match event {
             Event::Update => self.tim.is_sr_uief_set(),
@@ -260,9 +289,9 @@ where
         self.tim.set_arr(arr);
 
         // Ensure that the below procedure does not create an unexpected interrupt.
-        let is_update_interrupt_active = self.tim.is_dier_uie_set();
+        let is_update_interrupt_active = self.is_interrupt_configured(Event::Update);
         if is_update_interrupt_active {
-            self.tim.set_dier_uie(false);
+            self.configure_interrupt(Event::Update, false);
         }
 
         // Trigger an update event to load the prescaler value to the clock The above line raises
@@ -272,7 +301,7 @@ where
         self.clear_event(Event::Update);
 
         if is_update_interrupt_active {
-            self.tim.set_dier_uie(true);
+            self.configure_interrupt(Event::Update, true)
         }
 
         // start counter
@@ -294,7 +323,7 @@ where
 /// Error if a [`Cancel`]-ble [`Timer`] was cancled already or never been started.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct AlreadyCancled;
+pub struct AlreadyCancled(pub(crate) ());
 
 impl<TIM> Cancel for Timer<TIM>
 where
@@ -304,7 +333,7 @@ where
     fn cancel(&mut self) -> Result<(), Self::Error> {
         // If timer is already stopped.
         if !self.tim.is_cr1_cen_set() {
-            return Err(AlreadyCancled);
+            return Err(AlreadyCancled(()));
         }
         self.stop();
         Ok(())

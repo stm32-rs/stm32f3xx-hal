@@ -4,9 +4,20 @@
  `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
  peripheral access API for the STMicro [STM32F3][stm] series microcontrollers.
 
+ ## Philosophie
+
+ HAL (meaning **H**ardware **A**bstraction **L**ayer) is a generic term used in many contexts,
+ but in the specific context of this crate, it is meant to abstract away the control exposed
+ by the devices "[peripheral access crate](`crate::pac`)" to simplify initialization routines,
+ with a robust interface avoiding miss-configurations while still not abstracting away too much.
+
+ Also, this crate's goal is to integrate well with the rest of the rust embedded ecosystem,
+ for example by implementing the [`embedded_hal`] traits or using crates like [`embedded_time`],
+ or [`rtcc`].
+
  [stm]: https://www.st.com/en/microcontrollers-microprocessors/stm32f3-series.html
 
- ## Basic Usagee
+ ## Basic Usage
 
  ```rust
  #![no_std]
@@ -90,7 +101,7 @@
 
  Enable functions, which leverage [`enumset`](https://crates.io/crates/enumset).
  This is especially usefull to get all set status events at once,
- see for example [`crate::serial::Serial::triggered_events()`]
+ see for example [`serial::Serial::triggered_events()`]
 
  ### `defmt`
 
@@ -107,6 +118,7 @@
  [Application Setup]: https://defmt.ferrous-systems.com/setup-app.html
  [defmt]: https://github.com/knurling-rs/defmt
  [filter]: https://defmt.ferrous-systems.com/filtering.html
+ [`serial::Serial::triggered_events`]: `crate::serial::Serial::triggered_events`
 */
 #![no_std]
 #![allow(clippy::upper_case_acronyms)]
@@ -169,8 +181,8 @@ pub use stm32f3::stm32f3x4 as pac;
 #[cfg_attr(docsrs, doc(cfg(feature = "rt")))]
 pub use crate::pac::interrupt;
 
-#[cfg(feature = "stm32f303")]
-#[cfg_attr(docsrs, doc(cfg(feature = "stm32f303")))]
+// TODO: Not yet supported for stm32f373 as this does not share a concept of a "shared ADC"
+#[cfg(not(feature = "svd-f373"))]
 pub mod adc;
 #[cfg(all(feature = "can", not(feature = "svd-f301")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "can")))]
@@ -188,6 +200,7 @@ pub mod rcc;
 #[cfg_attr(docsrs, doc(cfg(feature = "rtc")))]
 pub mod rtc;
 pub mod serial;
+pub mod signature;
 pub mod spi;
 pub mod syscfg;
 pub mod timer;
@@ -258,6 +271,8 @@ cfg_if! {
 /// Convenience enum and wrapper around a bool, which more explicit about the intention to enable
 /// or disable something, in comparison to `true` or `false`.
 // TODO: Maybe move to some mod like "util"?
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Toggle {
     /// Toggle something on / enable a thing.
     On,
@@ -279,3 +294,9 @@ impl From<bool> for Toggle {
         }
     }
 }
+
+/// A generic Error type for failable integer to enum conversions used
+/// in multiple occasions inside this crate.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct TryFromIntError(pub(crate) ());
