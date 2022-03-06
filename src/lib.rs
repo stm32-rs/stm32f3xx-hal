@@ -299,4 +299,4 @@ impl From<bool> for Toggle {
 /// in multiple occasions inside this crate.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct TryFromIntError(pub(crate) ());
+pub struct TryFromIntError;
