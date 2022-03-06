@@ -9,7 +9,7 @@ use crate::pac::{PWR, RTC};
 use crate::rcc::{Enable, APB1, BDCR};
 use core::convert::TryInto;
 use core::fmt;
-use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
+use rtcc::{DateTimeAccess, Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
 /// RTC error type
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -128,9 +128,67 @@ impl Rtc {
     }
 }
 
-impl Rtcc for Rtc {
+impl DateTimeAccess for Rtc {
     type Error = Error;
 
+    fn set_datetime(&mut self, date: &NaiveDateTime) -> Result<(), Self::Error> {
+        if date.year() < 1970 {
+            return Err(Error::InvalidInputData);
+        }
+
+        self.set_24h_fmt();
+        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32)?;
+        let (mt, mu) = bcd2_encode(date.month())?;
+        let (dt, du) = bcd2_encode(date.day())?;
+
+        let (ht, hu) = bcd2_encode(date.hour())?;
+        let (mnt, mnu) = bcd2_encode(date.minute())?;
+        let (st, su) = bcd2_encode(date.second())?;
+
+        self.rtc.dr.write(|w| {
+            w.dt().bits(dt);
+            w.du().bits(du);
+            w.mt().bit(mt > 0);
+            w.mu().bits(mu);
+            w.yt().bits(yt);
+            w.yu().bits(yu)
+        });
+
+        self.rtc.tr.write(|w| {
+            w.ht().bits(ht);
+            w.hu().bits(hu);
+            w.mnt().bits(mnt);
+            w.mnu().bits(mnu);
+            w.st().bits(st);
+            w.su().bits(su);
+            w.pm().clear_bit()
+        });
+
+        Ok(())
+    }
+
+    fn datetime(&mut self) -> Result<NaiveDateTime, Self::Error> {
+        self.set_24h_fmt();
+
+        let day = self.day()?;
+        let month = self.month()?;
+        let year = self.year()?;
+
+        let seconds = self.seconds()?;
+        let minutes = self.minutes()?;
+        let hours = hours_to_u8(self.hours()?)?;
+
+        Ok(
+            NaiveDate::from_ymd(year.into(), month.into(), day.into()).and_hms(
+                hours.into(),
+                minutes.into(),
+                seconds.into(),
+            ),
+        )
+    }
+}
+
+impl Rtcc for Rtc {
     /// set time using NaiveTime (ISO 8601 time without timezone)
     /// Hour format is 24h
     fn set_time(&mut self, time: &NaiveTime) -> Result<(), Self::Error> {
@@ -245,55 +303,19 @@ impl Rtcc for Rtc {
         Ok(())
     }
 
-    fn set_datetime(&mut self, date: &NaiveDateTime) -> Result<(), Self::Error> {
-        if date.year() < 1970 {
-            return Err(Error::InvalidInputData);
-        }
-
-        self.set_24h_fmt();
-        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32)?;
-        let (mt, mu) = bcd2_encode(date.month())?;
-        let (dt, du) = bcd2_encode(date.day())?;
-
-        let (ht, hu) = bcd2_encode(date.hour())?;
-        let (mnt, mnu) = bcd2_encode(date.minute())?;
-        let (st, su) = bcd2_encode(date.second())?;
-
-        self.rtc.dr.write(|w| {
-            w.dt().bits(dt);
-            w.du().bits(du);
-            w.mt().bit(mt > 0);
-            w.mu().bits(mu);
-            w.yt().bits(yt);
-            w.yu().bits(yu)
-        });
-
-        self.rtc.tr.write(|w| {
-            w.ht().bits(ht);
-            w.hu().bits(hu);
-            w.mnt().bits(mnt);
-            w.mnu().bits(mnu);
-            w.st().bits(st);
-            w.su().bits(su);
-            w.pm().clear_bit()
-        });
-
-        Ok(())
-    }
-
-    fn get_seconds(&mut self) -> Result<u8, Self::Error> {
+    fn seconds(&mut self) -> Result<u8, Self::Error> {
         let tr = self.rtc.tr.read();
         let seconds = bcd2_decode(tr.st().bits(), tr.su().bits());
         Ok(seconds as u8)
     }
 
-    fn get_minutes(&mut self) -> Result<u8, Self::Error> {
+    fn minutes(&mut self) -> Result<u8, Self::Error> {
         let tr = self.rtc.tr.read();
         let minutes = bcd2_decode(tr.mnt().bits(), tr.mnu().bits());
         Ok(minutes as u8)
     }
 
-    fn get_hours(&mut self) -> Result<Hours, Self::Error> {
+    fn hours(&mut self) -> Result<Hours, Self::Error> {
         let tr = self.rtc.tr.read();
         let hours = bcd2_decode(tr.ht().bits(), tr.hu().bits());
         if self.is_24h_fmt() {
@@ -305,11 +327,11 @@ impl Rtcc for Rtc {
         Ok(Hours::PM(hours as u8))
     }
 
-    fn get_time(&mut self) -> Result<NaiveTime, Self::Error> {
+    fn time(&mut self) -> Result<NaiveTime, Self::Error> {
         self.set_24h_fmt();
-        let seconds = self.get_seconds()?;
-        let minutes = self.get_minutes()?;
-        let hours = hours_to_u8(self.get_hours()?)?;
+        let seconds = self.seconds()?;
+        let minutes = self.minutes()?;
+        let hours = hours_to_u8(self.hours()?)?;
 
         Ok(NaiveTime::from_hms(
             hours.into(),
@@ -318,57 +340,37 @@ impl Rtcc for Rtc {
         ))
     }
 
-    fn get_weekday(&mut self) -> Result<u8, Self::Error> {
+    fn weekday(&mut self) -> Result<u8, Self::Error> {
         let dr = self.rtc.dr.read();
         let weekday = bcd2_decode(dr.wdu().bits(), 0x00);
         Ok(weekday as u8)
     }
 
-    fn get_day(&mut self) -> Result<u8, Self::Error> {
+    fn day(&mut self) -> Result<u8, Self::Error> {
         let dr = self.rtc.dr.read();
         let day = bcd2_decode(dr.dt().bits(), dr.du().bits());
         Ok(day as u8)
     }
 
-    fn get_month(&mut self) -> Result<u8, Self::Error> {
+    fn month(&mut self) -> Result<u8, Self::Error> {
         let dr = self.rtc.dr.read();
         let mt: u8 = if dr.mt().bit() { 1 } else { 0 };
         let month = bcd2_decode(mt, dr.mu().bits());
         Ok(month as u8)
     }
 
-    fn get_year(&mut self) -> Result<u16, Self::Error> {
+    fn year(&mut self) -> Result<u16, Self::Error> {
         let dr = self.rtc.dr.read();
         let year = bcd2_decode(dr.yt().bits(), dr.yu().bits());
         Ok(year as u16)
     }
 
-    fn get_date(&mut self) -> Result<NaiveDate, Self::Error> {
-        let day = self.get_day()?;
-        let month = self.get_month()?;
-        let year = self.get_year()?;
+    fn date(&mut self) -> Result<NaiveDate, Self::Error> {
+        let day = self.day()?;
+        let month = self.month()?;
+        let year = self.year()?;
 
         Ok(NaiveDate::from_ymd(year.into(), month.into(), day.into()))
-    }
-
-    fn get_datetime(&mut self) -> Result<NaiveDateTime, Self::Error> {
-        self.set_24h_fmt();
-
-        let day = self.get_day()?;
-        let month = self.get_month()?;
-        let year = self.get_year()?;
-
-        let seconds = self.get_seconds()?;
-        let minutes = self.get_minutes()?;
-        let hours = hours_to_u8(self.get_hours()?)?;
-
-        Ok(
-            NaiveDate::from_ymd(year.into(), month.into(), day.into()).and_hms(
-                hours.into(),
-                minutes.into(),
-                seconds.into(),
-            ),
-        )
     }
 }
 
