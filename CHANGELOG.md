@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Make `rtc` an optional feature. Without that feature `rtcc` as a dependency is
   not needed. ([#283])
-- Update `rtcc` to `v0.3.0`. For a detailed changelog, go [here].
+- Update `rtcc` to `v0.3.0`. For a detailed changelog, go [here]. ([#314])
 - Enable `rt`, `usb`, `can`, `rtc` and `ld` feature by default.
   To disable that behavior, set `default-features = false`. ([#283])
 - The MSRV was bumped to 1.54 ([#308])
