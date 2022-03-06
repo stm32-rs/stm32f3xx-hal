@@ -116,7 +116,7 @@ impl TryFrom<u8> for Sequence {
             13 => Sequence::Fourteen,
             14 => Sequence::Fifteen,
             15 => Sequence::Sixteen,
-            _ => return Err(crate::TryFromIntError(())),
+            _ => return Err(crate::TryFromIntError),
         })
     }
 }

@@ -125,7 +125,7 @@ impl TryFrom<u8> for Id {
             16 => Id::Sixteen,
             17 => Id::Seventeen,
             18 => Id::Eighteen,
-            _ => return Err(crate::TryFromIntError(())),
+            _ => return Err(crate::TryFromIntError),
         })
     }
 }

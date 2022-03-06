@@ -120,8 +120,8 @@ mod tests {
         timer.start(10.milliseconds());
         state.delay.delay_ms(5u32);
 
-        assert!(matches!(timer.cancel(), Ok(())));
-        assert!(matches!(timer.cancel(), Err(AlreadyCancled)));
+        assert_eq!(timer.cancel(), Ok(()));
+        assert_eq!(timer.cancel(), Err(AlreadyCancled));
         state.timer = Some(timer);
     }
 
