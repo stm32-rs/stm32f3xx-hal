@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Make `rtc` an optional feature. Without that feature `rtcc` as a dependency is
   not needed. ([#283])
+- Update `rtcc` to `v0.3.0`. For a detailed changelog, go [here].
 - Enable `rt`, `usb`, `can`, `rtc` and `ld` feature by default.
   To disable that behavior, set `default-features = false`. ([#283])
 - The MSRV was bumped to 1.54 ([#308])
@@ -75,6 +76,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
     optimal configuration for the `OneShot` embedded-hal trait.
   - Support every possible ADC channel.
   - Add interrupt support.
+
+[here]: https://github.com/eldruin/rtcc-rs/blob/master/CHANGELOG.md#030---2022-02-19
 
 ## [v0.8.2] - 2021-12-14
 
@@ -547,6 +550,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#314]: https://github.com/stm32-rs/stm32f3xx-hal/pull/314
 [#309]: https://github.com/stm32-rs/stm32f3xx-hal/pull/309
 [#308]: https://github.com/stm32-rs/stm32f3xx-hal/pull/308
 [#304]: https://github.com/stm32-rs/stm32f3xx-hal/pull/304
