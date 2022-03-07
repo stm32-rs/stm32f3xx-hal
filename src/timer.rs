@@ -90,7 +90,7 @@ impl Instant {
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Timer<TIM> {
-    tim: BasicTimer<TIM>,
+    tim: TIM,
     clocks: Clocks,
 }
 
@@ -110,7 +110,7 @@ pub enum Event {
 
 impl<TIM> Timer<TIM>
 where
-    TIM: Instance<TIM>,
+    TIM: Instance,
 {
     /// Configures a TIM peripheral as a periodic count down timer
     // TODO: CHange clocks to be a global variable
@@ -118,15 +118,13 @@ where
         TIM::enable(apb);
         TIM::reset(apb);
 
-        let tim: BasicTimer<_> = tim.into();
-
         Timer { clocks, tim }
     }
 
     /// Stops the timer
     #[inline]
     pub fn stop(&mut self) {
-        self.tim.cr1.modify(|_, w| w.cen().disabled());
+        self.tim.as_basic_timer_mut().cr1.modify(|_, w| w.cen().disabled());
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
@@ -168,7 +166,7 @@ where
     #[inline]
     pub fn configure_interrupt(&mut self, event: Event, enable: bool) {
         match event {
-            Event::Update => self.tim.dier.modify(|_, w| w.uie().bit(enable)),
+            Event::Update => self.tim.as_basic_timer_mut().dier.modify(|_, w| w.uie().bit(enable)),
         }
     }
 
@@ -192,7 +190,7 @@ where
     #[inline]
     pub fn is_interrupt_configured(&self, event: Event) -> bool {
         match event {
-            Event::Update => self.tim.dier.read().uie().bit(),
+            Event::Update => self.tim.as_basic_timer().dier.read().uie().bit(),
         }
     }
 
@@ -216,7 +214,7 @@ where
     /// Check if an interrupt event happened.
     pub fn is_event_triggered(&self, event: Event) -> bool {
         match event {
-            Event::Update => self.tim.sr.read().uif().is_update_pending(),
+            Event::Update => self.tim.as_basic_timer().sr.read().uif().is_update_pending(),
         }
     }
 
@@ -239,7 +237,7 @@ where
     #[inline]
     pub fn clear_event(&mut self, event: Event) {
         match event {
-            Event::Update => self.tim.sr.modify(|_, w| w.uif().clear()),
+            Event::Update => self.tim.as_basic_timer_mut().sr.modify(|_, w| w.uif().clear()),
         }
     }
 
@@ -247,7 +245,7 @@ where
     #[inline]
     pub fn clear_events(&mut self) {
         // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
-        self.tim.sr.write(|w| unsafe { w.bits(0) });
+        self.tim.as_basic_timer_mut().sr.write(|w| unsafe { w.bits(0) });
     }
 
     /// Get access to the underlying register block.
@@ -260,22 +258,22 @@ where
     /// Changing specific options can lead to un-expected behavior and nothing
     /// is guaranteed.
     pub unsafe fn peripheral(&mut self) -> &mut TIM {
-        &mut self.tim.real_timer
+        &mut self.tim
     }
 
     /// Releases the TIM peripheral
     #[inline]
     pub fn free(mut self) -> TIM {
         self.stop();
-        self.tim.real_timer
+        self.tim
     }
 }
 
-impl<TIM> Periodic for Timer<TIM> where TIM: Instance<TIM> {}
+impl<TIM> Periodic for Timer<TIM> where TIM: Instance {}
 
 impl<TIM> CountDown for Timer<TIM>
 where
-    TIM: Instance<TIM>,
+    TIM: Instance,
 {
     type Time = duration::Generic<u32>;
 
@@ -292,12 +290,12 @@ where
 
         let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
         // NOTE(write): uses all bits in this register.
-        self.tim.psc.write(|w| w.psc().bits(psc));
+        self.tim.as_basic_timer_mut().psc.write(|w| w.psc().bits(psc));
 
         let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
         // TODO(Sh3Rm4n):
         // self.tim.arr.write(|w| { w.arr().bits(arr) });
-        self.tim.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
+        self.tim.as_basic_timer_mut().arr.write(|w| unsafe { w.bits(u32::from(arr)) });
 
         // Ensure that the below procedure does not create an unexpected interrupt.
         let is_update_interrupt_active = self.is_interrupt_configured(Event::Update);
@@ -307,7 +305,7 @@ where
 
         // Trigger an update event to load the prescaler value to the clock The above line raises
         // an update event which will indicate that the timer is already finished.
-        self.tim.egr.write(|w| w.ug().update());
+        self.tim.as_basic_timer_mut().egr.write(|w| w.ug().update());
         // Since this is not the case, it should be cleared.
         self.clear_event(Event::Update);
 
@@ -316,13 +314,13 @@ where
         }
 
         // start counter
-        self.tim.cr1.modify(|_, w| w.cen().bit(true));
+        self.tim.as_basic_timer_mut().cr1.modify(|_, w| w.cen().bit(true));
     }
 
     /// Wait until [`Event::Update`] / the timer has elapsed
     /// and than clear the event.
     fn wait(&mut self) -> nb::Result<(), Void> {
-        if !self.tim.sr.read().uif().is_update_pending() {
+        if !self.tim.as_basic_timer().sr.read().uif().is_update_pending() {
             Err(nb::Error::WouldBlock)
         } else {
             self.clear_event(Event::Update);
@@ -338,12 +336,12 @@ pub struct AlreadyCancled;
 
 impl<TIM> Cancel for Timer<TIM>
 where
-    TIM: Instance<TIM>,
+    TIM: Instance,
 {
     type Error = AlreadyCancled;
     fn cancel(&mut self) -> Result<(), Self::Error> {
         // If timer is already stopped.
-        if !self.tim.cr1.read().cen().bit() {
+        if !self.tim.as_basic_timer().cr1.read().cen().bit() {
             return Err(AlreadyCancled);
         }
         self.stop();
@@ -382,8 +380,8 @@ pub trait CommonRegisterBlock: crate::private::Sealed {
 }
 
 /// Associated clocks with timers
-pub trait Instance<T>:
-    Into<BasicTimer<T>>
+pub trait Instance:
+    AsBasicTimer
     + crate::interrupts::InterruptNumber
     + crate::private::Sealed
     + rcc::Enable
@@ -403,6 +401,17 @@ macro_rules! timer {
                     _ptr: unsafe { pac::TIM6::ptr() as _ },
                     real_timer: tim,
                 }
+            }
+        }
+
+        impl AsBasicTimer for crate::pac::$TIMX {
+            fn as_basic_timer(&self) -> &pac::tim6::RegisterBlock {
+                unsafe {&*(crate::pac::$TIMX::ptr() as *const pac::tim6::RegisterBlock)}
+                // unsafe { &*(self._ptr as *const Self::Target) }
+            }
+
+            fn as_basic_timer_mut(&mut self) -> &mut pac::tim6::RegisterBlock {
+                unsafe {&mut *(crate::pac::$TIMX::ptr() as *mut pac::tim6::RegisterBlock)}
             }
         }
 
@@ -469,7 +478,7 @@ macro_rules! timer {
 macro_rules! timer_var_clock {
     ($($TIMX:ident, $timXsw:ident),+) => {
         $(
-                impl Instance<crate::pac::$TIMX> for crate::pac::$TIMX {
+                impl Instance for crate::pac::$TIMX {
                 #[inline]
                 fn clock(clocks: &Clocks) -> Hertz {
                     // SAFETY: Atomic read with no side-effects.
@@ -513,7 +522,7 @@ macro_rules! timer_var_clock {
 macro_rules! timer_static_clock {
     ($($TIMX:ident),+) => {
         $(
-            impl Instance<crate::pac::$TIMX> for crate::pac::$TIMX {
+            impl Instance for crate::pac::$TIMX {
                 #[inline]
                 fn clock(clocks: &Clocks) -> Hertz {
                     <pac::$TIMX as rcc::BusTimerClock>::timer_clock(clocks)
@@ -648,6 +657,13 @@ impl<T> Deref for BasicTimer<T> {
 // TODO: Is that trait needed, when we already have Into<BasicTimer>?
 pub trait BasicTimerInstance: Deref<Target = pac::tim6::RegisterBlock> {}
 impl<T> BasicTimerInstance for BasicTimer<T> {}
+
+// TODO:
+pub trait AsBasicTimer {
+    fn as_basic_timer(&self) -> &pac::tim6::RegisterBlock;
+
+    fn as_basic_timer_mut(&mut self) -> &mut pac::tim6::RegisterBlock;
+}
 
 fn test2<T>(tim: impl Into<BasicTimer<T>>) {
     let tim: BasicTimer<T> = tim.into();
