@@ -124,7 +124,10 @@ where
     /// Stops the timer
     #[inline]
     pub fn stop(&mut self) {
-        self.tim.as_basic_timer_mut().cr1.modify(|_, w| w.cen().disabled());
+        self.tim
+            .as_basic_timer_mut()
+            .cr1
+            .modify(|_, w| w.cen().disabled());
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
@@ -166,7 +169,11 @@ where
     #[inline]
     pub fn configure_interrupt(&mut self, event: Event, enable: bool) {
         match event {
-            Event::Update => self.tim.as_basic_timer_mut().dier.modify(|_, w| w.uie().bit(enable)),
+            Event::Update => self
+                .tim
+                .as_basic_timer_mut()
+                .dier
+                .modify(|_, w| w.uie().bit(enable)),
         }
     }
 
@@ -214,7 +221,13 @@ where
     /// Check if an interrupt event happened.
     pub fn is_event_triggered(&self, event: Event) -> bool {
         match event {
-            Event::Update => self.tim.as_basic_timer().sr.read().uif().is_update_pending(),
+            Event::Update => self
+                .tim
+                .as_basic_timer()
+                .sr
+                .read()
+                .uif()
+                .is_update_pending(),
         }
     }
 
@@ -237,7 +250,11 @@ where
     #[inline]
     pub fn clear_event(&mut self, event: Event) {
         match event {
-            Event::Update => self.tim.as_basic_timer_mut().sr.modify(|_, w| w.uif().clear()),
+            Event::Update => self
+                .tim
+                .as_basic_timer_mut()
+                .sr
+                .modify(|_, w| w.uif().clear()),
         }
     }
 
@@ -245,7 +262,10 @@ where
     #[inline]
     pub fn clear_events(&mut self) {
         // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
-        self.tim.as_basic_timer_mut().sr.write(|w| unsafe { w.bits(0) });
+        self.tim
+            .as_basic_timer_mut()
+            .sr
+            .write(|w| unsafe { w.bits(0) });
     }
 
     /// Get access to the underlying register block.
@@ -290,12 +310,18 @@ where
 
         let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
         // NOTE(write): uses all bits in this register.
-        self.tim.as_basic_timer_mut().psc.write(|w| w.psc().bits(psc));
+        self.tim
+            .as_basic_timer_mut()
+            .psc
+            .write(|w| w.psc().bits(psc));
 
         let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
         // TODO(Sh3Rm4n):
         // self.tim.arr.write(|w| { w.arr().bits(arr) });
-        self.tim.as_basic_timer_mut().arr.write(|w| unsafe { w.bits(u32::from(arr)) });
+        self.tim
+            .as_basic_timer_mut()
+            .arr
+            .write(|w| unsafe { w.bits(u32::from(arr)) });
 
         // Ensure that the below procedure does not create an unexpected interrupt.
         let is_update_interrupt_active = self.is_interrupt_configured(Event::Update);
@@ -314,13 +340,23 @@ where
         }
 
         // start counter
-        self.tim.as_basic_timer_mut().cr1.modify(|_, w| w.cen().bit(true));
+        self.tim
+            .as_basic_timer_mut()
+            .cr1
+            .modify(|_, w| w.cen().bit(true));
     }
 
     /// Wait until [`Event::Update`] / the timer has elapsed
     /// and than clear the event.
     fn wait(&mut self) -> nb::Result<(), Void> {
-        if !self.tim.as_basic_timer().sr.read().uif().is_update_pending() {
+        if !self
+            .tim
+            .as_basic_timer()
+            .sr
+            .read()
+            .uif()
+            .is_update_pending()
+        {
             Err(nb::Error::WouldBlock)
         } else {
             self.clear_event(Event::Update);
@@ -406,12 +442,12 @@ macro_rules! timer {
 
         impl AsBasicTimer for crate::pac::$TIMX {
             fn as_basic_timer(&self) -> &pac::tim6::RegisterBlock {
-                unsafe {&*(crate::pac::$TIMX::ptr() as *const pac::tim6::RegisterBlock)}
+                unsafe { &*(crate::pac::$TIMX::ptr() as *const pac::tim6::RegisterBlock) }
                 // unsafe { &*(self._ptr as *const Self::Target) }
             }
 
             fn as_basic_timer_mut(&mut self) -> &mut pac::tim6::RegisterBlock {
-                unsafe {&mut *(crate::pac::$TIMX::ptr() as *mut pac::tim6::RegisterBlock)}
+                unsafe { &mut *(crate::pac::$TIMX::ptr() as *mut pac::tim6::RegisterBlock) }
             }
         }
 
@@ -618,7 +654,7 @@ cfg_if::cfg_if! {
 }
 
 fn test(tim: pac::TIM16) {
-    let tim6: *const pac::tim6::RegisterBlock = unsafe {core::mem::transmute(pac::TIM16::ptr())};
+    let tim6: *const pac::tim6::RegisterBlock = unsafe { core::mem::transmute(pac::TIM16::ptr()) };
 }
 
 // TODO: Rename BasicTimer to BasicTimerPeripheral or similar to not be confusing
