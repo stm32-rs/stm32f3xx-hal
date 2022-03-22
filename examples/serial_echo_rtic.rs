@@ -58,30 +58,30 @@ mod app {
         let mut dir: DirType = gpioe
             .pe13
             .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
-        dir.set_low().unwrap();
+        dir.set_low();
 
         // SERIAL
         let mut gpioa = cx.device.GPIOA.split(&mut rcc.ahb);
-        let mut pins = (
+        let pins = (
             gpioa
                 // Tx pin
                 .pa9
                 // configure this pin to make use of its `USART1_TX` alternative function
                 // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
                 //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
-                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+                .into_alternate(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
             gpioa
                 // Rx pin
                 .pa10
                 // configure this pin to make use of its `USART1_RX` alternative function
                 // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
                 //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
-                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+                .into_alternate(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh)
+                .internal_pull_up(&mut gpioa.pupdr, true),
         );
-        pins.1.internal_pull_up(&mut gpioa.pupdr, true);
         let mut serial: SerialType =
             Serial::new(cx.device.USART1, pins, 19200.Bd(), clocks, &mut rcc.apb2);
-        serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Switch::On);
+        serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Toggle::On);
 
         rprintln!("post init");
 
@@ -99,7 +99,7 @@ mod app {
         let dir = cx.local.dir;
 
         if serial.is_event_triggered(Event::ReceiveDataRegisterNotEmpty) {
-            dir.set_high().unwrap();
+            dir.set_high();
             serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Switch::Off);
             match serial.read() {
                 Ok(byte) => {
@@ -116,7 +116,7 @@ mod app {
         // and other functions enabled by the "enumset" feature.
         let events = serial.triggered_events();
         if events.contains(Event::TransmissionComplete) {
-            dir.set_low().unwrap();
+            dir.set_low();
             let interrupts = {
                 let mut interrupts = enumset::EnumSet::new();
                 interrupts.insert(Event::ReceiveDataRegisterNotEmpty);

@@ -5,11 +5,11 @@ use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
-use hal::gpio::{Input, PXx};
+use hal::gpio::{EPin, Input};
 
 struct State {
-    input_ground: PXx<Input>,
-    input_vdd: PXx<Input>,
+    input_ground: EPin<Input>,
+    input_vdd: EPin<Input>,
 }
 
 #[defmt_test::tests]
@@ -33,18 +33,18 @@ mod tests {
             .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
 
         super::State {
-            input_ground: input_ground.downgrade().downgrade(),
-            input_vdd: input_vdd.downgrade().downgrade(),
+            input_ground: input_ground.erase(),
+            input_vdd: input_vdd.erase(),
         }
     }
 
     #[test]
     fn ground_is_low(state: &mut super::State) {
-        assert!(unwrap!(state.input_ground.is_low()));
+        assert!(state.input_ground.is_low());
     }
 
     #[test]
     fn vdd_is_high(state: &mut super::State) {
-        assert!(unwrap!(state.input_vdd.is_high()));
+        assert!(state.input_vdd.is_high());
     }
 }

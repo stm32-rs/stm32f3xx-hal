@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Missing `MosiPin` impl for `PB5` ([#322])
 - Read valid data from data register even if reception of next character
   has started ([#317])
+- Use const generics for pins. The MSRV was bumped to 1.59 ([#316])
 
 ## [v0.9.0] - 2022-03-06
 
@@ -603,6 +604,7 @@ let clocks = rcc
 [#322]: https://github.com/stm32-rs/stm32f3xx-hal/pull/322
 [#318]: https://github.com/stm32-rs/stm32f3xx-hal/pull/318
 [#317]: https://github.com/stm32-rs/stm32f3xx-hal/pull/317
+[#316]: https://github.com/stm32-rs/stm32f3xx-hal/pull/316
 [#314]: https://github.com/stm32-rs/stm32f3xx-hal/pull/314
 [#309]: https://github.com/stm32-rs/stm32f3xx-hal/pull/309
 [#308]: https://github.com/stm32-rs/stm32f3xx-hal/pull/308

@@ -23,33 +23,29 @@ fn main() -> ! {
     let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
     let mut gpiod = dp.GPIOD.split(&mut rcc.ahb);
 
-    let mut pin_array: [gpio::PXx<Input>; 4] = [
+    let mut pin_array: [gpio::EPin<Input>; 4] = [
         gpiob
             .pb11
             .into_floating_input(&mut gpiob.moder, &mut gpiob.pupdr)
-            .downgrade()
-            .downgrade(),
+            .erase(),
         gpioc
             .pc4
             .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr)
-            .downgrade()
-            .downgrade(),
+            .erase(),
         gpiod
             .pd3
             .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr)
-            .downgrade()
-            .downgrade(),
+            .erase(),
         gpiod
             .pd2
             .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr)
-            .downgrade()
-            .downgrade(),
+            .erase(),
     ];
 
     hprintln!("Start scanning pin array");
     loop {
         for pin in pin_array.iter_mut() {
-            hprintln!("Value is {}", pin.is_high().unwrap());
+            hprintln!("Value is {}", pin.is_high());
             asm::delay(1_000_000);
         }
     }

@@ -3,7 +3,7 @@
 use core::fmt;
 use core::ops::Deref;
 
-use crate::gpio::{marker, Pin};
+use crate::gpio::PinExt;
 use crate::{
     pac::SYSCFG,
     rcc::{Enable, APB2},
@@ -73,15 +73,11 @@ impl SysCfg {
     ///
     /// But configuring `PA1` and and `PB2` works!
     #[doc(alias = "enable_interrupt")]
-    pub fn select_exti_interrupt_source<Gpio, Index, Mode>(&mut self, pin: &Pin<Gpio, Index, Mode>)
-    where
-        Gpio: marker::Gpio,
-        Index: marker::Index,
-    {
+    pub fn select_exti_interrupt_source<PIN: PinExt>(&mut self, pin: &PIN) {
         const BITWIDTH: u8 = 4;
-        let index = pin.index.index() % 4;
-        let extigpionr = pin.gpio.port_index() as u32;
-        match pin.index.index() {
+        let index = pin.pin_id() % 4;
+        let extigpionr = pin.port_id() as u32;
+        match pin.pin_id() {
             // SAFETY: These are all unguarded writes directly to the register,
             // without leveraging the safety of stm32f3 generated values.
             0..=3 => unsafe { crate::modify_at!(self.exticr1, BITWIDTH, index, extigpionr) },

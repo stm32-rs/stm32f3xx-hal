@@ -25,18 +25,18 @@ fn main() -> ! {
         .pe13
         .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
 
-    led.set_low().unwrap();
+    led.set_low();
 
     loop {
-        led.toggle().unwrap();
+        led.toggle();
         cortex_m::asm::delay(8_000_000);
         // Toggle by hand.
         // Uses `StatefulOutputPin` instead of `ToggleableOutputPin`.
         // Logically it is the same.
-        if led.is_set_low().unwrap() {
-            led.set_high().unwrap();
+        if led.is_set_low() {
+            led.set_high();
         } else {
-            led.set_low().unwrap();
+            led.set_low();
         }
         cortex_m::asm::delay(8_000_000);
     }

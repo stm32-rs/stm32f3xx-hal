@@ -7,11 +7,11 @@ use panic_probe as _;
 use hal::prelude::*;
 use stm32f3xx_hal as hal;
 
-use hal::gpio::{Input, Output, PXx, PushPull};
+use hal::gpio::{EPin, Input, Output, PushPull};
 
 struct State {
-    input_pin: PXx<Input>,
-    output_pin: PXx<Output<PushPull>>,
+    input_pin: EPin<Input>,
+    output_pin: EPin<Output<PushPull>>,
 }
 
 #[defmt_test::tests]
@@ -37,22 +37,22 @@ mod tests {
         };
 
         super::State {
-            input_pin: pair.0.downgrade().downgrade(),
-            output_pin: pair.1.downgrade().downgrade(),
+            input_pin: pair.0.erase(),
+            output_pin: pair.1.erase(),
         }
     }
 
     #[test]
     fn set_low_is_low(state: &mut super::State) {
-        unwrap!(state.output_pin.set_low());
-        assert!(unwrap!(state.output_pin.is_set_low()));
-        assert!(unwrap!(state.input_pin.is_low()));
+        state.output_pin.set_low();
+        assert!(state.output_pin.is_set_low());
+        assert!(state.input_pin.is_low());
     }
 
     #[test]
     fn set_high_is_high(state: &mut super::State) {
-        unwrap!(state.output_pin.set_high());
-        assert!(unwrap!(state.output_pin.is_set_high()));
-        assert!(unwrap!(state.input_pin.is_high()));
+        state.output_pin.set_high();
+        assert!(state.output_pin.is_set_high());
+        assert!(state.input_pin.is_high());
     }
 }
