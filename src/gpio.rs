@@ -666,9 +666,9 @@ gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA10: (pa10, 10, [1, 3, 4, 5, 6, 7, 8, 10, 15]),
     PA11: (pa11, 11, [5, 6, 7, 9, 11, 12, 15]),
     PA12: (pa12, 12, [1, 5, 6, 7, 8, 9, 11, 15]),
-    PA13: (pa13, 13, [0, 1, 3, 5, 7, 15], super::Debugger), // SWDIO, PullUp VeryHigh speed
-    PA14: (pa14, 14, [0, 3, 4, 6, 7, 15], super::Debugger), // SWCLK, PullDown
-    PA15: (pa15, 15, [0, 1, 3, 4, 6, 7, 9, 15], super::Debugger), // JTDI, PullUp
+    PA13: (pa13, 13, [0, 1, 3, 5, 7, 15], super::Debugger),
+    PA14: (pa14, 14, [0, 3, 4, 6, 7, 15], super::Debugger),
+    PA15: (pa15, 15, [0, 1, 3, 4, 6, 7, 9, 15], super::Debugger),
 ]);
 
 #[cfg(feature = "gpio-f302")]
@@ -676,8 +676,8 @@ gpio!(GPIOB, gpiob, PB, 'B', PBn, [
     PB0: (pb0, 0, [3, 6, 15]),
     PB1: (pb1, 1, [3, 6, 8, 15]),
     PB2: (pb2, 2, [3, 15]),
-    PB3: (pb3, 3, [0, 1, 3, 6, 7, 15], super::Debugger), // SWO, VeryHigh speed
-    PB4: (pb4, 4, [0, 1, 3, 6, 7, 10, 15], super::Debugger), // JTRST, PullUp
+    PB3: (pb3, 3, [0, 1, 3, 6, 7, 15], super::Debugger),
+    PB4: (pb4, 4, [0, 1, 3, 6, 7, 10, 15], super::Debugger),
     PB5: (pb5, 5, [1, 4, 6, 7, 8, 10, 15]),
     PB6: (pb6, 6, [1, 3, 4, 7, 15]),
     PB7: (pb7, 7, [1, 3, 4, 7, 15]),
@@ -722,6 +722,7 @@ gpio!(GPIOF, gpiof, PF, 'F', PFn, [
     PF1: (pf1, 1, [4, 5]),
 ]);
 
+
 #[cfg(feature = "gpio-f303e")]
 gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA0: (pa0, 0, [1, 3, 7, 8, 9, 10, 15]),
@@ -737,9 +738,9 @@ gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA10: (pa10, 10, [1, 3, 4, 5, 6, 7, 8, 10, 11, 15]),
     PA11: (pa11, 11, [5, 6, 7, 8, 9, 10, 11, 12, 15]),
     PA12: (pa12, 12, [1, 5, 6, 7, 8, 9, 10, 11, 15]),
-    PA13: (pa13, 13, [0, 1, 3, 5, 7, 10, 15], super::Debugger), // SWDIO, PullUp VeryHigh speed
-    PA14: (pa14, 14, [0, 3, 4, 5, 6, 7, 15], super::Debugger), // SWCLK, PullDown
-    PA15: (pa15, 15, [0, 1, 2, 3, 4, 5, 6, 7, 9, 15], super::Debugger), // JTDI, PullUp
+    PA13: (pa13, 13, [0, 1, 3, 5, 7, 10, 15], super::Debugger),
+    PA14: (pa14, 14, [0, 3, 4, 5, 6, 7, 15], super::Debugger),
+    PA15: (pa15, 15, [0, 1, 2, 3, 4, 5, 6, 7, 9, 15], super::Debugger),
 ]);
 
 #[cfg(feature = "gpio-f303e")]
@@ -747,8 +748,8 @@ gpio!(GPIOB, gpiob, PB, 'B', PBn, [
     PB0: (pb0, 0, [2, 3, 4, 6, 15]),
     PB1: (pb1, 1, [2, 3, 4, 6, 8, 15]),
     PB2: (pb2, 2, [3, 15]),
-    PB3: (pb3, 3, [0, 1, 2, 3, 4, 5, 6, 7, 10, 15], super::Debugger), // SWO, VeryHigh speed
-    PB4: (pb4, 4, [0, 1, 2, 3, 4, 5, 6, 7, 10, 15], super::Debugger), // JTRST, PullUp
+    PB3: (pb3, 3, [0, 1, 2, 3, 4, 5, 6, 7, 10, 15], super::Debugger),
+    PB4: (pb4, 4, [0, 1, 2, 3, 4, 5, 6, 7, 10, 15], super::Debugger),
     PB5: (pb5, 5, [1, 2, 3, 4, 5, 6, 7, 8, 10, 15]),
     PB6: (pb6, 6, [1, 2, 3, 4, 5, 6, 7, 10, 15]),
     PB7: (pb7, 7, [1, 2, 3, 4, 5, 7, 10, 12, 15]),
@@ -869,6 +870,7 @@ gpio!(GPIOH, gpioh, PH, 'H', PHn, [
     PH2: (ph2, 2, [1]),
 ]);
 
+
 #[cfg(feature = "gpio-f303")]
 gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA0: (pa0, 0, [1, 3, 7, 8, 9, 10, 15]),
@@ -884,9 +886,9 @@ gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA10: (pa10, 10, [1, 3, 4, 6, 7, 8, 10, 11, 15]),
     PA11: (pa11, 11, [6, 7, 8, 9, 10, 11, 12, 14, 15]),
     PA12: (pa12, 12, [1, 6, 7, 8, 9, 10, 11, 14, 15]),
-    PA13: (pa13, 13, [0, 1, 3, 5, 7, 10, 15], super::Debugger), // SWDIO, PullUp VeryHigh speed
-    PA14: (pa14, 14, [0, 3, 4, 5, 6, 7, 15], super::Debugger), // SWCLK, PullDown
-    PA15: (pa15, 15, [0, 1, 2, 4, 5, 6, 7, 9, 15], super::Debugger), // JTDI, PullUp
+    PA13: (pa13, 13, [0, 1, 3, 5, 7, 10, 15], super::Debugger),
+    PA14: (pa14, 14, [0, 3, 4, 5, 6, 7, 15], super::Debugger),
+    PA15: (pa15, 15, [0, 1, 2, 4, 5, 6, 7, 9, 15], super::Debugger),
 ]);
 
 #[cfg(feature = "gpio-f303")]
@@ -894,8 +896,8 @@ gpio!(GPIOB, gpiob, PB, 'B', PBn, [
     PB0: (pb0, 0, [2, 3, 4, 6, 15]),
     PB1: (pb1, 1, [2, 3, 4, 6, 8, 15]),
     PB2: (pb2, 2, [3, 15]),
-    PB3: (pb3, 3, [0, 1, 2, 3, 4, 5, 6, 7, 10, 15], super::Debugger), // SWO, VeryHigh speed
-    PB4: (pb4, 4, [0, 1, 2, 3, 4, 5, 6, 7, 10, 15], super::Debugger), // JTRST, PullUp
+    PB3: (pb3, 3, [0, 1, 2, 3, 4, 5, 6, 7, 10, 15], super::Debugger),
+    PB4: (pb4, 4, [0, 1, 2, 3, 4, 5, 6, 7, 10, 15], super::Debugger),
     PB5: (pb5, 5, [1, 2, 3, 4, 5, 6, 7, 10, 15]),
     PB6: (pb6, 6, [1, 2, 3, 4, 5, 6, 7, 10, 15]),
     PB7: (pb7, 7, [1, 2, 3, 4, 5, 7, 10, 15]),
@@ -980,6 +982,7 @@ gpio!(GPIOF, gpiof, PF, 'F', PFn, [
     PF10: (pf10, 10, [1, 3, 5]),
 ]);
 
+
 #[cfg(feature = "gpio-f333")]
 gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA0: (pa0, 0, [1, 3, 7, 15]),
@@ -995,9 +998,9 @@ gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA10: (pa10, 10, [1, 3, 6, 7, 8, 10, 13, 15]),
     PA11: (pa11, 11, [6, 7, 9, 11, 12, 13, 15]),
     PA12: (pa12, 12, [1, 6, 7, 8, 9, 11, 13, 15]),
-    PA13: (pa13, 13, [0, 1, 3, 5, 7, 15], super::Debugger), // SWDIO, PullUp VeryHigh speed
-    PA14: (pa14, 14, [0, 3, 4, 6, 7, 15], super::Debugger), // SWCLK, PullDown
-    PA15: (pa15, 15, [0, 1, 3, 4, 5, 7, 9, 13, 15], super::Debugger), // JTDI, PullUp
+    PA13: (pa13, 13, [0, 1, 3, 5, 7, 15], super::Debugger),
+    PA14: (pa14, 14, [0, 3, 4, 6, 7, 15], super::Debugger),
+    PA15: (pa15, 15, [0, 1, 3, 4, 5, 7, 9, 13, 15], super::Debugger),
 ]);
 
 #[cfg(feature = "gpio-f333")]
@@ -1005,8 +1008,8 @@ gpio!(GPIOB, gpiob, PB, 'B', PBn, [
     PB0: (pb0, 0, [2, 3, 6, 15]),
     PB1: (pb1, 1, [2, 3, 6, 8, 13, 15]),
     PB2: (pb2, 2, [3, 13, 15]),
-    PB3: (pb3, 3, [0, 1, 3, 5, 7, 10, 12, 13, 15], super::Debugger), // SWO, VeryHigh speed
-    PB4: (pb4, 4, [0, 1, 2, 3, 5, 7, 10, 13, 15], super::Debugger), // JTRST, PullUp
+    PB3: (pb3, 3, [0, 1, 3, 5, 7, 10, 12, 13, 15], super::Debugger),
+    PB4: (pb4, 4, [0, 1, 2, 3, 5, 7, 10, 13, 15], super::Debugger),
     PB5: (pb5, 5, [1, 2, 4, 5, 7, 10, 13, 15]),
     PB6: (pb6, 6, [1, 3, 4, 7, 12, 13, 15]),
     PB7: (pb7, 7, [1, 3, 4, 7, 10, 13, 15]),
@@ -1051,6 +1054,7 @@ gpio!(GPIOF, gpiof, PF, 'F', PFn, [
     PF1: (pf1, 1, []),
 ]);
 
+
 #[cfg(feature = "gpio-f373")]
 gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA0: (pa0, 0, [1, 2, 3, 7, 8, 11, 15]),
@@ -1066,9 +1070,9 @@ gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA10: (pa10, 10, [1, 3, 4, 5, 7, 9, 10, 15]),
     PA11: (pa11, 11, [2, 5, 6, 7, 8, 9, 10, 14, 15]),
     PA12: (pa12, 12, [1, 2, 6, 7, 8, 9, 10, 14, 15]),
-    PA13: (pa13, 13, [0, 1, 2, 3, 5, 6, 7, 10, 15], super::Debugger), // SWDIO, PullUp VeryHigh speed
-    PA14: (pa14, 14, [0, 3, 4, 10, 15], super::Debugger), // SWCLK, PullDown
-    PA15: (pa15, 15, [0, 1, 3, 4, 5, 6, 10, 15], super::Debugger), // JTDI, PullUp
+    PA13: (pa13, 13, [0, 1, 2, 3, 5, 6, 7, 10, 15], super::Debugger),
+    PA14: (pa14, 14, [0, 3, 4, 10, 15], super::Debugger),
+    PA15: (pa15, 15, [0, 1, 3, 4, 5, 6, 10, 15], super::Debugger),
 ]);
 
 #[cfg(feature = "gpio-f373")]
@@ -1076,8 +1080,8 @@ gpio!(GPIOB, gpiob, PB, 'B', PBn, [
     PB0: (pb0, 0, [2, 3, 5, 10, 15]),
     PB1: (pb1, 1, [2, 3, 15]),
     PB2: (pb2, 2, [15]),
-    PB3: (pb3, 3, [0, 1, 2, 3, 5, 6, 7, 9, 10, 15], super::Debugger), // SWO, VeryHigh speed
-    PB4: (pb4, 4, [0, 1, 2, 3, 5, 6, 7, 9, 10, 15], super::Debugger), // JTRST, PullUp
+    PB3: (pb3, 3, [0, 1, 2, 3, 5, 6, 7, 9, 10, 15], super::Debugger),
+    PB4: (pb4, 4, [0, 1, 2, 3, 5, 6, 7, 9, 10, 15], super::Debugger),
     PB5: (pb5, 5, [1, 2, 4, 5, 6, 7, 10, 11, 15]),
     PB6: (pb6, 6, [1, 2, 3, 4, 7, 9, 10, 11, 15]),
     PB7: (pb7, 7, [1, 2, 3, 4, 7, 9, 10, 11, 15]),

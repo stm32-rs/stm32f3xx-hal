@@ -21,7 +21,6 @@ fn gen_gpio_ip(ip: &gpio::Ip) -> Result<()> {
     let feature = ip_version_to_feature(&ip.version)?;
     let ports = merge_pins_by_port(&ip.pins)?;
 
-    println!(r#"#[cfg(feature = "{}")]"#, feature);
     gen_gpio_macro_call(&ports, &feature)?;
     Ok(())
 }
@@ -31,7 +30,7 @@ fn ip_version_to_feature(ip_version: &str) -> Result<String> {
         Lazy::new(|| Regex::new(r"^STM32(?P<version>\w+)_gpio_v1_0$").unwrap());
 
     let captures = VERSION
-        .captures(&ip_version)
+        .captures(ip_version)
         .with_context(|| format!("invalid GPIO IP version: {}", ip_version))?;
 
     let version = captures.name("version").unwrap().as_str();
@@ -60,94 +59,58 @@ fn merge_pins_by_port(pins: &[gpio::Pin]) -> Result<Vec<Port>> {
 }
 
 fn gen_gpio_macro_call(ports: &[Port], feature: &str) -> Result<()> {
-    println!("gpio!({{");
-
-    gen_pac_list(ports, feature);
-
-    println!("    ports: [");
     for port in ports {
-        gen_port(port, feature)?;
+        println!(r#"#[cfg(feature = "{}")]"#, feature);
+        gen_port(port)?;
+        println!();
     }
-    println!("    ],");
 
-    println!("}});");
     Ok(())
 }
 
-fn gen_pac_list(ports: &[Port], feature: &str) {
-    let mut pac_modules: Vec<_> = ports
-        .iter()
-        .map(|port| get_port_pac_module(port, feature))
-        .collect();
-    pac_modules.sort_unstable();
-    pac_modules.dedup();
-    println!("    pacs: [{}],", pac_modules.join(", "));
-}
-
-fn gen_port(port: &Port, feature: &str) -> Result<()> {
-    let pac_module = get_port_pac_module(port, feature);
-    let port_index = match port.id {
-        'A' => 0,
-        'B' => 1,
-        'C' => 2,
-        'D' => 3,
-        'E' => 4,
-        'F' => 5,
-        'G' => 6,
-        'H' => 7,
-        _ => unreachable!(),
-    };
-
-    println!("        {{");
+fn gen_port(port: &Port) -> Result<()> {
+    let port_upper = port.id;
+    let port_lower = port.id.to_ascii_lowercase();
     println!(
-        "            port: ({}/{}, {}, {}),",
-        port.id,
-        port.id.to_lowercase(),
-        port_index,
-        pac_module,
+        "gpio!(GPIO{0}, gpio{1}, P{0}, '{0}', P{0}n, [",
+        port_upper, port_lower
     );
-    println!("            pins: [");
 
     for pin in &port.pins {
-        gen_pin(pin)?;
+        gen_pin(port_upper, port_lower, pin)?;
     }
 
-    println!("            ],");
-    println!("        }},");
+    println!("]);");
     Ok(())
 }
 
-fn get_port_pac_module(port: &Port, feature: &str) -> &'static str {
-    // The registers in ports A and B have different reset values due to the
-    // presence of debug pins, so they get dedicated PAC modules.
-    match port.id {
-        'A' => "gpioa",
-        'B' => "gpiob",
-        'D' if feature == "gpio-f373" => "gpiod",
-        _ => "gpioc",
-    }
-}
-
-fn gen_pin(pin: &gpio::Pin) -> Result<()> {
+fn gen_pin(port_upper: char, port_lower: char, pin: &gpio::Pin) -> Result<()> {
     let nr = pin.number()?;
     let reset_mode = get_pin_reset_mode(pin)?;
-    let afr = if nr < 8 { 'L' } else { 'H' };
     let af_numbers = get_pin_af_numbers(pin)?;
 
     println!(
-        "                {} => {{ reset: {}, afr: {}, af: {:?} }},",
-        nr, reset_mode, afr, af_numbers,
+        "    P{0}{2}: (p{1}{2}, {2}, {3:?}{4}),",
+        port_upper,
+        port_lower,
+        nr,
+        af_numbers,
+        if let Some(rst) = reset_mode {
+            format!(", {}", rst)
+        } else {
+            String::new()
+        }
     );
 
     Ok(())
 }
 
-fn get_pin_reset_mode(pin: &gpio::Pin) -> Result<&'static str> {
+fn get_pin_reset_mode(pin: &gpio::Pin) -> Result<Option<&'static str>> {
     // Debug pins default to their debug function (AF0), everything else
-    // defaults to input.
+    // defaults to floating input or analog.
     let mode = match (pin.port()?, pin.number()?) {
-        ('A', 13) | ('A', 14) | ('A', 15) | ('B', 3) | ('B', 4) => "AF0<PushPull>",
-        _ => "Input",
+        ('A', 13) | ('A', 14) | ('A', 15) | ('B', 3) | ('B', 4) => Some("super::Debugger"),
+        _ => None,
     };
     Ok(mode)
 }
