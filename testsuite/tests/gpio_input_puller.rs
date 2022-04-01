@@ -5,11 +5,11 @@ use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
-use hal::gpio::{self, EPin, Input, Pull};
+use hal::gpio::{self, ErasedPin, Input, Pull};
 use hal::{pac, prelude::*};
 
 struct State {
-    observer: EPin<Input>,
+    observer: ErasedPin<Input>,
     puller: gpio::PC1<Input>,
     pupdr: gpio::PUPDR<'C'>,
 }

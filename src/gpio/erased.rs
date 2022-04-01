@@ -1,7 +1,5 @@
 use super::*;
 
-pub type EPin<MODE> = ErasedPin<MODE>;
-
 /// Fully erased pin
 ///
 /// `MODE` is one of the pin modes (see [Modes](crate::gpio#modes) section).
@@ -78,12 +76,14 @@ impl<MODE> ErasedPin<MODE> {
 }
 
 impl<MODE> ErasedPin<Output<MODE>> {
+    /// Drives the pin high
     #[inline(always)]
     pub fn set_high(&mut self) {
         // NOTE(unsafe) atomic write to a stateless register
         unsafe { self.block().bsrr.write(|w| w.bits(1 << self.pin_id())) };
     }
 
+    /// Drives the pin low
     #[inline(always)]
     pub fn set_low(&mut self) {
         // NOTE(unsafe) atomic write to a stateless register
@@ -94,6 +94,7 @@ impl<MODE> ErasedPin<Output<MODE>> {
         };
     }
 
+    /// Is the pin in drive high or low mode?
     #[inline(always)]
     pub fn get_state(&self) -> PinState {
         if self.is_set_low() {
@@ -103,6 +104,7 @@ impl<MODE> ErasedPin<Output<MODE>> {
         }
     }
 
+    /// Drives the pin high or low depending on the provided value
     #[inline(always)]
     pub fn set_state(&mut self, state: PinState) {
         match state {
@@ -111,16 +113,19 @@ impl<MODE> ErasedPin<Output<MODE>> {
         }
     }
 
+    /// Is the pin in drive high mode?
     #[inline(always)]
     pub fn is_set_high(&self) -> bool {
         !self.is_set_low()
     }
 
+    /// Is the pin in drive low mode?
     #[inline(always)]
     pub fn is_set_low(&self) -> bool {
         self.block().odr.read().bits() & (1 << self.pin_id()) == 0
     }
 
+    /// Toggle pin output
     #[inline(always)]
     pub fn toggle(&mut self) {
         if self.is_set_low() {
@@ -135,11 +140,13 @@ impl<MODE> ErasedPin<MODE>
 where
     MODE: super::sealed::Readable,
 {
+    /// Is the input pin high?
     #[inline(always)]
     pub fn is_high(&self) -> bool {
         !self.is_low()
     }
 
+    /// Is the input pin low?
     #[inline(always)]
     pub fn is_low(&self) -> bool {
         self.block().idr.read().bits() & (1 << self.pin_id()) == 0

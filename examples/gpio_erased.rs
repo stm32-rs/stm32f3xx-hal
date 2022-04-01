@@ -23,7 +23,7 @@ fn main() -> ! {
     let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
     let mut gpiod = dp.GPIOD.split(&mut rcc.ahb);
 
-    let mut pin_array: [gpio::EPin<Input>; 4] = [
+    let mut pin_array: [gpio::ErasedPin<Input>; 4] = [
         gpiob
             .pb11
             .into_floating_input(&mut gpiob.moder, &mut gpiob.pupdr)

@@ -5,11 +5,11 @@ use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
-use hal::gpio::{EPin, Input, OpenDrain, Output};
+use hal::gpio::{ErasedPin, Input, OpenDrain, Output};
 
 struct State {
-    input_pin: EPin<Input>,
-    output_pin: EPin<Output<OpenDrain>>,
+    input_pin: ErasedPin<Input>,
+    output_pin: ErasedPin<Output<OpenDrain>>,
 }
 
 #[defmt_test::tests]

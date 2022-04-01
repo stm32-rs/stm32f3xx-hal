@@ -78,8 +78,6 @@
 //! To make a pin dynamic, use the `into_dynamic` function, and then use the `make_<mode>` functions to
 //! change the mode
 
-#![allow(missing_docs)]
-
 use core::marker::PhantomData;
 
 use crate::pac::{Interrupt, EXTI};
@@ -89,9 +87,9 @@ use crate::Switch;
 mod convert;
 use convert::PinMode;
 mod partially_erased;
-pub use partially_erased::{PEPin, PartiallyErasedPin};
+pub use partially_erased::PartiallyErasedPin;
 mod erased;
-pub use erased::{EPin, ErasedPin};
+pub use erased::ErasedPin;
 mod dynamic;
 pub use dynamic::{Dynamic, DynamicPin};
 mod hal_02;
@@ -114,11 +112,13 @@ pub trait GpioExt {
     fn split(self, ahb: &mut AHB) -> Self::Parts;
 }
 
+/// Id, port and mode for any pin
 pub trait PinExt {
+    /// Current pin mode
     type Mode;
-    /// Return pin number
+    /// Pin number
     fn pin_id(&self) -> u8;
-    /// Return port number
+    /// Port number starting from 0
     fn port_id(&self) -> u8;
 }
 
@@ -154,6 +154,7 @@ pub struct PushPull;
 /// Analog mode (type state)
 pub struct Analog;
 
+/// JTAG/SWD mote (type state)
 pub type Debugger = Alternate<0, PushPull>;
 
 mod sealed {
@@ -184,16 +185,23 @@ impl sealed::NotAlt for Analog {}
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Speed {
+    /// Low speed
     Low = 0,
+    /// Medium speed
     Medium = 1,
+    /// High speed
     High = 3,
 }
 
+/// GPIO interrupt trigger edge selection
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Edge {
+    /// Rising edge of voltage
     Rising,
+    /// Falling edge of voltage
     Falling,
+    /// Rising and falling edge of voltage
     RisingFalling,
 }
 
@@ -474,16 +482,16 @@ impl<const P: char, const N: u8, MODE> Pin<P, N, MODE> {
     ///
     /// This is useful when you want to collect the pins into an array where you
     /// need all the elements to have the same type
-    pub fn erase_number(self) -> PEPin<P, MODE> {
-        PEPin::new(N)
+    pub fn erase_number(self) -> PartiallyErasedPin<P, MODE> {
+        PartiallyErasedPin::new(N)
     }
 
     /// Erases the pin number and the port from the type
     ///
     /// This is useful when you want to collect the pins into an array where you
     /// need all the elements to have the same type
-    pub fn erase(self) -> EPin<MODE> {
-        EPin::new(P as u8 - b'A', N)
+    pub fn erase(self) -> ErasedPin<MODE> {
+        ErasedPin::new(P as u8 - b'A', N)
     }
 }
 
@@ -522,16 +530,19 @@ impl<const P: char, const N: u8, MODE> Pin<P, N, MODE> {
 }
 
 impl<const P: char, const N: u8, MODE> Pin<P, N, Output<MODE>> {
+    /// Drives the pin high
     #[inline(always)]
     pub fn set_high(&mut self) {
         self._set_high()
     }
 
+    /// Drives the pin low
     #[inline(always)]
     pub fn set_low(&mut self) {
         self._set_low()
     }
 
+    /// Is the pin in drive high or low mode?
     #[inline(always)]
     pub fn get_state(&self) -> PinState {
         if self.is_set_low() {
@@ -541,6 +552,7 @@ impl<const P: char, const N: u8, MODE> Pin<P, N, Output<MODE>> {
         }
     }
 
+    /// Drives the pin high or low depending on the provided value
     #[inline(always)]
     pub fn set_state(&mut self, state: PinState) {
         match state {
@@ -549,16 +561,19 @@ impl<const P: char, const N: u8, MODE> Pin<P, N, Output<MODE>> {
         }
     }
 
+    /// Is the pin in drive high mode?
     #[inline(always)]
     pub fn is_set_high(&self) -> bool {
         !self.is_set_low()
     }
 
+    /// Is the pin in drive low mode?
     #[inline(always)]
     pub fn is_set_low(&self) -> bool {
         self._is_set_low()
     }
 
+    /// Toggle pin output
     #[inline(always)]
     pub fn toggle(&mut self) {
         if self.is_set_low() {
@@ -573,11 +588,13 @@ impl<const P: char, const N: u8, MODE> Pin<P, N, MODE>
 where
     MODE: sealed::Readable,
 {
+    /// Is the input pin high?
     #[inline(always)]
     pub fn is_high(&self) -> bool {
         !self.is_low()
     }
 
+    /// Is the input pin low?
     #[inline(always)]
     pub fn is_low(&self) -> bool {
         self._is_low()
@@ -635,9 +652,14 @@ macro_rules! gpio {
                 }
             }
 
-            pub type $PXn<MODE> = super::PEPin<$port_id, MODE>;
+            #[doc="Common type for "]
+            #[doc=stringify!($GPIOX)]
+            #[doc=" related pins"]
+            pub type $PXn<MODE> = super::PartiallyErasedPin<$port_id, MODE>;
 
             $(
+                #[doc=stringify!($PXi)]
+                #[doc=" pin"]
                 pub type $PXi<MODE = Input> = super::Pin<$port_id, $i, MODE>;
 
                 $(
@@ -721,7 +743,6 @@ gpio!(GPIOF, gpiof, PF, 'F', PFn, [
     PF0: (pf0, 0, [4, 5, 6]),
     PF1: (pf1, 1, [4, 5]),
 ]);
-
 
 #[cfg(feature = "gpio-f303e")]
 gpio!(GPIOA, gpioa, PA, 'A', PAn, [
@@ -870,7 +891,6 @@ gpio!(GPIOH, gpioh, PH, 'H', PHn, [
     PH2: (ph2, 2, [1]),
 ]);
 
-
 #[cfg(feature = "gpio-f303")]
 gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA0: (pa0, 0, [1, 3, 7, 8, 9, 10, 15]),
@@ -982,7 +1002,6 @@ gpio!(GPIOF, gpiof, PF, 'F', PFn, [
     PF10: (pf10, 10, [1, 3, 5]),
 ]);
 
-
 #[cfg(feature = "gpio-f333")]
 gpio!(GPIOA, gpioa, PA, 'A', PAn, [
     PA0: (pa0, 0, [1, 3, 7, 15]),
@@ -1053,7 +1072,6 @@ gpio!(GPIOF, gpiof, PF, 'F', PFn, [
     PF0: (pf0, 0, [6]),
     PF1: (pf1, 1, []),
 ]);
-
 
 #[cfg(feature = "gpio-f373")]
 gpio!(GPIOA, gpioa, PA, 'A', PAn, [

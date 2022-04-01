@@ -7,11 +7,11 @@ use panic_probe as _;
 use hal::prelude::*;
 use stm32f3xx_hal as hal;
 
-use hal::gpio::{EPin, Input, Output, PushPull};
+use hal::gpio::{ErasedPin, Input, Output, PushPull};
 
 struct State {
-    input_pin: EPin<Input>,
-    output_pin: EPin<Output<PushPull>>,
+    input_pin: ErasedPin<Input>,
+    output_pin: ErasedPin<Output<PushPull>>,
 }
 
 #[defmt_test::tests]

@@ -331,5 +331,5 @@ pub struct TryFromIntError;
 fn stripped_type_name<T>() -> &'static str {
     let s = core::any::type_name::<T>();
     let p = s.split("::");
-    p.last().unwrap()
+    p.last().unwrap_or(s)
 }
