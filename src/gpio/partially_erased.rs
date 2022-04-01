@@ -119,7 +119,7 @@ impl<const P: char, MODE> PartiallyErasedPin<P, Output<MODE>> {
 
 impl<const P: char, MODE> PartiallyErasedPin<P, MODE>
 where
-    MODE: super::sealed::Readable,
+    MODE: super::marker::Readable,
 {
     /// Is the input pin high?
     #[inline(always)]

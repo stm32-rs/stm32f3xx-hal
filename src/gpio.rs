@@ -157,7 +157,7 @@ pub struct Analog;
 /// JTAG/SWD mote (type state)
 pub type Debugger = Alternate<0, PushPull>;
 
-mod sealed {
+mod marker {
     /// Marker trait that show if `ExtiPin` can be implemented
     pub trait Interruptable {}
     /// Marker trait for readable pin modes
@@ -170,16 +170,16 @@ mod sealed {
     pub trait NotAlt {}
 }
 
-impl sealed::Readable for Input {}
-impl sealed::Readable for Output<OpenDrain> {}
-impl sealed::Active for Input {}
-impl<Otype> sealed::OutputSpeed for Output<Otype> {}
-impl<const A: u8, Otype> sealed::OutputSpeed for Alternate<A, Otype> {}
-impl<Otype> sealed::Active for Output<Otype> {}
-impl<const A: u8, Otype> sealed::Active for Alternate<A, Otype> {}
-impl sealed::NotAlt for Input {}
-impl<Otype> sealed::NotAlt for Output<Otype> {}
-impl sealed::NotAlt for Analog {}
+impl marker::Readable for Input {}
+impl marker::Readable for Output<OpenDrain> {}
+impl marker::Active for Input {}
+impl<Otype> marker::OutputSpeed for Output<Otype> {}
+impl<const A: u8, Otype> marker::OutputSpeed for Alternate<A, Otype> {}
+impl<Otype> marker::Active for Output<Otype> {}
+impl<const A: u8, Otype> marker::Active for Alternate<A, Otype> {}
+impl marker::NotAlt for Input {}
+impl<Otype> marker::NotAlt for Output<Otype> {}
+impl marker::NotAlt for Analog {}
 
 /// GPIO Pin speed selection
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -205,7 +205,7 @@ pub enum Edge {
     RisingFalling,
 }
 
-use sealed::Interruptable;
+use marker::Interruptable;
 impl<MODE> Interruptable for Output<MODE> {}
 impl Interruptable for Input {}
 
@@ -417,7 +417,7 @@ impl<const P: char, const N: u8, MODE> PinExt for Pin<P, N, MODE> {
 
 impl<const P: char, const N: u8, MODE> Pin<P, N, MODE>
 where
-    MODE: sealed::OutputSpeed,
+    MODE: marker::OutputSpeed,
 {
     /// Set pin speed
     pub fn set_speed(&mut self, _ospeedr: &mut OSPEEDR<P>, speed: Speed) {
@@ -439,7 +439,7 @@ where
 
 impl<const P: char, const N: u8, MODE> Pin<P, N, MODE>
 where
-    MODE: sealed::Active,
+    MODE: marker::Active,
 {
     /// Set the internal pull-up and pull-down resistor
     pub fn set_internal_resistor(&mut self, _pupdr: &mut PUPDR<P>, resistor: Pull) {
@@ -586,7 +586,7 @@ impl<const P: char, const N: u8, MODE> Pin<P, N, Output<MODE>> {
 
 impl<const P: char, const N: u8, MODE> Pin<P, N, MODE>
 where
-    MODE: sealed::Readable,
+    MODE: marker::Readable,
 {
     /// Is the input pin high?
     #[inline(always)]
