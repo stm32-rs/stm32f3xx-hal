@@ -9,7 +9,7 @@ impl<const P: char, const N: u8, MODE: PinMode> Pin<P, N, MODE> {
         _afr: &mut <Self as HL>::Afr,
     ) -> Pin<P, N, Alternate<A, PushPull>>
     where
-        Self: IntoAf<A>,
+        Self: super::marker::IntoAf<A>,
     {
         self.into_mode()
     }
@@ -22,7 +22,7 @@ impl<const P: char, const N: u8, MODE: PinMode> Pin<P, N, MODE> {
         _afr: &mut <Self as HL>::Afr,
     ) -> Pin<P, N, Alternate<A, OpenDrain>>
     where
-        Self: IntoAf<A>,
+        Self: super::marker::IntoAf<A>,
     {
         self.into_mode()
     }

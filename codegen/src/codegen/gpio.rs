@@ -49,6 +49,9 @@ fn merge_pins_by_port(pins: &[gpio::Pin]) -> Result<Vec<Port>> {
 
     let mut ports = Vec::new();
     for (id, mut pins) in pins_by_port {
+        pins.retain(|p| {
+            p.name != "PDR_ON" && p.name != "PC14OSC32_IN" && p.name != "PC15OSC32_OUT"
+        });
         pins.sort_by_key(|p| p.number().unwrap_or_default());
         pins.dedup_by_key(|p| p.number().unwrap_or_default());
         ports.push(Port { id, pins });

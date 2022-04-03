@@ -168,6 +168,8 @@ mod marker {
     pub trait Active {}
     /// Marker trait for all pin modes except alternate
     pub trait NotAlt {}
+    /// Marker trait for pins with alternate function `A` mapping
+    pub trait IntoAf<const A: u8>: super::HL {}
 }
 
 impl marker::Readable for Input {}
@@ -229,9 +231,6 @@ pub trait HL {
     /// Configuration register associated to pin
     type Afr;
 }
-
-/// Marker trait for pins with alternate function `A` mapping
-pub trait IntoAf<const A: u8>: HL {}
 
 macro_rules! cr {
     ($high:literal: [$($i:literal),+]) => {
@@ -609,7 +608,7 @@ macro_rules! gpio {
         pub mod $gpiox {
             use crate::pac::$GPIOX;
             use crate::rcc::{Enable, Reset, AHB};
-            use super::{Afr, Input, MODER, OTYPER, OSPEEDR, PUPDR, IntoAf};
+            use super::{Afr, MODER, OTYPER, OSPEEDR, PUPDR};
 
             /// GPIO parts
             pub struct Parts {
@@ -660,10 +659,10 @@ macro_rules! gpio {
             $(
                 #[doc=stringify!($PXi)]
                 #[doc=" pin"]
-                pub type $PXi<MODE = Input> = super::Pin<$port_id, $i, MODE>;
+                pub type $PXi<MODE = super::Input> = super::Pin<$port_id, $i, MODE>;
 
                 $(
-                    impl<MODE> IntoAf<$A> for $PXi<MODE> { }
+                    impl<MODE> super::marker::IntoAf<$A> for $PXi<MODE> { }
                 )*
             )+
 
@@ -1197,7 +1196,7 @@ impl<const P: char> Gpio<P> {
             'G' => crate::pac::GPIOG::ptr() as _,
             #[cfg(feature = "gpio-f303e")]
             'H' => crate::pac::GPIOH::ptr() as _,
-            _ => crate::pac::GPIOA::ptr(),
+            _ => panic!("Unknown GPIO port"),
         }
     }
 }
