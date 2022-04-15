@@ -445,6 +445,30 @@ mod tests {
 
         state.serial1 = Some(serial);
     }
+
+    #[test]
+    fn test_busy_does_not_prevent_reading_data_register(state: &mut super::State) {
+        let mut serial = state.serial1.take().unwrap();
+
+        while serial.is_busy() {}
+
+        let b1 = TEST_MSG[0];
+        let b2 = TEST_MSG[1];
+
+        unwrap!(nb::block!(serial.write(b1)));
+        while !serial.is_busy() {} // Wait until reception b1 started
+        while serial.is_busy() {} // Wait until reception b1 complete
+        unwrap!(nb::block!(serial.write(b2)));
+        while !serial.is_busy() {} // Wait until reception b2 started
+
+        let c1 = unwrap!(nb::block!(serial.read())); // b1 in data register, b2 in shift register
+        let c2 = unwrap!(nb::block!(serial.read())); // wait for b2 in data register
+
+        assert_eq!(b1, c1);
+        assert_eq!(b2, c2);
+
+        state.serial1 = Some(serial);
+    }
 }
 
 // TODO: This maybe can be moved into a function inside the
