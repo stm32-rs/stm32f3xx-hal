@@ -83,7 +83,7 @@ use core::marker::PhantomData;
 use crate::rcc::AHB;
 
 mod convert;
-use convert::PinMode;
+pub use convert::PinMode;
 mod partially_erased;
 pub use partially_erased::PartiallyErasedPin;
 mod erased;
