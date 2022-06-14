@@ -4,7 +4,7 @@
 
 use crate::rcc::{Enable, Reset, APB1};
 
-#[cfg(any(feature = "svd-f302",))]
+#[cfg(feature = "svd-f302")]
 use crate::pac::DAC;
 
 #[cfg(any(
