@@ -8,11 +8,7 @@ use panic_semihosting as _;
 
 use cortex_m_rt::entry;
 
-use stm32f3xx_hal::{
-    dac::{Dac, DacChannel},
-    pac,
-    prelude::*,
-};
+use stm32f3xx_hal::{dac::Dac, pac, prelude::*};
 
 const LUT_LEN: usize = 256;
 
@@ -49,15 +45,12 @@ fn main() -> ! {
     let _dac1_out1 = gpioa.pa4.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
 
     // set up led for blinking loop
-    let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
-    let mut ok_led = gpioe
-        .pe15
-        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut ok_led = gpioa
+        .pa15
+        .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
 
     // set up dac1, data is twelve bits, alighned right
     let mut dac1 = Dac::new(dp.DAC1, &mut rcc.apb1);
-    // enable channel one for single channel mode
-    dac1.enable_channel(DacChannel::One);
 
     let mut led = true;
 

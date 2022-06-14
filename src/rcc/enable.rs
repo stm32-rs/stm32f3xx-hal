@@ -154,7 +154,7 @@ bus! {
     feature = "svd-f3x4"
 ))]
 bus! {
-    DAC1 => (APB1, dac1en,), // 29
+    DAC1 => (APB1, dac1en, dac1rst), // 29
 }
 
 #[cfg(any(feature = "svd-f303", feature = "svd-f373", feature = "svd-f3x4"))]
