@@ -2,28 +2,29 @@
 
 // Based on stm32hal by David-OConnor
 
-use cortex_m::asm;
+use crate::rcc::{Enable, Reset, APB1};
 
-use crate::{
-    gpio::{self, Analog},
-    pac::{dac1, DAC1},
-    rcc::{Clocks, Enable, Rcc, Reset, AHB, APB1},
-};
+#[cfg(any(feature = "svd-f302",))]
+use crate::pac::DAC;
 
-use crate::pac::DMA1;
-
-use crate::pac::{self, rcc, RCC};
+#[cfg(any(
+    feature = "svd-f301",
+    feature = "svd-f303",
+    feature = "svd-f373",
+    feature = "svd-f3x4",
+))]
+use crate::pac::DAC1 as DAC;
 
 /// Represents a Digital to Analog Converter (DAC) peripheral.
 pub struct Dac {
-    regs: DAC1,
+    regs: DAC,
 }
 
 impl Dac {
     /// Initializes the DAC peripheral.
-    pub fn new(regs: DAC1, apb1: &mut APB1) -> Self {
-        DAC1::enable(apb1);
-        DAC1::reset(apb1);
+    pub fn new(regs: DAC, apb1: &mut APB1) -> Self {
+        DAC::enable(apb1);
+        DAC::reset(apb1);
 
         // Enable channel 1.
         regs.cr.modify(|_, w| w.en1().set_bit());
@@ -35,6 +36,11 @@ impl Dac {
     ///
     /// Only the low 12 bits of `data` will be used, the rest is ignored.
     pub fn write_data(&mut self, data: u16) {
-        self.regs.dhr12r1.write(|w| w.dacc1dhr().bits(data))
+        self.regs.dhr12r1.write(|w| {
+            #[allow(unused_unsafe)]
+            unsafe {
+                w.dacc1dhr().bits(data)
+            }
+        })
     }
 }
