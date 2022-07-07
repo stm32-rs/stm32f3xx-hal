@@ -45,12 +45,11 @@ impl defmt::Format for MonoTimer {
 impl MonoTimer {
     /// Creates a new `Monotonic` timer
     pub fn new(mut dwt: DWT, clocks: Clocks, dcb: &mut DCB) -> Self {
+        // Takes ownership of `DWT` so that the CYCCNT counter can't be stopped or resetted.
+
         // This is needed, so that the DWT timer starts to count.
         dcb.enable_trace();
         dwt.enable_cycle_counter();
-
-        // now the CYCCNT counter can't be stopped or resetted
-        drop(dwt);
 
         MonoTimer {
             frequency: clocks.hclk(),

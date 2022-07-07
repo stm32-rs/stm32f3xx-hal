@@ -1039,22 +1039,22 @@ where
 
         // Set the channel in the right sequence field
         match sequence {
-            config::Sequence::One      => self.reg.sqr1.modify(|_, w| unsafe { w.sq1().bits(channel.into()) }),
-            config::Sequence::Two      => self.reg.sqr1.modify(|_, w| unsafe { w.sq2().bits(channel.into()) }),
-            config::Sequence::Three    => self.reg.sqr1.modify(|_, w| unsafe { w.sq3().bits(channel.into()) }),
-            config::Sequence::Four     => self.reg.sqr1.modify(|_, w| unsafe { w.sq4().bits(channel.into()) }),
-            config::Sequence::Five     => self.reg.sqr2.modify(|_, w| unsafe { w.sq5().bits(channel.into()) }),
-            config::Sequence::Six      => self.reg.sqr2.modify(|_, w| unsafe { w.sq6().bits(channel.into()) }),
-            config::Sequence::Seven    => self.reg.sqr2.modify(|_, w| unsafe { w.sq7().bits(channel.into()) }),
-            config::Sequence::Eight    => self.reg.sqr2.modify(|_, w| unsafe { w.sq8().bits(channel.into()) }),
-            config::Sequence::Nine     => self.reg.sqr2.modify(|_, w| unsafe { w.sq9().bits(channel.into()) }),
-            config::Sequence::Ten      => self.reg.sqr3.modify(|_, w| unsafe { w.sq10().bits(channel.into()) }),
-            config::Sequence::Eleven   => self.reg.sqr3.modify(|_, w| unsafe { w.sq11().bits(channel.into()) }),
-            config::Sequence::Twelve   => self.reg.sqr3.modify(|_, w| unsafe { w.sq12().bits(channel.into()) }),
-            config::Sequence::Thirteen => self.reg.sqr3.modify(|_, w| unsafe { w.sq13().bits(channel.into()) }),
-            config::Sequence::Fourteen => self.reg.sqr3.modify(|_, w| unsafe { w.sq14().bits(channel.into()) }),
-            config::Sequence::Fifteen  => self.reg.sqr4.modify(|_, w| unsafe { w.sq15().bits(channel.into()) }),
-            config::Sequence::Sixteen  => self.reg.sqr4.modify(|_, w| unsafe { w.sq16().bits(channel.into()) }),
+            config::Sequence::One      => self.reg.sqr1.modify(|_, w| w.sq1().bits(channel.into())),
+            config::Sequence::Two      => self.reg.sqr1.modify(|_, w| w.sq2().bits(channel.into())),
+            config::Sequence::Three    => self.reg.sqr1.modify(|_, w| w.sq3().bits(channel.into())),
+            config::Sequence::Four     => self.reg.sqr1.modify(|_, w| w.sq4().bits(channel.into())),
+            config::Sequence::Five     => self.reg.sqr2.modify(|_, w| w.sq5().bits(channel.into())),
+            config::Sequence::Six      => self.reg.sqr2.modify(|_, w| w.sq6().bits(channel.into())),
+            config::Sequence::Seven    => self.reg.sqr2.modify(|_, w| w.sq7().bits(channel.into())),
+            config::Sequence::Eight    => self.reg.sqr2.modify(|_, w| w.sq8().bits(channel.into())),
+            config::Sequence::Nine     => self.reg.sqr2.modify(|_, w| w.sq9().bits(channel.into())),
+            config::Sequence::Ten      => self.reg.sqr3.modify(|_, w| w.sq10().bits(channel.into())),
+            config::Sequence::Eleven   => self.reg.sqr3.modify(|_, w| w.sq11().bits(channel.into())),
+            config::Sequence::Twelve   => self.reg.sqr3.modify(|_, w| w.sq12().bits(channel.into())),
+            config::Sequence::Thirteen => self.reg.sqr3.modify(|_, w| w.sq13().bits(channel.into())),
+            config::Sequence::Fourteen => self.reg.sqr3.modify(|_, w| w.sq14().bits(channel.into())),
+            config::Sequence::Fifteen  => self.reg.sqr4.modify(|_, w| w.sq15().bits(channel.into())),
+            config::Sequence::Sixteen  => self.reg.sqr4.modify(|_, w| w.sq16().bits(channel.into())),
         }
     }
 
