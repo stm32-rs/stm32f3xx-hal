@@ -53,6 +53,7 @@ pub trait MosiPin<SPI>: crate::private::Sealed {}
 impl SckPin<SPI1> for gpio::PA5<AF5<PushPull>> {}
 impl MisoPin<SPI1> for gpio::PA6<AF5<PushPull>> {}
 impl MosiPin<SPI1> for gpio::PA7<AF5<PushPull>> {}
+impl MosiPin<SPI1> for gpio::PB5<AF5<PushPull>> {}
 
 #[cfg(not(feature = "gpio-f373"))]
 impl SckPin<SPI2> for gpio::PB13<AF5<PushPull>> {}
