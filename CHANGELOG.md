@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Added
+
+- Add a minimal DAC driver ([#318])
+
 ### Fixed
 
 - Missing `MosiPin` impl for `PB5` ([#322])
@@ -557,6 +561,7 @@ let clocks = rcc
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
 [#322]: https://github.com/stm32-rs/stm32f3xx-hal/pull/322
+[#318]: https://github.com/stm32-rs/stm32f3xx-hal/pull/318
 [#314]: https://github.com/stm32-rs/stm32f3xx-hal/pull/314
 [#309]: https://github.com/stm32-rs/stm32f3xx-hal/pull/309
 [#308]: https://github.com/stm32-rs/stm32f3xx-hal/pull/308
