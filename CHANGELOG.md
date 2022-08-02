@@ -14,12 +14,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+### Added
+
+- Add a minimal DAC driver ([#318])
+
 ### Fixed
 
 - Missing `MosiPin` impl for `PB5` ([#322])
-### Added
-
-- Add a minimal DAC driver ([#318]).
 
 ## [v0.9.0] - 2022-03-06
 
