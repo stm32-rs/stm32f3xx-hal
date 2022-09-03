@@ -50,7 +50,7 @@ use core::convert::TryFrom;
 /// [`Adc::set_pin_sequence_position`]: `super::Adc::set_pin_sequence_position`
 /// [`Adc::set_channel_sequence_position`]: `super::Adc::set_channel_sequence_position`
 /// [`Adc::channel_sequence`]: `super::Adc::channel_sequence`
-#[derive(Debug, PartialEq, PartialOrd, Copy, Clone)]
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Copy, Clone)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[allow(missing_docs)]
 pub enum Sequence {

@@ -6,7 +6,7 @@ use crate::time::rate::{Baud, Extensions};
 /// Stop Bit configuration parameter for serial.
 ///
 /// Wrapper around [`STOP_A`]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum StopBits {
     /// 0.5 stop bit
@@ -45,7 +45,7 @@ impl From<STOP_A> for StopBits {
 /// underlying USART will be configured to send/receive the parity bit in
 /// addtion to the data bits.
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Parity {
     /// No parity bit will be added/checked.
     None,
@@ -73,7 +73,7 @@ pub enum Parity {
 /// assert!(config.parity == Parity::None);
 /// assert!(config.stopbits == StopBits::STOP1);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Config {
     /// Serial interface baud rate
