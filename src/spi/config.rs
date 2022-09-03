@@ -35,7 +35,7 @@ use crate::time::rate::Generic;
 /// assert!(config.parity == Parity::None);
 /// assert!(config.stopbits == StopBits::STOP1);
 /// ```
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Config {
     /// Operating frequency of the SPI peripheral.

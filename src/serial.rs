@@ -881,9 +881,7 @@ where
 {
     let isr = usart.isr.read();
 
-    Err(if isr.busy().bit_is_set() {
-        nb::Error::WouldBlock
-    } else if isr.pe().bit_is_set() {
+    Err(if isr.pe().bit_is_set() {
         usart.icr.write(|w| w.pecf().clear());
         nb::Error::Other(Error::Parity)
     } else if isr.fe().bit_is_set() {
