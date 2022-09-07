@@ -4,27 +4,18 @@
 
 use crate::rcc::{Enable, Reset, APB1};
 
-#[cfg(feature = "svd-f302")]
-use crate::pac::DAC;
-
-#[cfg(any(
-    feature = "svd-f301",
-    feature = "svd-f303",
-    feature = "svd-f373",
-    feature = "svd-f3x4",
-))]
-use crate::pac::DAC1 as DAC;
+use crate::pac::DAC1;
 
 /// Represents a Digital to Analog Converter (DAC) peripheral.
 pub struct Dac {
-    regs: DAC,
+    regs: DAC1,
 }
 
 impl Dac {
     /// Initializes the DAC peripheral.
-    pub fn new(regs: DAC, apb1: &mut APB1) -> Self {
-        DAC::enable(apb1);
-        DAC::reset(apb1);
+    pub fn new(regs: DAC1, apb1: &mut APB1) -> Self {
+        DAC1::enable(apb1);
+        DAC1::reset(apb1);
 
         // Enable channel 1.
         regs.cr.modify(|_, w| w.en1().set_bit());

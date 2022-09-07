@@ -46,10 +46,10 @@ fn main() -> ! {
             .downgrade(),
     ];
 
-    hprintln!("Start scanning pin array").unwrap();
+    hprintln!("Start scanning pin array");
     loop {
         for pin in pin_array.iter_mut() {
-            hprintln!("Value is {}", pin.is_high().unwrap()).unwrap();
+            hprintln!("Value is {}", pin.is_high().unwrap());
             asm::delay(1_000_000);
         }
     }

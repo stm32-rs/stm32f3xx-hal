@@ -18,7 +18,7 @@ use crate::time::rate::Kilohertz;
 /// Frequency of the watchdog peripheral clock
 const LSI: Kilohertz = Kilohertz(40);
 // const MAX_PRESCALER: u8 = 0b0111;
-const MAX_PRESCALER: PR_A = PR_A::DIVIDEBY256;
+const MAX_PRESCALER: PR_A = PR_A::DivideBy256;
 const MAX_RELOAD: u32 = 0x0FFF;
 
 /// Independent Watchdog Peripheral
@@ -43,13 +43,13 @@ impl fmt::Debug for IndependentWatchDog {
 
 fn into_division_value(psc: PR_A) -> u32 {
     match psc {
-        PR_A::DIVIDEBY4 => 4,
-        PR_A::DIVIDEBY8 => 8,
-        PR_A::DIVIDEBY16 => 16,
-        PR_A::DIVIDEBY32 => 32,
-        PR_A::DIVIDEBY64 => 64,
-        PR_A::DIVIDEBY128 => 128,
-        PR_A::DIVIDEBY256 | PR_A::DIVIDEBY256BIS => 256,
+        PR_A::DivideBy4 => 4,
+        PR_A::DivideBy8 => 8,
+        PR_A::DivideBy16 => 16,
+        PR_A::DivideBy32 => 32,
+        PR_A::DivideBy64 => 64,
+        PR_A::DivideBy128 => 128,
+        PR_A::DivideBy256 | PR_A::DivideBy256bis => 256,
     }
 }
 
@@ -71,7 +71,7 @@ impl IndependentWatchDog {
     /// Find and setup the next best prescaler and reload value for the selected timeout
     fn setup(&self, timeout: Milliseconds) {
         let mut reload: u32 =
-            timeout.integer() * LSI.integer() / into_division_value(PR_A::DIVIDEBY4);
+            timeout.integer().saturating_mul(LSI.integer()) / into_division_value(PR_A::DivideBy4);
 
         // Reload is potentially to high to be stored in the register.
         // The goal of this loop is to find the maximum possible reload value,

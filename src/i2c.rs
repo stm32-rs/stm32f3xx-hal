@@ -462,8 +462,8 @@ macro_rules! i2c {
                 fn clock(clocks: &Clocks) -> Hertz {
                     // NOTE(unsafe) atomic read with no side effects
                     match unsafe { (*RCC::ptr()).cfgr3.read().$i2cXsw().variant() } {
-                        I2C1SW_A::HSI => crate::rcc::HSI,
-                        I2C1SW_A::SYSCLK => clocks.sysclk(),
+                        I2C1SW_A::Hsi => crate::rcc::HSI,
+                        I2C1SW_A::Sysclk => clocks.sysclk(),
                     }
                 }
             }

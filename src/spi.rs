@@ -161,13 +161,13 @@ pub trait Word {
 
 impl Word for u8 {
     fn register_config() -> (FRXTH_A, DS_A) {
-        (FRXTH_A::QUARTER, DS_A::EIGHTBIT)
+        (FRXTH_A::Quarter, DS_A::EightBit)
     }
 }
 
 impl Word for u16 {
     fn register_config() -> (FRXTH_A, DS_A) {
-        (FRXTH_A::HALF, DS_A::SIXTEENBIT)
+        (FRXTH_A::Half, DS_A::SixteenBit)
     }
 }
 
@@ -309,14 +309,14 @@ where
         use spi1::cr1::BR_A;
         match SPI::clock(&clocks).0 / (freq.integer() * *freq.scaling_factor()) {
             0 => crate::unreachable!(),
-            1..=2 => BR_A::DIV2,
-            3..=5 => BR_A::DIV4,
-            6..=11 => BR_A::DIV8,
-            12..=23 => BR_A::DIV16,
-            24..=39 => BR_A::DIV32,
-            40..=95 => BR_A::DIV64,
-            96..=191 => BR_A::DIV128,
-            _ => BR_A::DIV256,
+            1..=2 => BR_A::Div2,
+            3..=5 => BR_A::Div4,
+            6..=11 => BR_A::Div8,
+            12..=23 => BR_A::Div16,
+            24..=39 => BR_A::Div32,
+            40..=95 => BR_A::Div64,
+            96..=191 => BR_A::Div128,
+            _ => BR_A::Div256,
         }
     }
 

@@ -22,10 +22,10 @@ pub enum StopBits {
 impl From<StopBits> for STOP_A {
     fn from(stopbit: StopBits) -> Self {
         match stopbit {
-            StopBits::Stop0P5 => STOP_A::STOP0P5,
-            StopBits::Stop1 => STOP_A::STOP1,
-            StopBits::Stop1P5 => STOP_A::STOP1P5,
-            StopBits::Stop2 => STOP_A::STOP2,
+            StopBits::Stop0P5 => STOP_A::Stop0p5,
+            StopBits::Stop1 => STOP_A::Stop1,
+            StopBits::Stop1P5 => STOP_A::Stop1p5,
+            StopBits::Stop2 => STOP_A::Stop2,
         }
     }
 }
@@ -33,10 +33,10 @@ impl From<StopBits> for STOP_A {
 impl From<STOP_A> for StopBits {
     fn from(stopbit: STOP_A) -> Self {
         match stopbit {
-            STOP_A::STOP0P5 => StopBits::Stop0P5,
-            STOP_A::STOP1 => StopBits::Stop1,
-            STOP_A::STOP1P5 => StopBits::Stop1P5,
-            STOP_A::STOP2 => StopBits::Stop2,
+            STOP_A::Stop0p5 => StopBits::Stop0P5,
+            STOP_A::Stop1 => StopBits::Stop1,
+            STOP_A::Stop1p5 => StopBits::Stop1P5,
+            STOP_A::Stop2 => StopBits::Stop2,
         }
     }
 }

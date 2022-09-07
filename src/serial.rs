@@ -491,9 +491,9 @@ where
         // and partiy bits together so the actual amount depends on the parity
         // selection.
         let (m0, ps, pce) = match config.parity {
-            Parity::None => (M_A::BIT8, PS_A::EVEN, PCE_A::DISABLED),
-            Parity::Even => (M_A::BIT9, PS_A::EVEN, PCE_A::ENABLED),
-            Parity::Odd => (M_A::BIT9, PS_A::ODD, PCE_A::ENABLED),
+            Parity::None => (M_A::Bit8, PS_A::Even, PCE_A::Disabled),
+            Parity::Even => (M_A::Bit9, PS_A::Even, PCE_A::Enabled),
+            Parity::Odd => (M_A::Bit9, PS_A::Odd, PCE_A::Enabled),
         };
 
         usart
@@ -1342,10 +1342,10 @@ macro_rules! usart_var_clock {
                 fn clock(clocks: &Clocks) -> Hertz {
                     // NOTE(unsafe): atomic read with no side effects
                     match unsafe {(*RCC::ptr()).cfgr3.read().$usartXsw().variant()} {
-                        USART1SW_A::PCLK => <$USARTX as rcc::BusClock>::clock(clocks),
-                        USART1SW_A::HSI => crate::rcc::HSI,
-                        USART1SW_A::SYSCLK => clocks.sysclk(),
-                        USART1SW_A::LSE => crate::rcc::LSE,
+                        USART1SW_A::Pclk => <$USARTX as rcc::BusClock>::clock(clocks),
+                        USART1SW_A::Hsi => crate::rcc::HSI,
+                        USART1SW_A::Sysclk => clocks.sysclk(),
+                        USART1SW_A::Lse => crate::rcc::LSE,
                     }
                 }
             }

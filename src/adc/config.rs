@@ -169,10 +169,10 @@ pub enum Resolution {
 impl From<Resolution> for cfgr::RES_A {
     fn from(r: Resolution) -> Self {
         match r {
-            Resolution::Twelve => cfgr::RES_A::BITS12,
-            Resolution::Ten => cfgr::RES_A::BITS10,
-            Resolution::Eight => cfgr::RES_A::BITS8,
-            Resolution::Six => cfgr::RES_A::BITS6,
+            Resolution::Twelve => cfgr::RES_A::Bits12,
+            Resolution::Ten => cfgr::RES_A::Bits10,
+            Resolution::Eight => cfgr::RES_A::Bits8,
+            Resolution::Six => cfgr::RES_A::Bits6,
         }
     }
 }
@@ -180,10 +180,10 @@ impl From<Resolution> for cfgr::RES_A {
 impl From<cfgr::RES_A> for Resolution {
     fn from(r: cfgr::RES_A) -> Self {
         match r {
-            cfgr::RES_A::BITS12 => Resolution::Twelve,
-            cfgr::RES_A::BITS10 => Resolution::Ten,
-            cfgr::RES_A::BITS8 => Resolution::Eight,
-            cfgr::RES_A::BITS6 => Resolution::Six,
+            cfgr::RES_A::Bits12 => Resolution::Twelve,
+            cfgr::RES_A::Bits10 => Resolution::Ten,
+            cfgr::RES_A::Bits8 => Resolution::Eight,
+            cfgr::RES_A::Bits6 => Resolution::Six,
         }
     }
 }
@@ -242,20 +242,20 @@ pub enum ExternalTrigger {
 impl From<ExternalTrigger> for cfgr::EXTSEL_A {
     fn from(et: ExternalTrigger) -> Self {
         match et {
-            ExternalTrigger::Tim1Cc1(_) => cfgr::EXTSEL_A::TIM1_CC1,
-            ExternalTrigger::Tim1Cc2(_) => cfgr::EXTSEL_A::TIM1_CC2,
-            ExternalTrigger::Tim1Cc3(_) => cfgr::EXTSEL_A::TIM1_CC3,
-            ExternalTrigger::Tim2Cc2(_) => cfgr::EXTSEL_A::TIM2_CC2,
-            ExternalTrigger::Tim3Trgo(_) => cfgr::EXTSEL_A::TIM3_TRGO,
-            ExternalTrigger::Exti11(_) => cfgr::EXTSEL_A::EXTI11,
-            ExternalTrigger::HrtimAdcTrg1(_) => cfgr::EXTSEL_A::HRTIM_ADCTRG1,
-            ExternalTrigger::HrtimAdcTrg3(_) => cfgr::EXTSEL_A::HRTIM_ADCTRG3,
-            ExternalTrigger::Tim1Trgo(_) => cfgr::EXTSEL_A::TIM1_TRGO,
-            ExternalTrigger::Tim1Trgo2(_) => cfgr::EXTSEL_A::TIM1_TRGO2,
-            ExternalTrigger::Tim2Trgo(_) => cfgr::EXTSEL_A::TIM2_TRGO,
-            ExternalTrigger::Tim6Trgo(_) => cfgr::EXTSEL_A::TIM6_TRGO,
-            ExternalTrigger::Tim15Trgo(_) => cfgr::EXTSEL_A::TIM15_TRGO,
-            ExternalTrigger::Tim3Cc4(_) => cfgr::EXTSEL_A::TIM1_CC3,
+            ExternalTrigger::Tim1Cc1(_) => cfgr::EXTSEL_A::Tim1Cc1,
+            ExternalTrigger::Tim1Cc2(_) => cfgr::EXTSEL_A::Tim1Cc2,
+            ExternalTrigger::Tim1Cc3(_) => cfgr::EXTSEL_A::Tim1Cc3,
+            ExternalTrigger::Tim2Cc2(_) => cfgr::EXTSEL_A::Tim2Cc2,
+            ExternalTrigger::Tim3Trgo(_) => cfgr::EXTSEL_A::Tim3Trgo,
+            ExternalTrigger::Exti11(_) => cfgr::EXTSEL_A::Exti11,
+            ExternalTrigger::HrtimAdcTrg1(_) => cfgr::EXTSEL_A::HrtimAdctrg1,
+            ExternalTrigger::HrtimAdcTrg3(_) => cfgr::EXTSEL_A::HrtimAdctrg3,
+            ExternalTrigger::Tim1Trgo(_) => cfgr::EXTSEL_A::Tim1Trgo,
+            ExternalTrigger::Tim1Trgo2(_) => cfgr::EXTSEL_A::Tim1Trgo2,
+            ExternalTrigger::Tim2Trgo(_) => cfgr::EXTSEL_A::Tim2Trgo,
+            ExternalTrigger::Tim6Trgo(_) => cfgr::EXTSEL_A::Tim6Trgo,
+            ExternalTrigger::Tim15Trgo(_) => cfgr::EXTSEL_A::Tim15Trgo,
+            ExternalTrigger::Tim3Cc4(_) => cfgr::EXTSEL_A::Tim3Cc4,
         }
     }
 }
@@ -304,9 +304,9 @@ pub enum TriggerMode {
 impl From<TriggerMode> for cfgr::EXTEN_A {
     fn from(tm: TriggerMode) -> Self {
         match tm {
-            TriggerMode::RisingEdge => cfgr::EXTEN_A::RISINGEDGE,
-            TriggerMode::FallingEdge => cfgr::EXTEN_A::FALLINGEDGE,
-            TriggerMode::BothEdges => cfgr::EXTEN_A::BOTHEDGES,
+            TriggerMode::RisingEdge => cfgr::EXTEN_A::RisingEdge,
+            TriggerMode::FallingEdge => cfgr::EXTEN_A::FallingEdge,
+            TriggerMode::BothEdges => cfgr::EXTEN_A::BothEdges,
         }
     }
 }
@@ -338,8 +338,8 @@ pub enum DataAlignment {
 impl From<DataAlignment> for cfgr::ALIGN_A {
     fn from(a: DataAlignment) -> Self {
         match a {
-            DataAlignment::Right => cfgr::ALIGN_A::RIGHT,
-            DataAlignment::Left => cfgr::ALIGN_A::LEFT,
+            DataAlignment::Right => cfgr::ALIGN_A::Right,
+            DataAlignment::Left => cfgr::ALIGN_A::Left,
         }
     }
 }
@@ -347,8 +347,8 @@ impl From<DataAlignment> for cfgr::ALIGN_A {
 impl From<cfgr::ALIGN_A> for DataAlignment {
     fn from(a: cfgr::ALIGN_A) -> Self {
         match a {
-            cfgr::ALIGN_A::RIGHT => DataAlignment::Right,
-            cfgr::ALIGN_A::LEFT => DataAlignment::Left,
+            cfgr::ALIGN_A::Right => DataAlignment::Right,
+            cfgr::ALIGN_A::Left => DataAlignment::Left,
         }
     }
 }
@@ -386,8 +386,8 @@ cfg_if::cfg_if! {
         impl From<Scan> for cr::SCAN_R {
             fn from(a: Scan) -> Self {
                 match a {
-                    Scan::Disabled => cr1::SCAN_R::DISABLED,
-                    Scan::Enabled => cr1::SCAN_R::ENABLED,
+                    Scan::Disabled => cr1::SCAN_R::Disabled,
+                    Scan::Enabled => cr1::SCAN_R::Enabled,
                 }
             }
         }
@@ -395,8 +395,8 @@ cfg_if::cfg_if! {
         impl From<Scan> for cr::SCAN_R {
             fn from(a: Scan) -> Self {
                 match a {
-                    Scan::Disabled => cr1::SCAN_R::DISABLED,
-                    Scan::Enabled => cr1::SCAN_R::ENABLED,
+                    Scan::Disabled => cr1::SCAN_R::Disabled,
+                    Scan::Enabled => cr1::SCAN_R::Enabled,
                 }
             }
         }
@@ -438,8 +438,8 @@ pub enum OverrunMode {
 impl From<cfgr::OVRMOD_A> for OverrunMode {
     fn from(a: cfgr::OVRMOD_A) -> Self {
         match a {
-            cfgr::OVRMOD_A::PRESERVE => OverrunMode::Preserve,
-            cfgr::OVRMOD_A::OVERWRITE => OverrunMode::Overwrite,
+            cfgr::OVRMOD_A::Preserve => OverrunMode::Preserve,
+            cfgr::OVRMOD_A::Overwrite => OverrunMode::Overwrite,
         }
     }
 }
@@ -447,8 +447,8 @@ impl From<cfgr::OVRMOD_A> for OverrunMode {
 impl From<OverrunMode> for cfgr::OVRMOD_A {
     fn from(a: OverrunMode) -> Self {
         match a {
-            OverrunMode::Preserve => cfgr::OVRMOD_A::PRESERVE,
-            OverrunMode::Overwrite => cfgr::OVRMOD_A::OVERWRITE,
+            OverrunMode::Preserve => cfgr::OVRMOD_A::Preserve,
+            OverrunMode::Overwrite => cfgr::OVRMOD_A::Overwrite,
         }
     }
 }
@@ -545,14 +545,14 @@ impl From<SampleTime> for f32 {
 impl From<SampleTime> for SMP1_A {
     fn from(t: SampleTime) -> Self {
         match t {
-            SampleTime::Cycles1C5 => Self::CYCLES1_5,
-            SampleTime::Cycles2C5 => Self::CYCLES2_5,
-            SampleTime::Cycles4C5 => Self::CYCLES4_5,
-            SampleTime::Cycles7C5 => Self::CYCLES7_5,
-            SampleTime::Cycles19C5 => Self::CYCLES19_5,
-            SampleTime::Cycles61C5 => Self::CYCLES61_5,
-            SampleTime::Cycles181C5 => Self::CYCLES181_5,
-            SampleTime::Cycles601C5 => Self::CYCLES601_5,
+            SampleTime::Cycles1C5 => Self::Cycles15,
+            SampleTime::Cycles2C5 => Self::Cycles25,
+            SampleTime::Cycles4C5 => Self::Cycles45,
+            SampleTime::Cycles7C5 => Self::Cycles75,
+            SampleTime::Cycles19C5 => Self::Cycles195,
+            SampleTime::Cycles61C5 => Self::Cycles615,
+            SampleTime::Cycles181C5 => Self::Cycles1815,
+            SampleTime::Cycles601C5 => Self::Cycles6015,
         }
     }
 }
@@ -560,14 +560,14 @@ impl From<SampleTime> for SMP1_A {
 impl From<SampleTime> for SMP10_A {
     fn from(t: SampleTime) -> Self {
         match t {
-            SampleTime::Cycles1C5 => Self::CYCLES1_5,
-            SampleTime::Cycles2C5 => Self::CYCLES2_5,
-            SampleTime::Cycles4C5 => Self::CYCLES4_5,
-            SampleTime::Cycles7C5 => Self::CYCLES7_5,
-            SampleTime::Cycles19C5 => Self::CYCLES19_5,
-            SampleTime::Cycles61C5 => Self::CYCLES61_5,
-            SampleTime::Cycles181C5 => Self::CYCLES181_5,
-            SampleTime::Cycles601C5 => Self::CYCLES601_5,
+            SampleTime::Cycles1C5 => Self::Cycles15,
+            SampleTime::Cycles2C5 => Self::Cycles25,
+            SampleTime::Cycles4C5 => Self::Cycles45,
+            SampleTime::Cycles7C5 => Self::Cycles75,
+            SampleTime::Cycles19C5 => Self::Cycles195,
+            SampleTime::Cycles61C5 => Self::Cycles615,
+            SampleTime::Cycles181C5 => Self::Cycles1815,
+            SampleTime::Cycles601C5 => Self::Cycles6015,
         }
     }
 }
@@ -575,14 +575,14 @@ impl From<SampleTime> for SMP10_A {
 impl From<SMP1_A> for SampleTime {
     fn from(t: SMP1_A) -> Self {
         match t {
-            SMP1_A::CYCLES1_5 => Self::Cycles1C5,
-            SMP1_A::CYCLES2_5 => Self::Cycles2C5,
-            SMP1_A::CYCLES4_5 => Self::Cycles4C5,
-            SMP1_A::CYCLES7_5 => Self::Cycles7C5,
-            SMP1_A::CYCLES19_5 => Self::Cycles19C5,
-            SMP1_A::CYCLES61_5 => Self::Cycles61C5,
-            SMP1_A::CYCLES181_5 => Self::Cycles181C5,
-            SMP1_A::CYCLES601_5 => Self::Cycles601C5,
+            SMP1_A::Cycles15 => Self::Cycles1C5,
+            SMP1_A::Cycles25 => Self::Cycles2C5,
+            SMP1_A::Cycles45 => Self::Cycles4C5,
+            SMP1_A::Cycles75 => Self::Cycles7C5,
+            SMP1_A::Cycles195 => Self::Cycles19C5,
+            SMP1_A::Cycles615 => Self::Cycles61C5,
+            SMP1_A::Cycles1815 => Self::Cycles181C5,
+            SMP1_A::Cycles6015 => Self::Cycles601C5,
         }
     }
 }
@@ -590,14 +590,14 @@ impl From<SMP1_A> for SampleTime {
 impl From<SMP10_A> for SampleTime {
     fn from(t: SMP10_A) -> Self {
         match t {
-            SMP10_A::CYCLES1_5 => Self::Cycles1C5,
-            SMP10_A::CYCLES2_5 => Self::Cycles2C5,
-            SMP10_A::CYCLES4_5 => Self::Cycles4C5,
-            SMP10_A::CYCLES7_5 => Self::Cycles7C5,
-            SMP10_A::CYCLES19_5 => Self::Cycles19C5,
-            SMP10_A::CYCLES61_5 => Self::Cycles61C5,
-            SMP10_A::CYCLES181_5 => Self::Cycles181C5,
-            SMP10_A::CYCLES601_5 => Self::Cycles601C5,
+            SMP10_A::Cycles15 => Self::Cycles1C5,
+            SMP10_A::Cycles25 => Self::Cycles2C5,
+            SMP10_A::Cycles45 => Self::Cycles4C5,
+            SMP10_A::Cycles75 => Self::Cycles7C5,
+            SMP10_A::Cycles195 => Self::Cycles19C5,
+            SMP10_A::Cycles615 => Self::Cycles61C5,
+            SMP10_A::Cycles1815 => Self::Cycles181C5,
+            SMP10_A::Cycles6015 => Self::Cycles601C5,
         }
     }
 }
@@ -779,8 +779,8 @@ pub enum ConversionMode {
 impl From<ConversionMode> for cfgr::CONT_A {
     fn from(mode: ConversionMode) -> Self {
         match mode {
-            ConversionMode::Single | ConversionMode::Discontinuous(_) => Self::SINGLE,
-            ConversionMode::Continuous => Self::CONTINUOUS,
+            ConversionMode::Single | ConversionMode::Discontinuous(_) => Self::Single,
+            ConversionMode::Continuous => Self::Continuous,
         }
     }
 }
@@ -788,8 +788,8 @@ impl From<ConversionMode> for cfgr::CONT_A {
 impl From<ConversionMode> for cfgr::DISCEN_A {
     fn from(mode: ConversionMode) -> Self {
         match mode {
-            ConversionMode::Single | ConversionMode::Continuous => Self::DISABLED,
-            ConversionMode::Discontinuous(_) => Self::ENABLED,
+            ConversionMode::Single | ConversionMode::Continuous => Self::Disabled,
+            ConversionMode::Discontinuous(_) => Self::Enabled,
         }
     }
 }
@@ -797,8 +797,8 @@ impl From<ConversionMode> for cfgr::DISCEN_A {
 impl From<cfgr::CONT_A> for ConversionMode {
     fn from(mode: cfgr::CONT_A) -> Self {
         match mode {
-            cfgr::CONT_A::SINGLE => ConversionMode::Single,
-            cfgr::CONT_A::CONTINUOUS => ConversionMode::Continuous,
+            cfgr::CONT_A::Single => ConversionMode::Single,
+            cfgr::CONT_A::Continuous => ConversionMode::Continuous,
         }
     }
 }

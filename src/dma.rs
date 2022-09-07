@@ -195,8 +195,8 @@ pub enum Increment {
 impl From<Increment> for cr::PINC_A {
     fn from(inc: Increment) -> Self {
         match inc {
-            Increment::Enable => cr::PINC_A::ENABLED,
-            Increment::Disable => cr::PINC_A::DISABLED,
+            Increment::Enable => cr::PINC_A::Enabled,
+            Increment::Disable => cr::PINC_A::Disabled,
         }
     }
 }
@@ -218,10 +218,10 @@ pub enum Priority {
 impl From<Priority> for cr::PL_A {
     fn from(prio: Priority) -> Self {
         match prio {
-            Priority::Low => cr::PL_A::LOW,
-            Priority::Medium => cr::PL_A::MEDIUM,
-            Priority::High => cr::PL_A::HIGH,
-            Priority::VeryHigh => cr::PL_A::VERYHIGH,
+            Priority::Low => cr::PL_A::Low,
+            Priority::Medium => cr::PL_A::Medium,
+            Priority::High => cr::PL_A::High,
+            Priority::VeryHigh => cr::PL_A::VeryHigh,
         }
     }
 }
@@ -239,8 +239,8 @@ pub enum Direction {
 impl From<Direction> for cr::DIR_A {
     fn from(dir: Direction) -> Self {
         match dir {
-            Direction::FromMemory => cr::DIR_A::FROMMEMORY,
-            Direction::FromPeripheral => cr::DIR_A::FROMPERIPHERAL,
+            Direction::FromMemory => cr::DIR_A::FromMemory,
+            Direction::FromPeripheral => cr::DIR_A::FromPeripheral,
         }
     }
 }
@@ -352,9 +352,9 @@ pub trait Channel: private::Channel {
         use cr::PSIZE_A::*;
 
         let psize = match mem::size_of::<W>() {
-            1 => BITS8,
-            2 => BITS16,
-            4 => BITS32,
+            1 => Bits8,
+            2 => Bits16,
+            4 => Bits32,
             #[cfg(not(feature = "defmt"))]
             s => core::panic!("unsupported word size: {:?}", s),
             #[cfg(feature = "defmt")]

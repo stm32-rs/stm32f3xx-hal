@@ -952,10 +952,10 @@ macro_rules! gpio {
             r_trait! {
                 ($GPIOX, $gpioy::moder::MODER15_A, 2);
                 impl Moder for MODER {
-                    fn input { INPUT }
-                    fn output { OUTPUT }
-                    fn alternate { ALTERNATE }
-                    fn analog { ANALOG }
+                    fn input { Input }
+                    fn output { Output }
+                    fn alternate { Alternate }
+                    fn analog { Analog }
                 }
             }
 
@@ -965,9 +965,9 @@ macro_rules! gpio {
             r_trait! {
                 ($GPIOX, $gpioy::ospeedr::OSPEEDR15_A, 2);
                 impl Ospeedr for OSPEEDR {
-                    fn low { LOWSPEED }
-                    fn medium { MEDIUMSPEED }
-                    fn high { HIGHSPEED }
+                    fn low { LowSpeed }
+                    fn medium { MediumSpeed }
+                    fn high { HighSpeed }
                 }
             }
 
@@ -977,8 +977,8 @@ macro_rules! gpio {
             r_trait! {
                 ($GPIOX, $gpioy::otyper::OT15_A, 1);
                 impl Otyper for OTYPER {
-                    fn push_pull { PUSHPULL }
-                    fn open_drain { OPENDRAIN }
+                    fn push_pull { PushPull }
+                    fn open_drain { OpenDrain }
                 }
             }
 
@@ -988,9 +988,9 @@ macro_rules! gpio {
             r_trait! {
                 ($GPIOX, $gpioy::pupdr::PUPDR15_A, 2);
                 impl Pupdr for PUPDR {
-                    fn floating { FLOATING }
-                    fn pull_up { PULLUP }
-                    fn pull_down { PULLDOWN }
+                    fn floating { Floating }
+                    fn pull_up { PullUp }
+                    fn pull_down { PullDown }
                 }
             }
         }
