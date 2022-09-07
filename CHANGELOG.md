@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
+No changes.
+
+## [v0.9.1] - 2022-09-07
+
 ### Added
 
 - Add a minimal DAC driver ([#318])
@@ -666,6 +670,7 @@ let clocks = rcc
 [#2]: https://github.com/stm32-rs/stm32f3xx-hal/pull/2
 
 <!-- cargo-release: latest tag -->
+[v0.9.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.9.1
 [v0.9.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.9.0
 [v0.8.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.1
 [v0.8.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.1

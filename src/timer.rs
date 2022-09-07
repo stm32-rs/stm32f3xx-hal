@@ -8,7 +8,7 @@
 //! Check out [examples/adc.rs], where a [`Periodic`] timer is used to wake
 //! up the main-loop regularly.
 //!
-//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.0/examples/adc.rs
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/adc.rs
 
 use core::convert::{From, TryFrom};
 

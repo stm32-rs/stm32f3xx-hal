@@ -4,7 +4,7 @@
 //!
 //! A usage example of the can peripheral can be found at [examples/spi.rs]
 //!
-//! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.0/examples/spi.rs
+//! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/spi.rs
 
 use core::{fmt, marker::PhantomData, ops::Deref, ptr};
 
@@ -195,7 +195,7 @@ impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
     ///
     /// ```
     ///
-    /// To get a better example, look [here](https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.0/examples/spi.rs).
+    /// To get a better example, look [here](https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/spi.rs).
     ///
     // TODO(Sh3Rm4n): See alternative modes provided besides FullDuplex (as listed in Stm32CubeMx).
     pub fn new<Config>(

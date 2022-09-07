@@ -58,7 +58,7 @@
 //!
 //! [InputPin]: embedded_hal::digital::v2::InputPin
 //! [OutputPin]: embedded_hal::digital::v2::OutputPin
-//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.0/examples/toggle.rs
+//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/toggle.rs
 
 use core::{convert::Infallible, marker::PhantomData};
 
@@ -322,7 +322,7 @@ impl<Gpio, Index, Mode> crate::private::Sealed for Pin<Gpio, Index, Mode> {}
 ///
 /// See [examples/gpio_erased.rs] as an example.
 ///
-/// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.0/examples/gpio_erased.rs
+/// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/gpio_erased.rs
 pub type PXx<Mode> = Pin<Gpiox, Ux, Mode>;
 
 impl<Gpio, Mode, const X: u8> Pin<Gpio, U<X>, Mode> {
