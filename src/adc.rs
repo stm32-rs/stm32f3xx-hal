@@ -30,7 +30,7 @@ use crate::{
     pac::{self, adc1, Interrupt},
     rcc::{Clocks, Enable, AHB},
     time::{duration::Microseconds, fixed_point::FixedPoint, rate::Hertz},
-    Toggle,
+    Switch,
 };
 
 use crate::pac::{adc1_2, adc1_2::ccr::CKMODE_A};
@@ -493,7 +493,7 @@ where
         // TODO(Sh3Rm4n): Would about concurrent calibrations between related ADCs?
         // int_ref: &mut VoltageInternalReference<ADC>,
     ) {
-        self.configure_voltage_regulator(Toggle::On, clocks);
+        self.configure_voltage_regulator(Switch::On, clocks);
 
         self.reg
             .cr
@@ -512,21 +512,21 @@ where
         asm::delay(cpu_cycles);
 
         // When the internal voltage regulator is disabled, the internal analog calibration is kept
-        self.configure_voltage_regulator(Toggle::Off, clocks);
+        self.configure_voltage_regulator(Switch::Off, clocks);
     }
 
     /// Enable the interal voltage generator Blocks until regulator is enabled.
-    fn configure_voltage_regulator(&mut self, toggle: impl Into<Toggle>, clocks: &Clocks) {
+    fn configure_voltage_regulator(&mut self, toggle: impl Into<Switch>, clocks: &Clocks) {
         let already_on = self.reg.cr.read().advregen().is_enabled();
         let toggle = toggle.into();
         self.reg.cr.modify(|_, w| w.advregen().intermediate());
         self.reg.cr.modify(|_, w| {
             w.advregen().variant(match toggle {
-                Toggle::On => adc1::cr::ADVREGEN_A::Enabled,
-                Toggle::Off => adc1::cr::ADVREGEN_A::Disabled,
+                Switch::On => adc1::cr::ADVREGEN_A::Enabled,
+                Switch::Off => adc1::cr::ADVREGEN_A::Disabled,
             })
         });
-        if toggle == Toggle::On && !already_on {
+        if toggle == Switch::On && !already_on {
             let wait = MAX_ADVREGEN_STARTUP.integer()
                 * clocks.sysclk().integer()
                 * <Microseconds as FixedPoint>::SCALING_FACTOR;
@@ -1103,20 +1103,20 @@ where
     /// Enable the interrupt for the specified [`Event`].
     #[inline]
     pub fn enable_interrupt(&mut self, event: Event) {
-        self.configure_interrupt(event, Toggle::On);
+        self.configure_interrupt(event, Switch::On);
     }
 
     /// Disable the interrupt for the specified [`Event`].
     #[inline]
     pub fn disable_interrupt(&mut self, event: Event) {
-        self.configure_interrupt(event, Toggle::Off);
+        self.configure_interrupt(event, Switch::Off);
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
-    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) {
-        // Do a round way trip to be convert Into<Toggle> -> bool
-        let enable: Toggle = enable.into();
+    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Switch>) {
+        // Do a round way trip to be convert Into<Switch> -> bool
+        let enable: Switch = enable.into();
         let enable: bool = enable.into();
         match event {
             Event::AdcReady => self.reg.ier.modify(|_, w| w.adrdyie().bit(enable)),

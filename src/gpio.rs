@@ -66,7 +66,7 @@ use crate::{
     hal::digital::v2::OutputPin,
     pac::{Interrupt, EXTI},
     rcc::AHB,
-    Toggle,
+    Switch,
 };
 
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
@@ -623,10 +623,10 @@ where
     ///
     /// Remeber to also configure the interrupt pin on
     /// the SysCfg site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
-    pub fn configure_interrupt(&mut self, exti: &mut EXTI, enable: impl Into<Toggle>) {
+    pub fn configure_interrupt(&mut self, exti: &mut EXTI, enable: impl Into<Switch>) {
         const BITWIDTH: u8 = 1;
 
-        let enable: Toggle = enable.into();
+        let enable: Switch = enable.into();
         let enable: bool = enable.into();
 
         let index = self.index.index();
@@ -642,12 +642,12 @@ where
     /// Remeber to also configure the interrupt pin on
     /// the SysCfg site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
     pub fn enable_interrupt(&mut self, exti: &mut EXTI) {
-        self.configure_interrupt(exti, Toggle::On)
+        self.configure_interrupt(exti, Switch::On)
     }
 
     /// Disable external interrupts from this pin
     pub fn disable_interrupt(&mut self, exti: &mut EXTI) {
-        self.configure_interrupt(exti, Toggle::Off)
+        self.configure_interrupt(exti, Switch::Off)
     }
 
     /// Clear the interrupt pending bit for this pin

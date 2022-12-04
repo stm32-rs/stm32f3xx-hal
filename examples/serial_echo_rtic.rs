@@ -19,7 +19,7 @@ mod app {
         pac,
         prelude::*,
         serial::{Event, Serial},
-        Toggle,
+        Switch,
     };
     use systick_monotonic::*;
 
@@ -81,7 +81,7 @@ mod app {
         pins.1.internal_pull_up(&mut gpioa.pupdr, true);
         let mut serial: SerialType =
             Serial::new(cx.device.USART1, pins, 19200.Bd(), clocks, &mut rcc.apb2);
-        serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Toggle::On);
+        serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Switch::On);
 
         rprintln!("post init");
 
@@ -100,12 +100,12 @@ mod app {
 
         if serial.is_event_triggered(Event::ReceiveDataRegisterNotEmpty) {
             dir.set_high().unwrap();
-            serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Toggle::Off);
+            serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Switch::Off);
             match serial.read() {
                 Ok(byte) => {
                     serial.write(byte).unwrap();
                     rprintln!("{:?}", char::from_u32(byte.into()).unwrap_or('?'));
-                    serial.configure_interrupt(Event::TransmissionComplete, Toggle::On);
+                    serial.configure_interrupt(Event::TransmissionComplete, Switch::On);
                 }
                 Err(_error) => rprintln!("irq error"),
             };
