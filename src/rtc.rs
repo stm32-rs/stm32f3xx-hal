@@ -1,4 +1,4 @@
-//! Real Time Clock
+//! # Real Time Clock
 //!
 //! Interface to the real time clock. See STM32F303 reference manual, section 27.
 //! For more details, see [ST AN4759][].
@@ -6,12 +6,15 @@
 //! [ST AN4759]: https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h
 
 use crate::pac::{PWR, RTC};
-use crate::rcc::{APB1, BDCR};
+use crate::rcc::{Enable, APB1, BDCR};
 use core::convert::TryInto;
-use rtcc::{Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
+use core::fmt;
+use rtcc::{DateTimeAccess, Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime, Rtcc, Timelike};
 
 /// RTC error type
-#[derive(Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
 pub enum Error {
     /// Invalid input error
     InvalidInputData,
@@ -20,7 +23,20 @@ pub enum Error {
 /// Real Time Clock peripheral
 pub struct Rtc {
     /// RTC Peripheral register definition
-    pub regs: RTC,
+    rtc: RTC,
+}
+
+#[cfg(feature = "defmt")]
+impl defmt::Format for Rtc {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(f, "Rtc {{ rtc: RTC }}");
+    }
+}
+
+impl fmt::Debug for Rtc {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Rtc").field("rtc", &"RTC").finish()
+    }
 }
 
 impl Rtc {
@@ -31,7 +47,7 @@ impl Rtc {
     /// The `bypass` argument is `true` if you're using an external oscillator that
     /// doesn't connect to `OSC32_IN`, such as a MEMS resonator.
     pub fn new(
-        regs: RTC,
+        rtc: RTC,
         prediv_s: u16,
         prediv_a: u8,
         bypass: bool,
@@ -39,14 +55,14 @@ impl Rtc {
         bdcr: &mut BDCR,
         pwr: &mut PWR,
     ) -> Self {
-        let mut result = Self { regs };
+        let mut result = Self { rtc };
 
         enable_lse(bdcr, bypass);
         unlock(apb1, pwr);
         enable(bdcr);
         result.set_24h_fmt();
 
-        result.regs.prer.modify(|_, w| {
+        result.rtc.prer.modify(|_, w| {
             w.prediv_s().bits(prediv_s);
             w.prediv_a().bits(prediv_a)
         });
@@ -56,16 +72,35 @@ impl Rtc {
 
     /// Sets calendar clock to 24 hr format
     pub fn set_24h_fmt(&mut self) {
-        self.regs.cr.modify(|_, w| w.fmt().set_bit());
+        self.rtc.cr.modify(|_, w| w.fmt().set_bit());
     }
     /// Sets calendar clock to 12 hr format
     pub fn set_12h_fmt(&mut self) {
-        self.regs.cr.modify(|_, w| w.fmt().clear_bit());
+        self.rtc.cr.modify(|_, w| w.fmt().clear_bit());
     }
 
     /// Reads current hour format selection
     pub fn is_24h_fmt(&self) -> bool {
-        self.regs.cr.read().fmt().bit()
+        self.rtc.cr.read().fmt().bit()
+    }
+
+    /// Get access to the underlying register block.
+    ///
+    /// # Safety
+    ///
+    /// This function is not _memory_ unsafe per se, but does not guarantee
+    /// anything about assumptions of invariants made in this implementation.
+    ///
+    /// Changing specific options can lead to un-expected behavior and nothing
+    /// is guaranteed.
+    pub unsafe fn peripheral(&mut self) -> &mut RTC {
+        &mut self.rtc
+    }
+
+    /// Release the RTC peripheral
+    pub fn free(self) -> RTC {
+        // TODO(Sh3Rm4n): Disable peripheral before releasing it.
+        self.rtc
     }
 
     /// As described in Section 27.3.7 in RM0316,
@@ -76,26 +111,84 @@ impl Rtc {
         F: FnMut(&mut RTC),
     {
         // Disable write protection
-        self.regs.wpr.write(|w| unsafe { w.bits(0xCA) });
-        self.regs.wpr.write(|w| unsafe { w.bits(0x53) });
+        self.rtc.wpr.write(|w| unsafe { w.bits(0xCA) });
+        self.rtc.wpr.write(|w| unsafe { w.bits(0x53) });
         // Enter init mode
-        let isr = self.regs.isr.read();
+        let isr = self.rtc.isr.read();
         if isr.initf().bit_is_clear() {
-            self.regs.isr.modify(|_, w| w.init().set_bit());
-            while self.regs.isr.read().initf().bit_is_clear() {}
+            self.rtc.isr.modify(|_, w| w.init().set_bit());
+            while self.rtc.isr.read().initf().bit_is_clear() {}
         }
         // Invoke closure
-        closure(&mut self.regs);
+        closure(&mut self.rtc);
         // Exit init mode
-        self.regs.isr.modify(|_, w| w.init().clear_bit());
+        self.rtc.isr.modify(|_, w| w.init().clear_bit());
         // wait for last write to be done
-        while !self.regs.isr.read().initf().bit_is_clear() {}
+        while !self.rtc.isr.read().initf().bit_is_clear() {}
+    }
+}
+
+impl DateTimeAccess for Rtc {
+    type Error = Error;
+
+    fn set_datetime(&mut self, date: &NaiveDateTime) -> Result<(), Self::Error> {
+        if date.year() < 1970 {
+            return Err(Error::InvalidInputData);
+        }
+
+        self.set_24h_fmt();
+        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32)?;
+        let (mt, mu) = bcd2_encode(date.month())?;
+        let (dt, du) = bcd2_encode(date.day())?;
+
+        let (ht, hu) = bcd2_encode(date.hour())?;
+        let (mnt, mnu) = bcd2_encode(date.minute())?;
+        let (st, su) = bcd2_encode(date.second())?;
+
+        self.rtc.dr.write(|w| {
+            w.dt().bits(dt);
+            w.du().bits(du);
+            w.mt().bit(mt > 0);
+            w.mu().bits(mu);
+            w.yt().bits(yt);
+            w.yu().bits(yu)
+        });
+
+        self.rtc.tr.write(|w| {
+            w.ht().bits(ht);
+            w.hu().bits(hu);
+            w.mnt().bits(mnt);
+            w.mnu().bits(mnu);
+            w.st().bits(st);
+            w.su().bits(su);
+            w.pm().clear_bit()
+        });
+
+        Ok(())
+    }
+
+    fn datetime(&mut self) -> Result<NaiveDateTime, Self::Error> {
+        self.set_24h_fmt();
+
+        let day = self.day()?;
+        let month = self.month()?;
+        let year = self.year()?;
+
+        let seconds = self.seconds()?;
+        let minutes = self.minutes()?;
+        let hours = hours_to_u8(self.hours()?)?;
+
+        Ok(
+            NaiveDate::from_ymd(year.into(), month.into(), day.into()).and_hms(
+                hours.into(),
+                minutes.into(),
+                seconds.into(),
+            ),
+        )
     }
 }
 
 impl Rtcc for Rtc {
-    type Error = Error;
-
     /// set time using NaiveTime (ISO 8601 time without timezone)
     /// Hour format is 24h
     fn set_time(&mut self, time: &NaiveTime) -> Result<(), Self::Error> {
@@ -103,7 +196,7 @@ impl Rtcc for Rtc {
         let (ht, hu) = bcd2_encode(time.hour())?;
         let (mnt, mnu) = bcd2_encode(time.minute())?;
         let (st, su) = bcd2_encode(time.second())?;
-        self.regs.tr.write(|w| {
+        self.rtc.tr.write(|w| {
             w.ht().bits(ht);
             w.hu().bits(hu);
             w.mnt().bits(mnt);
@@ -121,7 +214,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (st, su) = bcd2_encode(seconds as u32)?;
-        self.modify(|regs| regs.tr.modify(|_, w| w.st().bits(st).su().bits(su)));
+        self.modify(|rtc| rtc.tr.modify(|_, w| w.st().bits(st).su().bits(su)));
 
         Ok(())
     }
@@ -131,7 +224,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (mnt, mnu) = bcd2_encode(minutes as u32)?;
-        self.modify(|regs| regs.tr.modify(|_, w| w.mnt().bits(mnt).mnu().bits(mnu)));
+        self.modify(|rtc| rtc.tr.modify(|_, w| w.mnt().bits(mnt).mnu().bits(mnu)));
 
         Ok(())
     }
@@ -143,7 +236,7 @@ impl Rtcc for Rtc {
             Hours::AM(_h) | Hours::PM(_h) => self.set_12h_fmt(),
         }
 
-        self.regs.tr.modify(|_, w| w.ht().bits(ht).hu().bits(hu));
+        self.rtc.tr.modify(|_, w| w.ht().bits(ht).hu().bits(hu));
 
         Ok(())
     }
@@ -152,7 +245,7 @@ impl Rtcc for Rtc {
         if !(1..=7).contains(&weekday) {
             return Err(Error::InvalidInputData);
         }
-        self.modify(|regs| regs.dr.modify(|_, w| unsafe { w.wdu().bits(weekday) }));
+        self.modify(|rtc| rtc.dr.modify(|_, w| unsafe { w.wdu().bits(weekday) }));
 
         Ok(())
     }
@@ -162,7 +255,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (dt, du) = bcd2_encode(day as u32)?;
-        self.modify(|regs| regs.dr.modify(|_, w| w.dt().bits(dt).du().bits(du)));
+        self.modify(|rtc| rtc.dr.modify(|_, w| w.dt().bits(dt).du().bits(du)));
 
         Ok(())
     }
@@ -172,7 +265,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (mt, mu) = bcd2_encode(month as u32)?;
-        self.modify(|regs| regs.dr.modify(|_, w| w.mt().bit(mt > 0).mu().bits(mu)));
+        self.modify(|rtc| rtc.dr.modify(|_, w| w.mt().bit(mt > 0).mu().bits(mu)));
 
         Ok(())
     }
@@ -182,7 +275,7 @@ impl Rtcc for Rtc {
             return Err(Error::InvalidInputData);
         }
         let (yt, yu) = bcd2_encode(year as u32)?;
-        self.modify(|regs| regs.dr.modify(|_, w| w.yt().bits(yt).yu().bits(yu)));
+        self.modify(|rtc| rtc.dr.modify(|_, w| w.yt().bits(yt).yu().bits(yu)));
 
         Ok(())
     }
@@ -198,7 +291,7 @@ impl Rtcc for Rtc {
         let (mt, mu) = bcd2_encode(date.month())?;
         let (dt, du) = bcd2_encode(date.day())?;
 
-        self.regs.dr.write(|w| {
+        self.rtc.dr.write(|w| {
             w.dt().bits(dt);
             w.du().bits(du);
             w.mt().bit(mt > 0);
@@ -210,56 +303,20 @@ impl Rtcc for Rtc {
         Ok(())
     }
 
-    fn set_datetime(&mut self, date: &NaiveDateTime) -> Result<(), Self::Error> {
-        if date.year() < 1970 {
-            return Err(Error::InvalidInputData);
-        }
-
-        self.set_24h_fmt();
-        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32)?;
-        let (mt, mu) = bcd2_encode(date.month())?;
-        let (dt, du) = bcd2_encode(date.day())?;
-
-        let (ht, hu) = bcd2_encode(date.hour())?;
-        let (mnt, mnu) = bcd2_encode(date.minute())?;
-        let (st, su) = bcd2_encode(date.second())?;
-
-        self.regs.dr.write(|w| {
-            w.dt().bits(dt);
-            w.du().bits(du);
-            w.mt().bit(mt > 0);
-            w.mu().bits(mu);
-            w.yt().bits(yt);
-            w.yu().bits(yu)
-        });
-
-        self.regs.tr.write(|w| {
-            w.ht().bits(ht);
-            w.hu().bits(hu);
-            w.mnt().bits(mnt);
-            w.mnu().bits(mnu);
-            w.st().bits(st);
-            w.su().bits(su);
-            w.pm().clear_bit()
-        });
-
-        Ok(())
-    }
-
-    fn get_seconds(&mut self) -> Result<u8, Self::Error> {
-        let tr = self.regs.tr.read();
+    fn seconds(&mut self) -> Result<u8, Self::Error> {
+        let tr = self.rtc.tr.read();
         let seconds = bcd2_decode(tr.st().bits(), tr.su().bits());
         Ok(seconds as u8)
     }
 
-    fn get_minutes(&mut self) -> Result<u8, Self::Error> {
-        let tr = self.regs.tr.read();
+    fn minutes(&mut self) -> Result<u8, Self::Error> {
+        let tr = self.rtc.tr.read();
         let minutes = bcd2_decode(tr.mnt().bits(), tr.mnu().bits());
         Ok(minutes as u8)
     }
 
-    fn get_hours(&mut self) -> Result<Hours, Self::Error> {
-        let tr = self.regs.tr.read();
+    fn hours(&mut self) -> Result<Hours, Self::Error> {
+        let tr = self.rtc.tr.read();
         let hours = bcd2_decode(tr.ht().bits(), tr.hu().bits());
         if self.is_24h_fmt() {
             return Ok(Hours::H24(hours as u8));
@@ -270,11 +327,11 @@ impl Rtcc for Rtc {
         Ok(Hours::PM(hours as u8))
     }
 
-    fn get_time(&mut self) -> Result<NaiveTime, Self::Error> {
+    fn time(&mut self) -> Result<NaiveTime, Self::Error> {
         self.set_24h_fmt();
-        let seconds = self.get_seconds()?;
-        let minutes = self.get_minutes()?;
-        let hours = hours_to_u8(self.get_hours()?)?;
+        let seconds = self.seconds()?;
+        let minutes = self.minutes()?;
+        let hours = hours_to_u8(self.hours()?)?;
 
         Ok(NaiveTime::from_hms(
             hours.into(),
@@ -283,57 +340,37 @@ impl Rtcc for Rtc {
         ))
     }
 
-    fn get_weekday(&mut self) -> Result<u8, Self::Error> {
-        let dr = self.regs.dr.read();
+    fn weekday(&mut self) -> Result<u8, Self::Error> {
+        let dr = self.rtc.dr.read();
         let weekday = bcd2_decode(dr.wdu().bits(), 0x00);
         Ok(weekday as u8)
     }
 
-    fn get_day(&mut self) -> Result<u8, Self::Error> {
-        let dr = self.regs.dr.read();
+    fn day(&mut self) -> Result<u8, Self::Error> {
+        let dr = self.rtc.dr.read();
         let day = bcd2_decode(dr.dt().bits(), dr.du().bits());
         Ok(day as u8)
     }
 
-    fn get_month(&mut self) -> Result<u8, Self::Error> {
-        let dr = self.regs.dr.read();
+    fn month(&mut self) -> Result<u8, Self::Error> {
+        let dr = self.rtc.dr.read();
         let mt: u8 = if dr.mt().bit() { 1 } else { 0 };
         let month = bcd2_decode(mt, dr.mu().bits());
         Ok(month as u8)
     }
 
-    fn get_year(&mut self) -> Result<u16, Self::Error> {
-        let dr = self.regs.dr.read();
+    fn year(&mut self) -> Result<u16, Self::Error> {
+        let dr = self.rtc.dr.read();
         let year = bcd2_decode(dr.yt().bits(), dr.yu().bits());
         Ok(year as u16)
     }
 
-    fn get_date(&mut self) -> Result<NaiveDate, Self::Error> {
-        let day = self.get_day()?;
-        let month = self.get_month()?;
-        let year = self.get_year()?;
+    fn date(&mut self) -> Result<NaiveDate, Self::Error> {
+        let day = self.day()?;
+        let month = self.month()?;
+        let year = self.year()?;
 
         Ok(NaiveDate::from_ymd(year.into(), month.into(), day.into()))
-    }
-
-    fn get_datetime(&mut self) -> Result<NaiveDateTime, Self::Error> {
-        self.set_24h_fmt();
-
-        let day = self.get_day()?;
-        let month = self.get_month()?;
-        let year = self.get_year()?;
-
-        let seconds = self.get_seconds()?;
-        let minutes = self.get_minutes()?;
-        let hours = hours_to_u8(self.get_hours()?)?;
-
-        Ok(
-            NaiveDate::from_ymd(year.into(), month.into(), day.into()).and_hms(
-                hours.into(),
-                minutes.into(),
-                seconds.into(),
-            ),
-        )
     }
 }
 
@@ -389,12 +426,8 @@ fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
 }
 
 fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
-    apb1.enr().modify(|_, w| {
-        w
-            // Enable the backup interface by setting PWREN
-            .pwren()
-            .set_bit()
-    });
+    // Enable the backup interface by setting PWREN
+    PWR::enable(apb1);
     pwr.cr.modify(|_, w| {
         w
             // Enable access to the backup registers

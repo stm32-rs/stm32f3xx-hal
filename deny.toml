@@ -1,0 +1,19 @@
+targets = [
+ { triple = "thumbv7em-none-eabihf" },
+]
+
+[advisories]
+# A list of advisory IDs to ignore. Note that ignored advisories will still
+# output a note when they are encountered.
+ignore = [
+    # This only affects unix devices
+    "RUSTSEC-2020-0159",
+]
+
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "0BSD",
+    "Unicode-DFS-2016",
+]

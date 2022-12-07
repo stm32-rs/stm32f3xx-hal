@@ -1,4 +1,4 @@
-//! Reset and Clock Control
+//! # Reset and Clock Control
 //!
 //! The most important function this module
 //! delivers is the clock configuration.
@@ -8,7 +8,8 @@
 //!
 //! ```
 //! # use cortex_m_rt::entry;
-//! # use stm32f3xx_hal::prelude::*;
+//! # use stm32f3xx-hal::{prelude::*, time::rate::*};
+//!
 //! # #[entry]
 //! # fn main() -> ! {
 //! // Get our peripherals
@@ -23,7 +24,8 @@
 //!
 //! ```
 //! # use cortex_m_rt::entry;
-//! # use stm32f3xx_hal::prelude::*;
+//! # use stm32f3xx-hal::{prelude::*, time::rate::*};
+//! #
 //! # #[entry]
 //! # fn main() -> ! {
 //! # let dp = pac::Peripherals::take().unwrap();
@@ -33,18 +35,18 @@
 //! let clocks = rcc.cfgr
 //!     // Using the external oscillator
 //!     // Set the frequency to that of the external oscillator
-//!     .use_hse(8.mhz())
+//!     .use_hse(8.MHz())
 //!     // Set the frequency for the AHB bus,
 //!     // which the root of every following clock peripheral
-//!     .hclk(48.mhz())
+//!     .hclk(48.MHz())
 //!     // The sysclk is equivalent to the core clock
-//!     .sysclk(48.mhz())
+//!     .sysclk(48.MHz())
 //!     // The following are peripheral clocks, which are both
 //!     // needed to configure specific peripherals.
 //!     // Looking at the peripheral function parameters
 //!     // should give more insight, which peripheral clock is needed.
-//!     .pclk1(12.mhz())
-//!     .pclk2(12.mhz())
+//!     .pclk1(12.MHz())
+//!     .pclk2(12.MHz())
 //!     // Freeze / apply the configuration and setup all clocks
 //!     .freeze(&mut flash.acr);
 //! # }
@@ -59,14 +61,26 @@ use crate::pac::{
     RCC,
 };
 
-use crate::flash::ACR;
-use crate::time::Hertz;
+use core::convert::TryInto;
 
-/// Extension trait that constrains the `RCC` peripheral
-pub trait RccExt {
-    /// Constrains the `RCC` peripheral so it plays nicely with the other abstractions
+use crate::flash::ACR;
+use crate::time::rate::*;
+
+impl crate::private::Sealed for RCC {}
+
+/// Extension trait that constrains the []`RCC`] peripheral
+pub trait RccExt: crate::private::Sealed {
+    /// Constrains the [`RCC`] peripheral.
+    ///
+    /// Consumes the [`pac::RCC`] peripheral and converts it to a [`HAL`] internal type
+    /// constraining it's public access surface to fit the design of the `HAL`.
+    ///
+    /// [`pac::RCC`]: `crate::pac::RCC`
+    /// [`HAL`]: `crate`
     fn constrain(self) -> Rcc;
 }
+
+mod enable;
 
 impl RccExt for RCC {
     fn constrain(self) -> Rcc {
@@ -82,9 +96,8 @@ impl RccExt for RCC {
 
 /// Constrained RCC peripheral
 ///
-/// An instance of this struct is acquired by calling the
-/// [`constrain`](RccExt::constrain) function on the
-/// [`RCC`](crate::pac::RCC) struct.
+/// An instance of this struct is acquired by calling the [`constrain`](RccExt::constrain) function
+/// on the [`RCC`](crate::pac::RCC) struct.
 ///
 /// ```
 /// let dp = pac::Peripherals::take().unwrap();
@@ -116,18 +129,6 @@ pub struct AHB {
     _0: (),
 }
 
-impl AHB {
-    pub(crate) fn enr(&mut self) -> &rcc::AHBENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahbenr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::AHBRSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).ahbrstr }
-    }
-}
-
 /// Advanced Peripheral Bus 1 (APB1) registers
 ///
 /// An instance of this struct is acquired from the [`RCC`](crate::pac::RCC) struct.
@@ -139,18 +140,6 @@ impl AHB {
 /// ```
 pub struct APB1 {
     _0: (),
-}
-
-impl APB1 {
-    pub(crate) fn enr(&mut self) -> &rcc::APB1ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb1enr }
-    }
-
-    pub(crate) fn rstr(&mut self) -> &rcc::APB1RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb1rstr }
-    }
 }
 
 /// Advanced Peripheral Bus 2 (APB2) registers
@@ -166,19 +155,149 @@ pub struct APB2 {
     _0: (),
 }
 
-impl APB2 {
-    pub(crate) fn enr(&mut self) -> &rcc::APB2ENR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb2enr }
-    }
+macro_rules! bus_struct {
+    ($($busX:ident => ($EN:ident, $en:ident, $RST:ident, $rst:ident),)+) => {
+        $(
+            impl $busX {
+                fn new() -> Self {
+                    Self { _0: () }
+                }
 
-    pub(crate) fn rstr(&mut self) -> &rcc::APB2RSTR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).apb2rstr }
+                #[allow(unused)]
+                fn enr(&self) -> &rcc::$EN {
+                    // NOTE(unsafe) this proxy grants exclusive access to this register
+                    unsafe { &(*RCC::ptr()).$en }
+                }
+
+                #[allow(unused)]
+                fn rstr(&self) -> &rcc::$RST {
+                    // NOTE(unsafe) this proxy grants exclusive access to this register
+                    unsafe { &(*RCC::ptr()).$rst }
+                }
+            }
+        )+
+    };
+}
+
+bus_struct! {
+    AHB => (AHBENR, ahbenr, AHBRSTR, ahbrstr),
+    APB1 => (APB1ENR, apb1enr, APB1RSTR, apb1rstr),
+    APB2 => (APB2ENR, apb2enr, APB2RSTR, apb2rstr),
+}
+
+/// Bus associated to peripheral
+pub trait RccBus: crate::Sealed {
+    /// The underlying bus peripheral
+    type Bus;
+}
+
+/// Enable/disable peripheral
+pub trait Enable: RccBus {
+    /// Enables peripheral
+    fn enable(bus: &mut Self::Bus);
+
+    /// Disables peripheral
+    fn disable(bus: &mut Self::Bus);
+
+    /// Check if peripheral enabled
+    fn is_enabled() -> bool;
+
+    /// Check if peripheral disabled
+    fn is_disabled() -> bool;
+
+    /// Enables peripheral
+    ///
+    /// # Safety
+    ///
+    /// Takes access to RCC internally, so you have to make sure
+    /// you don't have race condition accessing RCC registers
+    unsafe fn enable_unchecked();
+
+    /// Disables peripheral
+    ///
+    /// # Safety
+    ///
+    /// Takes access to RCC internally, so you have to make sure
+    /// you don't have race condition accessing RCC registers
+    unsafe fn disable_unchecked();
+}
+
+/// Reset peripheral
+pub trait Reset: RccBus {
+    /// Resets peripheral
+    fn reset(bus: &mut Self::Bus);
+
+    /// # Safety
+    ///
+    /// Resets peripheral. Takes access to RCC internally
+    unsafe fn reset_unchecked();
+}
+
+/// Frequency on bus that peripheral is connected in
+pub trait BusClock {
+    /// Calculates frequency depending on `Clock` state
+    fn clock(clocks: &Clocks) -> Hertz;
+}
+
+impl<T> BusClock for T
+where
+    T: RccBus,
+    T::Bus: BusClock,
+{
+    fn clock(clocks: &Clocks) -> Hertz {
+        T::Bus::clock(clocks)
     }
 }
 
-const HSI: u32 = 8_000_000; // Hz
+impl BusClock for AHB {
+    fn clock(clocks: &Clocks) -> Hertz {
+        clocks.hclk
+    }
+}
+impl BusClock for APB1 {
+    fn clock(clocks: &Clocks) -> Hertz {
+        clocks.pclk1
+    }
+}
+impl BusClock for APB2 {
+    fn clock(clocks: &Clocks) -> Hertz {
+        clocks.pclk2
+    }
+}
+
+/// Frequency on bus that timer is connected in
+pub trait BusTimerClock {
+    /// Calculates base frequency of timer depending on `Clock` state
+    fn timer_clock(clocks: &Clocks) -> Hertz;
+}
+
+impl<T> BusTimerClock for T
+where
+    T: RccBus,
+    T::Bus: BusTimerClock,
+{
+    fn timer_clock(clocks: &Clocks) -> Hertz {
+        T::Bus::timer_clock(clocks)
+    }
+}
+
+impl BusTimerClock for APB1 {
+    fn timer_clock(clocks: &Clocks) -> Hertz {
+        let pclk_mul = if clocks.ppre1 > 1 { 2 } else { 1 };
+        Hertz(clocks.pclk1.0 * pclk_mul)
+    }
+}
+impl BusTimerClock for APB2 {
+    fn timer_clock(clocks: &Clocks) -> Hertz {
+        let pclk_mul = if clocks.ppre2 > 1 { 2 } else { 1 };
+        Hertz(clocks.pclk2.0 * pclk_mul)
+    }
+}
+
+/// Frequency of interal hardware RC oscillator (HSI OSC)
+pub const HSI: Hertz = Hertz(8_000_000);
+/// Frequency of external 32.768 kHz oscillator (LSE OSC)
+pub const LSE: Hertz = Hertz(32_768);
 
 // some microcontrollers do not have USB
 #[cfg(any(feature = "stm32f301", feature = "stm32f318", feature = "stm32f334",))]
@@ -239,6 +358,7 @@ pub struct BDCR {
 }
 
 impl BDCR {
+    #[allow(unused)]
     pub(crate) fn bdcr(&mut self) -> &rcc::BDCR {
         // NOTE(unsafe) this proxy grants exclusive access to this register
         unsafe { &(*RCC::ptr()).bdcr }
@@ -254,15 +374,30 @@ impl BDCR {
 /// let rcc = dp.RCC.constrain();
 /// use_cfgr(&mut rcc.cfgr)
 /// ```
-#[derive(Default)]
 pub struct CFGR {
     hse: Option<u32>,
     hse_bypass: bool,
+    pll_bypass: bool,
     css: bool,
     hclk: Option<u32>,
     pclk1: Option<u32>,
     pclk2: Option<u32>,
     sysclk: Option<u32>,
+}
+
+impl Default for CFGR {
+    fn default() -> Self {
+        Self {
+            hse: None,
+            hse_bypass: false,
+            pll_bypass: true,
+            css: false,
+            hclk: None,
+            pclk1: None,
+            pclk2: None,
+            sysclk: None,
+        }
+    }
 }
 
 pub(crate) struct PllConfig {
@@ -274,6 +409,8 @@ pub(crate) struct PllConfig {
 /// Determine the [greatest common divisor](https://en.wikipedia.org/wiki/Greatest_common_divisor)
 ///
 /// This function is based on the [Euclidean algorithm](https://en.wikipedia.org/wiki/Euclidean_algorithm).
+// TODO(Sh3Rm4n): As num-traits is a indirecty dependecy of this crate through embedded-time,
+// use its implementation instead.
 fn gcd(mut a: u32, mut b: u32) -> u32 {
     while b != 0 {
         let r = a % b;
@@ -333,11 +470,19 @@ impl CFGR {
     ///
     /// Will result in a hang if an external oscillator is not connected or it fails to start,
     /// unless [css](CFGR::enable_css) is enabled.
-    pub fn use_hse<F>(mut self, freq: F) -> Self
-    where
-        F: Into<Hertz>,
-    {
-        self.hse = Some(freq.into().0);
+    ///
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn use_hse(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
+        self.hse = Some(freq.integer());
+        self
+    }
+
+    /// Set this to disallow bypass the PLLCLK for the systemclock generation.
+    pub fn use_pll(mut self) -> Self {
+        self.pll_bypass = false;
         self
     }
 
@@ -363,12 +508,14 @@ impl CFGR {
         self
     }
 
-    /// Sets a frequency for the AHB bus
-    pub fn hclk<F>(mut self, freq: F) -> Self
-    where
-        F: Into<Hertz>,
-    {
-        self.hclk = Some(freq.into().0);
+    /// Sets a frequency for the AHB bus.
+    ///
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn hclk(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
+        self.hclk = Some(freq.integer());
         self
     }
 
@@ -378,11 +525,13 @@ impl CFGR {
     ///
     /// If not manually set, it will be set to [`CFGR::sysclk`] frequency
     /// or [`CFGR::sysclk`] frequency / 2, if [`CFGR::sysclk`] > 36 Mhz
-    pub fn pclk1<F>(mut self, freq: F) -> Self
-    where
-        F: Into<Hertz>,
-    {
-        self.pclk1 = Some(freq.into().0);
+    ///
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn pclk1(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
+        self.pclk1 = Some(freq.integer());
         self
     }
 
@@ -399,11 +548,12 @@ impl CFGR {
     ///
     ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
     ///
-    pub fn pclk2<F>(mut self, freq: F) -> Self
-    where
-        F: Into<Hertz>,
-    {
-        self.pclk2 = Some(freq.into().0);
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn pclk2(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
+        self.pclk2 = Some(freq.integer());
         self
     }
 
@@ -414,7 +564,7 @@ impl CFGR {
     /// - Maximal supported frequency with `HSE`: 72 Mhz
     /// - Maximal supported frequency without `HSE`: 64 Mhz
     ///
-    /// If [`CFGR::hse`] is not used, therefor `HSI / 2` is used.
+    /// If [`CFGR::use_hse`] is not set, `HSI / 2` will be used.
     /// Only multiples of (HSI / 2) (4 Mhz) are allowed.
     ///
     /// This is true for devices **except** the following devices,
@@ -422,11 +572,13 @@ impl CFGR {
     /// even when using the internal oscillator:
     ///
     ///     [stm32f302xd,stm32f302xe,stm32f303xd,stm32f303xe,stm32f398]
-    pub fn sysclk<F>(mut self, freq: F) -> Self
-    where
-        F: Into<Hertz>,
-    {
-        self.sysclk = Some(freq.into().0);
+    ///
+    /// # Panics
+    ///
+    /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    pub fn sysclk(mut self, freq: Megahertz) -> Self {
+        let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
+        self.sysclk = Some(freq.integer());
         self
     }
 
@@ -448,15 +600,9 @@ impl CFGR {
     ///
     /// `HSI` is simpler to calculate, but the possible system clocks are less than `HSE`, because the
     /// division is not configurable.
-    #[cfg(not(any(
-        feature = "stm32f302xd",
-        feature = "stm32f302xe",
-        feature = "stm32f303xd",
-        feature = "stm32f303xe",
-        feature = "stm32f398"
-    )))]
+    #[cfg(not(feature = "gpio-f303e"))]
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
-        let pllsrcclk = self.hse.unwrap_or(HSI / 2);
+        let pllsrcclk = self.hse.unwrap_or(HSI.integer() / 2);
         // Get the optimal value for the pll divisor (PLL_DIV) and multiplier (PLL_MUL)
         // Only for HSE PLL_DIV can be changed
         let (pll_mul, pll_div): (u32, Option<u32>) = if self.hse.is_some() {
@@ -524,15 +670,9 @@ impl CFGR {
     ///
     /// To determine the optimal values, the greatest common divisor is calculated and the
     /// limitations of the possible values are taken into considiration.
-    #[cfg(any(
-        feature = "stm32f302xd",
-        feature = "stm32f302xe",
-        feature = "stm32f303xd",
-        feature = "stm32f303xe",
-        feature = "stm32f398",
-    ))]
+    #[cfg(feature = "gpio-f303e")]
     fn calc_pll(&self, sysclk: u32) -> (u32, PllConfig) {
-        let pllsrcclk = self.hse.unwrap_or(HSI);
+        let pllsrcclk = self.hse.unwrap_or(HSI.integer());
 
         let (pll_mul, pll_div) = {
             // Get the optimal value for the pll divisor (PLL_DIV) and multiplcator (PLL_MUL)
@@ -598,9 +738,13 @@ impl CFGR {
             // because the two valid USB clocks, 72 Mhz and 48 Mhz, can't be generated
             // directly from neither the internal rc (8 Mhz)  nor the external
             // Oscillator (max 32 Mhz), without using the PLL.
-            (Some(sysclk), Some(hse)) if sysclk == hse => (hse, cfgr::SW_A::HSE, None),
+            (Some(sysclk), Some(hse)) if sysclk == hse && self.pll_bypass => {
+                (hse, cfgr::SW_A::HSE, None)
+            }
             // No need to use the PLL
-            (Some(sysclk), None) if sysclk == HSI => (HSI, cfgr::SW_A::HSI, None),
+            (Some(sysclk), None) if sysclk == HSI.integer() && self.pll_bypass => {
+                (HSI.integer(), cfgr::SW_A::HSI, None)
+            }
             (Some(sysclk), _) => {
                 let (sysclk, pll_config) = self.calc_pll(sysclk);
                 (sysclk, cfgr::SW_A::PLL, Some(pll_config))
@@ -608,7 +752,7 @@ impl CFGR {
             // Use HSE as system clock
             (None, Some(hse)) => (hse, cfgr::SW_A::HSE, None),
             // Use HSI as system clock
-            (None, None) => (HSI, cfgr::SW_A::HSI, None),
+            (None, None) => (HSI.integer(), cfgr::SW_A::HSI, None),
         }
     }
 
@@ -660,7 +804,7 @@ impl CFGR {
 
         // This ensures, that no panic happens, when
         // pclk1 is not manually set.
-        // As hclk highest value is 72.mhz()
+        // As hclk highest value is 72.MHz()
         // dividing by 2 should always be sufficient
         if self.pclk1.is_none() && pclk1 > 36_000_000 {
             ppre1_bits = cfgr::PPRE1_A::DIV2;
@@ -752,6 +896,7 @@ impl CFGR {
             ppre2,
             sysclk: Hertz(sysclk),
             usbclk_valid,
+            pll_bypass: self.pll_bypass,
         }
     }
 }
@@ -760,7 +905,7 @@ impl CFGR {
 ///
 /// The existence of this value indicates that the clock configuration can no longer be changed.
 /// This struct can be obtained via the [freeze](CFGR::freeze) method of the [CFGR](CFGR) struct.
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Clocks {
     hclk: Hertz,
     pclk1: Hertz,
@@ -769,8 +914,32 @@ pub struct Clocks {
     ppre2: u8,
     sysclk: Hertz,
     usbclk_valid: bool,
+    pll_bypass: bool,
 }
 
+// TODO(Sh3Rm4n) Add defmt support for embedded-time!
+#[cfg(feature = "defmt")]
+impl defmt::Format for Clocks {
+    fn format(&self, f: defmt::Formatter) {
+        // Format as hexadecimal.
+        defmt::write!(
+            f,
+            "Clocks {{ hclk: {} Hz, pclk1: {} Hz, pclk2: {} Hz, ppre1: {:b}, ppre2: {:b}, sysclk: {} Hz, usbclk_valid: {}, pll_bypass: {} }}",
+            self.hclk.integer(),
+            self.pclk1.integer(),
+            self.pclk2.integer(),
+            self.ppre1,
+            self.ppre2,
+            self.sysclk.integer(),
+            self.usbclk_valid,
+            self.pll_bypass,
+        );
+    }
+}
+
+// TODO(Sh3Rm4n): Think of some way to generlize APB1 and APB2 as types to then implement a method,
+// with which the ppre or pclk can be obtained by passing in the type of APB.
+// With that in place, some places of macro magic are not needed anymore.
 impl Clocks {
     /// Returns the frequency of the AHB
     pub fn hclk(&self) -> Hertz {
@@ -787,13 +956,13 @@ impl Clocks {
         self.pclk2
     }
 
-    pub(crate) fn ppre1(&self) -> u8 {
+    /// Returns the prescaler of the APB1
+    pub fn ppre1(&self) -> u8 {
         self.ppre1
     }
 
-    // TODO remove `allow`
-    #[allow(dead_code)]
-    pub(crate) fn ppre2(&self) -> u8 {
+    /// Returns the prescaler of the APB2
+    pub fn ppre2(&self) -> u8 {
         self.ppre2
     }
 
@@ -802,10 +971,23 @@ impl Clocks {
         self.sysclk
     }
 
+    /// Returns the PLL clock if configured, else it returns `None`.
+    ///
+    /// The PLL clock is a source of the system clock, but it is not necessarily configured to be one.
+    pub fn pllclk(&self) -> Option<Hertz> {
+        if self.pll_bypass {
+            None
+        } else {
+            // The PLLCLK is the same as the sysclk, beccause
+            // the sysclk is using it as a source.
+            Some(self.sysclk())
+        }
+    }
+
     /// Returns whether the USBCLK clock frequency is valid for the USB peripheral
     ///
     /// If the microcontroller does support USB, 48 Mhz or 72 Mhz have to be used
-    /// and the [`CFGR::hse`] must be used.
+    /// and the [`CFGR::use_hse`] must be set.
     ///
     /// The APB1 / [`CFGR::pclk1`] clock must have a minimum frequency of 10 MHz to avoid data
     /// overrun/underrun problems. [RM0316 32.5.2][RM0316]

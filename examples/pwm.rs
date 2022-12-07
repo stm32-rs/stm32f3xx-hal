@@ -16,9 +16,9 @@ use hal::hal::PwmPin;
 use hal::flash::FlashExt;
 use hal::gpio::GpioExt;
 use hal::pac;
+use hal::prelude::*;
 use hal::pwm::{tim16, tim2, tim3, tim8};
 use hal::rcc::RccExt;
-use hal::time::U32Ext;
 
 #[entry]
 fn main() -> ! {
@@ -28,24 +28,44 @@ fn main() -> ! {
     // Configure our clocks
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.sysclk(16.mhz()).freeze(&mut flash.acr);
+    let clocks = rcc.cfgr.sysclk(16.MHz()).freeze(&mut flash.acr);
 
     // Prep the pins we need in their correct alternate function
     let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    let pa4 = gpioa.pa4.into_af2(&mut gpioa.moder, &mut gpioa.afrl);
-    let pa6 = gpioa.pa6.into_af2(&mut gpioa.moder, &mut gpioa.afrl);
-    let pa7 = gpioa.pa7.into_af2(&mut gpioa.moder, &mut gpioa.afrl);
+    let pa4 = gpioa
+        .pa4
+        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let pa6 = gpioa
+        .pa6
+        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
+    let pa7 = gpioa
+        .pa7
+        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl);
 
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
-    let pb0 = gpiob.pb0.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb1 = gpiob.pb1.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb4 = gpiob.pb4.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb5 = gpiob.pb5.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb8 = gpiob.pb8.into_af1(&mut gpiob.moder, &mut gpiob.afrh);
-    let pb10 = gpiob.pb10.into_af1(&mut gpiob.moder, &mut gpiob.afrh);
+    let pb0 = gpiob
+        .pb0
+        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let pb1 = gpiob
+        .pb1
+        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let pb4 = gpiob
+        .pb4
+        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let pb5 = gpiob
+        .pb5
+        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let pb8 = gpiob
+        .pb8
+        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh);
+    let pb10 = gpiob
+        .pb10
+        .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh);
 
     let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
-    let pc10 = gpioc.pc10.into_af4(&mut gpioc.moder, &mut gpioc.afrh);
+    let pc10 = gpioc
+        .pc10
+        .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
 
     // TIM3
     //
@@ -53,7 +73,7 @@ fn main() -> ! {
     let tim3_channels = tim3(
         dp.TIM3,
         1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
+        50.Hz(), // frequency of period
         &clocks, // To get the timer's clock speed
     );
 
@@ -102,7 +122,7 @@ fn main() -> ! {
     let tim2_channels = tim2(
         dp.TIM2,
         160000,  // resolution of duty cycle
-        50.hz(), // frequency of period
+        50.Hz(), // frequency of period
         &clocks, // To get the timer's clock speed
     );
 
@@ -117,7 +137,7 @@ fn main() -> ! {
     let mut tim16_ch1 = tim16(
         dp.TIM16,
         1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
+        50.Hz(), // frequency of period
         &clocks, // To get the timer's clock speed
     )
     .output_to_pb8(pb8);
@@ -130,9 +150,9 @@ fn main() -> ! {
     // to complementary pins (works just like standard pins)
     let tim8_channels = tim8(
         dp.TIM8,
-        1280,    // resolution of duty cycle
-        50.hz(), // frequency of period
-        &clocks, // To get the timer's clock speed
+        1280,       // resolution of duty cycle
+        50u32.Hz(), // frequency of period
+        &clocks,    // To get the timer's clock speed
     );
 
     let mut tim8_ch1 = tim8_channels.0.output_to_pc10(pc10);

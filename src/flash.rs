@@ -1,10 +1,20 @@
-//! Flash memory
+//! # Flash memory
+//!
+//! Abstractions of the internal flash module.
 
 use crate::pac::{flash, FLASH};
 
-/// Extension trait to constrain the FLASH peripheral
-pub trait FlashExt {
-    /// Constrains the FLASH peripheral to play nicely with the other abstractions
+impl crate::private::Sealed for FLASH {}
+
+/// Extension trait to constrain the [`FLASH`] peripheral
+pub trait FlashExt: crate::private::Sealed {
+    /// Constrains the [`FLASH`] peripheral.
+    ///
+    /// Consumes the [`pac::FLASH`] peripheral and converts it to a [`HAL`] internal type
+    /// constraining it's public access surface to fit the design of the [`HAL`].
+    ///
+    /// [`pac::FLASH`]: `crate::pac::FLASH`
+    /// [`HAL`]: `crate`
     fn constrain(self) -> Parts;
 }
 
@@ -29,7 +39,7 @@ pub struct ACR {
 
 impl ACR {
     pub(crate) fn acr(&mut self) -> &flash::ACR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
+        // SAFETY: This proxy grants exclusive access to this register
         unsafe { &(*FLASH::ptr()).acr }
     }
 }

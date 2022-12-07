@@ -11,31 +11,32 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # Devices only differ in memory size are commented out
         mcu:
-          - stm32f301
-          - stm32f318
-          - stm32f302xb
-          - stm32f302xc
-          - stm32f302xd
-          - stm32f302xe
+          - stm32f301x6
+          - stm32f318x8
           - stm32f302x6
-          - stm32f302x8
+          # - stm32f302x8
+          - stm32f302xb
+          # - stm32f302xc
+          - stm32f302xd
+          # - stm32f302xe
+          - stm32f303x6
+          # - stm32f303x8
           - stm32f303xb
           - stm32f303xc
           - stm32f303xd
-          - stm32f303xe
-          - stm32f303x6
-          - stm32f303x8
-          - stm32f373
-          - stm32f378
-          - stm32f334
-          - stm32f328
-          - stm32f358
-          - stm32f398
-        features: ["rt"]
-        include:
-          - mcu: stm32f303xc
-            features: rt,stm32-usbd
+          # - stm32f303xe
+          - stm32f328x8
+          - stm32f358xc
+          - stm32f398xe
+          - stm32f373x8
+          # - stm32f373xb
+          # - stm32f373xc
+          - stm32f378xc
+          - stm32f334x4
+          # - stm32f334x6
+          # - stm32f334x8
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -44,10 +45,7 @@ jobs:
           target: thumbv7em-none-eabihf
           override: true
           profile: minimal
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features=${{ matrix.mcu }},${{ matrix.features }} --lib --examples
+      - run: cargo build --features=${{ matrix.mcu }} --lib --examples
 
   # This is our MSRV. However this is only for documentation
   # purposes and should be increased if newer features are used.
@@ -59,25 +57,40 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.48.0
+          toolchain: 1.54.0
           target: thumbv7em-none-eabihf
           override: true
           profile: minimal
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=stm32f303xc,stm32-usbd,rt,can --lib --examples
+          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib
 
-  check-tests:
-    name: Check Tests
+  check-min-deps:
+    name: Check Minimal Dependency Versions
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        test:
-          - rcc
-        mcu:
-          - stm32f303xc
-          - stm32f303xd
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: thumbv7em-none-eabihf
+          profile: minimal
+      - run: cargo +nightly update -Z minimal-versions
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
+
+  check-minimal-feature-set:
+    name: Check minimal feature set
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -89,10 +102,26 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: check
-          args: --features=rt,defmt,${{ matrix.mcu }} --test ${{ matrix.test }}
+          args: --no-default-features --features=stm32f303xc --lib --examples
 
-  clippy:
-    name: Clippy
+  build-testsuite:
+    name: Build Testsuite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p testsuite --no-run
+
+  check-doc:
+    name: Check Documentation Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -102,12 +131,28 @@ jobs:
           target: thumbv7em-none-eabihf
           override: true
           profile: minimal
+      - uses: actions-rs/cargo@v1
+        with:
+          command: doc
+          args: --features=stm32f303xc
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          override: true
+          profile: minimal
           components: clippy
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: >
-            --features=stm32f303xc,rt,stm32-usbd,can --lib --examples
+            --features=stm32f303xc --lib --examples
             -- -D warnings
 
   rustfmt:
@@ -137,13 +182,33 @@ jobs:
           override: true
           profile: minimal
           components: rustfmt
-      - run: cd codegen && cargo check
+      - run: cargo check --target "x86_64-unknown-linux-gnu" -p codegen
 
   markdown-lint:
     name: Markdown Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: nosborn/github-action-markdown-cli@v1.1.1
+      - uses: actions/checkout@v2
+      - uses: nosborn/github-action-markdown-cli@v2.0.0
         with:
           files: .
-          ignore_files: "target/"
+          config_file: .markdownlint.yml
+          ignore_files: target/
+
+  link-checker:
+    name: Link Checker
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Check URLs in documentation
+      uses: lycheeverse/lychee-action@v1.0.8
+      with:
+        args: --verbose --no-progress "**/*.md" "**/*.rs" "Cargo.toml" "**/Cargo.toml" -h accept=text/html
+
+  cargo-deny:
+    name: Cargo Deny
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: EmbarkStudios/cargo-deny-action@v1

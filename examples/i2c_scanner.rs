@@ -1,12 +1,11 @@
 //! Example of using I2C.
 //! Scans available I2C devices on bus and print the result.
-//! Appropriate pull-up registers should be installed on I2C bus.
 //! Target board: STM32F3DISCOVERY
 
 #![no_std]
 #![no_main]
 
-use core::ops::Range;
+use core::{convert::TryInto, ops::Range};
 
 use panic_semihosting as _;
 
@@ -29,11 +28,23 @@ fn main() -> ! {
     let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
 
     // Configure I2C1
-    let pins = (
-        gpiob.pb6.into_af4(&mut gpiob.moder, &mut gpiob.afrl), // SCL
-        gpiob.pb7.into_af4(&mut gpiob.moder, &mut gpiob.afrl), // SDA
+    let mut scl =
+        gpiob
+            .pb6
+            .into_af_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    let mut sda =
+        gpiob
+            .pb7
+            .into_af_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
+    scl.internal_pull_up(&mut gpiob.pupdr, true);
+    sda.internal_pull_up(&mut gpiob.pupdr, true);
+    let mut i2c = hal::i2c::I2c::new(
+        dp.I2C1,
+        (scl, sda),
+        100.kHz().try_into().unwrap(),
+        clocks,
+        &mut rcc.apb1,
     );
-    let mut i2c = hal::i2c::I2c::new(dp.I2C1, pins, 100.khz(), clocks, &mut rcc.apb1);
 
     hprintln!("Start i2c scanning...").expect("Error using hprintln.");
     hprintln!().unwrap();

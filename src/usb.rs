@@ -1,34 +1,83 @@
-//! USB peripheral
+//! # USB peripheral.
 //!
-//! Requires the `stm32-usbd` feature and one of the `stm32f303x*` features.
+//! Mostly builds upon the [`stm32_usbd`] crate.
+//!
+//! ## Examples
 //!
 //! See [examples/usb_serial.rs] for a usage example.
 //!
-//! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/usb_serial.rs
+//! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/usb_serial.rs
 
-use crate::pac::{RCC, USB};
+use core::fmt;
+
+use crate::pac::USB;
+use crate::rcc::{Enable, Reset};
 use stm32_usbd::UsbPeripheral;
 
+use crate::gpio;
 use crate::gpio::gpioa::{PA11, PA12};
-use crate::gpio::AF14;
 pub use stm32_usbd::UsbBus;
+
+/// Trait implemented by all pins that can be the "D-" pin for the USB peripheral
+pub trait DmPin: crate::private::Sealed {}
+
+/// Trait implemented by all pins that can be the "D+" pin for the USB peripheral
+pub trait DpPin: crate::private::Sealed {}
+
+#[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
+impl DmPin for PA11<gpio::AF14<gpio::PushPull>> {}
+
+#[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
+impl DpPin for PA12<gpio::AF14<gpio::PushPull>> {}
+
+#[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
+impl<Mode> DmPin for PA11<Mode> {}
+
+#[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
+impl<Mode> DpPin for PA12<Mode> {}
 
 /// USB Peripheral
 ///
 /// Constructs the peripheral, which
 /// than gets passed to the [`UsbBus`].
-pub struct Peripheral {
+pub struct Peripheral<Dm: DmPin, Dp: DpPin> {
     /// USB Register Block
     pub usb: USB,
     /// Data Negativ Pin
-    pub pin_dm: PA11<AF14>,
+    pub pin_dm: Dm,
     /// Data Positiv Pin
-    pub pin_dp: PA12<AF14>,
+    pub pin_dp: Dp,
 }
 
-unsafe impl Sync for Peripheral {}
+#[cfg(feature = "defmt")]
+impl<Dm: DmPin + defmt::Format, Dp: DpPin + defmt::Format> defmt::Format for Peripheral<Dm, Dp> {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(
+            f,
+            "Peripheral {{ usb: USB, pin_dm: {}, pin_dp: {}}}",
+            self.pin_dm,
+            self.pin_dp
+        );
+    }
+}
 
-unsafe impl UsbPeripheral for Peripheral {
+impl<Dm, Dp> fmt::Debug for Peripheral<Dm, Dp>
+where
+    Dm: DmPin + fmt::Debug,
+    Dp: DpPin + fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Peripheral")
+            .field("usb", &"USB")
+            .field("pin_dm", &self.pin_dm)
+            .field("pin_dp", &self.pin_dp)
+            .finish()
+    }
+}
+
+unsafe impl<Dm: DmPin, Dp: DpPin> Sync for Peripheral<Dm, Dp> {}
+
+unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm, Dp> {
     const REGISTERS: *const () = USB::ptr() as *const ();
     const DP_PULL_UP_FEATURE: bool = false;
     const EP_MEMORY: *const () = 0x4000_6000 as _;
@@ -36,17 +85,17 @@ unsafe impl UsbPeripheral for Peripheral {
     const EP_MEMORY_SIZE: usize = 512;
     #[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
     const EP_MEMORY_SIZE: usize = 1024;
+    #[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
+    const EP_MEMORY_ACCESS_2X16: bool = false;
+    #[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
+    const EP_MEMORY_ACCESS_2X16: bool = true;
 
     fn enable() {
-        let rcc = unsafe { &*RCC::ptr() };
-
-        cortex_m::interrupt::free(|_| {
+        cortex_m::interrupt::free(|_| unsafe {
             // Enable USB peripheral
-            rcc.apb1enr.modify(|_, w| w.usben().enabled());
-
+            USB::enable_unchecked();
             // Reset USB peripheral
-            rcc.apb1rstr.modify(|_, w| w.usbrst().reset());
-            rcc.apb1rstr.modify(|_, w| w.usbrst().clear_bit());
+            USB::reset_unchecked();
         });
     }
 
@@ -59,7 +108,10 @@ unsafe impl UsbPeripheral for Peripheral {
 }
 
 /// Type of the UsbBus
-///
-/// As this MCU family has only USB peripheral,
-/// this is the only possible concrete type construction.
-pub type UsbBusType = UsbBus<Peripheral>;
+#[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
+pub type UsbBusType<Dm = PA11<gpio::AF14<gpio::PushPull>>, Dp = PA12<gpio::AF14<gpio::PushPull>>> =
+    UsbBus<Peripheral<Dm, Dp>>;
+
+/// Type of the UsbBus
+#[cfg(any(feature = "stm32f303xd", feature = "stm32f303xe"))]
+pub type UsbBusType<Dm = PA11<gpio::Input>, Dp = PA12<gpio::Input>> = UsbBus<Peripheral<Dm, Dp>>;

@@ -1,8 +1,8 @@
 //! Inter-Integrated Circuit (I2C) bus interruption
 
 use crate::i2c::{I2c, Instance, SclPin, SdaPin};
-use crate::rcc::{Clocks, APB1};
-use crate::time::Hertz;
+use crate::rcc::{self, Clocks};
+use crate::time::rate::*;
 use core::fmt;
 
 /// I2c errors.
@@ -76,19 +76,18 @@ where
     I2C: Instance,
 {
     /// Configures the I2C peripheral to work in master mode
-    pub fn new_int<F>(
+    pub fn new_int(
         i2c: I2C,
         pins: (SCL, SDA),
-        freq: F,
+        freq: Hertz,
         clocks: Clocks,
-        apb1: &mut APB1,
+        bus: &mut <I2C as rcc::RccBus>::Bus,
     ) -> I2cInt<I2C, (SCL, SDA)>
     where
         SCL: SclPin<I2C>,
         SDA: SdaPin<I2C>,
-        F: Into<Hertz>,
     {
-        let i2c = I2c::new(i2c, pins, freq, clocks, apb1);
+        let i2c = I2c::new(i2c, pins, freq, clocks, bus);
 
         I2cInt {
             dev: i2c,

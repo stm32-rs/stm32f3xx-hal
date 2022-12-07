@@ -1,18 +1,19 @@
-//! Inter-Integrated Circuit (I2C) bus
+//! # Inter-Integrated Circuit (I2C) bus
+//!
+//! ## Examples
 //!
 //! A usage example of the i2c peripheral can be found at [examples/i2c_scanner.rs]
 //!
-//! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/i2c_scanner.rs
+//! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/i2c_scanner.rs
 
-use core::convert::TryFrom;
-use core::ops::Deref;
+use core::{convert::TryFrom, ops::Deref};
 
 use crate::{
-    gpio::{gpioa, gpiob, AF4},
+    gpio::{gpioa, gpiob, OpenDrain, AF4},
     hal::blocking::i2c::{Read, Write, WriteRead},
     pac::{i2c1::RegisterBlock, rcc::cfgr3::I2C1SW_A, I2C1, RCC},
-    rcc::{Clocks, APB1},
-    time::{Hertz, U32Ext},
+    rcc::{self, Clocks},
+    time::rate::*,
 };
 
 #[cfg(not(feature = "gpio-f333"))]
@@ -44,38 +45,37 @@ pub enum Error {
     // Alert, // SMBUS mode only
 }
 
-// FIXME these should be "closed" traits
-/// SCL pin -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait SclPin<I2C> {}
+/// SCL pin
+pub trait SclPin<I2C>: crate::private::Sealed {}
 
-/// SDA pin -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait SdaPin<I2C> {}
+/// SDA pin
+pub trait SdaPin<I2C>: crate::private::Sealed {}
 
-unsafe impl SclPin<I2C1> for gpioa::PA15<AF4> {}
-unsafe impl SclPin<I2C1> for gpiob::PB6<AF4> {}
-unsafe impl SclPin<I2C1> for gpiob::PB8<AF4> {}
-unsafe impl SdaPin<I2C1> for gpioa::PA14<AF4> {}
-unsafe impl SdaPin<I2C1> for gpiob::PB7<AF4> {}
-unsafe impl SdaPin<I2C1> for gpiob::PB9<AF4> {}
+impl SclPin<I2C1> for gpioa::PA15<AF4<OpenDrain>> {}
+impl SclPin<I2C1> for gpiob::PB6<AF4<OpenDrain>> {}
+impl SclPin<I2C1> for gpiob::PB8<AF4<OpenDrain>> {}
+impl SdaPin<I2C1> for gpioa::PA14<AF4<OpenDrain>> {}
+impl SdaPin<I2C1> for gpiob::PB7<AF4<OpenDrain>> {}
+impl SdaPin<I2C1> for gpiob::PB9<AF4<OpenDrain>> {}
 
 cfg_if! {
     if #[cfg(not(feature = "gpio-f333"))] {
-        unsafe impl SclPin<I2C2> for gpioa::PA9<AF4> {}
-        unsafe impl SclPin<I2C2> for gpiof::PF1<AF4> {}
+        impl SclPin<I2C2> for gpioa::PA9<AF4<OpenDrain>> {}
+        impl SclPin<I2C2> for gpiof::PF1<AF4<OpenDrain>> {}
         #[cfg(any(feature = "gpio-f303", feature = "gpio-f303e", feature = "gpio-f373"))]
-        unsafe impl SclPin<I2C2> for gpiof::PF6<AF4> {}
-        unsafe impl SdaPin<I2C2> for gpioa::PA10<AF4> {}
-        unsafe impl SdaPin<I2C2> for gpiof::PF0<AF4> {}
+        impl SclPin<I2C2> for gpiof::PF6<AF4<OpenDrain>> {}
+        impl SdaPin<I2C2> for gpioa::PA10<AF4<OpenDrain>> {}
+        impl SdaPin<I2C2> for gpiof::PF0<AF4<OpenDrain>> {}
         #[cfg(feature = "gpio-f373")]
-        unsafe impl SdaPin<I2C2> for gpiof::PF7<AF4> {}
+        impl SdaPin<I2C2> for gpiof::PF7<AF4<OpenDrain>> {}
     }
 }
 
 cfg_if! {
     if #[cfg(any(feature = "gpio-f302", feature = "gpio-f303e"))] {
-        unsafe impl SclPin<I2C3> for gpioa::PA8<AF3> {}
-        unsafe impl SdaPin<I2C3> for gpiob::PB5<AF8> {}
-        unsafe impl SdaPin<I2C3> for gpioc::PC9<AF3> {}
+        impl SclPin<I2C3> for gpioa::PA8<AF3<OpenDrain>> {}
+        impl SdaPin<I2C3> for gpiob::PB5<AF8<OpenDrain>> {}
+        impl SdaPin<I2C3> for gpioc::PC9<AF3<OpenDrain>> {}
     }
 }
 
@@ -111,18 +111,22 @@ macro_rules! busy_wait {
 
 impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
     /// Configures the I2C peripheral to work in master mode
-    pub fn new<F>(i2c: I2C, pins: (SCL, SDA), freq: F, clocks: Clocks, apb1: &mut APB1) -> Self
+    pub fn new(
+        i2c: I2C,
+        pins: (SCL, SDA),
+        freq: Hertz,
+        clocks: Clocks,
+        bus: &mut <I2C as rcc::RccBus>::Bus,
+    ) -> Self
     where
         I2C: Instance,
         SCL: SclPin<I2C>,
         SDA: SdaPin<I2C>,
-        F: Into<Hertz>,
     {
-        let freq = freq.into().0;
+        crate::assert!(freq.integer() <= 1_000_000);
 
-        crate::assert!(freq <= 1_000_000);
-
-        I2C::enable_clock(apb1);
+        I2C::enable(bus);
+        I2C::reset(bus);
 
         // TODO review compliance with the timing requirements of I2C
         // t_I2CCLK = 1 / PCLK1
@@ -133,8 +137,8 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         // t_SYNC1 + t_SYNC2 > 4 * t_I2CCLK
         // t_SCL ~= t_SYNC1 + t_SYNC2 + t_SCLL + t_SCLH
         let i2cclk = I2C::clock(&clocks).0;
-        let ratio = i2cclk / freq - 4;
-        let (presc, scll, sclh, sdadel, scldel) = if freq >= 100_000 {
+        let ratio = i2cclk / freq.integer() - 4;
+        let (presc, scll, sclh, sdadel, scldel) = if freq >= 100.kHz() {
             // fast-mode or fast-mode plus
             // here we pick SCLL + 1 = 2 * (SCLH + 1)
             let presc = ratio / 387;
@@ -142,7 +146,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
             let sclh = ((ratio / (presc + 1)) - 3) / 3;
             let scll = 2 * (sclh + 1) - 1;
 
-            let (sdadel, scldel) = if freq > 400_000 {
+            let (sdadel, scldel) = if freq > 400.kHz() {
                 // fast-mode plus
                 let sdadel = 0;
                 let scldel = i2cclk / 4_000_000 / (presc + 1) - 1;
@@ -196,6 +200,19 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         i2c.cr1.modify(|_, w| w.pe().set_bit());
 
         Self { i2c, pins }
+    }
+
+    /// Get access to the underlying register block.
+    ///
+    /// # Safety
+    ///
+    /// This function is not _memory_ unsafe per se, but does not guarantee
+    /// anything about assumptions of invariants made in this implementation.
+    ///
+    /// Changing specific options can lead to un-expected behavior and nothing
+    /// is guaranteed.
+    pub unsafe fn peripheral(&mut self) -> &mut I2C {
+        &mut self.i2c
     }
 
     /// Releases the I2C peripheral and associated pins
@@ -430,28 +447,22 @@ where
     }
 }
 
-/// I2C instance -- DO NOT IMPLEMENT THIS TRAIT
-pub unsafe trait Instance: Deref<Target = RegisterBlock> {
-    #[doc(hidden)]
-    fn enable_clock(apb1: &mut APB1);
+/// I2C instance
+pub trait Instance:
+    Deref<Target = RegisterBlock> + crate::private::Sealed + rcc::Enable + rcc::Reset
+{
     #[doc(hidden)]
     fn clock(clocks: &Clocks) -> Hertz;
 }
 
 macro_rules! i2c {
-    ($($I2CX:ident: ($i2cXen:ident, $i2cXrst:ident, $i2cXsw:ident),)+) => {
+    ($($I2CX:ident: ($i2cXsw:ident),)+) => {
         $(
-            unsafe impl Instance for $I2CX {
-                fn enable_clock(apb1: &mut APB1) {
-                    apb1.enr().modify(|_, w| w.$i2cXen().enabled());
-                    apb1.rstr().modify(|_, w| w.$i2cXrst().reset());
-                    apb1.rstr().modify(|_, w| w.$i2cXrst().clear_bit());
-                }
-
+            impl Instance for $I2CX {
                 fn clock(clocks: &Clocks) -> Hertz {
                     // NOTE(unsafe) atomic read with no side effects
                     match unsafe { (*RCC::ptr()).cfgr3.read().$i2cXsw().variant() } {
-                        I2C1SW_A::HSI => 8.mhz().into(),
+                        I2C1SW_A::HSI => crate::rcc::HSI,
                         I2C1SW_A::SYSCLK => clocks.sysclk(),
                     }
                 }
@@ -462,7 +473,7 @@ macro_rules! i2c {
     ([ $($X:literal),+ ]) => {
         paste::paste! {
             i2c!(
-                $([<I2C $X>]: ([<i2c $X en>], [<i2c $X rst>], [<i2c $X sw>]),)+
+                $([<I2C $X>]: ([<i2c $X sw>]),)+
             );
         }
     };

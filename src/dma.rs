@@ -1,10 +1,12 @@
-//! Direct memory access (DMA) controller
+//! # Direct memory access (DMA) controller.
 //!
-//! Currently DMA is only supported for STM32F303 MCUs.
+//! Currently DMA is only supported for STM32F303 or STM32F302 MCUs.
+//!
+//! ## Examples
 //!
 //! An example how to use DMA for serial, can be found at [examples/serial_dma.rs]
 //!
-//! [examples/serial_dma.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.0/examples/serial_dma.rs
+//! [examples/serial_dma.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/serial_dma.rs
 
 // To learn about most of the ideas implemented here, check out the DMA section
 // of the Embedonomicon: https://docs.rust-embedded.org/embedonomicon/dma.html
@@ -21,6 +23,9 @@ use core::{
     mem,
     sync::atomic::{self, Ordering},
 };
+
+#[cfg(feature = "enumset")]
+use enumset::EnumSetType;
 
 /// Extension trait to split a DMA peripheral into independent channels
 pub trait DmaExt {
@@ -40,6 +45,8 @@ pub trait Target {
 }
 
 /// An in-progress one-shot DMA transfer
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Transfer<B, C: Channel, T: Target> {
     // This is always a `Some` outside of `drop`.
     inner: Option<TransferInner<B, C, T>>,
@@ -129,7 +136,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     /// Is this transfer complete?
     pub fn is_complete(&self) -> bool {
         let inner = crate::unwrap!(self.inner.as_ref());
-        inner.channel.event_occurred(Event::TransferComplete)
+        inner.channel.is_event_triggered(Event::TransferComplete)
     }
 
     /// Stop this transfer and return ownership over its parts
@@ -157,6 +164,8 @@ impl<B, C: Channel, T: Target> Drop for Transfer<B, C, T> {
 }
 
 /// This only exists so we can implement `Drop` for `Transfer`.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct TransferInner<B, C, T> {
     buffer: B,
     channel: C,
@@ -174,6 +183,8 @@ impl<B, C: Channel, T: Target> TransferInner<B, C, T> {
 }
 
 /// DMA address increment mode
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Increment {
     /// Enable increment
     Enable,
@@ -191,6 +202,8 @@ impl From<Increment> for cr::PINC_A {
 }
 
 /// Channel priority level
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Priority {
     /// Low
     Low,
@@ -214,6 +227,8 @@ impl From<Priority> for cr::PL_A {
 }
 
 /// DMA transfer direction
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Direction {
     /// From memory to peripheral
     FromMemory,
@@ -231,6 +246,10 @@ impl From<Direction> for cr::DIR_A {
 }
 
 /// DMA events
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[cfg_attr(feature = "enumset", derive(EnumSetType))]
+#[cfg_attr(not(feature = "enumset"), derive(Copy, Clone, PartialEq, Eq))]
 pub enum Event {
     /// First half of a transfer is done
     HalfTransfer,
@@ -245,7 +264,7 @@ pub enum Event {
 /// Trait implemented by all DMA channels
 pub trait Channel: private::Channel {
     /// Is the interrupt flag for the given event set?
-    fn event_occurred(&self, event: Event) -> bool;
+    fn is_event_triggered(&self, event: Event) -> bool;
 
     /// Clear the interrupt flag for the given event.
     ///
@@ -255,6 +274,11 @@ pub trait Channel: private::Channel {
     /// even when all other flags are cleared. The only way to clear it is to
     /// call this method with `Event::Any`.
     fn clear_event(&mut self, event: Event);
+
+    /// Clear **all** interrupt event flags
+    fn clear_events(&mut self) {
+        self.clear_event(Event::Any);
+    }
 
     /// Reset the control registers of this channel.
     /// This stops any ongoing transfers.
@@ -331,7 +355,10 @@ pub trait Channel: private::Channel {
             1 => BITS8,
             2 => BITS16,
             4 => BITS32,
-            s => crate::panic!("unsupported word size: {:?}", s),
+            #[cfg(not(feature = "defmt"))]
+            s => core::panic!("unsupported word size: {:?}", s),
+            #[cfg(feature = "defmt")]
+            _ => defmt::panic!("unsupported word size"),
         };
 
         self.ch().cr.modify(|_, w| {
@@ -352,34 +379,28 @@ pub trait Channel: private::Channel {
         self.ch().cr.modify(|_, w| w.dir().variant(dir));
     }
 
-    /// Enable the interrupt for the given event
-    fn listen(&mut self, event: Event) {
-        use Event::*;
+    /// Enable or disable the interrupt for the specified [`Event`].
+    fn configure_intterupt(&mut self, event: Event, enable: bool) {
         match event {
-            HalfTransfer => self.ch().cr.modify(|_, w| w.htie().enabled()),
-            TransferComplete => self.ch().cr.modify(|_, w| w.tcie().enabled()),
-            TransferError => self.ch().cr.modify(|_, w| w.teie().enabled()),
-            Any => self.ch().cr.modify(|_, w| {
-                w.htie().enabled();
-                w.tcie().enabled();
-                w.teie().enabled()
+            Event::HalfTransfer => self.ch().cr.modify(|_, w| w.htie().bit(enable)),
+            Event::TransferComplete => self.ch().cr.modify(|_, w| w.tcie().bit(enable)),
+            Event::TransferError => self.ch().cr.modify(|_, w| w.teie().bit(enable)),
+            Event::Any => self.ch().cr.modify(|_, w| {
+                w.htie().bit(enable);
+                w.tcie().bit(enable);
+                w.teie().bit(enable)
             }),
         }
     }
 
-    /// Disable the interrupt for the given event
-    fn unlisten(&mut self, event: Event) {
-        use Event::*;
-        match event {
-            HalfTransfer => self.ch().cr.modify(|_, w| w.htie().disabled()),
-            TransferComplete => self.ch().cr.modify(|_, w| w.tcie().disabled()),
-            TransferError => self.ch().cr.modify(|_, w| w.teie().disabled()),
-            Any => self.ch().cr.modify(|_, w| {
-                w.htie().disabled();
-                w.tcie().disabled();
-                w.teie().disabled()
-            }),
-        }
+    /// Enable the interrupt for the given [`Event`].
+    fn enable_interrupt(&mut self, event: Event) {
+        self.configure_intterupt(event, true);
+    }
+
+    /// Disable the interrupt for the given [`Event`].
+    fn disable_interrupt(&mut self, event: Event) {
+        self.configure_intterupt(event, false);
     }
 
     /// Start a transfer
@@ -425,12 +446,13 @@ macro_rules! dma {
             pub mod $dmax {
                 use super::*;
                 use crate::pac::$DMAx;
+                use crate::rcc::Enable;
 
                 impl DmaExt for $DMAx {
                     type Channels = Channels;
 
                     fn split(self, ahb: &mut AHB) -> Channels {
-                        ahb.enr().modify(|_, w| w.$dmaxen().set_bit());
+                        <$DMAx>::enable(ahb);
 
                         let mut channels = Channels {
                             $( $chi: $Ci { _0: () }, )+
@@ -442,6 +464,8 @@ macro_rules! dma {
                 }
 
                 /// DMA channels
+                #[derive(Debug)]
+                #[cfg_attr(feature = "defmt", derive(defmt::Format))]
                 pub struct Channels {
                     $(
                         /// Channel
@@ -459,6 +483,8 @@ macro_rules! dma {
 
                 $(
                     /// Singleton that represents a DMA channel
+                    #[derive(Debug)]
+                    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
                     pub struct $Ci {
                         _0: (),
                     }
@@ -471,7 +497,7 @@ macro_rules! dma {
                     }
 
                     impl Channel for $Ci {
-                        fn event_occurred(&self, event: Event) -> bool {
+                        fn is_event_triggered(&self, event: Event) -> bool {
                             use Event::*;
 
                             // NOTE(unsafe) atomic read
@@ -489,7 +515,7 @@ macro_rules! dma {
 
                             // NOTE(unsafe) atomic write to a stateless register
                             unsafe {
-                                &(*$DMAx::ptr()).ifcr.write(|w| match event {
+                                (*$DMAx::ptr()).ifcr.write(|w| match event {
                                     HalfTransfer => w.$chtifi().set_bit(),
                                     TransferComplete => w.$ctcifi().set_bit(),
                                     TransferError => w.$cteifi().set_bit(),
@@ -530,40 +556,46 @@ macro_rules! dma {
 
 dma!( 1: { 1,2,3,4,5,6,7 } );
 
-#[cfg(any(
-    feature = "stm32f302xb",
-    feature = "stm32f302xc",
-    feature = "stm32f302xd",
-    feature = "stm32f302xe",
-    feature = "stm32f303xb",
-    feature = "stm32f303xc",
-    feature = "stm32f303xd",
-    feature = "stm32f303xe",
-))]
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
 dma!( 2: { 1,2,3,4,5 } );
 
 /// Marker trait mapping DMA targets to their channels
-///
-/// # Safety
-///
-/// `C` must be the correct DMA channel for the peripheral implementing
-/// this trait.
-pub unsafe trait OnChannel<C: Channel>: Target {}
+pub trait OnChannel<C: Channel>: Target + crate::private::Sealed {}
+
+use crate::serial::{RxPin, TxPin};
 
 macro_rules! on_channel {
     (
-        $dma:ident,
-        $( $target:ty => $C:ident, )+
+        $(
+            $dma:ident: [$(($USART:ty, ($TxChannel:ident, $RxChannel:ident)),)+],
+        ),+
     ) => {
-        $( unsafe impl OnChannel<$dma::$C> for $target {} )+
+        $(
+            $(
+                impl<Pin> crate::private::Sealed for serial::Tx<$USART, Pin> {}
+                impl<Pin> OnChannel<$dma::$TxChannel> for serial::Tx<$USART, Pin> where Pin: TxPin<$USART> {}
+                impl<Pin> crate::private::Sealed for serial::Rx<$USART, Pin> {}
+                impl<Pin> OnChannel<$dma::$RxChannel> for serial::Rx<$USART, Pin> where Pin: RxPin<$USART> {}
+                impl<Tx, Rx> crate::private::Sealed for serial::Serial<$USART, (Tx, Rx)> {}
+                impl<Tx, Rx> OnChannel<$dma::$TxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
+                impl<Tx, Rx> OnChannel<$dma::$RxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
+            )+
+        )+
     };
 }
 
-on_channel!(dma1,
-    serial::Rx<pac::USART1> => C5,
-    serial::Tx<pac::USART1> => C4,
-    serial::Rx<pac::USART2> => C6,
-    serial::Tx<pac::USART2> => C7,
-    serial::Rx<pac::USART3> => C3,
-    serial::Tx<pac::USART3> => C2,
+// See mapping details in RM0316 13.4.7 Fig 47 onwards
+on_channel!(
+    dma1: [
+        (pac::USART1, (C4, C5)),
+        (pac::USART2, (C7, C6)),
+        (pac::USART3, (C2, C3)),
+    ],
+);
+
+#[cfg(any(feature = "gpio-f303", feature = "gpio-f303e",))]
+on_channel!(
+    dma2: [
+        (pac::UART4, (C5, C3)),
+    ],
 );
