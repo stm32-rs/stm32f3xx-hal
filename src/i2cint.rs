@@ -320,24 +320,27 @@ where
             self.dev.i2c.icr.write(|w| w.ovrcf().bit(true));
             return Err(I2cError::Overrun);
         }
-        if isr.nackf().bit() {
+        self.state = if isr.nackf().bit() {
             self.dev.i2c.icr.write(|w| w.nackcf().bit(true));
-            self.state = State::TxNack;
+            State::TxNack
         } else if isr.tc().bit() {
-            self.state = State::TxComplete;
+            State::TxComplete
         } else if isr.txis().bit() && isr.txe().bit() {
-            self.state = State::TxReady;
+            State::TxReady
         } else if isr.rxne().bit() {
-            self.state = State::RxReady;
+            State::RxReady
         } else if isr.stopf().bit() {
             // clear stop bit once read
             self.dev.i2c.icr.write(|w| w.stopcf().bit(true));
-            self.state = match self.state {
+            match self.state {
                 State::TxSent | State::TxComplete => State::TxStop,
                 State::RxReady => State::RxStop,
                 _ => return Err(I2cError::StateError),
             }
         }
+        else {
+            return Err(I2cError::StateError)
+        };
         Ok(self.state)
     }
 
