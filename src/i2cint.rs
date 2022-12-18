@@ -70,7 +70,7 @@ pub struct I2cInt<I2C, PINS> {
     dev: I2c<I2C, PINS>,
     state: State,
     /// Last error that happened on i2c communications.
-    pub last_error: Option<I2cError>,
+    last_error: Option<I2cError>,
     current_write_addr: Option<u8>,
     tx_ind: usize,
     tx_buf: Option<&'static [u8]>,
@@ -384,6 +384,14 @@ where
     /// Get the state of the device.
     pub fn get_state(&self) -> State {
         self.state
+    }
+
+    /// Get last error that happened on the device
+    ///
+    /// # Returns
+    /// Some if there is an error, None if not
+    pub fn get_last_error(&self) -> Option<I2cError> {
+        self.last_error
     }
 
     /// Get the content of the receive buffer.
