@@ -26,6 +26,12 @@ pub enum I2cError {
     TxBufferEmpty,
 }
 
+impl core::fmt::Display for I2cError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 /// State of i2c communication.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum State {
@@ -45,6 +51,8 @@ pub enum State {
     RxStart,
     /// Ready for receive
     RxReady,
+    /// Read is complete, last byte ready for read
+    RxComplete,
     /// Received is complete
     RxStop,
     /// Nack for send
@@ -210,7 +218,7 @@ where
     /// # Arguments
     /// * `addr` - Destination address.
     /// * `len` - number of bytes to read.
-    pub fn read(&mut self, addr: u8, len: usize) {
+    pub fn read(&mut self, addr: u8, len: usize, auto_stop: bool) {
         self.dev.i2c.cr2.modify(|_, w| {
             w.sadd()
                 .bits(u16::from(addr << 1))
@@ -221,7 +229,7 @@ where
                 .start()
                 .start()
                 .autoend()
-                .automatic()
+                .bit(auto_stop)
         });
         self.state = State::RxStart;
     }
@@ -261,13 +269,22 @@ where
 
     /// This function must be called when there is an interruption on i2c device.
     /// It will compute the current state based on ISR register and execute work based on the state.
-    pub fn interrupt(&mut self) {
+    pub fn interrupt(&mut self) -> Result<State, I2cError> {
         let isr_state = self.isr_state();
         match isr_state {
             Ok(State::TxReady) => {
                 if let Some(buf) = self.tx_buf {
                     self.write_tx_buffer(buf[self.tx_ind]);
                     self.tx_ind += 1;
+                    if self.tx_ind >= buf.len() {
+                        self.tx_buf = None;
+                        // When receiving Tx complete, we should read after
+                        // if not it should be a tx stop
+                        if let Some(recv) = self.recv {
+                            self.read(recv.0, recv.1, false);
+                            self.state = State::RxStart;
+                        }
+                    }
                 } else {
                     self.last_error = Some(I2cError::TxBufferEmpty);
                 }
@@ -282,14 +299,13 @@ where
             }
             Ok(State::TxComplete) => {
                 self.tx_ind = 0;
-                // When receiving Tx complete, we should read after
-                // if not it should be a tx stop
-                if let Some(recv) = self.recv {
-                    self.read(recv.0, recv.1)
-                } else {
-                    self.last_error = Some(I2cError::TransferCompleteNoRead);
-                }
                 self.current_write_addr = None;
+                self.dev.i2c.cr2.modify(|_, w| w.stop().stop());
+            }
+            Ok(State::RxComplete) => {
+                self.rx_buf[self.rx_ind] = self.dev.i2c.rxdr.read().rxdata().bits();
+                self.rx_ind += 1;
+                self.dev.i2c.cr2.modify(|_, w| w.stop().stop());
             }
             Ok(State::RxStop) => {
                 self.rx_ind = 0;
@@ -305,6 +321,7 @@ where
             }
             _ => {}
         }
+        return isr_state;
     }
 
     /// Computes the states based on IRS register.
@@ -324,7 +341,10 @@ where
             self.dev.i2c.icr.write(|w| w.nackcf().bit(true));
             State::TxNack
         } else if isr.tc().bit() {
-            State::TxComplete
+            match self.state {
+                State::RxReady | State::RxStart => State::RxComplete,
+                _ => State::TxComplete,
+            }
         } else if isr.txis().bit() && isr.txe().bit() {
             State::TxReady
         } else if isr.rxne().bit() {
@@ -334,17 +354,16 @@ where
             self.dev.i2c.icr.write(|w| w.stopcf().bit(true));
             match self.state {
                 State::TxSent | State::TxComplete => State::TxStop,
-                State::RxReady => State::RxStop,
+                State::RxReady | State::RxComplete => State::RxStop,
                 _ => return Err(I2cError::StateError),
             }
-        }
-        else {
-            return Err(I2cError::StateError)
+        } else {
+            return Err(I2cError::StateError);
         };
         Ok(self.state)
     }
 
-    /// Write a bute into the tx buffer.
+    /// Write a byte into the tx buffer.
     fn write_tx_buffer(&mut self, byte: u8) {
         self.dev.i2c.txdr.write(|w| w.txdata().bits(byte));
         self.state = State::TxSent;
