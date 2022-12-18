@@ -382,7 +382,7 @@ where
     }
 
     /// Get the state of the device.
-    pub fn get_tx_state(&self) -> State {
+    pub fn get_state(&self) -> State {
         self.state
     }
 
