@@ -274,7 +274,7 @@ where
 
     /// This function must be called when there is an interruption on i2c device.
     /// It will compute the current state based on ISR register and execute work based on the state.
-    pub fn interrupt(&mut self) -> Result<State, I2cError> {
+    pub fn react_on_interrupt(&mut self) -> Result<State, I2cError> {
         let isr_state = self.isr_state();
         match isr_state {
             Ok(State::TxReady) => {
