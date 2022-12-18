@@ -84,7 +84,7 @@ where
     I2C: Instance,
 {
     /// Configures the I2C peripheral to work in master mode
-    pub fn new_int(
+    pub fn new(
         i2c: I2C,
         pins: (SCL, SDA),
         freq: Hertz,
