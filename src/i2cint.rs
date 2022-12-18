@@ -158,6 +158,11 @@ where
         });
     }
 
+    /// Releases the I2C peripheral and associated pins
+    pub fn free(self) -> (I2C, (SCL, SDA)) {
+        (self.dev.i2c, self.dev.pins)
+    }
+
     /// Write bytes through i2c. Supports only write < 256 bytes.
     ///
     /// # Arguments
