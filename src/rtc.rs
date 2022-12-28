@@ -179,11 +179,10 @@ impl DateTimeAccess for Rtc {
         let hours = hours_to_u8(self.hours()?)?;
 
         Ok(
-            NaiveDate::from_ymd(year.into(), month.into(), day.into()).and_hms(
-                hours.into(),
-                minutes.into(),
-                seconds.into(),
-            ),
+            NaiveDate::from_ymd_opt(year.into(), month.into(), day.into())
+                .unwrap()
+                .and_hms_opt(hours.into(), minutes.into(), seconds.into())
+                .unwrap(),
         )
     }
 }
@@ -333,11 +332,7 @@ impl Rtcc for Rtc {
         let minutes = self.minutes()?;
         let hours = hours_to_u8(self.hours()?)?;
 
-        Ok(NaiveTime::from_hms(
-            hours.into(),
-            minutes.into(),
-            seconds.into(),
-        ))
+        Ok(NaiveTime::from_hms_opt(hours.into(), minutes.into(), seconds.into()).unwrap())
     }
 
     fn weekday(&mut self) -> Result<u8, Self::Error> {
@@ -370,7 +365,7 @@ impl Rtcc for Rtc {
         let month = self.month()?;
         let year = self.year()?;
 
-        Ok(NaiveDate::from_ymd(year.into(), month.into(), day.into()))
+        Ok(NaiveDate::from_ymd_opt(year.into(), month.into(), day.into()).unwrap())
     }
 }
 
