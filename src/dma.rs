@@ -343,6 +343,16 @@ pub trait Channel: private::Channel {
         self.ch().ndtr.write(|w| w.ndt().bits(len));
     }
 
+    /// Get the content of the number of data (NDTR) register
+    ///
+    /// If the DMA has not been enabled yet, this will be the value which
+    /// was set with [`set_transfer_length`]. If the DMA is active, the value
+    /// indicates the number of remaining bytes to be transmitted. This value
+    /// is decremented by the hardware after each DMA transfer.
+    fn get_remaining_transfer_len(&self) -> u16 {
+        self.ch().ndtr.read().ndt().bits()
+    }
+
     /// Set the word size.
     ///
     /// # Panics
