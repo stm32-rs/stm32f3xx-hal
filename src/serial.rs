@@ -453,6 +453,8 @@ mod split {
 
 pub use split::{Rx, Tx};
 
+use self::config::InvalidBaudrate;
+
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
 where
     Usart: Instance,
@@ -464,7 +466,7 @@ where
         config: Config,
         clocks: Clocks,
         apb: &mut <Usart as rcc::RccBus>::Bus,
-    ) -> Self
+    ) -> Result<Self, InvalidBaudrate>
     where
         Usart: Instance,
         Tx: TxPin<Usart>,
@@ -483,7 +485,9 @@ where
         usart.cr1.modify(|_, w| w.ue().disabled());
 
         let brr = Usart::clock(&clocks).integer() / config.baudrate.integer();
-        crate::assert!(brr >= 16, "impossible baud rate");
+        if brr < 16 {
+            return Err(InvalidBaudrate);
+        }
         usart.brr.write(|w| w.brr().bits(brr as u16));
 
         // We currently support only eight data bits as supporting a full-blown
@@ -510,7 +514,7 @@ where
         // Finally enable the configured UART.
         usart.cr1.modify(|_, w| w.ue().enabled());
 
-        Self { usart, pins }
+        Ok(Self { usart, pins })
     }
 
     /// Get access to the underlying register block.
@@ -544,7 +548,7 @@ where
     /// ```
     /// let dp = pac::Peripherals::take().unwrap();
     ///
-    /// (tx, rx) = Serial::new(dp.USART1, ...).split();
+    /// (tx, rx) = Serial::new(dp.USART1, ...).unwrap().split();
     ///
     /// // Do something with tx and rx
     ///

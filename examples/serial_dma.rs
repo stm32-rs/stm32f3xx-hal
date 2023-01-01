@@ -40,7 +40,7 @@ fn main() -> ! {
             .pa10
             .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
     );
-    let serial = Serial::new(dp.USART1, pins, 9600.Bd(), clocks, &mut rcc.apb2);
+    let serial = Serial::new(dp.USART1, pins, 9600.Bd(), clocks, &mut rcc.apb2).unwrap();
     let (tx, rx) = serial.split();
 
     let dma1 = dp.DMA1.split(&mut rcc.ahb);

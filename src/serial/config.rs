@@ -105,6 +105,10 @@ impl Config {
     }
 }
 
+/// Invalid baud rate.
+#[derive(Debug)]
+pub struct InvalidBaudrate;
+
 impl Default for Config {
     /// Creates a new configuration with typically used parameters: 115,200
     /// Baud 8N1.

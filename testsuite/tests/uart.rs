@@ -52,7 +52,7 @@ const TEST_MSG: [u8; 8] = [0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0xaa, 0xbb];
 
 fn test_test_msg_loopback(state: &mut State, config: impl Into<Config>) {
     let (usart, pins) = unwrap!(state.serial1.take()).free();
-    let mut serial = Serial::new(usart, pins, config, state.clocks, &mut state.apb2);
+    let mut serial = Serial::new(usart, pins, config, state.clocks, &mut state.apb2).unwrap();
 
     for i in &TEST_MSG {
         unwrap!(nb::block!(serial.write(*i)));
@@ -75,7 +75,7 @@ fn trigger_event<Usart, Pins>(
     let mut events = EnumSet::new();
     events.insert(event);
     // Clear events, so that previously triggered events do not fire
-    // the now configured interupt imediatly.
+    // the now configured interrupt immediately.
     serial.clear_events();
     serial.configure_interrupts(events);
     // Check that the interrupt has not been run, since the configuration
@@ -153,26 +153,33 @@ mod tests {
             9600.Bd(),
             clocks,
             &mut rcc.apb2,
-        );
+        )
+        .unwrap();
 
         unsafe { cortex_m::peripheral::NVIC::unmask(serial1.interrupt()) }
 
         super::State {
             serial1: Some(serial1),
-            serial_slow: Some(Serial::new(
-                dp.USART2,
-                (cs_pair_1.0, cs_pair_2.1),
-                BAUD_SLOW,
-                clocks,
-                &mut rcc.apb1,
-            )),
-            serial_fast: Some(Serial::new(
-                dp.USART3,
-                (cs_pair_2.0, cs_pair_1.1),
-                BAUD_FAST,
-                clocks,
-                &mut rcc.apb1,
-            )),
+            serial_slow: Some(
+                Serial::new(
+                    dp.USART2,
+                    (cs_pair_1.0, cs_pair_2.1),
+                    BAUD_SLOW,
+                    clocks,
+                    &mut rcc.apb1,
+                )
+                .unwrap(),
+            ),
+            serial_fast: Some(
+                Serial::new(
+                    dp.USART3,
+                    (cs_pair_2.0, cs_pair_1.1),
+                    BAUD_FAST,
+                    clocks,
+                    &mut rcc.apb1,
+                )
+                .unwrap(),
+            ),
             clocks,
             apb1: rcc.apb1,
             apb2: rcc.apb2,
@@ -195,7 +202,8 @@ mod tests {
     #[test]
     fn test_overrun(state: &mut super::State) {
         let (usart, pins) = unwrap!(state.serial1.take()).free();
-        let mut serial = Serial::new(usart, pins, 115200.Bd(), state.clocks, &mut state.apb2);
+        let mut serial =
+            Serial::new(usart, pins, 115200.Bd(), state.clocks, &mut state.apb2).unwrap();
         // Provoke an overrun
         unwrap!(serial.bwrite_all(&TEST_MSG));
 
@@ -296,7 +304,8 @@ mod tests {
             config_even,
             state.clocks,
             &mut state.apb1,
-        );
+        )
+        .unwrap();
         let (usart_odd, pins_odd) = unwrap!(state.serial_fast.take()).free();
         let config_odd = Config::default().parity(Parity::Odd);
         let mut serial_odd = Serial::new(
@@ -305,7 +314,8 @@ mod tests {
             config_odd,
             state.clocks,
             &mut state.apb1,
-        );
+        )
+        .unwrap();
 
         // Transmit data with wrong parity in both directions.
         unwrap!(nb::block!(serial_even.write(b'x')));
@@ -326,7 +336,8 @@ mod tests {
             BAUD_SLOW,
             state.clocks,
             &mut state.apb1,
-        );
+        )
+        .unwrap();
         let (usart_fast, pins_fast) = serial_odd.free();
         let serial_fast = Serial::new(
             usart_fast,
@@ -334,7 +345,8 @@ mod tests {
             BAUD_FAST,
             state.clocks,
             &mut state.apb1,
-        );
+        )
+        .unwrap();
         state.serial_slow = Some(serial_slow);
         state.serial_fast = Some(serial_fast);
     }
