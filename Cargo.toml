@@ -3,7 +3,7 @@ edition = "2021"
 authors = [
     "Dylan Frankland <dylan@frankland.io>",
     "Sh3Rm4n <f.vioel@gmail.com>",
-    "Jan Teske <jteske@posteo.net>"
+    "Jan Teske <jteske@posteo.net>",
 ]
 categories = ["embedded", "hardware-support", "no-std"]
 description = "Peripheral access API for STM32F3 series microcontrollers"
@@ -14,26 +14,20 @@ readme = "README.md"
 repository = "https://github.com/stm32-rs/stm32f3xx-hal"
 documentation = "https://docs.rs/stm32f3xx-hal"
 version = "0.9.1"
-exclude = [
-    "codegen",
-    ".markdownlint.yml"
-]
+exclude = ["codegen", ".markdownlint.yml"]
 resolver = "2"
 rust-version = "1.59"
-
-[workspace]
-members = [
-    ".",
-    "testsuite",
-    "codegen"
-]
 
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "usb", "can", "enumset"]
 targets = ["thumbv7em-none-eabihf"]
 rustc-args = ["--cfg", "docsrs"]
 
+[workspace]
+members = [".", "testsuite", "codegen"]
+
 [dependencies]
+bxcan = { version = "0.7.0", optional = true }
 cfg-if = "1.0.0"
 cortex-m = "0.7.4"
 cortex-m-rt = "0.7.3"
@@ -41,47 +35,50 @@ defmt = { version = ">=0.2.3, <0.4.0", optional = true }
 embedded-dma = "0.2.0"
 embedded-hal = { version = "0.2.5", features = ["unproven"] }
 embedded-time = "0.12.0"
+enumset = { version = "1.0.6", optional = true }
 nb = "1.0.0"
 paste = "1.0.5"
 rtcc = { version = "0.3.0", optional = true }
-stm32f3 = { version = "0.15.1", default-features = false }
-bxcan = { version = "0.7.0", optional = true }
 stm32-usbd = { version = "0.6.0", optional = true }
+stm32f3 = { version = "0.15.1", default-features = false }
 void = { version = "1.0.2", default-features = false }
-enumset = { version = "1.0.6", optional = true}
 
 [dev-dependencies]
+cortex-m-rtic = "1.0"
 cortex-m-semihosting = "0.5.0"
 defmt = "0.3.0"
 defmt-rtt = "0.4.0"
 defmt-test = "0.3.0"
 panic-probe = "0.3.0"
-panic-semihosting = "0.6.0"
-usbd-serial = "0.1.1"
-usb-device = "0.2.8"
-cortex-m-rtic = "1.0"
-systick-monotonic = "1.0"
 panic-rtt-target = { version = "0.1", features = ["cortex-m"] }
+panic-semihosting = "0.6.0"
 rtt-target = { version = "0.3.1", features = ["cortex-m"] }
+systick-monotonic = "1.0"
+usb-device = "0.2.8"
+usbd-serial = "0.1.1"
 
 [build-dependencies]
 slice-group-by = "0.3.0"
 
 [features]
+can = ["bxcan"]
 default = ["rt", "ld", "usb", "can", "rtc", "enumset"]
+defmt-debug = ["defmt"]
+
+defmt-default = ["defmt"]
+defmt-error = ["defmt"]
+defmt-info = ["defmt"]
+defmt-trace = ["defmt"]
+defmt-warn = ["defmt"]
 device-selected = []
 direct-call-deprecated = []
-ld = []
-rt = ["stm32f3/rt"]
-can = ["bxcan"]
-usb = ["stm32-usbd"]
-rtc = ["rtcc"]
 
-svd-f301 = ["stm32f3/stm32f301"]
-svd-f302 = ["stm32f3/stm32f302"]
-svd-f303 = ["stm32f3/stm32f303"]
-svd-f373 = ["stm32f3/stm32f373"]
-svd-f3x4 = ["stm32f3/stm32f3x4"]
+gpio-f302 = []
+gpio-f303 = []
+gpio-f303e = []
+gpio-f333 = []
+gpio-f373 = []
+ld = []
 
 mem-4 = []
 mem-6 = []
@@ -90,20 +87,14 @@ mem-b = []
 mem-c = []
 mem-d = []
 mem-e = []
-
-gpio-f302 = []
-gpio-f303 = []
-gpio-f303e = []
-gpio-f333 = []
-gpio-f373 = []
+rt = ["stm32f3/rt"]
+rtc = ["rtcc"]
 
 # Any changes here should be mirrored in README.md, build.rs, src/lib.rs, and
 # .github/workflows/ci.yml.
 stm32f301 = ["svd-f301", "direct-call-deprecated"]
 stm32f301x6 = ["stm32f301", "mem-6", "gpio-f302", "device-selected"]
 stm32f301x8 = ["stm32f301", "mem-8", "gpio-f302", "device-selected"]
-stm32f318 = ["svd-f301", "direct-call-deprecated"]
-stm32f318x8 = ["stm32f318", "mem-8", "gpio-f302", "device-selected"]
 stm32f302 = ["svd-f302", "direct-call-deprecated"]
 stm32f302x6 = ["stm32f302", "mem-6", "gpio-f302", "device-selected"]
 stm32f302x8 = ["stm32f302", "mem-8", "gpio-f302", "device-selected"]
@@ -118,29 +109,31 @@ stm32f303xb = ["stm32f303", "mem-b", "gpio-f303", "device-selected"]
 stm32f303xc = ["stm32f303", "mem-c", "gpio-f303", "device-selected"]
 stm32f303xd = ["stm32f303", "mem-d", "gpio-f303e", "device-selected"]
 stm32f303xe = ["stm32f303", "mem-e", "gpio-f303e", "device-selected"]
+stm32f318 = ["svd-f301", "direct-call-deprecated"]
+stm32f318x8 = ["stm32f318", "mem-8", "gpio-f302", "device-selected"]
 stm32f328 = ["svd-f303", "direct-call-deprecated"]
 stm32f328x8 = ["stm32f328", "mem-8", "gpio-f333", "device-selected"]
+stm32f334 = ["svd-f3x4", "direct-call-deprecated"]
+stm32f334x4 = ["stm32f334", "mem-4", "gpio-f333", "device-selected"]
+stm32f334x6 = ["stm32f334", "mem-6", "gpio-f333", "device-selected"]
+stm32f334x8 = ["stm32f334", "mem-8", "gpio-f333", "device-selected"]
 stm32f358 = ["svd-f303", "direct-call-deprecated"]
 stm32f358xc = ["stm32f358", "mem-c", "gpio-f303", "device-selected"]
-stm32f398 = ["svd-f303", "direct-call-deprecated"]
-stm32f398xe = ["stm32f398", "mem-e", "gpio-f303e", "device-selected"]
 stm32f373 = ["svd-f373", "direct-call-deprecated"]
 stm32f373x8 = ["stm32f373", "mem-8", "gpio-f373", "device-selected"]
 stm32f373xb = ["stm32f373", "mem-b", "gpio-f373", "device-selected"]
 stm32f373xc = ["stm32f373", "mem-c", "gpio-f373", "device-selected"]
 stm32f378 = ["svd-f373", "direct-call-deprecated"]
 stm32f378xc = ["stm32f378", "mem-c", "gpio-f373", "device-selected"]
-stm32f334 = ["svd-f3x4", "direct-call-deprecated"]
-stm32f334x4 = ["stm32f334", "mem-4", "gpio-f333", "device-selected"]
-stm32f334x6 = ["stm32f334", "mem-6", "gpio-f333", "device-selected"]
-stm32f334x8 = ["stm32f334", "mem-8", "gpio-f333", "device-selected"]
+stm32f398 = ["svd-f303", "direct-call-deprecated"]
+stm32f398xe = ["stm32f398", "mem-e", "gpio-f303e", "device-selected"]
 
-defmt-default = ["defmt"]
-defmt-trace = ["defmt"]
-defmt-debug = ["defmt"]
-defmt-info = ["defmt"]
-defmt-warn = ["defmt"]
-defmt-error = ["defmt"]
+svd-f301 = ["stm32f3/stm32f301"]
+svd-f302 = ["stm32f3/stm32f302"]
+svd-f303 = ["stm32f3/stm32f303"]
+svd-f373 = ["stm32f3/stm32f373"]
+svd-f3x4 = ["stm32f3/stm32f3x4"]
+usb = ["stm32-usbd"]
 
 # cargo build/run
 [profile.dev]

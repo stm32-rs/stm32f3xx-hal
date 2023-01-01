@@ -579,7 +579,7 @@ where
     ///
     /// ## Embedded HAL
     ///
-    /// To have a more managed way to read from the serial use the [`embeded_hal::serial::Read`]
+    /// To have a more managed way to read from the serial use the [`embedded_hal::serial::Read`]
     /// trait implementation.
     #[doc(alias = "RDR")]
     pub fn read_data_register(&self) -> Option<u8> {
@@ -947,7 +947,7 @@ where
     /// up to the interrupt handler.
     ///
     /// To read out the content of the read register without internal error handling, use
-    /// [`Serial::read()`].
+    /// [`embedded_hal::serial::Read`].
     /// ...
     // -> According to this API it should be skipped.
     fn read(&mut self) -> nb::Result<u8, Error> {
