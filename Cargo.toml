@@ -1,5 +1,5 @@
 [package]
-edition = "2018"
+edition = "2021"
 authors = [
     "Dylan Frankland <dylan@frankland.io>",
     "Sh3Rm4n <f.vioel@gmail.com>",
@@ -19,7 +19,7 @@ exclude = [
     ".markdownlint.yml"
 ]
 resolver = "2"
-rust-version = "1.54"
+rust-version = "1.59"
 
 [workspace]
 members = [
@@ -36,7 +36,7 @@ rustc-args = ["--cfg", "docsrs"]
 [dependencies]
 cfg-if = "1.0.0"
 cortex-m = "0.7.4"
-cortex-m-rt = "0.7"
+cortex-m-rt = "0.7.3"
 defmt = { version = ">=0.2.3, <0.4.0", optional = true }
 embedded-dma = "0.2.0"
 embedded-hal = { version = "0.2.5", features = ["unproven"] }
@@ -44,23 +44,19 @@ embedded-time = "0.12.0"
 nb = "1.0.0"
 paste = "1.0.5"
 rtcc = { version = "0.3.0", optional = true }
-stm32f3 = { version = "0.14.0", default-features = false }
-bxcan = { version = "0.6.2", optional = true }
+stm32f3 = { version = "0.15.1", default-features = false }
+bxcan = { version = "0.7.0", optional = true }
 stm32-usbd = { version = "0.6.0", optional = true }
 void = { version = "1.0.2", default-features = false }
 enumset = { version = "1.0.6", optional = true}
-# NOTE: Workaround for build
-# $ cargo +nightly update -Z minimal-versions
-# as long cortex-m depends on bare-metal 0.2.1
-bare-metal = "1.0.0"
 
 [dev-dependencies]
-cortex-m-semihosting = "0.3.7"
+cortex-m-semihosting = "0.5.0"
 defmt = "0.3.0"
-defmt-rtt = "0.3.0"
+defmt-rtt = "0.4.0"
 defmt-test = "0.3.0"
 panic-probe = "0.3.0"
-panic-semihosting = "0.5.6"
+panic-semihosting = "0.6.0"
 usbd-serial = "0.1.1"
 usb-device = "0.2.8"
 cortex-m-rtic = "1.0"
@@ -171,44 +167,44 @@ opt-level = "s"
 
 [[example]]
 name = "pwm"
-required-features = ["ld", "stm32f303xc"]
+required-features = ["ld", "stm32f303xc", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "toggle"
-required-features = ["ld", "stm32f303xc"]
+required-features = ["ld", "stm32f303xc", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "usb_serial"
-required-features = ["ld", "stm32f303xc", "usb"]
+required-features = ["ld", "stm32f303xc", "usb", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "spi"
-required-features = ["ld", "stm32f303xc"]
+required-features = ["ld", "stm32f303xc", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "can"
-required-features = ["ld", "rt", "can", "stm32f302xc"]
+required-features = ["ld", "rt", "can", "stm32f302xc", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "serial_dma"
-required-features = ["ld", "rt", "stm32f303xc"]
+required-features = ["ld", "rt", "stm32f303xc", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "serial_echo_rtic"
-required-features = ["ld", "rt", "stm32f303xc", "enumset"]
+required-features = ["ld", "rt", "stm32f303xc", "enumset", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "adc"
-required-features = ["ld", "stm32f303xc"]
+required-features = ["ld", "stm32f303xc", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "i2c_scanner"
-required-features = ["ld", "stm32f303xc"]
+required-features = ["ld", "stm32f303xc", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "gpio_erased"
-required-features = ["ld", "stm32f303xc"]
+required-features = ["ld", "stm32f303xc", "cortex-m/critical-section-single-core"]
 
 [[example]]
 name = "gpio_interrupts"
-required-features = ["ld", "rt", "stm32f303xc"]
+required-features = ["ld", "rt", "stm32f303xc", "cortex-m/critical-section-single-core"]

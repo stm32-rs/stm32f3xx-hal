@@ -552,12 +552,12 @@ macro_rules! pwm_pin_for_pwm_channel_private {
             }
 
             fn get_duty(&self) -> Self::Duty {
-                unsafe { (*$TIMx::ptr()).$ccrx.read().$ccrq().bits() }
+                unsafe { (*$TIMx::ptr()).$ccrx().read().$ccrq().bits() }
             }
 
             fn set_duty(&mut self, duty: Self::Duty) -> () {
                 unsafe {
-                    (*$TIMx::ptr()).$ccrx.modify(|_, w| w.$ccrq().bits(duty));
+                    (*$TIMx::ptr()).$ccrx().modify(|_, w| w.$ccrq().bits(duty));
                 }
             }
         }

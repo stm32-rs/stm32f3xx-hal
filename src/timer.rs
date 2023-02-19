@@ -431,9 +431,9 @@ macro_rules! timer {
 
             #[inline]
             fn set_arr(&mut self, arr: u16) {
-                // TODO (sh3rm4n)
-                // self.tim.arr.write(|w| { w.arr().bits(arr) });
-                self.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
+                // SAFETY: For easier compatibility between timers write to whole register
+                #[allow(unused_unsafe)]
+                self.arr.write(|w| unsafe { w.arr().bits(arr.into()) });
             }
         }
     };
@@ -450,12 +450,12 @@ macro_rules! timer_var_clock {
                     match unsafe {(*RCC::ptr()).cfgr3.read().$timXsw().variant()} {
                         // PCLK2 is really the wrong name, as depending on the type of chip, it is
                         // pclk1 or pclk2. This distinction is however not made in stm32f3.
-                        crate::pac::rcc::cfgr3::TIM1SW_A::PCLK2 =>  {
+                        crate::pac::rcc::cfgr3::TIM1SW_A::Pclk2 =>  {
                             // Conditional mutliplier after APB prescaler is used.
                             // See RM0316 Fig 13.
                             <pac::$TIMX as rcc::BusTimerClock>::timer_clock(clocks)
                         }
-                        crate::pac::rcc::cfgr3::TIM1SW_A::PLL => {
+                        crate::pac::rcc::cfgr3::TIM1SW_A::Pll => {
                             if let Some(pllclk) = clocks.pllclk() {
                                 pllclk * 2
                             } else {
