@@ -38,6 +38,35 @@ CHIP_SELECT = {
     "stm32f334": r".*STM32F334.*\.xml",
 }
 
+def channel_to_id(channel: int) -> str:
+    id_ = "Id::"
+    match channel:
+        case 0:
+            return id_ + "Zero"
+        case 1:
+            return id_ + "One"
+        case 2:
+            return id_ + "Two"
+        case 3:
+            return id_ + "Three"
+        case 4: return id_ + "Four"
+        case 5: return id_ + "Five"
+        case 6: return id_ + "Six"
+        case 7: return id_ + "Seven"
+        case 8: return id_ + "Eight"
+        case 9: return id_ + "Nine"
+        case 10: return id_ + "Ten"
+        case 11: return id_ + "Eleven"
+        case 12: return id_ + "Twelve"
+        case 13: return id_ + "Thirteen"
+        case 14: return id_ + "Fourteen"
+        case 15: return id_ + "Fifteen"
+        case 16: return id_ + "Sixteen"
+        case 17: return id_ + "Seventeen"
+        case 18: return id_ + "Eighteen"
+
+    raise Exception(f"Channel: \"{channel}\" does not exists")
+
 
 def main():
     chip_post = {}
@@ -52,7 +81,7 @@ def main():
                     (adc, channel) = pin[i].split("_")
                 except IndexError:
                     continue
-                adc_list.append((adc, int(channel)))
+                adc_list.append((adc, channel_to_id(int(channel))))
             pins.append((pin[0], adc_list))
         chip_post[chip_name] = pins
 

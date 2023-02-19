@@ -14,9 +14,11 @@ for xml in /opt/stm32cubemx/db/mcu/STM32F3*.xml; do
     xq '.Mcu.Pin[]
         | select(.Signal[]?."@Name"? | startswith("ADC"))
         | [."@Name", (.Signal[]? | select(."@Name" | startswith("ADC")))."@Name"]
-        | @csv' --raw-output < $xml \
-        | rg -v EXTI \
-        | rg -v OSC32 \
+        | @csv' --raw-output \
+        < "$xml" \
+        | sed -e 's/,"ADC[[:digit:]]_EXTI[[:digit:]]\+"//g' \
+        | sed -e 's/-OSC32_OUT//g' \
+        | rg 'IN' \
         | rg -v 'jq:' \
         | sed 's/IN//g'  \
         | sort -u \
