@@ -1425,20 +1425,6 @@ macro_rules! adc {
             );
         }
     };
-
-    // TODO(Sh3Rm4n): https://github.com/stm32-rs/stm32-rs/pull/696
-    ([ $(($A:literal, $ADC:ident, $INTERRUPT:path)),+ ]) => {
-        paste::paste! {
-            adc!(
-                $(
-                    [<ADC $A>]: (
-                        $ADC,
-                        $INTERRUPT
-                    ),
-                )+
-            );
-        }
-    };
 }
 
 macro_rules! adc_common {
@@ -1566,7 +1552,7 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "svd-f301")] {
         adc_common!([(1, 1, 2)]);
         adc!([(1, 1, 2, Interrupt::ADC1_IRQ)]);
-    } else if #[cfg(not(feature = "svd-f3x4"))]{
+    } else {
         adc_common!([(1, 2)]);
         adc!([(1, 1, 2, Interrupt::ADC1_2)]);
     }
@@ -1576,18 +1562,8 @@ cfg_if::cfg_if! {
 // * stm32f373 will become complicated, because no ADC1_2
 
 // See https://stm32-rs.github.io/stm32-rs/stm32f/stm32f3/index.html for an overview
-#[cfg(any(feature = "svd-f302", feature = "svd-f303"))]
+#[cfg(any(feature = "svd-f302", feature = "svd-f303", feature = "svd-f3x4"))]
 adc!([(2, 1, 2, Interrupt::ADC1_2)]);
-
-// FIXME(Sh3Rm4n): https://github.com/stm32-rs/stm32-rs/pull/696
-// #[cfg(feature = "svd-f3x4")]
-cfg_if::cfg_if! {
-    if #[cfg(feature = "svd-f3x4")] {
-        adc!([(1, ADC_COMMON, Interrupt::ADC1_2)]);
-        adc!([(2, ADC_COMMON, Interrupt::ADC1_2)]);
-        adc_common!([(1, 2, ADC_COMMON)]);
-    }
-}
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "svd-f303")] {
