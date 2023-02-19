@@ -20,6 +20,10 @@ No changes.
 
 - Add missing ADC channels ([#337])
 
+### Fixed
+
+- Fix wrong timer frequency calculation and unexpected panics ([#338])
+
 ## [v0.9.1] - 2022-09-07
 
 ### Added
@@ -570,6 +574,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#338]: https://github.com/stm32-rs/stm32f3xx-hal/pull/338
 [#337]: https://github.com/stm32-rs/stm32f3xx-hal/pull/337
 [#335]: https://github.com/stm32-rs/stm32f3xx-hal/pull/335
 [#334]: https://github.com/stm32-rs/stm32f3xx-hal/pull/334
