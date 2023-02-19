@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   ([#334])
   - Add `impl From<Toggle> for Switch` to reduce churn.
 
+### Added
+
+- Add missing ADC channels ([#337])
+
 ## [v0.9.1] - 2022-09-07
 
 ### Added
@@ -573,6 +577,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#337]: https://github.com/stm32-rs/stm32f3xx-hal/pull/337
 [#335]: https://github.com/stm32-rs/stm32f3xx-hal/pull/335
 [#334]: https://github.com/stm32-rs/stm32f3xx-hal/pull/334
 [#322]: https://github.com/stm32-rs/stm32f3xx-hal/pull/322
