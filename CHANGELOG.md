@@ -16,9 +16,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Breaking changes
 
-- Update `stm32f3` pac to v0.15.1 ([#282])
-- Update `bxcan` pac to v0.7.0 ([#282])
-- The MSRV was bumped to 1.59 ([#227])
+- Update `stm32f3` pac to v0.15.1 ([#335])
+- Update `bxcan` pac to v0.7.0 ([#335])
+- The MSRV was bumped to 1.59 ([#335])
 
 ## [v0.9.1] - 2022-09-07
 
@@ -570,6 +570,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#335]: https://github.com/stm32-rs/stm32f3xx-hal/pull/335
 [#322]: https://github.com/stm32-rs/stm32f3xx-hal/pull/322
 [#318]: https://github.com/stm32-rs/stm32f3xx-hal/pull/318
 [#317]: https://github.com/stm32-rs/stm32f3xx-hal/pull/317
