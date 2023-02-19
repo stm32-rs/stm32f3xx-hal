@@ -18,6 +18,8 @@ use rtcc::{DateTimeAccess, Datelike, Hours, NaiveDate, NaiveDateTime, NaiveTime,
 pub enum Error {
     /// Invalid input error
     InvalidInputData,
+    /// Invalid register data, failed to convert to rtcc Type
+    InvalidRtcData,
 }
 
 /// Real Time Clock peripheral
@@ -178,13 +180,10 @@ impl DateTimeAccess for Rtc {
         let minutes = self.minutes()?;
         let hours = hours_to_u8(self.hours()?)?;
 
-        Ok(
-            NaiveDate::from_ymd(year.into(), month.into(), day.into()).and_hms(
-                hours.into(),
-                minutes.into(),
-                seconds.into(),
-            ),
-        )
+        NaiveDate::from_ymd_opt(year.into(), month.into(), day.into())
+            .ok_or(Error::InvalidRtcData)?
+            .and_hms_opt(hours.into(), minutes.into(), seconds.into())
+            .ok_or(Error::InvalidRtcData)
     }
 }
 
@@ -333,11 +332,8 @@ impl Rtcc for Rtc {
         let minutes = self.minutes()?;
         let hours = hours_to_u8(self.hours()?)?;
 
-        Ok(NaiveTime::from_hms(
-            hours.into(),
-            minutes.into(),
-            seconds.into(),
-        ))
+        NaiveTime::from_hms_opt(hours.into(), minutes.into(), seconds.into())
+            .ok_or(Error::InvalidRtcData)
     }
 
     fn weekday(&mut self) -> Result<u8, Self::Error> {
@@ -370,7 +366,7 @@ impl Rtcc for Rtc {
         let month = self.month()?;
         let year = self.year()?;
 
-        Ok(NaiveDate::from_ymd(year.into(), month.into(), day.into()))
+        NaiveDate::from_ymd_opt(year.into(), month.into(), day.into()).ok_or(Error::InvalidRtcData)
     }
 }
 
@@ -384,13 +380,13 @@ fn bcd2_encode(word: u32) -> Result<(u8, u8), Error> {
     let l = match (word / 10).try_into() {
         Ok(v) => v,
         Err(_) => {
-            return Err(Error::InvalidInputData);
+            return Err(Error::InvalidRtcData);
         }
     };
     let r = match (word % 10).try_into() {
         Ok(v) => v,
         Err(_) => {
-            return Err(Error::InvalidInputData);
+            return Err(Error::InvalidRtcData);
         }
     };
 
