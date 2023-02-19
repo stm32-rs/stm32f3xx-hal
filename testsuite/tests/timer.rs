@@ -77,7 +77,8 @@ mod tests {
         defmt::trace!("{}", state.mono_timer);
         let freqcyc = state.mono_timer.frequency().integer();
 
-        let durations: [duration::Generic<u32>; 5] = [
+        let durations: [duration::Generic<u32>; 6] = [
+            100.nanoseconds().into(),
             100.microseconds().into(),
             1.milliseconds().into(),
             100.milliseconds().into(),
@@ -86,11 +87,12 @@ mod tests {
             // 100.seconds().into(),
         ];
 
-        for dur in durations {
+        for (i, dur) in durations.into_iter().enumerate() {
             defmt::trace!("Duration: {}", defmt::Debug2Format(&dur));
 
             timer.start(dur);
-            assert!(!timer.is_event_triggered(Event::Update));
+            // Wait one cycle, so the start function overhead is not that big.
+            unwrap!(nb::block!(timer.wait()).ok());
             // call instant after start, because starting the timer is the last thing done in the
             // start function, and therefor no overhead is added to the timing.
             let instant = state.mono_timer.now();
@@ -106,8 +108,10 @@ mod tests {
             let deviation = (ratio - 1.).abs();
 
             // Deviation is high for smaller timer duration. Higher duration are pretty accurate.
-            // TODO: Maybe the allowed deviation should changed depending on the duration?
-            defmt::assert!(deviation < 11e-02);
+            defmt::trace!("deviation: {}", deviation);
+            if i > 0 {
+                defmt::assert!(deviation < 1e-02);
+            }
         }
         state.timer = Some(timer);
     }

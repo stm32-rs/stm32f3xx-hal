@@ -10,7 +10,7 @@
 //!
 //! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/adc.rs
 
-use core::convert::{From, TryFrom};
+use core::convert::TryFrom;
 
 use crate::pac::{DCB, DWT};
 #[cfg(feature = "enumset")]
@@ -279,13 +279,19 @@ where
         let timeout: Self::Time = timeout.into();
         let clock = TIM::clock(&self.clocks);
 
-        let ticks = clock.integer() * *timeout.scaling_factor() * timeout.integer();
+        let ticks = clock.integer().saturating_mul(timeout.integer()) * *timeout.scaling_factor();
 
-        let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
-        self.tim.set_psc(psc);
+        let psc: u32 = (ticks.saturating_sub(1)) / (1 << 16);
+        self.tim.set_psc(crate::unwrap!(u16::try_from(psc).ok()));
 
-        let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
-        self.tim.set_arr(arr);
+        let mut arr = ticks / psc.saturating_add(1);
+        // If the set frequency is to high to get a meaningful timer resolution,
+        // set arr to one, so the timer can at least do something and code waiting
+        // on it is not stuck.
+        if psc == 0 && arr == 0 {
+            arr = 1;
+        }
+        self.tim.set_arr(crate::unwrap!(u16::try_from(arr).ok()));
 
         // Ensure that the below procedure does not create an unexpected interrupt.
         let is_update_interrupt_active = self.is_interrupt_configured(Event::Update);
