@@ -1,5 +1,5 @@
 [package]
-edition = "2018"
+edition = "2021"
 authors = [
     "Dylan Frankland <dylan@frankland.io>",
     "Sh3Rm4n <f.vioel@gmail.com>",
@@ -19,7 +19,7 @@ exclude = [
     ".markdownlint.yml"
 ]
 resolver = "2"
-rust-version = "1.54"
+rust-version = "1.59"
 
 [workspace]
 members = [

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Update `stm32f3` pac to v0.15.1 ([#282])
 - Update `bxcan` pac to v0.7.0 ([#282])
+- The MSRV was bumped to 1.59 ([#227])
 
 ## [v0.9.1] - 2022-09-07
 
