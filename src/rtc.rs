@@ -354,7 +354,7 @@ impl Rtcc for Rtc {
 
     fn month(&mut self) -> Result<u8, Self::Error> {
         let dr = self.rtc.dr.read();
-        let mt: u8 = if dr.mt().bit() { 1 } else { 0 };
+        let mt = u8::from(dr.mt().bit());
         let month = bcd2_decode(mt, dr.mu().bits());
         Ok(month as u8)
     }
