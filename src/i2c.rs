@@ -31,6 +31,8 @@ use cfg_if::cfg_if;
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
+    /// Configuration
+    Config,
     /// Arbitration loss
     Arbitration,
     /// Bus error
@@ -117,13 +119,15 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         freq: Hertz,
         clocks: Clocks,
         bus: &mut <I2C as rcc::RccBus>::Bus,
-    ) -> Self
+    ) -> Result<Self, Error>
     where
         I2C: Instance,
         SCL: SclPin<I2C>,
         SDA: SdaPin<I2C>,
     {
-        crate::assert!(freq.integer() <= 1_000_000);
+        if freq.integer() > 1_000_000 {
+            return Err(Error::Config);
+        }
 
         I2C::enable(bus);
         I2C::reset(bus);
@@ -175,11 +179,15 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
             (presc, scll, sclh, sdadel, scldel)
         };
 
-        crate::assert!(presc < 16);
-        crate::assert!(scldel < 16);
-        crate::assert!(sdadel < 16);
-        let sclh = crate::unwrap!(u8::try_from(sclh).ok());
-        let scll = crate::unwrap!(u8::try_from(scll).ok());
+        if presc >= 16 || scldel >= 16 || sdadel >= 16 {
+            return Err(Error::Config);
+        }
+        let Ok(sclh) = u8::try_from(sclh) else {
+            return Err(Error::Config);
+        };
+        let Ok(scll) = u8::try_from(scll) else {
+            return Err(Error::Config);
+        };
 
         // Configure for "fast mode" (400 KHz)
         // NOTE(write): writes all non-reserved bits.
@@ -199,7 +207,7 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         // Enable the peripheral
         i2c.cr1.modify(|_, w| w.pe().set_bit());
 
-        Self { i2c, pins }
+        Ok(Self { i2c, pins })
     }
 
     /// Get access to the underlying register block.

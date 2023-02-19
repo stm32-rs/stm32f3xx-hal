@@ -80,7 +80,7 @@ mod app {
         );
         pins.1.internal_pull_up(&mut gpioa.pupdr, true);
         let mut serial: SerialType =
-            Serial::new(cx.device.USART1, pins, 19200.Bd(), clocks, &mut rcc.apb2);
+            Serial::new(cx.device.USART1, pins, 19200.Bd(), clocks, &mut rcc.apb2).unwrap();
         serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Toggle::On);
 
         rprintln!("post init");

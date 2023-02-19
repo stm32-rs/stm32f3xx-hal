@@ -44,7 +44,8 @@ fn main() -> ! {
         100.kHz().try_into().unwrap(),
         clocks,
         &mut rcc.apb1,
-    );
+    )
+    .unwrap();
 
     hprintln!("Start i2c scanning...").expect("Error using hprintln.");
     hprintln!().unwrap();
