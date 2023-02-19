@@ -28,7 +28,6 @@ use hal::interrupt;
 
 use defmt::{assert, assert_eq, unwrap};
 
-use core::array::IntoIter;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 static INTERRUPT_FIRED: AtomicBool = AtomicBool::new(false);
@@ -183,7 +182,7 @@ mod tests {
     fn send_receive_split(state: &mut super::State) {
         let (mut tx, mut rx) = unwrap!(state.serial1.take()).split();
 
-        for i in IntoIter::new(TEST_MSG) {
+        for i in TEST_MSG {
             defmt::unwrap!(nb::block!(tx.write(i)));
             let c = unwrap!(nb::block!(rx.read()));
             assert_eq!(c, i);
