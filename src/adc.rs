@@ -33,15 +33,7 @@ use crate::{
     Toggle,
 };
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "svd-f3x4")] {
-        use crate::pac::adc_common as adc1_2;
-
-        use adc1_2::ccr::CKMODE_A;
-    } else {
-        use crate::pac::{adc1_2, adc1_2::ccr::CKMODE_A};
-    }
-}
+use crate::pac::{adc1_2, adc1_2::ccr::CKMODE_A};
 
 #[cfg(feature = "enumset")]
 use enumset::{EnumSet, EnumSetType};
