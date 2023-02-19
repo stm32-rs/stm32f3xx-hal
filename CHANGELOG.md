@@ -24,6 +24,10 @@ No changes.
 
 - Fix wrong timer frequency calculation and unexpected panics ([#338])
 
+### Changed
+
+- The MSRV was bumped to 1.59 ([#227])
+
 ## [v0.9.1] - 2022-09-07
 
 ### Added
