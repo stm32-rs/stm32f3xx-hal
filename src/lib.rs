@@ -274,6 +274,8 @@ cfg_if! {
 // TODO: Maybe move to some mod like "util"?
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[deprecated(since = "0.10.0", note = "Use Switch instead")]
+#[allow(deprecated)]
 pub enum Toggle {
     /// Toggle something on / enable a thing.
     On,
@@ -281,17 +283,41 @@ pub enum Toggle {
     Off,
 }
 
-impl From<Toggle> for bool {
+/// Switch something on or off.
+///
+/// Convenience enum and wrapper around a bool, which more explicit about the intention to enable
+/// or disable something, in comparison to `true` or `false`.
+// TODO: Maybe move to some mod like "util"?
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum Switch {
+    /// Switch something on / enable a thing.
+    On,
+    /// Switch something off / disable a thing.
+    Off,
+}
+
+#[allow(deprecated)]
+impl From<Toggle> for Switch {
     fn from(toggle: Toggle) -> Self {
-        matches!(toggle, Toggle::On)
+        match toggle {
+            Toggle::On => Switch::On,
+            Toggle::Off => Switch::Off,
+        }
     }
 }
 
-impl From<bool> for Toggle {
+impl From<Switch> for bool {
+    fn from(switch: Switch) -> Self {
+        matches!(switch, Switch::On)
+    }
+}
+
+impl From<bool> for Switch {
     fn from(b: bool) -> Self {
         match b {
-            true => Toggle::On,
-            false => Toggle::Off,
+            true => Switch::On,
+            false => Switch::Off,
         }
     }
 }

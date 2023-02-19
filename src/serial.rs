@@ -24,7 +24,7 @@ use crate::{
     },
     rcc::{self, Clocks},
     time::rate::*,
-    Toggle,
+    Switch,
 };
 
 #[allow(unused_imports)]
@@ -623,20 +623,20 @@ where
     /// Enable the interrupt for the specified [`Event`].
     #[inline]
     pub fn enable_interrupt(&mut self, event: Event) {
-        self.configure_interrupt(event, Toggle::On);
+        self.configure_interrupt(event, Switch::On);
     }
 
     /// Disable the interrupt for the specified [`Event`].
     #[inline]
     pub fn disable_interrupt(&mut self, event: Event) {
-        self.configure_interrupt(event, Toggle::Off);
+        self.configure_interrupt(event, Switch::Off);
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
-    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) {
-        // Do a round way trip to be convert Into<Toggle> -> bool
-        let enable: Toggle = enable.into();
+    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Switch>) {
+        // Do a round way trip to be convert Into<Switch> -> bool
+        let enable: Switch = enable.into();
         let enable: bool = enable.into();
         match event {
             Event::TransmitDataRegisterEmtpy => self.usart.cr1.modify(|_, w| w.txeie().bit(enable)),

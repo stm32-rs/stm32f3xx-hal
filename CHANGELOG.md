@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Update `stm32f3` pac to v0.15.1 ([#335])
 - Update `bxcan` pac to v0.7.0 ([#335])
 - The MSRV was bumped to 1.59 ([#335])
+- Deprecate `Toggle` enum and use `Switch` instead for better naming purposes
+  ([#334])
+  - Add `impl From<Toggle> for Switch` to reduce churn.
 
 ## [v0.9.1] - 2022-09-07
 
@@ -571,6 +574,7 @@ let clocks = rcc
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
 [#335]: https://github.com/stm32-rs/stm32f3xx-hal/pull/335
+[#334]: https://github.com/stm32-rs/stm32f3xx-hal/pull/334
 [#322]: https://github.com/stm32-rs/stm32f3xx-hal/pull/322
 [#318]: https://github.com/stm32-rs/stm32f3xx-hal/pull/318
 [#317]: https://github.com/stm32-rs/stm32f3xx-hal/pull/317
