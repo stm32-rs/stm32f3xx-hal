@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Add missing ADC channels ([#337])
 
+### Fixed
+
+- Fix wrong timer frequency calculation and unexpected panics ([#338])
+
 ## [v0.9.1] - 2022-09-07
 
 ### Added
@@ -38,7 +42,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Missing `MosiPin` impl for `PB5` ([#322])
 - Read valid data from data register even if reception of next character
   has started ([#317])
-- Fix wrong timer frequency calculation and unexpected panics ([#338])
 
 ## [v0.9.0] - 2022-03-06
 
