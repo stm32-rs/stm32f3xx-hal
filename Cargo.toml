@@ -13,7 +13,7 @@ name = "stm32f3xx-hal"
 readme = "README.md"
 repository = "https://github.com/stm32-rs/stm32f3xx-hal"
 documentation = "https://docs.rs/stm32f3xx-hal"
-version = "0.9.1"
+version = "0.9.2"
 exclude = [
     "codegen",
     ".markdownlint.yml"
