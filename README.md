@@ -47,17 +47,16 @@ Almost all of the implementation was shamelessly adapted from the
 Cargo.toml:
 
 ```toml
-[package]
-# ...
-resolver = "2"
-
 [dependencies]
-cortex-m = "0.7.2"
-cortex-m-rt = { version = "0.6.13", features = ["device"] }
-# Panic behaviour, see https://crates.io/keywords/panic-impl for alternatives
+# Only set the critical section feature, if you are using a bare-metal platform
+# without any RTOS
+# See https://github.com/rust-embedded/critical-section for further details.
+cortex-m = { version = "0.7.4", features = ["critical-section-single-core"]}
+cortex-m-rt = { version = "0.7.3", features = ["device"] }
+# Panic behavior, see https://crates.io/keywords/panic-impl for alternatives
 panic-halt = "0.2.0"
 # Replace stm32f303xc with your target chip, see next section for more info
-stm32f3xx-hal = { version = "0.9.1", features = ["ld", "rt", "stm32f303xc"] }
+stm32f3xx-hal = { version = "0.9.2", features = ["ld", "rt", "stm32f303xc"] }
 ```
 
 We also need to tell Rust about target architecture and how to link our

@@ -1,8 +1,8 @@
 # cargo-release configuration
 
 tag-message = "{{version}}"
-dev-version = false
 pre-release-commit-message = "Release v{{version}}"
+consolidate-commits = false
 push-remote = "upstream"
 
 # Change the changelog's `Unreleased` section to refer to this release and
