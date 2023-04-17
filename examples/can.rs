@@ -28,8 +28,8 @@ fn main() -> ! {
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let gpiob = dp.GPIOB.split(&mut rcc.ahb);
+    let gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
     let _clocks = rcc
         .cfgr
@@ -41,12 +41,8 @@ fn main() -> ! {
         .freeze(&mut flash.acr);
 
     // Configure CAN RX and TX pins (AF9)
-    let rx = gpioa
-        .pa11
-        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let tx = gpioa
-        .pa12
-        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let rx = gpioa.pa11.into_af_push_pull();
+    let tx = gpioa.pa12.into_af_push_pull();
 
     // Initialize the CAN peripheral
     // Use loopback mode: No pins need to be assigned to peripheral.
@@ -68,9 +64,7 @@ fn main() -> ! {
     // Sync to the bus and start normal operation.
     block!(can.enable_non_blocking()).ok();
 
-    let mut led0 = gpiob
-        .pb15
-        .into_push_pull_output(&mut gpiob.moder, &mut gpiob.otyper);
+    let mut led0 = gpiob.pb15.into_push_pull_output();
     led0.set_high().unwrap();
 
     // Watchdog makes sure this gets restarted periodically if nothing happens

@@ -24,13 +24,9 @@ mod tests {
         let dp = unwrap!(pac::Peripherals::take());
 
         let mut rcc = dp.RCC.constrain();
-        let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
-        let input_ground: GroundPin<Input> = gpioc
-            .pc3
-            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
-        let input_vdd: VddPin<Input> = gpioc
-            .pc2
-            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr);
+        let gpioc = dp.GPIOC.split(&mut rcc.ahb);
+        let input_ground: GroundPin<Input> = gpioc.pc3.into_floating_input();
+        let input_vdd: VddPin<Input> = gpioc.pc2.into_floating_input();
 
         super::State {
             input_ground: input_ground.downgrade().downgrade(),

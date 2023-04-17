@@ -35,28 +35,22 @@ fn main() -> ! {
     assert!(clocks.usbclk_valid());
 
     // Configure the on-board LED (LD10, south red)
-    let mut gpioe = dp.GPIOE.split(&mut rcc.ahb);
-    let mut led = gpioe
-        .pe13
-        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let gpioe = dp.GPIOE.split(&mut rcc.ahb);
+    let mut led = gpioe.pe13.into_push_pull_output();
     led.set_low().ok(); // Turn off
 
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let gpioa = dp.GPIOA.split(&mut rcc.ahb);
 
     // F3 Discovery board has a pull-up resistor on the D+ line.
     // Pull the D+ pin down to send a RESET condition to the USB bus.
     // This forced reset is needed only for development, without it host
     // will not reset your device when you upload new firmware.
-    let mut usb_dp = gpioa
-        .pa12
-        .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
+    let mut usb_dp = gpioa.pa12.into_push_pull_output();
     usb_dp.set_low().ok();
     delay(clocks.sysclk().0 / 100);
 
-    let usb_dm = gpioa
-        .pa11
-        .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
-    let usb_dp = usb_dp.into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh);
+    let usb_dm = gpioa.pa11.into_af_push_pull();
+    let usb_dp = usb_dp.into_af_push_pull();
 
     let usb = Peripheral {
         usb: dp.USB,

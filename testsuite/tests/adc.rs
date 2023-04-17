@@ -74,7 +74,7 @@ mod tests {
             .use_hse(8.MHz())
             .use_pll()
             .freeze(&mut flash.acr);
-        let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
+        let gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
         // Slow down ADC
         unsafe {
@@ -97,10 +97,8 @@ mod tests {
         let v_ref = VoltageInternalReference::new(&mut common_adc, &mut adc_dp);
 
         let pair = GenericPair {
-            0: gpioc.pc0.into_analog(&mut gpioc.moder, &mut gpioc.pupdr),
-            1: gpioc
-                .pc1
-                .into_push_pull_output(&mut gpioc.moder, &mut gpioc.otyper),
+            0: gpioc.pc0.into_analog(),
+            1: gpioc.pc1.into_push_pull_output(),
         };
 
         let adc = Adc::new(adc_dp.0, Config::default(), &clocks, &common_adc);

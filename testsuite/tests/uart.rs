@@ -118,32 +118,20 @@ mod tests {
             .use_hse(8.MHz())
             .sysclk(64.MHz())
             .freeze(&mut flash.acr);
-        let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-        let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
+        let gpioa = dp.GPIOA.split(&mut rcc.ahb);
+        let gpiob = dp.GPIOB.split(&mut rcc.ahb);
 
         let serial_pair = SerialPair {
-            0: gpioa
-                .pa9
-                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
-            1: gpioa
-                .pa10
-                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+            0: gpioa.pa9.into_af_push_pull(),
+            1: gpioa.pa10.into_af_push_pull(),
         };
         let cs_pair_1 = CrossSerialPair1 {
-            0: gpioa
-                .pa2
-                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
-            1: gpiob
-                .pb11
-                .into_af_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
+            0: gpioa.pa2.into_af_push_pull(),
+            1: gpiob.pb11.into_af_open_drain(),
         };
         let cs_pair_2 = CrossSerialPair2 {
-            0: gpiob
-                .pb10
-                .into_af_push_pull(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrh),
-            1: gpioa
-                .pa3
-                .into_af_open_drain(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrl),
+            0: gpiob.pb10.into_af_push_pull(),
+            1: gpioa.pa3.into_af_open_drain(),
         };
 
         let serial1 = Serial::new(

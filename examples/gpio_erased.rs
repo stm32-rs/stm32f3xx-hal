@@ -19,31 +19,15 @@ fn main() -> ! {
     let dp = pac::Peripherals::take().unwrap();
 
     let mut rcc = dp.RCC.constrain();
-    let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
-    let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
-    let mut gpiod = dp.GPIOD.split(&mut rcc.ahb);
+    let gpiob = dp.GPIOB.split(&mut rcc.ahb);
+    let gpioc = dp.GPIOC.split(&mut rcc.ahb);
+    let gpiod = dp.GPIOD.split(&mut rcc.ahb);
 
     let mut pin_array: [gpio::PXx<Input>; 4] = [
-        gpiob
-            .pb11
-            .into_floating_input(&mut gpiob.moder, &mut gpiob.pupdr)
-            .downgrade()
-            .downgrade(),
-        gpioc
-            .pc4
-            .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr)
-            .downgrade()
-            .downgrade(),
-        gpiod
-            .pd3
-            .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr)
-            .downgrade()
-            .downgrade(),
-        gpiod
-            .pd2
-            .into_floating_input(&mut gpiod.moder, &mut gpiod.pupdr)
-            .downgrade()
-            .downgrade(),
+        gpiob.pb11.into_floating_input().downgrade().downgrade(),
+        gpioc.pc4.into_floating_input().downgrade().downgrade(),
+        gpiod.pd3.into_floating_input().downgrade().downgrade(),
+        gpiod.pd2.into_floating_input().downgrade().downgrade(),
     ];
 
     hprintln!("Start scanning pin array");

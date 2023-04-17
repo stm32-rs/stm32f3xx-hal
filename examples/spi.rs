@@ -20,7 +20,7 @@ fn main() -> ! {
 
     let mut flash = dp.FLASH.constrain();
     let mut rcc = dp.RCC.constrain();
-    let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
+    let gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
     let clocks = rcc
         .cfgr
@@ -30,15 +30,9 @@ fn main() -> ! {
         .freeze(&mut flash.acr);
 
     // Configure pins for SPI
-    let sck = gpioc
-        .pc10
-        .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
-    let miso = gpioc
-        .pc11
-        .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
-    let mosi = gpioc
-        .pc12
-        .into_af_push_pull(&mut gpioc.moder, &mut gpioc.otyper, &mut gpioc.afrh);
+    let sck = gpioc.pc10.into_af_push_pull();
+    let miso = gpioc.pc11.into_af_push_pull();
+    let mosi = gpioc.pc12.into_af_push_pull();
 
     let mut spi = Spi::new(dp.SPI3, (sck, miso, mosi), 3.MHz(), clocks, &mut rcc.apb1);
 

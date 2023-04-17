@@ -54,31 +54,25 @@ mod app {
 
         // Initialize the peripherals
         // DIR (the LED that lights up during serial rx)
-        let mut gpioe = cx.device.GPIOE.split(&mut rcc.ahb);
-        let mut dir: DirType = gpioe
-            .pe13
-            .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+        let gpioe = cx.device.GPIOE.split(&mut rcc.ahb);
+        let mut dir: DirType = gpioe.pe13.into_push_pull_output();
         dir.set_low().unwrap();
 
         // SERIAL
-        let mut gpioa = cx.device.GPIOA.split(&mut rcc.ahb);
+        let gpioa = cx.device.GPIOA.split(&mut rcc.ahb);
         let mut pins = (
-            gpioa
-                // Tx pin
-                .pa9
-                // configure this pin to make use of its `USART1_TX` alternative function
-                // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
-                //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
-                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
-            gpioa
-                // Rx pin
-                .pa10
-                // configure this pin to make use of its `USART1_RX` alternative function
-                // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
-                //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
-                .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
+            // Tx pin
+            // configure this pin to make use of its `USART1_TX` alternative function
+            // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
+            //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
+            gpioa.pa9.into_af_push_pull(),
+            // Rx pin
+            // configure this pin to make use of its `USART1_RX` alternative function
+            // (AF mapping taken from table 14 "Alternate functions for port A" of the datasheet at
+            //  https://www.st.com/en/microcontrollers-microprocessors/stm32f303vc.html)
+            gpioa.pa10.into_af_push_pull(),
         );
-        pins.1.internal_pull_up(&mut gpioa.pupdr, true);
+        pins.1.internal_pull_up(true);
         let mut serial: SerialType =
             Serial::new(cx.device.USART1, pins, 19200.Bd(), clocks, &mut rcc.apb2);
         serial.configure_interrupt(Event::ReceiveDataRegisterNotEmpty, Switch::On);

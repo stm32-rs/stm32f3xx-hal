@@ -28,12 +28,10 @@ fn main() -> ! {
     let mut rcc = device_peripherals.RCC.constrain();
     let mut syscfg = device_peripherals.SYSCFG.constrain(&mut rcc.apb2);
     let mut exti = device_peripherals.EXTI;
-    let mut gpioe = device_peripherals.GPIOE.split(&mut rcc.ahb);
-    let mut gpioa = device_peripherals.GPIOA.split(&mut rcc.ahb);
+    let gpioe = device_peripherals.GPIOE.split(&mut rcc.ahb);
+    let gpioa = device_peripherals.GPIOA.split(&mut rcc.ahb);
 
-    let mut led = gpioe
-        .pe9
-        .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
+    let mut led = gpioe.pe9.into_push_pull_output();
     // Turn the led on so we know the configuration step occurred.
     led.toggle().expect("unable to toggle led in configuration");
 
@@ -41,9 +39,7 @@ fn main() -> ! {
     cortex_m::interrupt::free(|cs| *LED.borrow(cs).borrow_mut() = Some(led));
 
     // Configuring the user button to trigger an interrupt when the button is pressed.
-    let mut user_button = gpioa
-        .pa0
-        .into_pull_down_input(&mut gpioa.moder, &mut gpioa.pupdr);
+    let mut user_button = gpioa.pa0.into_pull_down_input();
     syscfg.select_exti_interrupt_source(&user_button);
     user_button.trigger_on_edge(&mut exti, Edge::Rising);
     user_button.enable_interrupt(&mut exti);

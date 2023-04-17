@@ -47,12 +47,12 @@
   the channels have pins connected they can be enabled.
 
   ```
-    let mut gpioa = dp.GPIOB.split(&mut rcc.ahb);
-    let pa6 = gpioa.pa6.into_af2(&mut gpioa.moder, &mut gpioa.afrl);
+    let gpioa = dp.GPIOB.split(&mut rcc.ahb);
+    let pa6 = gpioa.pa6.into_af_push_pull();
 
-    let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
-    let pb1 = gpiob.pb1.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
-    let pb4 = gpiob.pb4.into_af2(&mut gpiob.moder, &mut gpiob.afrl);
+    let gpiob = dp.GPIOB.split(&mut rcc.ahb);
+    let pb1 = gpiob.pb1.into_af_push_pull();
+    let pb4 = gpiob.pb4.into_af_open_drain();
 
     let mut ch1 = ch1_no_pins
         .output_to_pa6(pa6)
@@ -121,8 +121,8 @@
     // 50Hz.
     let mut (ch1_no_pins, _, _, _) = tim1(device.TIM3, 9000, 50.Hz(), clocks);
 
-    let mut gpioa = dp.GPIOB.split(&mut rcc.ahb);
-    let pa7 = gpioa.pa7.into_af6(&mut gpioa.moder, &mut gpioa.afrl);
+    let gpioa = dp.GPIOB.split(&mut rcc.ahb);
+    let pa7 = gpioa.pa7.into_af_push_pull();
 
     let mut ch1 = ch1_no_pins.output_to(pa7);
     ch1.enable();
@@ -136,9 +136,9 @@
   ```
     ...
 
-    let mut gpioa = dp.GPIOB.split(&mut rcc.ahb);
-    let pa7 = gpioa.pa7.into_af6(&mut gpioa.moder, &mut gpioa.afrl);
-    let pa8 = gpioa.pa8.into_af6(&mut gpioa.moder, &mut gpioa.afrl);
+    let gpioa = dp.GPIOB.split(&mut rcc.ahb);
+    let pa7 = gpioa.pa7.into_af_push_pull();
+    let pa8 = gpioa.pa8.into_af_push_pull();
 
     let mut ch1 = ch1_no_pins
         .output_to(pa7)

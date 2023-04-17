@@ -19,13 +19,11 @@ fn main() -> ! {
     // let clocks = rcc.cfgr.freeze(&mut dp.FLASH.constrain().acr);
 
     // Set up pin PA4 as analog pin.
-    let mut gpioa = dp.GPIOA.split(&mut rcc.ahb);
-    let _dac1_out1 = gpioa.pa4.into_analog(&mut gpioa.moder, &mut gpioa.pupdr);
+    let gpioa = dp.GPIOA.split(&mut rcc.ahb);
+    let _dac1_out1 = gpioa.pa4.into_analog();
 
     // set up led for blinking loop
-    let mut ok_led = gpioa
-        .pa15
-        .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
+    let mut ok_led = gpioa.pa15.into_push_pull_output();
 
     // set up dac1, data is twelve bits, aligned right
     let mut dac1 = Dac::new(dp.DAC1, &mut rcc.apb1);
@@ -38,10 +36,10 @@ fn main() -> ! {
             cortex_m::asm::delay(8_000);
         }
         if led {
-            ok_led.set_low().unwrap();
+            ok_led.set_low().ok();
             led = false;
         } else {
-            ok_led.set_high().unwrap();
+            ok_led.set_high().ok();
             led = true;
         }
     }

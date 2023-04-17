@@ -25,19 +25,13 @@ fn main() -> ! {
     let mut rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.freeze(&mut flash.acr);
 
-    let mut gpiob = dp.GPIOB.split(&mut rcc.ahb);
+    let gpiob = dp.GPIOB.split(&mut rcc.ahb);
 
     // Configure I2C1
-    let mut scl =
-        gpiob
-            .pb6
-            .into_af_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
-    let mut sda =
-        gpiob
-            .pb7
-            .into_af_open_drain(&mut gpiob.moder, &mut gpiob.otyper, &mut gpiob.afrl);
-    scl.internal_pull_up(&mut gpiob.pupdr, true);
-    sda.internal_pull_up(&mut gpiob.pupdr, true);
+    let mut scl = gpiob.pb6.into_af_open_drain();
+    let mut sda = gpiob.pb7.into_af_open_drain();
+    scl.internal_pull_up(true);
+    sda.internal_pull_up(true);
     let mut i2c = hal::i2c::I2c::new(
         dp.I2C1,
         (scl, sda),

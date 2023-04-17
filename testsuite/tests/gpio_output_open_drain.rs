@@ -23,18 +23,14 @@ mod tests {
         let dp = unwrap!(pac::Peripherals::take());
 
         let mut rcc = dp.RCC.constrain();
-        let mut gpioc = dp.GPIOC.split(&mut rcc.ahb);
+        let gpioc = dp.GPIOC.split(&mut rcc.ahb);
 
         let pair = GenericPair {
-            0: gpioc
-                .pc0
-                .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr),
-            1: gpioc
-                .pc1
-                .into_open_drain_output(&mut gpioc.moder, &mut gpioc.otyper),
+            0: gpioc.pc0.into_floating_input(),
+            1: gpioc.pc1.into_open_drain_output(),
         };
         let mut input_pin = pair.0;
-        input_pin.internal_pull_up(&mut gpioc.pupdr, true);
+        input_pin.internal_pull_up(true);
         let output_pin = pair.1;
 
         super::State {
