@@ -126,11 +126,11 @@ mod tests {
         let mut adc = defmt::unwrap!(state.adc.take());
         adc.set_sample_time(&state.analog, config::SampleTime::Cycles61C5);
         for _ in 0..10 {
-            defmt::unwrap!(state.output.set_high());
+            state.output.set_high();
             asm::delay(100);
             let adc_level: u16 = defmt::unwrap!(adc.read(&mut state.analog).ok());
             defmt::debug!("{}", adc_level);
-            defmt::unwrap!(state.output.set_low());
+            state.output.set_low();
             asm::delay(100);
             // Vref is 3V so output should reach the maximum.
             assert!((3500..4100).contains(&adc_level));

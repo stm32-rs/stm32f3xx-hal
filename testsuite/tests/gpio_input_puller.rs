@@ -5,15 +5,13 @@ use testsuite as _;
 
 use stm32f3xx_hal as hal;
 
-use hal::gpio::gpioc;
-use hal::gpio::Resistor;
-use hal::gpio::{Input, PXx};
+use hal::gpio::{self, ErasedPin, Input, Pull};
 use hal::{pac, prelude::*};
 
 struct State {
-    observer: PXx<Input>,
-    puller: gpioc::PC1<Input>,
-    pupdr: gpioc::PUPDR,
+    observer: ErasedPin<Input>,
+    puller: gpio::PC1<Input>,
+    pupdr: gpio::PUPDR<'C'>,
 }
 
 #[defmt_test::tests]
@@ -37,14 +35,13 @@ mod tests {
                 .pc1
                 .into_floating_input(&mut gpioc.moder, &mut gpioc.pupdr),
         };
-        let mut observer = pair.0;
+        let observer = pair.0.internal_resistor(&mut gpioc.pupdr, Pull::None);
         let puller = pair.1;
 
-        observer.set_internal_resistor(&mut gpioc.pupdr, Resistor::Floating);
         let pupdr = gpioc.pupdr;
 
         super::State {
-            observer: observer.downgrade().downgrade(),
+            observer: observer.erase(),
             puller,
             pupdr,
         }
@@ -54,19 +51,19 @@ mod tests {
     fn pulldown_is_low(state: &mut super::State) {
         state
             .puller
-            .set_internal_resistor(&mut state.pupdr, Resistor::PullDown);
+            .set_internal_resistor(&mut state.pupdr, Pull::None);
         cortex_m::asm::delay(10);
-        assert!(unwrap!(state.puller.is_low()));
-        assert!(unwrap!(state.observer.is_low()));
+        assert!(state.puller.is_low());
+        assert!(state.observer.is_low());
     }
 
     #[test]
     fn set_high_is_high(state: &mut super::State) {
         state
             .puller
-            .set_internal_resistor(&mut state.pupdr, Resistor::PullUp);
+            .set_internal_resistor(&mut state.pupdr, Pull::Up);
         cortex_m::asm::delay(10);
-        assert!(unwrap!(state.puller.is_high()));
-        assert!(unwrap!(state.observer.is_high()));
+        assert!(state.puller.is_high());
+        assert!(state.observer.is_high());
     }
 }

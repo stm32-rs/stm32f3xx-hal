@@ -34,7 +34,7 @@ fn handle_gpio(db_path: PathBuf) -> Result<()> {
 }
 
 fn emit_autogen_comment(db: &Db) -> Result<()> {
-    let package = cubemx::package::load(&db)?;
+    let package = cubemx::package::load(db)?;
     codegen::gen_autogen_comment(&package);
 
     Ok(())

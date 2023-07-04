@@ -35,7 +35,7 @@ fn main() -> ! {
         .pe9
         .into_push_pull_output(&mut gpioe.moder, &mut gpioe.otyper);
     // Turn the led on so we know the configuration step occurred.
-    led.toggle().expect("unable to toggle led in configuration");
+    led.toggle();
 
     // Move the ownership of the led to the global LED
     cortex_m::interrupt::free(|cs| *LED.borrow(cs).borrow_mut() = Some(led));
@@ -69,12 +69,7 @@ fn main() -> ! {
 fn EXTI0() {
     cortex_m::interrupt::free(|cs| {
         // Toggle the LED
-        LED.borrow(cs)
-            .borrow_mut()
-            .as_mut()
-            .unwrap()
-            .toggle()
-            .unwrap();
+        LED.borrow(cs).borrow_mut().as_mut().unwrap().toggle();
 
         // Clear the interrupt pending bit so we don't infinitely call this routine
         BUTTON

@@ -38,10 +38,10 @@ fn main() -> ! {
             cortex_m::asm::delay(8_000);
         }
         if led {
-            ok_led.set_low().unwrap();
+            ok_led.set_low();
             led = false;
         } else {
-            ok_led.set_high().unwrap();
+            ok_led.set_high();
             led = true;
         }
     }
