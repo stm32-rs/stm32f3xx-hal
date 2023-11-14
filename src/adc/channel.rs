@@ -294,6 +294,8 @@ cfg_if::cfg_if! {
             (PD13, [(ADC3, Id::Ten), (ADC4, Id::Ten)]),
             (PD14, [(ADC3, Id::Eleven), (ADC4, Id::Eleven)]),
             (PD9, [(ADC4, Id::Thirteen)]),
+            (PE9, [(ADC3, Id::Two)]),
+            (PE10, [(ADC3, Id::Fourteen)]),
             (PE11, [(ADC3, Id::Fifteen)]),
             (PE12, [(ADC3, Id::Sixteen)]),
             (PE7, [(ADC3, Id::Thirteen)]),
