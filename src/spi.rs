@@ -24,6 +24,7 @@ use crate::{
     rcc::{self, Clocks},
     time::rate,
 };
+use num_traits::{AsPrimitive, PrimInt};
 
 /// SPI error
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -337,6 +338,8 @@ where
     // SckPin could technically be omitted, though not advisable.
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
+    Word: PrimInt + Into<u32> + 'static,
+    u32: AsPrimitive<Word>,
 {
     type Error = Error;
 
@@ -350,10 +353,8 @@ where
         } else if sr.crcerr().is_no_match() {
             nb::Error::Other(Error::Crc)
         } else if sr.rxne().is_not_empty() {
-            let read_ptr = &self.spi.dr as *const _ as *const Word;
             // NOTE(unsafe) read from register owned by this Spi struct
-            let value = unsafe { ptr::read_volatile(read_ptr) };
-            return Ok(value);
+            return Ok(self.spi.dr.read().bits().as_());
         } else {
             nb::Error::WouldBlock
         })
@@ -369,9 +370,8 @@ where
         } else if sr.crcerr().is_no_match() {
             nb::Error::Other(Error::Crc)
         } else if sr.txe().is_empty() {
-            let write_ptr = &self.spi.dr as *const _ as *mut Word;
-            // NOTE(unsafe) write to register owned by this Spi struct
-            unsafe { ptr::write_volatile(write_ptr, word) };
+            // NOTE(unsafe): this is the data register, where unsafe writes are ok.
+            self.spi.dr.write(|w| unsafe { w.bits(word.into()) });
             return Ok(());
         } else {
             nb::Error::WouldBlock
@@ -384,6 +384,8 @@ where
     SPI: Instance,
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
+    Word: PrimInt + Into<u32> + 'static,
+    u32: AsPrimitive<Word>,
 {
 }
 
@@ -392,6 +394,8 @@ where
     SPI: Instance,
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
+    Word: PrimInt + Into<u32> + 'static,
+    u32: AsPrimitive<Word>,
 {
 }
 
