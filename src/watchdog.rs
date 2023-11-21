@@ -59,6 +59,7 @@ impl IndependentWatchDog {
     /// Call [`start`](WatchdogEnable::start) to start the watchdog.
     ///
     /// See [`WatchdogEnable`] and [`Watchdog`] for more info.
+    #[must_use]
     pub fn new(iwdg: IWDG) -> Self {
         IndependentWatchDog { iwdg }
     }
@@ -98,6 +99,7 @@ impl IndependentWatchDog {
 
         self.access_registers(|iwdg| {
             iwdg.pr.modify(|_, w| w.pr().bits(psc));
+            #[allow(clippy::cast_possible_truncation)]
             iwdg.rlr.modify(|_, w| w.rl().bits(reload as u16));
         });
 
@@ -120,6 +122,7 @@ impl IndependentWatchDog {
     }
 
     /// Returns the currently set interval
+    #[must_use]
     pub fn interval(&self) -> Milliseconds {
         // If the prescaler was changed wait until the change procedure is finished.
         while self.iwdg.sr.read().pvu().bit() {}

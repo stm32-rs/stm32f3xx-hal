@@ -28,6 +28,7 @@ use core::{
 use enumset::EnumSetType;
 
 /// Extension trait to split a DMA peripheral into independent channels
+#[allow(clippy::module_name_repetitions)]
 pub trait DmaExt {
     /// The type to split the DMA into
     type Channels;
@@ -134,12 +135,20 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     }
 
     /// Is this transfer complete?
+    ///
+    /// # Panics
+    ///
+    /// Panics if no transfer is ongoing.
     pub fn is_complete(&self) -> bool {
         let inner = crate::unwrap!(self.inner.as_ref());
         inner.channel.is_event_triggered(Event::TransferComplete)
     }
 
     /// Stop this transfer and return ownership over its parts
+    ///
+    /// # Panics
+    ///
+    /// Panics no transfer is ongoing.
     pub fn stop(mut self) -> (B, C, T) {
         let mut inner = crate::unwrap!(self.inner.take());
         inner.stop();
@@ -349,7 +358,7 @@ pub trait Channel: private::Channel {
     ///
     /// Panics if the word size is not one of 8, 16, or 32 bits.
     fn set_word_size<W>(&mut self) {
-        use cr::PSIZE_A::*;
+        use cr::PSIZE_A::{Bits16, Bits32, Bits8};
 
         let psize = match mem::size_of::<W>() {
             1 => Bits8,

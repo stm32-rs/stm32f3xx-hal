@@ -19,7 +19,7 @@
 //! let pa0 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
 //! ```
 //!
-//! And finally, you can use the functions from the [InputPin] or [OutputPin] traits in
+//! And finally, you can use the functions from the [`InputPin`] or [`OutputPin`] traits in
 //! `embedded_hal`
 //!
 //! For a complete example, see [examples/toggle.rs]
@@ -30,18 +30,18 @@
 //!
 //! Each GPIO pin can be set to various modes by corresponding `into_...` method:
 //!
-//! - **Input**: The output buffer is disabled and the schmitt trigger input is activated
-//! - **Output**: Both the output buffer and the schmitt trigger input is enabled
-//!     - **PushPull**: Output which either drives the pin high or low
-//!     - **OpenDrain**: Output which leaves the gate floating, or pulls it to ground in drain
+//! - `Input`: The output buffer is disabled and the schmitt trigger input is activated
+//! - `Output`: Both the output buffer and the schmitt trigger input is enabled
+//!     - `PushPull`: Output which either drives the pin high or low
+//!     - `OpenDrain`: Output which leaves the gate floating, or pulls it to ground in drain
 //!     mode. Can be used as an input in the `open` configuration
-//! - **Alternate**: Pin mode required when the pin is driven by other peripherals. The schmitt
+//! - `Alternate`: Pin mode required when the pin is driven by other peripherals. The schmitt
 //! trigger input is activated. The Output buffer is automatically enabled and disabled by
 //! peripherals. Output behavior is same as the output mode
-//!     - **PushPull**: Output which either drives the pin high or low
-//!     - **OpenDrain**: Output which leaves the gate floating, or pulls it to ground in drain
+//!     - `PushPull`: Output which either drives the pin high or low
+//!     - `OpenDrain`: Output which leaves the gate floating, or pulls it to ground in drain
 //!     mode
-//! - **Analog**: Pin mode required for ADC, DAC, OPAMP, and COMP peripherals. It is also suitable
+//! - `Analog`: Pin mode required for ADC, DAC, OPAMP, and COMP peripherals. It is also suitable
 //! for minimize energy consumption as the output buffer and the schmitt trigger input is disabled
 //!
 //! ### Output Speed
@@ -72,6 +72,7 @@ use crate::{
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers
+#[allow(clippy::module_name_repetitions)]
 pub trait GpioExt {
     /// The Parts to split the GPIO peripheral into
     type Parts;
@@ -226,7 +227,6 @@ impl marker::Index for Ux {
 pub struct U<const X: u8>;
 
 impl<const X: u8> marker::Index for U<X> {
-    #[inline(always)]
     fn index(&self) -> u8 {
         X
     }
@@ -606,9 +606,9 @@ where
         const BITWIDTH: u8 = 1;
         let index = self.index.index();
         let (rise, fall) = match edge {
-            Edge::Rising => (true as u32, false as u32),
-            Edge::Falling => (false as u32, true as u32),
-            Edge::RisingFalling => (true as u32, true as u32),
+            Edge::Rising => (u32::from(true), u32::from(false)),
+            Edge::Falling => (u32::from(false), u32::from(true)),
+            Edge::RisingFalling => (u32::from(true), u32::from(true)),
         };
         // SAFETY: Unguarded write to the register, but behind a &mut
         unsafe {
@@ -622,7 +622,7 @@ where
     /// # Note
     ///
     /// Remeber to also configure the interrupt pin on
-    /// the SysCfg site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
+    /// the `SysCfg` site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
     pub fn configure_interrupt(&mut self, exti: &mut EXTI, enable: impl Into<Switch>) {
         const BITWIDTH: u8 = 1;
 
@@ -640,14 +640,14 @@ where
     /// # Note
     ///
     /// Remeber to also configure the interrupt pin on
-    /// the SysCfg site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
+    /// the `SysCfg` site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
     pub fn enable_interrupt(&mut self, exti: &mut EXTI) {
-        self.configure_interrupt(exti, Switch::On)
+        self.configure_interrupt(exti, Switch::On);
     }
 
     /// Disable external interrupts from this pin
     pub fn disable_interrupt(&mut self, exti: &mut EXTI) {
-        self.configure_interrupt(exti, Switch::Off)
+        self.configure_interrupt(exti, Switch::Off);
     }
 
     /// Clear the interrupt pending bit for this pin
@@ -777,7 +777,7 @@ macro_rules! gpio_trait {
     };
 }
 
-/// Implement private::{Moder, Ospeedr, Otyper, Pupdr} traits for each opaque register structs
+/// Implement `private::{Moder, Ospeedr, Otyper, Pupdr}` traits for each opaque register structs
 macro_rules! r_trait {
     (
         ($GPIOX:ident, $gpioy:ident::$xr:ident::$enum:ident, $bitwidth:expr);

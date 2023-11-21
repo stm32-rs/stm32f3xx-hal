@@ -2,7 +2,7 @@
  # `stm32f3xx-hal`
 
  `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
- peripheral access API for the STMicro [STM32F3][stm] series microcontrollers.
+ peripheral access API for the `STMicro` [STM32F3][stm] series microcontrollers.
 
  ## Philosophie
 
@@ -63,7 +63,7 @@
  * stm32f373x8, stm32f373xb, stm32f373xc, stm32f378xc
  * stm32f334x4, stm32f334x6, stm32f334x8
 
- Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+ Example: The `STM32F3Discovery` board has a STM32F303VCT6 chip.
  So you need to specify `stm32f303xc` in your `Cargo.toml` (note that VC → xc).
 
  For more information, see the [README][].
@@ -315,9 +315,10 @@ impl From<Switch> for bool {
 
 impl From<bool> for Switch {
     fn from(b: bool) -> Self {
-        match b {
-            true => Switch::On,
-            false => Switch::Off,
+        if b {
+            Switch::On
+        } else {
+            Switch::Off
         }
     }
 }

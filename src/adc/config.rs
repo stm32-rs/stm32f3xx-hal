@@ -464,7 +464,7 @@ impl Default for OverrunMode {
 /// Each channel can be sampled with a different sample time.
 /// There is always an overhead of 13 ADC clock cycles.
 ///
-/// E.g. For SampleTime::T19C5 the total conversion time (in ADC clock cycles) is
+/// E.g. For `SampleTime::T19C5` the total conversion time (in ADC clock cycles) is
 /// 13 + 19 = 32 ADC Clock Cycles
 ///
 /// # Related functions
@@ -834,12 +834,14 @@ pub struct Config {
 
 impl Config {
     /// Change the resolution
+    #[must_use]
     pub fn resolution(mut self, resolution: Resolution) -> Self {
         self.resolution = resolution;
         self
     }
 
     /// Set the align mode
+    #[must_use]
     pub fn align(mut self, align: DataAlignment) -> Self {
         self.data_alignment = align;
         self
@@ -853,24 +855,28 @@ impl Config {
     }
 
     /// Set the overrun mode
+    #[must_use]
     pub fn overrun_mode(mut self, mode: OverrunMode) -> Self {
         self.overrun = mode;
         self
     }
 
     /// Set the conversion mode
+    #[must_use]
     pub fn conversion_mode(mut self, mode: ConversionMode) -> Self {
         self.conversion = mode;
         self
     }
 
     /// Enable external trigger and the trigger source
+    #[must_use]
     pub fn external_trigger(mut self, trigger: Option<ExternalTrigger>) -> Self {
         self.external_trigger = trigger;
         self
     }
 
     /// Enable DMA and the operation mode, in which DMA will transfer data from the ADC peripheral.
+    #[must_use]
     pub fn dma_mode(mut self, dma: DmaMode) -> Self {
         self.dma = dma;
         self

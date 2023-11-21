@@ -23,7 +23,8 @@ use crate::{
         Interrupt, USART1, USART2, USART3,
     },
     rcc::{self, Clocks},
-    time::rate::*,
+    time::fixed_point::FixedPoint,
+    time::rate::{Baud, Hertz},
     Switch,
 };
 
@@ -227,14 +228,14 @@ pub enum BaudTable {
 impl From<BaudTable> for Baud {
     fn from(baud: BaudTable) -> Self {
         match baud {
-            BaudTable::Bd1200 => Baud(1200),
-            BaudTable::Bd9600 => Baud(9600),
-            BaudTable::Bd19200 => Baud(19200),
-            BaudTable::Bd38400 => Baud(38400),
-            BaudTable::Bd57600 => Baud(57600),
-            BaudTable::Bd115200 => Baud(115200),
-            BaudTable::Bd230400 => Baud(230400),
-            BaudTable::Bd460800 => Baud(460800),
+            BaudTable::Bd1200 => Baud(1_200),
+            BaudTable::Bd9600 => Baud(9_600),
+            BaudTable::Bd19200 => Baud(19_200),
+            BaudTable::Bd38400 => Baud(38_400),
+            BaudTable::Bd57600 => Baud(57_600),
+            BaudTable::Bd115200 => Baud(115_200),
+            BaudTable::Bd230400 => Baud(230_400),
+            BaudTable::Bd460800 => Baud(460_800),
         }
     }
 }
@@ -248,14 +249,14 @@ impl TryFrom<Baud> for BaudTable {
     type Error = TryFromBaudError;
     fn try_from(baud: Baud) -> Result<Self, Self::Error> {
         Ok(match baud {
-            Baud(1200) => BaudTable::Bd1200,
-            Baud(9600) => BaudTable::Bd9600,
-            Baud(19200) => BaudTable::Bd19200,
-            Baud(38400) => BaudTable::Bd38400,
-            Baud(57600) => BaudTable::Bd57600,
-            Baud(115200) => BaudTable::Bd115200,
-            Baud(230400) => BaudTable::Bd230400,
-            Baud(460800) => BaudTable::Bd460800,
+            Baud(1_200) => BaudTable::Bd1200,
+            Baud(9_600) => BaudTable::Bd9600,
+            Baud(19_200) => BaudTable::Bd19200,
+            Baud(38_400) => BaudTable::Bd38400,
+            Baud(57_600) => BaudTable::Bd57600,
+            Baud(115_200) => BaudTable::Bd115200,
+            Baud(230_400) => BaudTable::Bd230400,
+            Baud(460_800) => BaudTable::Bd460800,
             _ => return Err(TryFromBaudError(())),
         })
     }
@@ -458,6 +459,10 @@ where
     Usart: Instance,
 {
     /// Configures a USART peripheral to provide serial communication
+    ///
+    /// # Panics
+    ///
+    /// Panics if the configured baud rate is impossible for the hardware to setup.
     pub fn new<Config>(
         usart: Usart,
         pins: (Tx, Rx),
@@ -471,7 +476,7 @@ where
         Rx: RxPin<Usart>,
         Config: Into<config::Config>,
     {
-        use config::*;
+        use config::Parity;
 
         let config = config.into();
 
@@ -484,7 +489,12 @@ where
 
         let brr = Usart::clock(&clocks).integer() / config.baudrate.integer();
         crate::assert!(brr >= 16, "impossible baud rate");
-        usart.brr.write(|w| w.brr().bits(brr as u16));
+        usart.brr.write(|w| {
+            w.brr().bits(
+                // NOTE(unsafe): safe because of assert before
+                unsafe { u16::try_from(brr).unwrap_unchecked() },
+            )
+        });
 
         // We currently support only eight data bits as supporting a full-blown
         // configuration gets complicated pretty fast. The USART counts data
@@ -586,6 +596,7 @@ where
         if self.usart.isr.read().busy().bit_is_set() {
             return None;
         }
+        #[allow(clippy::cast_possible_truncation)]
         Some(self.usart.rdr.read().rdr().bits() as u8)
     }
 
@@ -643,12 +654,12 @@ where
             Event::CtsInterrupt => self.usart.cr3.modify(|_, w| w.ctsie().bit(enable)),
             Event::TransmissionComplete => self.usart.cr1.modify(|_, w| w.tcie().bit(enable)),
             Event::ReceiveDataRegisterNotEmpty => {
-                self.usart.cr1.modify(|_, w| w.rxneie().bit(enable))
+                self.usart.cr1.modify(|_, w| w.rxneie().bit(enable));
             }
             Event::ParityError => self.usart.cr1.modify(|_, w| w.peie().bit(enable)),
             Event::LinBreak => self.usart.cr2.modify(|_, w| w.lbdie().bit(enable)),
             Event::NoiseError | Event::OverrunError | Event::FramingError => {
-                self.usart.cr3.modify(|_, w| w.eie().bit(enable))
+                self.usart.cr3.modify(|_, w| w.eie().bit(enable));
             }
             Event::Idle => self.usart.cr1.modify(|_, w| w.idleie().bit(enable)),
             Event::CharacterMatch => self.usart.cr1.modify(|_, w| w.cmie().bit(enable)),
@@ -812,7 +823,6 @@ where
     ///
     /// If the character is matched [`Event::CharacterMatch`] is generated,
     /// which can fire an interrupt, if enabled via [`Serial::configure_interrupt()`]
-    #[inline(always)]
     pub fn set_match_character(&mut self, char: u8) {
         // Note: This bit field can only be written when reception is disabled (RE = 0) or the
         // USART is disabled
@@ -823,7 +833,6 @@ where
     }
 
     /// Read out the configured match character.
-    #[inline(always)]
     pub fn match_character(&self) -> u8 {
         self.usart.cr2.read().add().bits()
     }
@@ -848,11 +857,11 @@ where
     /// - This value must only be programmed once per received character.
     /// - Can be written on the fly. If the new value is lower than or equal to the counter,
     ///   the RTOF flag is set.
-    /// - Values higher than 24 bits are truncated to 24 bit max (16_777_216).
+    /// - Values higher than 24 bits are truncated to 24 bit max (`16_777_216`).
     pub fn set_receiver_timeout(&mut self, value: Option<u32>) {
         if let Some(value) = value {
             self.usart.cr2.modify(|_, w| w.rtoen().enabled());
-            self.usart.rtor.modify(|_, w| w.rto().bits(value))
+            self.usart.rtor.modify(|_, w| w.rto().bits(value));
         } else {
             self.usart.cr2.modify(|_, w| w.rtoen().disabled());
         }
@@ -921,6 +930,7 @@ where
         usart.rqr.write(|w| w.rxfrq().set_bit());
         nb::Error::Other(Error::Overrun)
     } else if isr.rxne().bit_is_set() {
+        #[allow(clippy::cast_possible_truncation)]
         return Ok(usart.rdr.read().bits() as u8);
     } else {
         nb::Error::WouldBlock
@@ -1072,9 +1082,9 @@ where
         // NOTE(unsafe) usage of a valid peripheral address
         unsafe {
             channel.set_peripheral_address(
-                &self.usart().rdr as *const _ as u32,
+                core::ptr::addr_of!(self.usart().rdr) as u32,
                 dma::Increment::Disable,
-            )
+            );
         };
 
         dma::Transfer::start_write(buffer, channel, self)
@@ -1103,9 +1113,9 @@ where
         // NOTE(unsafe) usage of a valid peripheral address
         unsafe {
             channel.set_peripheral_address(
-                &self.usart().tdr as *const _ as u32,
+                core::ptr::addr_of!(self.usart().tdr) as u32,
                 dma::Increment::Disable,
-            )
+            );
         };
 
         dma::Transfer::start_read(buffer, channel, self)
@@ -1164,8 +1174,10 @@ where
     {
         // NOTE(unsafe) usage of a valid peripheral address
         unsafe {
-            channel
-                .set_peripheral_address(&self.usart.rdr as *const _ as u32, dma::Increment::Disable)
+            channel.set_peripheral_address(
+                core::ptr::addr_of!(self.usart.rdr) as u32,
+                dma::Increment::Disable,
+            );
         };
 
         dma::Transfer::start_write(buffer, channel, self)
@@ -1180,8 +1192,10 @@ where
     {
         // NOTE(unsafe) usage of a valid peripheral address
         unsafe {
-            channel
-                .set_peripheral_address(&self.usart.tdr as *const _ as u32, dma::Increment::Disable)
+            channel.set_peripheral_address(
+                core::ptr::addr_of!(self.usart.tdr) as u32,
+                dma::Increment::Disable,
+            );
         };
 
         dma::Transfer::start_read(buffer, channel, self)
@@ -1195,13 +1209,13 @@ where
     fn enable_dma(&mut self) {
         self.usart
             .cr3
-            .modify(|_, w| w.dmar().enabled().dmat().enabled())
+            .modify(|_, w| w.dmar().enabled().dmat().enabled());
     }
 
     fn disable_dma(&mut self) {
         self.usart
             .cr3
-            .modify(|_, w| w.dmar().disabled().dmat().disabled())
+            .modify(|_, w| w.dmar().disabled().dmat().disabled());
     }
 }
 
