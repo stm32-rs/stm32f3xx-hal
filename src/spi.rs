@@ -6,7 +6,7 @@
 //!
 //! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/spi.rs
 
-use core::{fmt, marker::PhantomData, ops::Deref, ptr};
+use core::{fmt, marker::PhantomData, ops::Deref};
 
 use crate::hal::blocking::spi;
 use crate::hal::spi::FullDuplex;
@@ -24,6 +24,7 @@ use crate::{
     rcc::{self, Clocks},
     time::rate,
 };
+use num_traits::{AsPrimitive, PrimInt};
 
 /// SPI error
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -337,6 +338,8 @@ where
     // SckPin could technically be omitted, though not advisable.
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
+    Word: PrimInt + Into<u32> + 'static,
+    u32: AsPrimitive<Word>,
 {
     type Error = Error;
 
@@ -350,9 +353,9 @@ where
         } else if sr.crcerr().is_no_match() {
             nb::Error::Other(Error::Crc)
         } else if sr.rxne().is_not_empty() {
-            let read_ptr = &self.spi.dr as *const _ as *const Word;
-            // NOTE(unsafe) read from register owned by this Spi struct
-            let value = unsafe { ptr::read_volatile(read_ptr) };
+            let read_ptr = core::ptr::addr_of!(self.spi.dr) as *const Word;
+            // SAFETY: Read from register owned by this Spi struct
+            let value = unsafe { core::ptr::read_volatile(read_ptr) };
             return Ok(value);
         } else {
             nb::Error::WouldBlock
@@ -369,9 +372,9 @@ where
         } else if sr.crcerr().is_no_match() {
             nb::Error::Other(Error::Crc)
         } else if sr.txe().is_empty() {
-            let write_ptr = &self.spi.dr as *const _ as *mut Word;
-            // NOTE(unsafe) write to register owned by this Spi struct
-            unsafe { ptr::write_volatile(write_ptr, word) };
+            let write_ptr = core::ptr::addr_of!(self.spi.dr) as *mut Word;
+            // SAFETY: Write to register owned by this Spi struct
+            unsafe { core::ptr::write_volatile(write_ptr, word) };
             return Ok(());
         } else {
             nb::Error::WouldBlock
@@ -384,6 +387,8 @@ where
     SPI: Instance,
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
+    Word: PrimInt + Into<u32> + 'static,
+    u32: AsPrimitive<Word>,
 {
 }
 
@@ -392,6 +397,8 @@ where
     SPI: Instance,
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
+    Word: PrimInt + Into<u32> + 'static,
+    u32: AsPrimitive<Word>,
 {
 }
 
