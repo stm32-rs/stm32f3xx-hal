@@ -28,7 +28,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 - Add missing ADC channels ([#337])
-- Add many `#[must_use]` instances ([#346])
 
 ### Fixed
 
