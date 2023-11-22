@@ -82,6 +82,7 @@ impl Rtc {
     }
 
     /// Reads current hour format selection
+    #[must_use]
     pub fn is_24h_fmt(&self) -> bool {
         self.rtc.cr.read().fmt().bit()
     }
@@ -100,6 +101,7 @@ impl Rtc {
     }
 
     /// Release the RTC peripheral
+    #[must_use]
     pub fn free(self) -> RTC {
         // TODO(Sh3Rm4n): Disable peripheral before releasing it.
         self.rtc
@@ -130,39 +132,37 @@ impl Rtc {
     }
 }
 
+// TODO: check conditional compilation because of Chrono
 impl DateTimeAccess for Rtc {
     type Error = Error;
 
     fn set_datetime(&mut self, date: &NaiveDateTime) -> Result<(), Self::Error> {
-        if date.year() < 1970 {
-            return Err(Error::InvalidInputData);
-        }
-
         self.set_24h_fmt();
-        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32)?;
-        let (mt, mu) = bcd2_encode(date.month())?;
-        let (dt, du) = bcd2_encode(date.day())?;
+        let (year_tens, year_units) =
+            bcd2_encode(u32::try_from(date.year() - 1970).map_err(|_| Error::InvalidInputData)?)?;
+        let (month_tens, month_units) = bcd2_encode(date.month())?;
+        let (day_tens, day_units) = bcd2_encode(date.day())?;
 
-        let (ht, hu) = bcd2_encode(date.hour())?;
-        let (mnt, mnu) = bcd2_encode(date.minute())?;
-        let (st, su) = bcd2_encode(date.second())?;
+        let (hour_tens, hour_units) = bcd2_encode(date.hour())?;
+        let (minutes_tens, minutes_units) = bcd2_encode(date.minute())?;
+        let (second_tens, second_units) = bcd2_encode(date.second())?;
 
         self.rtc.dr.write(|w| {
-            w.dt().bits(dt);
-            w.du().bits(du);
-            w.mt().bit(mt > 0);
-            w.mu().bits(mu);
-            w.yt().bits(yt);
-            w.yu().bits(yu)
+            w.dt().bits(day_tens);
+            w.du().bits(day_units);
+            w.mt().bit(month_tens > 0);
+            w.mu().bits(month_units);
+            w.yt().bits(year_tens);
+            w.yu().bits(year_units)
         });
 
         self.rtc.tr.write(|w| {
-            w.ht().bits(ht);
-            w.hu().bits(hu);
-            w.mnt().bits(mnt);
-            w.mnu().bits(mnu);
-            w.st().bits(st);
-            w.su().bits(su);
+            w.ht().bits(hour_tens);
+            w.hu().bits(hour_units);
+            w.mnt().bits(minutes_tens);
+            w.mnu().bits(minutes_units);
+            w.st().bits(second_tens);
+            w.su().bits(second_units);
             w.pm().clear_bit()
         });
 
@@ -188,20 +188,21 @@ impl DateTimeAccess for Rtc {
 }
 
 impl Rtcc for Rtc {
-    /// set time using NaiveTime (ISO 8601 time without timezone)
+    /// Set time using `NaiveTime` (ISO 8601 time without timezone)
+    ///
     /// Hour format is 24h
     fn set_time(&mut self, time: &NaiveTime) -> Result<(), Self::Error> {
         self.set_24h_fmt();
-        let (ht, hu) = bcd2_encode(time.hour())?;
-        let (mnt, mnu) = bcd2_encode(time.minute())?;
-        let (st, su) = bcd2_encode(time.second())?;
+        let (hour_tens, hour_units) = bcd2_encode(time.hour())?;
+        let (minutes_tens, minutes_units) = bcd2_encode(time.minute())?;
+        let (seconds_tens, seconds_units) = bcd2_encode(time.second())?;
         self.rtc.tr.write(|w| {
-            w.ht().bits(ht);
-            w.hu().bits(hu);
-            w.mnt().bits(mnt);
-            w.mnu().bits(mnu);
-            w.st().bits(st);
-            w.su().bits(su);
+            w.ht().bits(hour_tens);
+            w.hu().bits(hour_units);
+            w.mnt().bits(minutes_tens);
+            w.mnu().bits(minutes_units);
+            w.st().bits(seconds_tens);
+            w.su().bits(seconds_units);
             w.pm().clear_bit()
         });
 
@@ -212,8 +213,11 @@ impl Rtcc for Rtc {
         if seconds > 59 {
             return Err(Error::InvalidInputData);
         }
-        let (st, su) = bcd2_encode(seconds as u32)?;
-        self.modify(|rtc| rtc.tr.modify(|_, w| w.st().bits(st).su().bits(su)));
+        let (seconds_tens, seconds_units) = bcd2_encode(u32::from(seconds))?;
+        self.modify(|rtc| {
+            rtc.tr
+                .modify(|_, w| w.st().bits(seconds_tens).su().bits(seconds_units));
+        });
 
         Ok(())
     }
@@ -222,20 +226,25 @@ impl Rtcc for Rtc {
         if minutes > 59 {
             return Err(Error::InvalidInputData);
         }
-        let (mnt, mnu) = bcd2_encode(minutes as u32)?;
-        self.modify(|rtc| rtc.tr.modify(|_, w| w.mnt().bits(mnt).mnu().bits(mnu)));
+        let (minutes_tens, minutes_units) = bcd2_encode(u32::from(minutes))?;
+        self.modify(|rtc| {
+            rtc.tr
+                .modify(|_, w| w.mnt().bits(minutes_tens).mnu().bits(minutes_units));
+        });
 
         Ok(())
     }
 
     fn set_hours(&mut self, hours: Hours) -> Result<(), Self::Error> {
-        let (ht, hu) = hours_to_register(hours)?;
+        let (hour_tens, hour_units) = hours_to_register(hours)?;
         match hours {
-            Hours::H24(_h) => self.set_24h_fmt(),
-            Hours::AM(_h) | Hours::PM(_h) => self.set_12h_fmt(),
+            Hours::H24(_) => self.set_24h_fmt(),
+            Hours::AM(_) | Hours::PM(_) => self.set_12h_fmt(),
         }
 
-        self.rtc.tr.modify(|_, w| w.ht().bits(ht).hu().bits(hu));
+        self.rtc
+            .tr
+            .modify(|_, w| w.ht().bits(hour_tens).hu().bits(hour_units));
 
         Ok(())
     }
@@ -253,8 +262,11 @@ impl Rtcc for Rtc {
         if !(1..=31).contains(&day) {
             return Err(Error::InvalidInputData);
         }
-        let (dt, du) = bcd2_encode(day as u32)?;
-        self.modify(|rtc| rtc.dr.modify(|_, w| w.dt().bits(dt).du().bits(du)));
+        let (day_tens, day_units) = bcd2_encode(u32::from(day))?;
+        self.modify(|rtc| {
+            rtc.dr
+                .modify(|_, w| w.dt().bits(day_tens).du().bits(day_units));
+        });
 
         Ok(())
     }
@@ -263,8 +275,11 @@ impl Rtcc for Rtc {
         if !(1..=12).contains(&month) {
             return Err(Error::InvalidInputData);
         }
-        let (mt, mu) = bcd2_encode(month as u32)?;
-        self.modify(|rtc| rtc.dr.modify(|_, w| w.mt().bit(mt > 0).mu().bits(mu)));
+        let (month_tens, month_units) = bcd2_encode(u32::from(month))?;
+        self.modify(|rtc| {
+            rtc.dr
+                .modify(|_, w| w.mt().bit(month_tens > 0).mu().bits(month_units));
+        });
 
         Ok(())
     }
@@ -273,29 +288,26 @@ impl Rtcc for Rtc {
         if !(1970..=2038).contains(&year) {
             return Err(Error::InvalidInputData);
         }
-        let (yt, yu) = bcd2_encode(year as u32)?;
-        self.modify(|rtc| rtc.dr.modify(|_, w| w.yt().bits(yt).yu().bits(yu)));
+        let (year_tens, yu) = bcd2_encode(u32::from(year))?;
+        self.modify(|rtc| rtc.dr.modify(|_, w| w.yt().bits(year_tens).yu().bits(yu)));
 
         Ok(())
     }
 
-    /// Set the date using NaiveDate (ISO 8601 calendar date without timezone).
-    /// WeekDay is set using the `set_weekday` method
+    /// Set the date using `NaiveDate` (ISO 8601 calendar date without timezone).
+    /// `WeekDay` is set using the `set_weekday` method
     fn set_date(&mut self, date: &NaiveDate) -> Result<(), Self::Error> {
-        if date.year() < 1970 {
-            return Err(Error::InvalidInputData);
-        }
-
-        let (yt, yu) = bcd2_encode((date.year() - 1970) as u32)?;
-        let (mt, mu) = bcd2_encode(date.month())?;
-        let (dt, du) = bcd2_encode(date.day())?;
+        let (year_tens, yu) =
+            bcd2_encode(u32::try_from(date.year() - 1970).map_err(|_| Error::InvalidInputData)?)?;
+        let (month_tens, month_units) = bcd2_encode(date.month())?;
+        let (day_tens, day_units) = bcd2_encode(date.day())?;
 
         self.rtc.dr.write(|w| {
-            w.dt().bits(dt);
-            w.du().bits(du);
-            w.mt().bit(mt > 0);
-            w.mu().bits(mu);
-            w.yt().bits(yt);
+            w.dt().bits(day_tens);
+            w.du().bits(day_units);
+            w.mt().bit(month_tens > 0);
+            w.mu().bits(month_units);
+            w.yt().bits(year_tens);
             w.yu().bits(yu)
         });
 
@@ -305,25 +317,26 @@ impl Rtcc for Rtc {
     fn seconds(&mut self) -> Result<u8, Self::Error> {
         let tr = self.rtc.tr.read();
         let seconds = bcd2_decode(tr.st().bits(), tr.su().bits());
-        Ok(seconds as u8)
+        u8::try_from(seconds).map_err(|_| Error::InvalidRtcData)
     }
 
     fn minutes(&mut self) -> Result<u8, Self::Error> {
         let tr = self.rtc.tr.read();
         let minutes = bcd2_decode(tr.mnt().bits(), tr.mnu().bits());
-        Ok(minutes as u8)
+        u8::try_from(minutes).map_err(|_| Error::InvalidRtcData)
     }
 
     fn hours(&mut self) -> Result<Hours, Self::Error> {
         let tr = self.rtc.tr.read();
         let hours = bcd2_decode(tr.ht().bits(), tr.hu().bits());
+        let hours = u8::try_from(hours).map_err(|_| Error::InvalidRtcData)?;
         if self.is_24h_fmt() {
-            return Ok(Hours::H24(hours as u8));
+            return Ok(Hours::H24(hours));
         }
         if !tr.pm().bit() {
-            return Ok(Hours::AM(hours as u8));
+            return Ok(Hours::AM(hours));
         }
-        Ok(Hours::PM(hours as u8))
+        Ok(Hours::PM(hours))
     }
 
     fn time(&mut self) -> Result<NaiveTime, Self::Error> {
@@ -339,26 +352,26 @@ impl Rtcc for Rtc {
     fn weekday(&mut self) -> Result<u8, Self::Error> {
         let dr = self.rtc.dr.read();
         let weekday = bcd2_decode(dr.wdu().bits(), 0x00);
-        Ok(weekday as u8)
+        u8::try_from(weekday).map_err(|_| Error::InvalidRtcData)
     }
 
     fn day(&mut self) -> Result<u8, Self::Error> {
         let dr = self.rtc.dr.read();
         let day = bcd2_decode(dr.dt().bits(), dr.du().bits());
-        Ok(day as u8)
+        u8::try_from(day).map_err(|_| Error::InvalidRtcData)
     }
 
     fn month(&mut self) -> Result<u8, Self::Error> {
         let dr = self.rtc.dr.read();
-        let mt = u8::from(dr.mt().bit());
-        let month = bcd2_decode(mt, dr.mu().bits());
-        Ok(month as u8)
+        let month_tens = u8::from(dr.mt().bit());
+        let month = bcd2_decode(month_tens, dr.mu().bits());
+        u8::try_from(month).map_err(|_| Error::InvalidRtcData)
     }
 
     fn year(&mut self) -> Result<u16, Self::Error> {
         let dr = self.rtc.dr.read();
         let year = bcd2_decode(dr.yt().bits(), dr.yu().bits());
-        Ok(year as u16)
+        u16::try_from(year).map_err(|_| Error::InvalidRtcData)
     }
 
     fn date(&mut self) -> Result<NaiveDate, Self::Error> {
@@ -394,14 +407,14 @@ fn bcd2_encode(word: u32) -> Result<(u8, u8), Error> {
 }
 
 fn bcd2_decode(fst: u8, snd: u8) -> u32 {
-    (fst * 10 + snd).into()
+    u32::from(fst) * 10 + u32::from(snd)
 }
 
 fn hours_to_register(hours: Hours) -> Result<(u8, u8), Error> {
     match hours {
-        Hours::H24(h) => Ok(bcd2_encode(h as u32))?,
-        Hours::AM(h) => Ok(bcd2_encode((h - 1) as u32))?,
-        Hours::PM(h) => Ok(bcd2_encode((h + 11) as u32))?,
+        Hours::H24(h) => Ok(bcd2_encode(u32::from(h)))?,
+        Hours::AM(h) => Ok(bcd2_encode(u32::from(h - 1)))?,
+        Hours::PM(h) => Ok(bcd2_encode(u32::from(h + 11)))?,
     }
 }
 

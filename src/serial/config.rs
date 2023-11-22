@@ -87,18 +87,21 @@ pub struct Config {
 
 impl Config {
     /// Sets the given baudrate.
+    #[must_use]
     pub fn baudrate(mut self, baudrate: impl Into<Baud>) -> Self {
         self.baudrate = baudrate.into();
         self
     }
 
     /// Sets the given parity.
+    #[must_use]
     pub fn parity(mut self, parity: Parity) -> Self {
         self.parity = parity;
         self
     }
 
     /// Sets the stop bits to `stopbits`.
+    #[must_use]
     pub fn stopbits(mut self, stopbits: StopBits) -> Self {
         self.stopbits = stopbits;
         self

@@ -32,6 +32,6 @@ impl Dac {
             unsafe {
                 w.dacc1dhr().bits(data)
             }
-        })
+        });
     }
 }

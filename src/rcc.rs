@@ -61,14 +61,16 @@ use crate::pac::{
     RCC,
 };
 
-use core::convert::TryInto;
-
 use crate::flash::ACR;
-use crate::time::rate::*;
+use crate::time::{
+    fixed_point::FixedPoint,
+    rate::{Hertz, Megahertz},
+};
 
 impl crate::private::Sealed for RCC {}
 
 /// Extension trait that constrains the []`RCC`] peripheral
+#[allow(clippy::module_name_repetitions)]
 pub trait RccExt: crate::private::Sealed {
     /// Constrains the [`RCC`] peripheral.
     ///
@@ -186,6 +188,7 @@ bus_struct! {
 }
 
 /// Bus associated to peripheral
+#[allow(clippy::module_name_repetitions)]
 pub trait RccBus: crate::Sealed {
     /// The underlying bus peripheral
     type Bus;
@@ -352,13 +355,15 @@ mod usb_clocking {
     }
 }
 
-/// Backup Domain Control register (RCC_BDCR)
+/// Backup Domain Control register (`RCC_BDCR`)
 pub struct BDCR {
     _0: (),
 }
 
 impl BDCR {
     #[allow(unused)]
+    #[allow(clippy::unused_self)]
+    #[must_use]
     pub(crate) fn bdcr(&mut self) -> &rcc::BDCR {
         // NOTE(unsafe) this proxy grants exclusive access to this register
         unsafe { &(*RCC::ptr()).bdcr }
@@ -474,6 +479,7 @@ impl CFGR {
     /// # Panics
     ///
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    #[must_use]
     pub fn use_hse(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.hse = Some(freq.integer());
@@ -481,6 +487,7 @@ impl CFGR {
     }
 
     /// Set this to disallow bypass the PLLCLK for the systemclock generation.
+    #[must_use]
     pub fn use_pll(mut self) -> Self {
         self.pll_bypass = false;
         self
@@ -492,6 +499,7 @@ impl CFGR {
     /// `OSC_OUT` pin is free and can be used as GPIO.
     ///
     /// No effect if `HSE` is not enabled.
+    #[must_use]
     pub fn bypass_hse(mut self) -> Self {
         self.hse_bypass = true;
         self
@@ -503,6 +511,7 @@ impl CFGR {
     /// when `HSE` clock failure is detected.
     ///
     /// No effect if `HSE` is not enabled.
+    #[must_use]
     pub fn enable_css(mut self) -> Self {
         self.css = true;
         self
@@ -513,6 +522,7 @@ impl CFGR {
     /// # Panics
     ///
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    #[must_use]
     pub fn hclk(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.hclk = Some(freq.integer());
@@ -529,6 +539,7 @@ impl CFGR {
     /// # Panics
     ///
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    #[must_use]
     pub fn pclk1(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.pclk1 = Some(freq.integer());
@@ -551,6 +562,7 @@ impl CFGR {
     /// # Panics
     ///
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    #[must_use]
     pub fn pclk2(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.pclk2 = Some(freq.integer());
@@ -576,6 +588,7 @@ impl CFGR {
     /// # Panics
     ///
     /// Panics if conversion from `Megahertz` to `Hertz` produces a value greater then `u32::MAX`.
+    #[must_use]
     pub fn sysclk(mut self, freq: Megahertz) -> Self {
         let freq: Hertz = crate::expect!(freq.try_into(), "ConversionError");
         self.sysclk = Some(freq.integer());
@@ -644,7 +657,9 @@ impl CFGR {
         };
 
         // Convert into register bit field types
+        #[allow(clippy::cast_possible_truncation)]
         let pll_mul_bits = into_pll_mul(pll_mul as u8);
+        #[allow(clippy::cast_possible_truncation)]
         let pll_div_bits = pll_div.map(|pll_div| into_pre_div(pll_div as u8));
 
         (
@@ -709,7 +724,9 @@ impl CFGR {
         };
 
         // Convert into register bit field types
+        #[allow(clippy::cast_possible_truncation)]
         let pll_mul_bits = into_pll_mul(pll_mul as u8);
+        #[allow(clippy::cast_possible_truncation)]
         let pll_div_bits = into_pre_div(pll_div as u8);
 
         (
@@ -722,7 +739,7 @@ impl CFGR {
         )
     }
 
-    /// Get the system clock, the system clock source and the pll_options, if needed.
+    /// Get the system clock, the system clock source and the `pll_options`, if needed.
     ///
     /// The system clock source is determined by the chosen system clock and the provided hardware
     /// clock.
@@ -942,31 +959,37 @@ impl defmt::Format for Clocks {
 // With that in place, some places of macro magic are not needed anymore.
 impl Clocks {
     /// Returns the frequency of the AHB
+    #[must_use]
     pub fn hclk(&self) -> Hertz {
         self.hclk
     }
 
     /// Returns the frequency of the APB1
+    #[must_use]
     pub fn pclk1(&self) -> Hertz {
         self.pclk1
     }
 
     /// Returns the frequency of the APB2
+    #[must_use]
     pub fn pclk2(&self) -> Hertz {
         self.pclk2
     }
 
     /// Returns the prescaler of the APB1
+    #[must_use]
     pub fn ppre1(&self) -> u8 {
         self.ppre1
     }
 
     /// Returns the prescaler of the APB2
+    #[must_use]
     pub fn ppre2(&self) -> u8 {
         self.ppre2
     }
 
     /// Returns the system (core) frequency
+    #[must_use]
     pub fn sysclk(&self) -> Hertz {
         self.sysclk
     }
@@ -974,6 +997,7 @@ impl Clocks {
     /// Returns the PLL clock if configured, else it returns `None`.
     ///
     /// The PLL clock is a source of the system clock, but it is not necessarily configured to be one.
+    #[must_use]
     pub fn pllclk(&self) -> Option<Hertz> {
         if self.pll_bypass {
             None
@@ -993,6 +1017,7 @@ impl Clocks {
     /// overrun/underrun problems. [RM0316 32.5.2][RM0316]
     ///
     /// [RM0316]: https://www.st.com/resource/en/reference_manual/dm00043574.pdf
+    #[must_use]
     pub fn usbclk_valid(&self) -> bool {
         self.usbclk_valid
     }

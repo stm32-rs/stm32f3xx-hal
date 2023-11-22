@@ -14,6 +14,7 @@ macro_rules! define_ptr_type {
             }
 
             /// Returns a wrapped reference to the value in flash memory
+            #[must_use]
             pub fn get() -> &'static Self {
                 unsafe { &*Self::ptr() }
             }
@@ -71,33 +72,40 @@ fn bcd_to_num(bcd_num: u16) -> u16 {
 
 impl Uid {
     /// X coordinate on wafer in BCD format
+    #[must_use]
     pub fn x_bcd(&self) -> u16 {
         self.x
     }
 
     /// X coordinate on wafer
+    #[must_use]
     pub fn x(&self) -> u16 {
         bcd_to_num(self.x)
     }
 
     /// Y coordinate on wafer in BCD format
+    #[must_use]
     pub fn y_bcd(&self) -> u16 {
         self.y
     }
 
     /// Y coordinate on wafer
+    #[must_use]
     pub fn y(&self) -> u16 {
         bcd_to_num(self.y)
     }
 
     /// Wafer number
+    #[must_use]
     pub fn wafer_number(&self) -> u8 {
         self.waf
     }
 
     /// Lot number
+    #[must_use]
     pub fn lot_number(&self) -> &str {
         // Lets ignore the last byte, because it is a '\0' character.
+        // TODO: change to core::ffi::CStr
         unsafe { str::from_utf8_unchecked(&self.lot[..6]) }
     }
 }
@@ -110,11 +118,13 @@ define_ptr_type!(FlashSize, 0x1FFF_F7CC);
 
 impl FlashSize {
     /// Read flash size in kilobytes
+    #[must_use]
     pub fn kilo_bytes(&self) -> u16 {
         self.0
     }
 
     /// Read flash size in bytes
+    #[must_use]
     pub fn bytes(&self) -> usize {
         usize::from(self.kilo_bytes()) * 1024
     }

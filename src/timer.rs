@@ -24,6 +24,7 @@ use crate::time::{duration, fixed_point::FixedPoint, rate::Hertz};
 mod interrupts;
 
 /// A monotonic nondecreasing timer.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy)]
 pub struct MonoTimer {
     frequency: Hertz,
@@ -55,11 +56,13 @@ impl MonoTimer {
     }
 
     /// Returns the frequency at which the monotonic timer is operating at
+    #[must_use]
     pub fn frequency(&self) -> Hertz {
         self.frequency
     }
 
     /// Returns an `Instant` corresponding to "now"
+    #[must_use]
     pub fn now(&self) -> Instant {
         Instant {
             now: DWT::cycle_count(),
@@ -76,6 +79,7 @@ pub struct Instant {
 
 impl Instant {
     /// Ticks elapsed since the `Instant` was created
+    #[must_use]
     pub fn elapsed(self) -> u32 {
         DWT::cycle_count().wrapping_sub(self.now)
     }
@@ -110,7 +114,7 @@ where
         TIM::enable(apb);
         TIM::reset(apb);
 
-        Timer { clocks, tim }
+        Timer { tim, clocks }
     }
 
     /// Stops the timer
@@ -304,7 +308,7 @@ where
         self.clear_event(Event::Update);
 
         if is_update_interrupt_active {
-            self.configure_interrupt(Event::Update, true)
+            self.configure_interrupt(Event::Update, true);
         }
 
         // start counter
@@ -314,11 +318,11 @@ where
     /// Wait until [`Event::Update`] / the timer has elapsed
     /// and than clear the event.
     fn wait(&mut self) -> nb::Result<(), Void> {
-        if !self.tim.is_sr_uief_set() {
-            Err(nb::Error::WouldBlock)
-        } else {
+        if self.tim.is_sr_uief_set() {
             self.clear_event(Event::Update);
             Ok(())
+        } else {
+            Err(nb::Error::WouldBlock)
         }
     }
 }

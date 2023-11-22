@@ -16,7 +16,7 @@ use crate::time::rate::Generic;
 /// let config = Config::default();
 /// ````
 ///
-/// [`Spi`](super::Spi) defaults to [`spi::MODE_0`] and a frequency of 1 MHz.
+/// [`Spi`](super::Spi) defaults to [`spi::MODE_0`] and a frequency of 1 `MHz`.
 ///
 /// ```
 /// # use stm32f3xx_hal::spi::config::Config;
@@ -46,11 +46,13 @@ pub struct Config {
 
 impl Config {
     /// Set the operating frequency of the SPI
+    #[must_use]
     pub fn frequency(mut self, frequency: impl Into<Generic<u32>>) -> Self {
         self.frequency = frequency.into();
         self
     }
     /// Set the Operation Mode
+    #[must_use]
     pub fn mode(mut self, mode: Mode) -> Self {
         self.mode = mode;
         self
@@ -71,7 +73,7 @@ impl fmt::Debug for Config {
 
         f.debug_struct("Config")
             .field("frequency", &format_args!("{:?}", self.frequency))
-            .field("mode", &format_args!("MODE_{}", mode))
+            .field("mode", &format_args!("MODE_{mode}"))
             .finish()
     }
 }
