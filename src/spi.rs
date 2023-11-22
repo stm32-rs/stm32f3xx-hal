@@ -354,6 +354,8 @@ where
             nb::Error::Other(Error::Crc)
         } else if sr.rxne().is_not_empty() {
             let read_ptr = core::ptr::addr_of!(self.spi.dr) as *const Word;
+            // SAFETY: Read from register owned by this Spi struct, which we have mutualy exclusive
+            // access to
             let value = unsafe { core::ptr::read_volatile(read_ptr) };
             return Ok(value);
         } else {
@@ -372,7 +374,8 @@ where
             nb::Error::Other(Error::Crc)
         } else if sr.txe().is_empty() {
             let write_ptr = core::ptr::addr_of!(self.spi.dr) as *mut Word;
-            // NOTE(unsafe) write to register owned by this Spi struct
+            // SAFETY: Write to register owned by this Spi struct, which we have mutualy exclusive
+            // access to
             unsafe { core::ptr::write_volatile(write_ptr, word) };
             return Ok(());
         } else {
