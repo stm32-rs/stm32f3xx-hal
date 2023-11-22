@@ -167,13 +167,15 @@ macro_rules! bus_struct {
 
                 #[allow(unused)]
                 fn enr(&self) -> &rcc::$EN {
-                    // NOTE(unsafe) this proxy grants exclusive access to this register
+                    // FIXME: this should still be shared carefully
+                    // SAFETY: this proxy grants exclusive access to this register
                     unsafe { &(*RCC::ptr()).$en }
                 }
 
                 #[allow(unused)]
                 fn rstr(&self) -> &rcc::$RST {
-                    // NOTE(unsafe) this proxy grants exclusive access to this register
+                    // FIXME: this should still be shared carefully
+                    // SAFETY: this proxy grants exclusive access to this register
                     unsafe { &(*RCC::ptr()).$rst }
                 }
             }
@@ -365,7 +367,7 @@ impl BDCR {
     #[allow(clippy::unused_self)]
     #[must_use]
     pub(crate) fn bdcr(&mut self) -> &rcc::BDCR {
-        // NOTE(unsafe) this proxy grants exclusive access to this register
+        // SAFETY: this proxy grants exclusive access to this register
         unsafe { &(*RCC::ptr()).bdcr }
     }
 }
@@ -860,6 +862,8 @@ impl CFGR {
 
         let (usbpre, usbclk_valid) = usb_clocking::is_valid(sysclk, self.hse, pclk1, &pll_config);
 
+        // SAFETY: RCC ptr is guaranteed to be valid. This funciton is the first, which uses the
+        // RCC peripheral: RCC.constrain() -> Rcc -> CFGR
         let rcc = unsafe { &*RCC::ptr() };
 
         // enable HSE and wait for it to be ready

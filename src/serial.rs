@@ -367,7 +367,7 @@ where
         crate::assert!(brr >= 16, "impossible baud rate");
         usart.brr.write(|w| {
             w.brr().bits(
-                // NOTE(unsafe): safe because of assert before
+                // SAFETY: safe because of assert before
                 unsafe { u16::try_from(brr).unwrap_unchecked() },
             )
         });
@@ -867,7 +867,7 @@ where
         B: dma::WriteBuffer<Word = u8> + 'static,
         C: dma::Channel,
     {
-        // NOTE(unsafe) usage of a valid peripheral address
+        // SAFETY: RDR is valid peripheral address, safe to dereference and pass to the DMA
         unsafe {
             channel.set_peripheral_address(
                 core::ptr::addr_of!(self.usart.rdr) as u32,
@@ -885,7 +885,7 @@ where
         B: dma::ReadBuffer<Word = u8> + 'static,
         C: dma::Channel,
     {
-        // NOTE(unsafe) usage of a valid peripheral address
+        // SAFETY: TDR is valid peripheral address, safe to dereference and pass to the DMA
         unsafe {
             channel.set_peripheral_address(
                 core::ptr::addr_of!(self.usart.tdr) as u32,
@@ -1021,7 +1021,7 @@ macro_rules! usart_var_clock {
         $(
             impl Instance for $USARTX {
                 fn clock(clocks: &Clocks) -> Hertz {
-                    // NOTE(unsafe): atomic read with no side effects
+                    // SAFETY: The read instruction of the RCC.cfgr3 register should be atomic
                     match unsafe {(*RCC::ptr()).cfgr3.read().$usartXsw().variant()} {
                         USART1SW_A::Pclk => <$USARTX as rcc::BusClock>::clock(clocks),
                         USART1SW_A::Hsi => crate::rcc::HSI,

@@ -27,7 +27,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Remove `Serial::split`, which possibly creates two mutable references two
   one Serial instance, which could've caused UB. The use case of this function
   was hard to find out anyway. ([#351])
-  was hard to find out anyway.
 
 ### Added
 
@@ -45,7 +44,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   implementation, but it is hard to maintain the current implementation
   and not easy to verify if it is really a safe implementation.
   It is also not consistent with the rest of the crates API. ([#352])
-  It is also not consistent with the rest of the crates API.
 
 ## [v0.9.2] - 2023-02-20
 

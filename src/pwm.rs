@@ -155,6 +155,10 @@
   [examples/pwm.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/pwm.rs
 */
 
+// FIXME: this PWM module needs refactoring to ensure that no UB / race conditiotns is caused by unsafe acces to
+// mmaped registers.
+#![allow(clippy::undocumented_unsafe_blocks)]
+
 use core::marker::PhantomData;
 
 use crate::{

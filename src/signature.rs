@@ -4,22 +4,22 @@
 use core::fmt;
 use core::str;
 
+const UID_PTR: u32 = 0x1FFF_F7AC;
+
 use core::convert::TryInto;
 
-macro_rules! define_ptr_type {
-    ($name: ident, $ptr: expr) => {
-        impl $name {
-            fn ptr() -> *const Self {
-                $ptr as *const _
-            }
+impl Uid {
+    fn ptr() -> *const Self {
+        UID_PTR as *const _
+    }
 
-            /// Returns a wrapped reference to the value in flash memory
-            #[must_use]
-            pub fn get() -> &'static Self {
-                unsafe { &*Self::ptr() }
-            }
-        }
-    };
+    /// Returns a wrapped reference to the value in flash memory
+    #[must_use]
+    pub fn get() -> &'static Self {
+        // SAFETY: The Uid pointer is definitly correct and as it is only ever shared immutable
+        // mutliple references to it are fine.
+        unsafe { &*Self::ptr() }
+    }
 }
 
 /// Uniqure Device ID register
@@ -30,7 +30,6 @@ pub struct Uid {
     waf: u8,
     lot: [u8; 7],
 }
-define_ptr_type!(Uid, 0x1FFF_F7AC);
 
 #[cfg(feature = "defmt")]
 impl defmt::Format for Uid {
@@ -106,6 +105,7 @@ impl Uid {
     pub fn lot_number(&self) -> &str {
         // Lets ignore the last byte, because it is a '\0' character.
         // TODO: change to core::ffi::CStr
+        // SAFETY: It is assumed that the lot number only contains valid ASCII characters
         unsafe { str::from_utf8_unchecked(&self.lot[..6]) }
     }
 }
@@ -114,7 +114,21 @@ impl Uid {
 #[derive(Debug)]
 #[repr(C)]
 pub struct FlashSize(u16);
-define_ptr_type!(FlashSize, 0x1FFF_F7CC);
+
+const FLASH_PTR: u32 = 0x1FFF_F7CC;
+impl FlashSize {
+    fn ptr() -> *const Self {
+        FLASH_PTR as *const _
+    }
+
+    /// Returns a wrapped reference to the value in flash memory
+    #[must_use]
+    pub fn get() -> &'static Self {
+        // SAFETY: The FlashSize pointer is definitly correct and as it is only ever shared immutable
+        // mutliple references to it are fine.
+        unsafe { &*Self::ptr() }
+    }
+}
 
 impl FlashSize {
     /// Read flash size in kilobytes
