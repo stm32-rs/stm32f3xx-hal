@@ -6,7 +6,7 @@
 //!
 //! [examples/spi.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/spi.rs
 
-use core::{fmt, marker::PhantomData, ops::Deref, ptr};
+use core::{fmt, marker::PhantomData, ops::Deref};
 
 use crate::hal::blocking::spi;
 use crate::hal::spi::FullDuplex;
