@@ -353,8 +353,9 @@ where
         } else if sr.crcerr().is_no_match() {
             nb::Error::Other(Error::Crc)
         } else if sr.rxne().is_not_empty() {
-            // NOTE(unsafe) read from register owned by this Spi struct
-            return Ok(self.spi.dr.read().bits().as_());
+            let read_ptr = core::ptr::addr_of!(self.spi.dr) as *const Word;
+            let value = unsafe { core::ptr::read_volatile(read_ptr) };
+            return Ok(value);
         } else {
             nb::Error::WouldBlock
         })
@@ -370,8 +371,9 @@ where
         } else if sr.crcerr().is_no_match() {
             nb::Error::Other(Error::Crc)
         } else if sr.txe().is_empty() {
-            // NOTE(unsafe): this is the data register, where unsafe writes are ok.
-            self.spi.dr.write(|w| unsafe { w.bits(word.into()) });
+            let write_ptr = core::ptr::addr_of!(self.spi.dr) as *mut Word;
+            // NOTE(unsafe) write to register owned by this Spi struct
+            unsafe { core::ptr::write_volatile(write_ptr, word) };
             return Ok(());
         } else {
             nb::Error::WouldBlock
