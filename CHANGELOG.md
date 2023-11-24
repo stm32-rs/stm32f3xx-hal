@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Add missing ADC channels ([#337])
 - Add many `#[must_use]` instances ([#347])
+- Add missing ADC channels ([#345])
 
 ### Fixed
 
@@ -598,6 +599,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#345]: https://github.com/stm32-rs/stm32f3xx-hal/pull/345
 [#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
 [#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347
 [#340]: https://github.com/stm32-rs/stm32f3xx-hal/pull/340
