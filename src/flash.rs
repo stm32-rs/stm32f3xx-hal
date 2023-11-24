@@ -7,6 +7,7 @@ use crate::pac::{flash, FLASH};
 impl crate::private::Sealed for FLASH {}
 
 /// Extension trait to constrain the [`FLASH`] peripheral
+#[allow(clippy::module_name_repetitions)]
 pub trait FlashExt: crate::private::Sealed {
     /// Constrains the [`FLASH`] peripheral.
     ///
@@ -38,6 +39,7 @@ pub struct ACR {
 }
 
 impl ACR {
+    #[allow(clippy::unused_self)]
     pub(crate) fn acr(&mut self) -> &flash::ACR {
         // SAFETY: This proxy grants exclusive access to this register
         unsafe { &(*FLASH::ptr()).acr }

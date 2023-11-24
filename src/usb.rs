@@ -16,6 +16,7 @@ use stm32_usbd::UsbPeripheral;
 
 use crate::gpio;
 use crate::gpio::gpioa::{PA11, PA12};
+#[allow(clippy::module_name_repetitions)]
 pub use stm32_usbd::UsbBus;
 
 /// Trait implemented by all pins that can be the "D-" pin for the USB peripheral
@@ -78,7 +79,7 @@ where
 unsafe impl<Dm: DmPin, Dp: DpPin> Sync for Peripheral<Dm, Dp> {}
 
 unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm, Dp> {
-    const REGISTERS: *const () = USB::ptr() as *const ();
+    const REGISTERS: *const () = USB::ptr().cast::<()>();
     const DP_PULL_UP_FEATURE: bool = false;
     const EP_MEMORY: *const () = 0x4000_6000 as _;
     #[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
@@ -107,8 +108,9 @@ unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm,
     }
 }
 
-/// Type of the UsbBus
+/// Type of the `UsbBus`
 #[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
+#[allow(clippy::module_name_repetitions)]
 pub type UsbBusType<Dm = PA11<gpio::AF14<gpio::PushPull>>, Dp = PA12<gpio::AF14<gpio::PushPull>>> =
     UsbBus<Peripheral<Dm, Dp>>;
 

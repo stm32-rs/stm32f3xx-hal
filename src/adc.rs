@@ -4,7 +4,7 @@
 //!
 //! Check out [examples/adc.rs].
 //!
-//! It can be built for the STM32F3Discovery running
+//! It can be built for the `STM32F3Discovery` running
 //! `cargo build --example adc --features=stm32f303xc`
 //!
 //! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/adc.rs
@@ -97,6 +97,7 @@ pub struct TemperatureSensor<ADC> {
 ///
 /// This peripheral can control different parts, like enabling internal sensors (like temperature sensor)
 /// or enable dual channel mode (which is not supported yet.)
+#[allow(clippy::module_name_repetitions)]
 pub struct CommonAdc<ADC> {
     reg: ADC,
 }
@@ -348,7 +349,7 @@ where
     // TODO(Sh3Rm4n): Check against and integrate to DMA
     #[inline]
     pub fn data_register_address(&self) -> u32 {
-        &self.reg.dr as *const _ as u32
+        core::ptr::addr_of!(self.reg.dr) as u32
     }
 
     /// Manually start a conversion sequence.
@@ -629,8 +630,9 @@ where
     /// Get the current configured DMA mode.
     #[inline]
     pub fn dma_mode(&self) -> config::DmaMode {
-        let cfgr = self.reg.cfgr.read();
         use adc1::cfgr::{DMACFG_A, DMAEN_A};
+
+        let cfgr = self.reg.cfgr.read();
         match (cfgr.dmaen().variant(), cfgr.dmacfg().variant()) {
             (DMAEN_A::Disabled, _) => config::DmaMode::Disabled,
             (DMAEN_A::Enabled, DMACFG_A::OneShot) => config::DmaMode::OneShot,
@@ -872,7 +874,7 @@ where
     /// Set the overrun mode
     #[inline]
     pub fn set_overrun_mode(&mut self, mode: config::OverrunMode) {
-        self.reg.cfgr.modify(|_, w| w.ovrmod().variant(mode.into()))
+        self.reg.cfgr.modify(|_, w| w.ovrmod().variant(mode.into()));
     }
 
     /// Sets the sampling resolution.
@@ -1090,7 +1092,7 @@ where
     /// the end of a single conversion of a "slot" is notfied via [`Event::EndOfConversion`].
     #[inline]
     pub fn set_sequence_length(&mut self, sequence: config::Sequence) {
-        self.reg.sqr1.modify(|_, w| w.l().bits(sequence.into()))
+        self.reg.sqr1.modify(|_, w| w.l().bits(sequence.into()));
     }
 
     // TODO(Sh3Rm4n): Implement, when injection mode is implemented.
@@ -1125,16 +1127,16 @@ where
             Event::EndOfSequence => self.reg.ier.modify(|_, w| w.eosie().bit(enable)),
             Event::Overrun => self.reg.ier.modify(|_, w| w.ovrie().bit(enable)),
             Event::InjectedChannelEndOfConversion => {
-                self.reg.ier.modify(|_, w| w.jeocie().bit(enable))
+                self.reg.ier.modify(|_, w| w.jeocie().bit(enable));
             }
             Event::InjectedChannelEndOfSequence => {
-                self.reg.ier.modify(|_, w| w.jeosie().bit(enable))
+                self.reg.ier.modify(|_, w| w.jeosie().bit(enable));
             }
             Event::AnalogWatchdog1 => self.reg.ier.modify(|_, w| w.awd1ie().bit(enable)),
             Event::AnalogWatchdog2 => self.reg.ier.modify(|_, w| w.awd2ie().bit(enable)),
             Event::AnalogWatchdog3 => self.reg.ier.modify(|_, w| w.awd3ie().bit(enable)),
             Event::InjectedContextQueueOverfow => {
-                self.reg.ier.modify(|_, w| w.jqovfie().bit(enable))
+                self.reg.ier.modify(|_, w| w.jqovfie().bit(enable));
             }
         };
     }
@@ -1266,8 +1268,8 @@ where
         #[cfg(feature = "svd-f373")]
         self.set_scan(config::Scan::Disabled);
 
-        let is_eoc_enabled = self.is_interrupt_configured(Event::EndOfConversion);
-        let is_eos_enabled = self.is_interrupt_configured(Event::EndOfSequence);
+        let is_end_of_conversion_enabled = self.is_interrupt_configured(Event::EndOfConversion);
+        let is_end_of_sequence_enabled = self.is_interrupt_configured(Event::EndOfSequence);
         self.disable_interrupt(Event::EndOfConversion);
         self.disable_interrupt(Event::EndOfSequence);
 
@@ -1297,8 +1299,8 @@ where
         }
         self.set_sequence_length(seq_len);
 
-        self.configure_interrupt(Event::EndOfSequence, is_eos_enabled);
-        self.configure_interrupt(Event::EndOfConversion, is_eoc_enabled);
+        self.configure_interrupt(Event::EndOfSequence, is_end_of_sequence_enabled);
+        self.configure_interrupt(Event::EndOfConversion, is_end_of_conversion_enabled);
 
         #[cfg(feature = "svd-f373")]
         self.set_scan(config::Scan::Disabled);

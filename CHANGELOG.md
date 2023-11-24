@@ -22,10 +22,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Deprecate `Toggle` enum and use `Switch` instead for better naming purposes
   ([#334])
   - Add `impl From<Toggle> for Switch` to reduce churn.
+- Fix undefined behavior in SPI implementation ([#346])
+  - Add `num_traits::PrimInt` bounds to `Word`
 
 ### Added
 
 - Add missing ADC channels ([#337])
+- Add many `#[must_use]` instances ([#347])
 
 ### Fixed
 
@@ -595,6 +598,8 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
+[#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347
 [#340]: https://github.com/stm32-rs/stm32f3xx-hal/pull/340
 [#338]: https://github.com/stm32-rs/stm32f3xx-hal/pull/338
 [#337]: https://github.com/stm32-rs/stm32f3xx-hal/pull/337

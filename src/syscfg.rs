@@ -52,7 +52,6 @@ impl fmt::Debug for SysCfg {
 impl Deref for SysCfg {
     type Target = SYSCFG;
 
-    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -80,7 +79,7 @@ impl SysCfg {
     {
         const BITWIDTH: u8 = 4;
         let index = pin.index.index() % 4;
-        let extigpionr = pin.gpio.port_index() as u32;
+        let extigpionr = u32::from(pin.gpio.port_index());
         match pin.index.index() {
             // SAFETY: These are all unguarded writes directly to the register,
             // without leveraging the safety of stm32f3 generated values.

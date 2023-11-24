@@ -84,7 +84,7 @@ pub(crate) const TIM8_TYPES: InterruptTypes = InterruptTypes {
     capture_compare: Interrupt::TIM8_CC,
 };
 
-#[cfg(all(feature = "svd-f303"))]
+#[cfg(feature = "svd-f303")]
 pub(crate) const TIM20_TYPES: InterruptTypes = InterruptTypes {
     r#break: Interrupt::TIM20_BRK,
     update: Interrupt::TIM20_UP,

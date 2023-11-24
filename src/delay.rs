@@ -16,7 +16,7 @@ use crate::rcc::Clocks;
 use crate::time::duration::{Microseconds, Milliseconds};
 use crate::time::fixed_point::FixedPoint;
 
-/// System timer (SysTick) as a delay provider
+/// System timer (`SysTick`) as a delay provider
 pub struct Delay {
     clocks: Clocks,
     syst: SYST,
@@ -39,7 +39,7 @@ impl fmt::Debug for Delay {
 }
 
 impl Delay {
-    /// Configures the system timer (SysTick) as a delay provider
+    /// Configures the system timer (`SysTick`) as a delay provider
     ///
     /// # Limitations
     ///
@@ -49,6 +49,7 @@ impl Delay {
     ///
     /// For accuracy purposes and because this is a blocking, busy-waiting function,
     /// if delays in the second to minute range are needed, use timers instead.
+    #[must_use]
     pub fn new(mut syst: SYST, clocks: Clocks) -> Self {
         syst.set_clock_source(SystClkSource::Core);
 
@@ -68,7 +69,8 @@ impl Delay {
         &mut self.syst
     }
 
-    /// Releases the system timer (SysTick) resource
+    /// Releases the system timer (`SysTick`) resource
+    #[must_use]
     pub fn free(self) -> SYST {
         self.syst
     }
@@ -131,13 +133,13 @@ impl DelayUs<u32> for Delay {
 
 impl DelayUs<u16> for Delay {
     fn delay_us(&mut self, us: u16) {
-        self.delay_us(u32::from(us))
+        self.delay_us(u32::from(us));
     }
 }
 
 impl DelayUs<u8> for Delay {
     fn delay_us(&mut self, us: u8) {
-        self.delay_us(u32::from(us))
+        self.delay_us(u32::from(us));
     }
 }
 
