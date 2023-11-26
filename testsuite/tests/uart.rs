@@ -179,19 +179,6 @@ mod tests {
     }
 
     #[test]
-    fn send_receive_split(state: &mut super::State) {
-        let (mut tx, mut rx) = unwrap!(state.serial1.take()).split();
-
-        for i in TEST_MSG {
-            defmt::unwrap!(nb::block!(tx.write(i)));
-            let c = unwrap!(nb::block!(rx.read()));
-            assert_eq!(c, i);
-        }
-
-        state.serial1 = Some(Serial::join(tx, rx));
-    }
-
-    #[test]
     fn test_overrun(state: &mut super::State) {
         let (usart, pins) = unwrap!(state.serial1.take()).free();
         let mut serial = Serial::new(usart, pins, 115200.Bd(), state.clocks, &mut state.apb2);
@@ -340,20 +327,20 @@ mod tests {
 
     #[test]
     fn send_receive_wrong_baud(state: &mut super::State) {
-        let (mut tx_slow, mut rx_slow) = unwrap!(state.serial_slow.take()).split();
-        let (mut tx_fast, mut rx_fast) = unwrap!(state.serial_fast.take()).split();
+        let mut usart_slow = unwrap!(state.serial_slow.take());
+        let mut usart_fast = unwrap!(state.serial_fast.take());
 
         // provoke an error (framing)
-        unwrap!(nb::block!(tx_slow.write(b'a')));
-        let c = nb::block!(rx_fast.read());
+        unwrap!(nb::block!(usart_slow.write(b'a')));
+        let c = nb::block!(usart_fast.read());
         defmt::debug!("{}", c);
         assert!(matches!(c, Err(Error::Framing)));
 
         // provoke an error (this does not seem to be absolutely deterministic
         // and we've seen multiple error variants in the wild, including
         // receiving the wrong but valid character)
-        unwrap!(nb::block!(tx_fast.write(b'a')));
-        let result = nb::block!(rx_slow.read());
+        unwrap!(nb::block!(usart_fast.write(b'a')));
+        let result = nb::block!(usart_slow.read());
         defmt::debug!("{}", result);
         assert!(match result {
             Ok(c) => {
@@ -364,8 +351,8 @@ mod tests {
             Err(_) => false,
         });
 
-        state.serial_slow = Some(Serial::join(tx_slow, rx_slow));
-        state.serial_fast = Some(Serial::join(tx_fast, rx_fast));
+        state.serial_slow = Some(usart_slow);
+        state.serial_fast = Some(usart_fast);
     }
 
     // TODO: Currently, this is a limited test, just to see, that
