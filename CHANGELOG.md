@@ -35,6 +35,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Fix wrong timer frequency calculation and unexpected panics ([#338])
 
+### Changed
+
+- The PWM implementation was deprecated. There is not yet an alternative
+  implementation, but it is hard to maintain the current implementation
+  and not easy to verify if it is really a safe implementation.
+  It is also not consistent with the rest of the crates API. ([#352])
+
 ## [v0.9.2] - 2023-02-20
 
 ### Added
@@ -599,6 +606,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#352]: https://github.com/stm32-rs/stm32f3xx-hal/pull/352
 [#345]: https://github.com/stm32-rs/stm32f3xx-hal/pull/345
 [#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
 [#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347
