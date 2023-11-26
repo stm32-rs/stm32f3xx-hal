@@ -54,24 +54,24 @@ defmt-test = "0.3.1"
 panic-probe = "0.3.1"
 panic-rtt-target = { version = "0.1.2", features = ["cortex-m"] }
 panic-semihosting = "0.6.0"
-rtt-target = { version = "0.3.1", features = ["cortex-m"] }
+rtt-target = { version = "0.4.0" }
 systick-monotonic = "1.0"
-usb-device = "0.2.9"
-usbd-serial = "0.1.1"
+usb-device = "0.3.1"
+usbd-serial = "0.2.0"
 
 [build-dependencies]
 slice-group-by = "0.3.1"
 
 [features]
-can = ["bxcan"]
+can = ["dep:bxcan"]
 default = ["rt", "ld", "usb", "can", "rtc", "enumset"]
-defmt-debug = ["defmt"]
+defmt-debug = ["dep:defmt"]
 
-defmt-default = ["defmt"]
-defmt-error = ["defmt"]
-defmt-info = ["defmt"]
-defmt-trace = ["defmt"]
-defmt-warn = ["defmt"]
+defmt-default = ["dep:defmt"]
+defmt-error = ["dep:defmt"]
+defmt-info = ["dep:defmt"]
+defmt-trace = ["dep:defmt"]
+defmt-warn = ["dep:defmt"]
 device-selected = []
 direct-call-deprecated = []
 
@@ -90,7 +90,7 @@ mem-c = []
 mem-d = []
 mem-e = []
 rt = ["stm32f3/rt"]
-rtc = ["rtcc"]
+rtc = ["dep:rtcc"]
 
 # Any changes here should be mirrored in README.md, build.rs, src/lib.rs, and
 # .github/workflows/ci.yml.
@@ -135,7 +135,7 @@ svd-f302 = ["stm32f3/stm32f302"]
 svd-f303 = ["stm32f3/stm32f303"]
 svd-f373 = ["stm32f3/stm32f373"]
 svd-f3x4 = ["stm32f3/stm32f3x4"]
-usb = ["stm32-usbd"]
+usb = ["dep:stm32-usbd"]
 
 # cargo build/run
 [profile.dev]
