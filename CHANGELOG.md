@@ -44,6 +44,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   implementation, but it is hard to maintain the current implementation
   and not easy to verify if it is really a safe implementation.
   It is also not consistent with the rest of the crates API. ([#352])
+- Use [critical-section] crate instead of `interrupt_free`, which is not always
+  sound. ([#350])
+
+[critical-section]: https://github.com/rust-embedded/critical-section
 
 ## [v0.9.2] - 2023-02-20
 
@@ -611,6 +615,7 @@ let clocks = rcc
 
 [#352]: https://github.com/stm32-rs/stm32f3xx-hal/pull/352
 [#351]: https://github.com/stm32-rs/stm32f3xx-hal/pull/351
+[#350]: https://github.com/stm32-rs/stm32f3xx-hal/pull/350
 [#345]: https://github.com/stm32-rs/stm32f3xx-hal/pull/345
 [#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
 [#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347

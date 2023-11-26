@@ -97,7 +97,7 @@ unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm,
     fn enable() {
         // SAFETY: the cricitcal section ensures, that the RCC access to enable the USB peripheral
         // is mutually exclusive
-        cortex_m::interrupt::free(|_| unsafe {
+        critical_section::with(|_| unsafe {
             // Enable USB peripheral
             USB::enable_unchecked();
             // Reset USB peripheral

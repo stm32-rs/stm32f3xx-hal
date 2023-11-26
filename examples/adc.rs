@@ -9,8 +9,8 @@ use panic_probe as _;
 use core::cell::RefCell;
 
 use cortex_m::asm;
-use cortex_m::interrupt::Mutex;
 use cortex_m_rt::entry;
+use critical_section::Mutex;
 
 use embedded_hal::adc::OneShot;
 use stm32f3xx_hal::{
@@ -99,7 +99,7 @@ fn main() -> ! {
     // Start a timer which fires regularly to wake up from `asm::wfi`
     timer.start(500.milliseconds());
     // Put the timer in the global context.
-    cortex_m::interrupt::free(|cs| {
+    critical_section::with(|cs| {
         TIMER.borrow(cs).replace(Some(timer));
     });
 
@@ -133,7 +133,7 @@ fn main() -> ! {
 #[interrupt]
 fn TIM2() {
     // Just handle the pending interrupt event.
-    cortex_m::interrupt::free(|cs| {
+    critical_section::with(|cs| {
         TIMER
             // Unlock resource for use in critical section
             .borrow(cs)

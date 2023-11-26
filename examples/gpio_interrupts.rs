@@ -5,8 +5,9 @@ use core::cell::RefCell;
 
 use panic_semihosting as _;
 
-use cortex_m::{asm, interrupt::Mutex, peripheral::NVIC};
+use cortex_m::{asm, peripheral::NVIC};
 use cortex_m_rt::entry;
+use critical_section::Mutex;
 
 use stm32f3xx_hal::{
     gpio::{self, Edge, Input, Output, PushPull},
@@ -38,7 +39,7 @@ fn main() -> ! {
     led.toggle().expect("unable to toggle led in configuration");
 
     // Move the ownership of the led to the global LED
-    cortex_m::interrupt::free(|cs| *LED.borrow(cs).borrow_mut() = Some(led));
+    critical_section::with(|cs| *LED.borrow(cs).borrow_mut() = Some(led));
 
     // Configuring the user button to trigger an interrupt when the button is pressed.
     let mut user_button = gpioa
@@ -50,7 +51,7 @@ fn main() -> ! {
     let interrupt_num = user_button.interrupt(); // hal::pac::Interrupt::EXTI0
 
     // Moving ownership to the global BUTTON so we can clear the interrupt pending bit.
-    cortex_m::interrupt::free(|cs| *BUTTON.borrow(cs).borrow_mut() = Some(user_button));
+    critical_section::with(|cs| *BUTTON.borrow(cs).borrow_mut() = Some(user_button));
 
     unsafe { NVIC::unmask(interrupt_num) };
 
@@ -67,7 +68,7 @@ fn main() -> ! {
 // This may be called more than once per button press from the user since the button may not be debounced.
 #[interrupt]
 fn EXTI0() {
-    cortex_m::interrupt::free(|cs| {
+    critical_section::with(|cs| {
         // Toggle the LED
         LED.borrow(cs)
             .borrow_mut()
