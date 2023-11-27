@@ -19,7 +19,7 @@ jobs:
         with:
           toolchain: 1.59.0
           target: thumbv7em-none-eabihf
-      - run: cargo check --features=stm32f303xc,stm32-usbd,rt,can,ld --lib
+      - run: cargo check --features=stm32f303xc,usb,rt,can,ld --lib
 
   check-min-deps:
     name: Check Minimal Dependency Versions
@@ -35,5 +35,5 @@ jobs:
           toolchain: nightly
           target: thumbv7em-none-eabihf
       - run: cargo +nightly update -Z minimal-versions
-      - run: cargo check --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
+      - run: cargo check --features=stm32f303xc,usb,rt,can,ld --lib --examples
 

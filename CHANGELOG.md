@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   was hard to find out anyway.
 - Remove `defmt-*` features (`defmt` feature is still available), to finalize
   migration from `defmt-0.2.x` -> `defmt-0.3.x`.
+- Removed implicit `stm32-usbd` feature (use `usb` instead)
 
 ### Added
 
