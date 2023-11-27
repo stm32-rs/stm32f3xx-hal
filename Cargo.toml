@@ -16,7 +16,7 @@ documentation = "https://docs.rs/stm32f3xx-hal"
 version = "0.9.2"
 exclude = ["codegen", ".markdownlint.yml"]
 resolver = "2"
-rust-version = "1.59"
+rust-version = "1.60"
 
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "usb", "can", "enumset"]

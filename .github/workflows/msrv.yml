@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.59.0
+          toolchain: 1.60.0
           target: thumbv7em-none-eabihf
       - run: cargo check --features=stm32f303xc,usb,rt,can,ld --lib
 
