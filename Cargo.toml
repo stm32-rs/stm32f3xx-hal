@@ -65,13 +65,8 @@ slice-group-by = "0.3.1"
 [features]
 can = ["dep:bxcan"]
 default = ["rt", "ld", "usb", "can", "rtc", "enumset"]
-defmt-debug = ["dep:defmt"]
+defmt = ["dep:defmt"]
 
-defmt-default = ["dep:defmt"]
-defmt-error = ["dep:defmt"]
-defmt-info = ["dep:defmt"]
-defmt-trace = ["dep:defmt"]
-defmt-warn = ["dep:defmt"]
 device-selected = []
 direct-call-deprecated = []
 
