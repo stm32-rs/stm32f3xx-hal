@@ -29,6 +29,8 @@ impl Dac {
     pub fn write_data(&mut self, data: u16) {
         self.regs.dhr12r1.write(|w| {
             #[allow(unused_unsafe)]
+            // SAFETY: Direct write to register for easier sharing between different stm32f3xx svd
+            // generated API
             unsafe {
                 w.dacc1dhr().bits(data)
             }

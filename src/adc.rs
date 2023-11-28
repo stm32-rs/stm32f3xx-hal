@@ -1025,23 +1025,26 @@ where
         }
 
         // Set the channel in the right sequence field
-        match sequence {
-            config::Sequence::One      => self.reg.sqr1.modify(|_, w| w.sq1().bits(channel.into())),
-            config::Sequence::Two      => self.reg.sqr1.modify(|_, w| w.sq2().bits(channel.into())),
-            config::Sequence::Three    => self.reg.sqr1.modify(|_, w| w.sq3().bits(channel.into())),
-            config::Sequence::Four     => self.reg.sqr1.modify(|_, w| w.sq4().bits(channel.into())),
-            config::Sequence::Five     => self.reg.sqr2.modify(|_, w| w.sq5().bits(channel.into())),
-            config::Sequence::Six      => self.reg.sqr2.modify(|_, w| w.sq6().bits(channel.into())),
-            config::Sequence::Seven    => self.reg.sqr2.modify(|_, w| w.sq7().bits(channel.into())),
-            config::Sequence::Eight    => self.reg.sqr2.modify(|_, w| w.sq8().bits(channel.into())),
-            config::Sequence::Nine     => self.reg.sqr2.modify(|_, w| w.sq9().bits(channel.into())),
-            config::Sequence::Ten      => self.reg.sqr3.modify(|_, w| w.sq10().bits(channel.into())),
-            config::Sequence::Eleven   => self.reg.sqr3.modify(|_, w| w.sq11().bits(channel.into())),
-            config::Sequence::Twelve   => self.reg.sqr3.modify(|_, w| w.sq12().bits(channel.into())),
-            config::Sequence::Thirteen => self.reg.sqr3.modify(|_, w| w.sq13().bits(channel.into())),
-            config::Sequence::Fourteen => self.reg.sqr3.modify(|_, w| w.sq14().bits(channel.into())),
-            config::Sequence::Fifteen  => self.reg.sqr4.modify(|_, w| w.sq15().bits(channel.into())),
-            config::Sequence::Sixteen  => self.reg.sqr4.modify(|_, w| w.sq16().bits(channel.into())),
+        // SAFETY: the channel.into() implementation ensures that those are valid values
+        unsafe {
+            match sequence {
+                config::Sequence::One      => self.reg.sqr1.modify(|_, w| w.sq1().bits(channel.into())),
+                config::Sequence::Two      => self.reg.sqr1.modify(|_, w| w.sq2().bits(channel.into())),
+                config::Sequence::Three    => self.reg.sqr1.modify(|_, w| w.sq3().bits(channel.into())),
+                config::Sequence::Four     => self.reg.sqr1.modify(|_, w| w.sq4().bits(channel.into())),
+                config::Sequence::Five     => self.reg.sqr2.modify(|_, w| w.sq5().bits(channel.into())),
+                config::Sequence::Six      => self.reg.sqr2.modify(|_, w| w.sq6().bits(channel.into())),
+                config::Sequence::Seven    => self.reg.sqr2.modify(|_, w| w.sq7().bits(channel.into())),
+                config::Sequence::Eight    => self.reg.sqr2.modify(|_, w| w.sq8().bits(channel.into())),
+                config::Sequence::Nine     => self.reg.sqr2.modify(|_, w| w.sq9().bits(channel.into())),
+                config::Sequence::Ten      => self.reg.sqr3.modify(|_, w| w.sq10().bits(channel.into())),
+                config::Sequence::Eleven   => self.reg.sqr3.modify(|_, w| w.sq11().bits(channel.into())),
+                config::Sequence::Twelve   => self.reg.sqr3.modify(|_, w| w.sq12().bits(channel.into())),
+                config::Sequence::Thirteen => self.reg.sqr3.modify(|_, w| w.sq13().bits(channel.into())),
+                config::Sequence::Fourteen => self.reg.sqr3.modify(|_, w| w.sq14().bits(channel.into())),
+                config::Sequence::Fifteen  => self.reg.sqr4.modify(|_, w| w.sq15().bits(channel.into())),
+                config::Sequence::Sixteen  => self.reg.sqr4.modify(|_, w| w.sq16().bits(channel.into())),
+            }
         }
     }
 
@@ -1323,10 +1326,14 @@ where
 
     /// Synchronously record a single sample of `pin`.
     fn read(&mut self, _pin: &mut Pin) -> nb::Result<Word, Self::Error> {
+        // NOTE: as ADC is not configurable (`OneShot` does not implement `Configurable`), we can't
+        // use the public methods to configure the ADC but have to fallback to the lower level
+        // methods.
+
         // self.set_pin_sequence_position(config::Sequence::One, pin);
-        self.reg
-            .sqr1
-            .modify(|_, w| unsafe { w.sq1().bits(Pin::channel().into()) });
+        self.reg.sqr1.modify(|_, w|
+                // SAFETY: channel().into() ensure the right channel value
+                unsafe { w.sq1().bits(Pin::channel().into()) });
 
         // Wait for the sequence to complete
 

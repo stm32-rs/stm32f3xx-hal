@@ -181,13 +181,13 @@ impl defmt::Format for Gpiox {
     }
 }
 
-// # SAFETY
+// SAFETY:
 // As Gpiox uses `dyn GpioRegExt` pointer internally, `Send` is not auto-implemented.
 // But since GpioExt does only do atomic operations without side-effects we can assume
 // that it safe to `Send` this type.
 unsafe impl Send for Gpiox {}
 
-// # SAFETY
+// SAFETY:
 // As Gpiox uses `dyn GpioRegExt` pointer internally, `Sync` is not auto-implemented.
 // But since GpioExt does only do atomic operations without side-effects we can assume
 // that it safe to `Send` this type.
@@ -500,13 +500,13 @@ where
     type Error = Infallible;
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        // NOTE(unsafe) atomic write to a stateless register
+        // SAFETY: atomic write to a stateless register
         unsafe { (*self.gpio.ptr()).set_high(self.index.index()) };
         Ok(())
     }
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        // NOTE(unsafe) atomic write to a stateless register
+        // SAFETY: atomic write to a stateless register
         unsafe { (*self.gpio.ptr()).set_low(self.index.index()) };
         Ok(())
     }
@@ -525,7 +525,7 @@ where
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> {
-        // NOTE(unsafe) atomic read with no side effects
+        // SAFETY: atomic read with no side effects
         Ok(unsafe { (*self.gpio.ptr()).is_low(self.index.index()) })
     }
 }
@@ -540,7 +540,7 @@ where
     }
 
     fn is_set_low(&self) -> Result<bool, Self::Error> {
-        // NOTE(unsafe) atomic read with no side effects
+        // SAFETY: atomic read with no side effects
         Ok(unsafe { (*self.gpio.ptr()).is_set_low(self.index.index()) })
     }
 }
@@ -763,13 +763,13 @@ macro_rules! gpio_trait {
 
                 #[inline(always)]
                 fn set_high(&self, i: u8) {
-                    // NOTE(unsafe, write) atomic write to a stateless register
+                    // SAFETY: atomic write to a stateless register
                     unsafe { self.bsrr.write(|w| w.bits(1 << i)) };
                 }
 
                 #[inline(always)]
                 fn set_low(&self, i: u8) {
-                    // NOTE(unsafe, write) atomic write to a stateless register
+                    // SAFETY: atomic write to a stateless register
                     unsafe { self.bsrr.write(|w| w.bits(1 << (16 + i))) };
                 }
             }
@@ -792,6 +792,8 @@ macro_rules! r_trait {
                 #[inline]
                 fn $fn(&mut self, i: u8) {
                     let value = $gpioy::$xr::$enum::$VARIANT as u32;
+                    // SAFETY: The &mut abstracts all accesses to the register itself,
+                    // which makes sure that this register accesss is exclusive
                     unsafe { crate::modify_at!((*$GPIOX::ptr()).$xr, $bitwidth, i, value) };
                 }
             )+
@@ -931,6 +933,8 @@ macro_rules! gpio {
                 #[inline]
                 fn afx(&mut self, i: u8, x: u8) {
                     const BITWIDTH: u8 = 4;
+                    // SAFETY: the abstraction of AFRL should ensure exclusive access in addition
+                    // to the &mut exclusive reference
                     unsafe { crate::modify_at!((*$GPIOX::ptr()).afrh, BITWIDTH, i - 8, x as u32) };
                 }
             }
@@ -942,6 +946,8 @@ macro_rules! gpio {
                 #[inline]
                 fn afx(&mut self, i: u8, x: u8) {
                     const BITWIDTH: u8 = 4;
+                    // SAFETY: the abstraction of AFRL should ensure exclusive access in addition
+                    // to the &mut exclusive reference
                     unsafe { crate::modify_at!((*$GPIOX::ptr()).afrl, BITWIDTH, i, x as u32) };
                 }
             }

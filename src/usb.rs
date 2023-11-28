@@ -76,8 +76,11 @@ where
     }
 }
 
+// SAFETY: Implementation of Peripheral is thread-safe by using cricitcal sections to ensure
+// mutually exclusive access to the USB peripheral
 unsafe impl<Dm: DmPin, Dp: DpPin> Sync for Peripheral<Dm, Dp> {}
 
+// SAFETY: The Peirpheral has the same register block layout as STM32 USBFS
 unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm, Dp> {
     const REGISTERS: *const () = USB::ptr().cast::<()>();
     const DP_PULL_UP_FEATURE: bool = false;
@@ -92,6 +95,8 @@ unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm,
     const EP_MEMORY_ACCESS_2X16: bool = true;
 
     fn enable() {
+        // SAFETY: the cricitcal section ensures, that the RCC access to enable the USB peripheral
+        // is mutually exclusive
         cortex_m::interrupt::free(|_| unsafe {
             // Enable USB peripheral
             USB::enable_unchecked();

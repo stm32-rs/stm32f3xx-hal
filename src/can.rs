@@ -68,10 +68,12 @@ where
     }
 }
 
+// SAFETY: Can has ownership of the CAN peripheral and the pointer is pointing to the CAN peripheral
 unsafe impl<Tx, Rx> bxcan::Instance for Can<Tx, Rx> {
     const REGISTERS: *mut RegisterBlock = pac::CAN::ptr() as *mut _;
 }
 
+// SAFETY: The peripheral does own it's associated filter banks
 unsafe impl<Tx, Rx> bxcan::FilterOwner for Can<Tx, Rx> {
     const NUM_FILTER_BANKS: u8 = 28;
 }

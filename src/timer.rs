@@ -439,8 +439,8 @@ macro_rules! timer {
 
             #[inline]
             fn set_arr(&mut self, arr: u16) {
-                // SAFETY: For easier compatibility between timers write to whole register
                 #[allow(unused_unsafe)]
+                // SAFETY: For easier compatibility between timers write to whole register
                 self.arr.write(|w| unsafe { w.arr().bits(arr.into()) });
             }
         }

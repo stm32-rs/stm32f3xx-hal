@@ -64,21 +64,26 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         B: WriteBuffer + 'static,
         T: OnChannel<C>,
     {
-        // NOTE(unsafe) We don't know the concrete type of `buffer` here, all
+        // SAFETY: We don't know the concrete type of `buffer` here, all
         // we can use are its `WriteBuffer` methods. Hence the only `&mut self`
         // method we can call is `write_buffer`, which is allowed by
         // `WriteBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.write_buffer() };
         let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
 
-        // NOTE(unsafe) We are using the address of a 'static WriteBuffer here,
+        // SAFETY: We are using the address of a 'static WriteBuffer here,
         // which is guaranteed to be safe for DMA.
         unsafe { channel.set_memory_address(ptr as u32, Increment::Enable) };
         channel.set_transfer_length(len);
         channel.set_word_size::<B::Word>();
         channel.set_direction(Direction::FromPeripheral);
 
-        unsafe { Self::start(buffer, channel, target) }
+        // SAFTEY: we take ownership of the buffer, which is 'static as well, so it lives long
+        // enough (at least longer that the DMA transfer itself)
+        #[allow(clippy::undocumented_unsafe_blocks)]
+        unsafe {
+            Self::start(buffer, channel, target)
+        }
     }
 
     /// Start a DMA read transfer.
@@ -91,21 +96,26 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         B: ReadBuffer + 'static,
         T: OnChannel<C>,
     {
-        // NOTE(unsafe) We don't know the concrete type of `buffer` here, all
+        // SAFETY: We don't know the concrete type of `buffer` here, all
         // we can use are its `ReadBuffer` methods. Hence there are no
         // `&mut self` methods we can call, so we are safe according to
         // `ReadBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.read_buffer() };
         let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
 
-        // NOTE(unsafe) We are using the address of a 'static ReadBuffer here,
+        // SAFETY: We are using the address of a 'static ReadBuffer here,
         // which is guaranteed to be safe for DMA.
         unsafe { channel.set_memory_address(ptr as u32, Increment::Enable) };
         channel.set_transfer_length(len);
         channel.set_word_size::<B::Word>();
         channel.set_direction(Direction::FromMemory);
 
-        unsafe { Self::start(buffer, channel, target) }
+        // SAFTEY: We take ownership of the buffer, which is 'static as well, so it lives long
+        // enough (at least longer that the DMA transfer itself)
+        #[allow(clippy::undocumented_unsafe_blocks)]
+        unsafe {
+            Self::start(buffer, channel, target)
+        }
     }
 
     /// # Safety
@@ -315,7 +325,10 @@ pub trait Channel: private::Channel {
     unsafe fn set_peripheral_address(&mut self, address: u32, inc: Increment) {
         crate::assert!(!self.is_enabled());
 
-        self.ch().par.write(|w| w.pa().bits(address));
+        // SAFETY: If the caller does ensure, that address is valid address, this should be safe
+        unsafe {
+            self.ch().par.write(|w| w.pa().bits(address));
+        }
         self.ch().cr.modify(|_, w| w.pinc().variant(inc.into()));
     }
 
@@ -335,7 +348,10 @@ pub trait Channel: private::Channel {
     unsafe fn set_memory_address(&mut self, address: u32, inc: Increment) {
         crate::assert!(!self.is_enabled());
 
-        self.ch().mar.write(|w| w.ma().bits(address));
+        // SAFETY: If the caller does ensure, that address is valid address, this should be safe
+        unsafe {
+            self.ch().mar.write(|w| w.ma().bits(address));
+        }
         self.ch().cr.modify(|_, w| w.minc().variant(inc.into()));
     }
 
@@ -500,35 +516,31 @@ macro_rules! dma {
 
                     impl private::Channel for $Ci {
                         fn ch(&self) -> &pac::dma1::CH {
-                            // NOTE(unsafe) $Ci grants exclusive access to this register
+                            // SAFETY: $Ci grants exclusive access to this register
                             unsafe { &(*$DMAx::ptr()).$chi }
                         }
                     }
 
                     impl Channel for $Ci {
                         fn is_event_triggered(&self, event: Event) -> bool {
-                            use Event::*;
-
-                            // NOTE(unsafe) atomic read
+                            // SAFETY: atomic read
                             let flags = unsafe { (*$DMAx::ptr()).isr.read() };
                             match event {
-                                HalfTransfer => flags.$htifi().bit_is_set(),
-                                TransferComplete => flags.$tcifi().bit_is_set(),
-                                TransferError => flags.$teifi().bit_is_set(),
-                                Any => flags.$gifi().bit_is_set(),
+                                Event::HalfTransfer => flags.$htifi().bit_is_set(),
+                                Event::TransferComplete => flags.$tcifi().bit_is_set(),
+                                Event::TransferError => flags.$teifi().bit_is_set(),
+                                Event::Any => flags.$gifi().bit_is_set(),
                             }
                         }
 
                         fn clear_event(&mut self, event: Event) {
-                            use Event::*;
-
-                            // NOTE(unsafe) atomic write to a stateless register
+                            // SAFETY: atomic write to a stateless register
                             unsafe {
                                 (*$DMAx::ptr()).ifcr.write(|w| match event {
-                                    HalfTransfer => w.$chtifi().set_bit(),
-                                    TransferComplete => w.$ctcifi().set_bit(),
-                                    TransferError => w.$cteifi().set_bit(),
-                                    Any => w.$cgifi().set_bit(),
+                                    Event::HalfTransfer => w.$chtifi().set_bit(),
+                                    Event::TransferComplete => w.$ctcifi().set_bit(),
+                                    Event::TransferError => w.$cteifi().set_bit(),
+                                    Event::Any => w.$cgifi().set_bit(),
                                 });
                             }
                         }

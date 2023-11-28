@@ -115,8 +115,8 @@ impl Rtc {
         F: FnMut(&mut RTC),
     {
         // Disable write protection
-        self.rtc.wpr.write(|w| unsafe { w.bits(0xCA) });
-        self.rtc.wpr.write(|w| unsafe { w.bits(0x53) });
+        self.rtc.wpr.write(|w| w.key().bits(0xCA));
+        self.rtc.wpr.write(|w| w.key().bits(0x53));
         // Enter init mode
         let isr = self.rtc.isr.read();
         if isr.initf().bit_is_clear() {
@@ -253,6 +253,7 @@ impl Rtcc for Rtc {
         if !(1..=7).contains(&weekday) {
             return Err(Error::InvalidInputData);
         }
+        // SAFETY: check above ensures, that the weekday number is in the valid range (0x01 - 0x07)
         self.modify(|rtc| rtc.dr.modify(|_, w| unsafe { w.wdu().bits(weekday) }));
 
         Ok(())
