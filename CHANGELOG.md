@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - Add `num_traits::PrimInt` bounds to `Word`
 - Remove `Serial::split`, which possibly creates two mutable references two
   one Serial instance, which could've caused UB. The use case of this function
-  was hard to find out anyway. ([#352])
+  was hard to find out anyway. ([#351])
 
 ### Added
 
@@ -610,6 +610,7 @@ let clocks = rcc
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
 [#352]: https://github.com/stm32-rs/stm32f3xx-hal/pull/352
+[#351]: https://github.com/stm32-rs/stm32f3xx-hal/pull/351
 [#345]: https://github.com/stm32-rs/stm32f3xx-hal/pull/345
 [#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
 [#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347

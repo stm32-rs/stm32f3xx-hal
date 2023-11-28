@@ -17,7 +17,6 @@ use crate::{
     gpio::{gpioa, gpiob, gpioc, AF7},
     hal::{blocking, serial, serial::Write},
     pac::{
-        self,
         rcc::cfgr3::USART1SW_A,
         usart1::{cr1::M_A, cr1::PCE_A, cr1::PS_A, RegisterBlock},
         Interrupt, USART1, USART2, USART3,
@@ -36,7 +35,6 @@ use cfg_if::cfg_if;
 use enumset::{EnumSet, EnumSetType};
 
 use crate::dma;
-use cortex_m::interrupt;
 
 /// Interrupt and status events.
 ///
@@ -332,128 +330,6 @@ pub struct Serial<Usart, Pins> {
     pins: Pins,
 }
 
-mod split {
-    use super::Instance;
-    /// Serial receiver
-    #[derive(Debug)]
-    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-    pub struct Rx<Usart, Pin> {
-        usart: Usart,
-        pub(crate) pin: Pin,
-    }
-
-    /// Serial transmitter
-    #[derive(Debug)]
-    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-    pub struct Tx<Usart, Pin> {
-        usart: Usart,
-        pub(crate) pin: Pin,
-    }
-
-    impl<Usart, Pin> Tx<Usart, Pin>
-    where
-        Usart: Instance,
-        Pin: super::TxPin<Usart>,
-    {
-        pub(crate) fn new(usart: Usart, pin: Pin) -> Self {
-            Tx { usart, pin }
-        }
-
-        /// Destruct [`Tx`] to regain access to underlying USART and pin.
-        pub(crate) fn free(self) -> (Usart, Pin) {
-            (self.usart, self.pin)
-        }
-    }
-
-    impl<Usart, Pin> Tx<Usart, Pin>
-    where
-        Usart: Instance,
-    {
-        /// Get a reference to internal usart peripheral
-        ///
-        /// # Safety
-        ///
-        /// This is unsafe, because the creation of this struct
-        /// is only possible by splitting the the USART peripheral
-        /// into Tx and Rx, which are internally both pointing
-        /// to the same peripheral.
-        ///
-        /// Therefor, if getting a mutuable reference to the peripheral
-        /// or changing any of it's configuration, the exclusivity
-        /// is no longer guaranteed by the type system.
-        ///
-        /// Ensure that the Tx and Rx implemtation only do things with
-        /// the peripheral, which do not effect the other.
-        pub(crate) unsafe fn usart(&self) -> &Usart {
-            &self.usart
-        }
-
-        /// Get a reference to internal usart peripheral
-        ///
-        /// # Saftey
-        ///
-        /// Same as in [`Self::usart()`].
-        #[allow(dead_code)]
-        pub(crate) unsafe fn usart_mut(&mut self) -> &mut Usart {
-            &mut self.usart
-        }
-    }
-
-    impl<Usart, Pin> Rx<Usart, Pin>
-    where
-        Usart: Instance,
-        Pin: super::RxPin<Usart>,
-    {
-        pub(crate) fn new(usart: Usart, pin: Pin) -> Self {
-            Rx { usart, pin }
-        }
-
-        /// Destruct [`Rx`] to regain access to the underlying pin.
-        ///
-        /// The USART is omitted, as it is returnend from Tx already to avoid
-        /// beeing able to crate a duplicate reference to the same underlying
-        /// peripheral.
-        pub(crate) fn free(self) -> Pin {
-            self.pin
-        }
-    }
-
-    impl<Usart, Pin> Rx<Usart, Pin>
-    where
-        Usart: Instance,
-    {
-        /// Get a reference to internal usart peripheral
-        ///
-        /// # Safety
-        ///
-        /// This is unsafe, because the creation of this struct
-        /// is only possible by splitting the the USART peripheral
-        /// into Tx and Rx, which are internally both pointing
-        /// to the same peripheral.
-        ///
-        /// Therefor, if getting a mutuable reference to the peripheral
-        /// or changing any of it's configuration, the exclusivity
-        /// is no longer guaranteed by the type system.
-        ///
-        /// Ensure that the Tx and Rx implemtation only do things with
-        /// the peripheral, which do not effect the other.
-        pub(crate) unsafe fn usart(&self) -> &Usart {
-            &self.usart
-        }
-
-        /// Get a reference to internal usart peripheral
-        ///
-        /// # Saftey
-        ///
-        /// Same as in [`Self::usart()`].
-        pub(crate) unsafe fn usart_mut(&mut self) -> &mut Usart {
-            &mut self.usart
-        }
-    }
-}
-
-pub use split::{Rx, Tx};
-
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
 where
     Usart: Instance,
@@ -542,35 +418,6 @@ where
             .cr1
             .modify(|_, w| w.ue().disabled().re().disabled().te().disabled());
         (self.usart, self.pins)
-    }
-
-    /// Joins previously [`Serial::split()`] serial.
-    ///
-    /// This is often needed to access methods only implemented for [`Serial`]
-    /// but not for [`Tx`] nor [`Rx`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// let dp = pac::Peripherals::take().unwrap();
-    ///
-    /// (tx, rx) = Serial::new(dp.USART1, ...).split();
-    ///
-    /// // Do something with tx and rx
-    ///
-    /// serial = Serial::join(tx, rx);
-    /// ```
-    pub fn join(tx: split::Tx<Usart, Tx>, rx: split::Rx<Usart, Rx>) -> Self
-    where
-        Tx: TxPin<Usart>,
-        Rx: RxPin<Usart>,
-    {
-        let (usart, tx_pin) = tx.free();
-        let rx_pin = rx.free();
-        Self {
-            usart,
-            pins: (tx_pin, rx_pin),
-        }
     }
 }
 
@@ -965,19 +812,6 @@ where
     }
 }
 
-impl<Usart, Pin> serial::Read<u8> for Rx<Usart, Pin>
-where
-    Usart: Instance,
-    Pin: RxPin<Usart>,
-{
-    type Error = Error;
-
-    /// This implementation shares the same effects as the [`Serial`]s [`serial::Read`] implemenation.
-    fn read(&mut self) -> nb::Result<u8, Error> {
-        eh_read(unsafe { self.usart_mut() })
-    }
-}
-
 impl<Usart, Pins> serial::Write<u8> for Serial<Usart, Pins>
 where
     Usart: Instance,
@@ -1020,145 +854,6 @@ where
 impl<USART, TX, RX> blocking::serial::write::Default<u8> for Serial<USART, (TX, RX)> where
     USART: Instance
 {
-}
-
-impl<Usart, Pin> serial::Write<u8> for Tx<Usart, Pin>
-where
-    Usart: Instance,
-    Pin: TxPin<Usart>,
-{
-    // NOTE(Infallible) See section "29.7 USART interrupts"; the only possible errors during
-    // transmission are: clear to send (which is disabled in this case) errors and
-    // framing errors (which only occur in SmartCard mode); neither of these apply to
-    // our hardware configuration
-    type Error = Infallible;
-
-    fn flush(&mut self) -> nb::Result<(), Infallible> {
-        let isr = unsafe { self.usart().isr.read() };
-
-        if isr.tc().bit_is_set() {
-            Ok(())
-        } else {
-            Err(nb::Error::WouldBlock)
-        }
-    }
-
-    fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
-        // NOTE(unsafe) atomic read with no side effects
-        let isr = unsafe { self.usart().isr.read() };
-
-        if isr.txe().bit_is_set() {
-            // NOTE(unsafe) atomic write to stateless register
-            unsafe { self.usart().tdr.write(|w| w.tdr().bits(u16::from(byte))) };
-            Ok(())
-        } else {
-            Err(nb::Error::WouldBlock)
-        }
-    }
-}
-
-impl<Usart, Pin> fmt::Write for Tx<Usart, Pin>
-where
-    Tx<Usart, Pin>: serial::Write<u8>,
-{
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        s.bytes()
-            .try_for_each(|c| nb::block!(self.write(c)))
-            .map_err(|_| fmt::Error)
-    }
-}
-
-impl<Usart, Pin> Rx<Usart, Pin>
-where
-    Usart: Instance + Dma,
-{
-    /// Fill the buffer with received data using DMA.
-    pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
-    where
-        Self: dma::OnChannel<C>,
-        B: dma::WriteBuffer<Word = u8> + 'static,
-        C: dma::Channel,
-    {
-        // NOTE(unsafe) usage of a valid peripheral address
-        unsafe {
-            channel.set_peripheral_address(
-                core::ptr::addr_of!(self.usart().rdr) as u32,
-                dma::Increment::Disable,
-            );
-        };
-
-        dma::Transfer::start_write(buffer, channel, self)
-    }
-}
-
-impl<Usart, Pin> blocking::serial::write::Default<u8> for Tx<Usart, Pin>
-where
-    Usart: Instance,
-    Pin: TxPin<Usart>,
-{
-}
-
-impl<Usart, Pin> Tx<Usart, Pin>
-where
-    Usart: Instance + Dma,
-    Pin: TxPin<Usart>,
-{
-    /// Transmit all data in the buffer using DMA.
-    pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
-    where
-        Self: dma::OnChannel<C>,
-        B: dma::ReadBuffer<Word = u8> + 'static,
-        C: dma::Channel,
-    {
-        // NOTE(unsafe) usage of a valid peripheral address
-        unsafe {
-            channel.set_peripheral_address(
-                core::ptr::addr_of!(self.usart().tdr) as u32,
-                dma::Increment::Disable,
-            );
-        };
-
-        dma::Transfer::start_read(buffer, channel, self)
-    }
-}
-
-impl<Usart, Pin> dma::Target for Rx<Usart, Pin>
-where
-    Usart: Instance + Dma,
-{
-    fn enable_dma(&mut self) {
-        // NOTE(unsafe) critical section prevents races
-        interrupt::free(|_| unsafe {
-            self.usart().cr3.modify(|_, w| w.dmar().enabled());
-        });
-    }
-
-    fn disable_dma(&mut self) {
-        // NOTE(unsafe) critical section prevents races
-        interrupt::free(|_| unsafe {
-            self.usart().cr3.modify(|_, w| w.dmar().disabled());
-        });
-    }
-}
-
-impl<Usart, Pin> dma::Target for Tx<Usart, Pin>
-where
-    Usart: Instance + Dma,
-    Pin: TxPin<Usart>,
-{
-    fn enable_dma(&mut self) {
-        // NOTE(unsafe) critical section prevents races
-        interrupt::free(|_| unsafe {
-            self.usart().cr3.modify(|_, w| w.dmat().enabled());
-        });
-    }
-
-    fn disable_dma(&mut self) {
-        // NOTE(unsafe) critical section prevents races
-        interrupt::free(|_| unsafe {
-            self.usart().cr3.modify(|_, w| w.dmat().disabled());
-        });
-    }
 }
 
 impl<Usart, Pins> Serial<Usart, Pins>
@@ -1257,34 +952,6 @@ macro_rules! usart {
             impl crate::interrupts::InterruptNumber for $USARTX {
                 type Interrupt = Interrupt;
                 const INTERRUPT: Interrupt = $INTERRUPT;
-            }
-
-            impl<Tx, Rx> Serial<$USARTX, (Tx, Rx)>
-                where Tx: TxPin<$USARTX>, Rx: RxPin<$USARTX> {
-                /// Splits the [`Serial`] abstraction into a transmitter and a receiver half.
-                ///
-                /// This allows using [`Tx`] and [`Rx`] related actions to
-                /// be handled independently and even use these safely in different
-                /// contexts (like interrupt routines) without needing to do synchronization work
-                /// between them.
-                pub fn split(self) -> (split::Tx<$USARTX, Tx>, split::Rx<$USARTX, Rx>) {
-                    // NOTE(unsafe): This essentially duplicates the USART peripheral
-                    //
-                    // As RX and TX both do have direct access to the peripheral,
-                    // they must guarantee to only do atomic operations on the peripheral
-                    // registers to avoid data races.
-                    //
-                    // Tx and Rx won't access the same registers anyways,
-                    // as they have independent responsibilities, which are NOT represented
-                    // in the type system.
-                    let (tx, rx) = unsafe {
-                        (
-                            pac::Peripherals::steal().$USARTX,
-                            pac::Peripherals::steal().$USARTX,
-                        )
-                    };
-                    (split::Tx::new(tx, self.pins.0), split::Rx::new(rx, self.pins.1))
-                }
             }
 
             #[cfg(feature = "defmt")]
