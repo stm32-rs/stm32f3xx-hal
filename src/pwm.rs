@@ -282,6 +282,7 @@ macro_rules! pwm_timer_private {
         /// of exactly one degree.
         #[allow(unused_parens)]
         #[must_use]
+        #[deprecated(since = "0.10.0", note = "needs refactoring and might violate safety rules conflicting with the timer API")]
         pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer and reset it to ensure a clean state
             // We use unsafe here to abstract away this implementation detail
