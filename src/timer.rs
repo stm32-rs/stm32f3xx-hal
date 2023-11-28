@@ -281,9 +281,10 @@ where
         let timeout: Self::Time = timeout.into();
         let clock = TIM::clock(&self.clocks);
 
-        let ticks = clock.integer().saturating_mul(timeout.integer()) * *timeout.scaling_factor();
+        let ticks = u64::from(clock.integer()).saturating_mul(u64::from(timeout.integer()))
+            * *timeout.scaling_factor();
 
-        let psc: u32 = (ticks.saturating_sub(1)) / (1 << 16);
+        let psc = ticks.saturating_sub(1) / (1 << 16);
         self.tim.set_psc(crate::unwrap!(u16::try_from(psc).ok()));
 
         let mut arr = ticks / psc.saturating_add(1);

@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 
 - Fix wrong timer frequency calculation and unexpected panics ([#338])
+- Fixed integer saturation in Timer::start, see #342 ([#356])
 
 ### Changed
 
@@ -614,6 +615,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#356]: https://github.com/stm32-rs/stm32f3xx-hal/pull/356
 [#352]: https://github.com/stm32-rs/stm32f3xx-hal/pull/352
 [#351]: https://github.com/stm32-rs/stm32f3xx-hal/pull/351
 [#350]: https://github.com/stm32-rs/stm32f3xx-hal/pull/350
