@@ -27,10 +27,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Remove `Serial::split`, which possibly creates two mutable references two
   one Serial instance, which could've caused UB. The use case of this function
   was hard to find out anyway. ([#351])
-  was hard to find out anyway.
 - Remove `defmt-*` features (`defmt` feature is still available), to finalize
-  migration from `defmt-0.2.x` -> `defmt-0.3.x`.
-- Removed implicit `stm32-usbd` feature (use `usb` instead)
+  migration from `defmt-0.2.x` -> `defmt-0.3.x`. ([#349])
+- Removed implicit `stm32-usbd` feature (use `usb` instead) ([#349])
 
 ### Added
 
