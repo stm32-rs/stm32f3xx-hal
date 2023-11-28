@@ -1,8 +1,6 @@
 name: MSRV
 
 on:
-  push:
-    branches: [master]
   pull_request:
   merge_group:
 
@@ -17,9 +15,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: 1.59.0
+          toolchain: 1.60.0
           target: thumbv7em-none-eabihf
-      - run: cargo check --features=stm32f303xc,stm32-usbd,rt,can,ld --lib
+      - run: cargo check --features=stm32f303xc,usb,rt,can,ld --lib
 
   check-min-deps:
     name: Check Minimal Dependency Versions
@@ -28,12 +26,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: thumbv7em-none-eabihf
-      - uses: dtolnay/rust-toolchain@stable
-        with:
           toolchain: nightly
           target: thumbv7em-none-eabihf
       - run: cargo +nightly update -Z minimal-versions
-      - run: cargo check --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
+      - run: cargo tree
+      - run: cargo check --features=stm32f303xc,usb,rt,can,ld --lib --examples
 

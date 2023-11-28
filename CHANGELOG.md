@@ -18,7 +18,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Update `stm32f3` pac to v0.15.1 ([#335])
 - Update `bxcan` pac to v0.7.0 ([#335])
-- The MSRV was bumped to 1.59 ([#335])
 - Deprecate `Toggle` enum and use `Switch` instead for better naming purposes
   ([#334])
   - Add `impl From<Toggle> for Switch` to reduce churn.
@@ -28,6 +27,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Remove `Serial::split`, which possibly creates two mutable references two
   one Serial instance, which could've caused UB. The use case of this function
   was hard to find out anyway. ([#351])
+- Remove `defmt-*` features (`defmt` feature is still available), to finalize
+  migration from `defmt-0.2.x` -> `defmt-0.3.x`. ([#349])
+- Removed implicit `stm32-usbd` feature (use `usb` instead) ([#349])
 
 ### Added
 
@@ -48,6 +50,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   It is also not consistent with the rest of the crates API. ([#352])
 - Use [critical-section] crate instead of `interrupt_free`, which is not always
   sound. ([#350])
+  It is also not consistent with the rest of the crates API.
+- Use [critical-section] crate instead of `interrupt_free`, which is not always
+  sound.
+- The MSRV was bumped to 1.60 ([#349])
 
 [critical-section]: https://github.com/rust-embedded/critical-section
 
@@ -619,6 +625,7 @@ let clocks = rcc
 [#352]: https://github.com/stm32-rs/stm32f3xx-hal/pull/352
 [#351]: https://github.com/stm32-rs/stm32f3xx-hal/pull/351
 [#350]: https://github.com/stm32-rs/stm32f3xx-hal/pull/350
+[#349]: https://github.com/stm32-rs/stm32f3xx-hal/pull/349
 [#345]: https://github.com/stm32-rs/stm32f3xx-hal/pull/345
 [#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
 [#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347
