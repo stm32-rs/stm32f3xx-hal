@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
   - Add `impl From<Toggle> for Switch` to reduce churn.
 - Fix undefined behavior in SPI implementation ([#346])
   - Add `num_traits::PrimInt` bounds to `Word`
+- Remove `Serial::split`, which possibly creates two mutable references two
+  one Serial instance, which could've caused UB. The use case of this function
+  was hard to find out anyway. ([#352])
 
 ### Added
 
@@ -599,6 +602,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#352]: https://github.com/stm32-rs/stm32f3xx-hal/pull/352
 [#345]: https://github.com/stm32-rs/stm32f3xx-hal/pull/345
 [#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
 [#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347
@@ -713,7 +717,6 @@ let clocks = rcc
 <!-- cargo-release: latest tag -->
 [v0.9.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.9.1
 [v0.9.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.9.0
-[v0.8.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.1
 [v0.8.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.1
 [v0.8.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.0
 [v0.7.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.7.0
