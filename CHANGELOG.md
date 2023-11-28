@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Deprecate `Toggle` enum and use `Switch` instead for better naming purposes
   ([#334])
   - Add `impl From<Toggle> for Switch` to reduce churn.
+- Remove `Toggle` enum and use `Switch` instead for better naming purposes
 - Fix undefined behavior in SPI implementation ([#346])
   - Add `num_traits::PrimInt` bounds to `Word`
 - Remove `Serial::split`, which possibly creates two mutable references two

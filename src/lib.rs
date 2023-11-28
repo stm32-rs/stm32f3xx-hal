@@ -270,22 +270,6 @@ cfg_if! {
     }
 }
 
-/// Toggle something on or off.
-///
-/// Convenience enum and wrapper around a bool, which more explicit about the intention to enable
-/// or disable something, in comparison to `true` or `false`.
-// TODO: Maybe move to some mod like "util"?
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[deprecated(since = "0.10.0", note = "Use Switch instead")]
-#[allow(deprecated)]
-pub enum Toggle {
-    /// Toggle something on / enable a thing.
-    On,
-    /// Toggle something off / disable a thing.
-    Off,
-}
-
 /// Switch something on or off.
 ///
 /// Convenience enum and wrapper around a bool, which more explicit about the intention to enable
@@ -293,21 +277,12 @@ pub enum Toggle {
 // TODO: Maybe move to some mod like "util"?
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[doc(alias = "Toggle")]
 pub enum Switch {
     /// Switch something on / enable a thing.
     On,
     /// Switch something off / disable a thing.
     Off,
-}
-
-#[allow(deprecated)]
-impl From<Toggle> for Switch {
-    fn from(toggle: Toggle) -> Self {
-        match toggle {
-            Toggle::On => Switch::On,
-            Toggle::Off => Switch::Off,
-        }
-    }
 }
 
 impl From<Switch> for bool {
