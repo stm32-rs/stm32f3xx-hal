@@ -18,9 +18,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Update `stm32f3` pac to v0.15.1 ([#335])
 - Update `bxcan` pac to v0.7.0 ([#335])
-- Deprecate `Toggle` enum and use `Switch` instead for better naming purposes
-  ([#334])
-  - Add `impl From<Toggle> for Switch` to reduce churn.
 - Remove `Toggle` enum and use `Switch` instead for better naming purposes
 - Fix undefined behavior in SPI implementation ([#346])
   - Add `num_traits::PrimInt` bounds to `Word`
@@ -33,14 +30,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
-- Add missing ADC channels ([#337])
+- Add missing ADC channels ([#337] & [#345])
 - Add many `#[must_use]` instances ([#347])
-- Add missing ADC channels ([#345])
 
 ### Fixed
 
 - Fix wrong timer frequency calculation and unexpected panics ([#338])
-- Fixed integer saturation in Timer::start, see #342 ([#356])
+- Fixed integer saturation in Timer::start, see [#342] ([#356])
 
 ### Changed
 
@@ -51,8 +47,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Use [critical-section] crate instead of `interrupt_free`, which is not always
   sound. ([#350])
   It is also not consistent with the rest of the crates API.
-- Use [critical-section] crate instead of `interrupt_free`, which is not always
-  sound.
 - The MSRV was bumped to 1.60 ([#349])
 
 [critical-section]: https://github.com/rust-embedded/critical-section
@@ -629,11 +623,11 @@ let clocks = rcc
 [#345]: https://github.com/stm32-rs/stm32f3xx-hal/pull/345
 [#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
 [#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347
+[#342]: https://github.com/stm32-rs/stm32f3xx-hal/issues/342
 [#340]: https://github.com/stm32-rs/stm32f3xx-hal/pull/340
 [#338]: https://github.com/stm32-rs/stm32f3xx-hal/pull/338
 [#337]: https://github.com/stm32-rs/stm32f3xx-hal/pull/337
 [#335]: https://github.com/stm32-rs/stm32f3xx-hal/pull/335
-[#334]: https://github.com/stm32-rs/stm32f3xx-hal/pull/334
 [#322]: https://github.com/stm32-rs/stm32f3xx-hal/pull/322
 [#318]: https://github.com/stm32-rs/stm32f3xx-hal/pull/318
 [#317]: https://github.com/stm32-rs/stm32f3xx-hal/pull/317
