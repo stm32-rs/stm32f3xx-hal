@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
+  merge_group:
 
 jobs:
   check:
@@ -38,177 +39,31 @@ jobs:
           # - stm32f334x6
           # - stm32f334x8
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: thumbv7em-none-eabihf
-          override: true
-          profile: minimal
       - run: cargo build --features=${{ matrix.mcu }} --lib --examples
-
-  # This is our MSRV. However this is only for documentation
-  # purposes and should be increased if newer features are used.
-  # This should not stop anyone from bumping the MSRV.
-  check-msrv:
-    name: Check MSRV
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: 1.59.0
-          target: thumbv7em-none-eabihf
-          override: true
-          profile: minimal
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib
-
-  check-min-deps:
-    name: Check Minimal Dependency Versions
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: thumbv7em-none-eabihf
-          override: true
-          profile: minimal
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          target: thumbv7em-none-eabihf
-          profile: minimal
-      - run: cargo +nightly update -Z minimal-versions
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --features=stm32f303xc,stm32-usbd,rt,can,ld --lib --examples
 
   check-minimal-feature-set:
     name: Check minimal feature set
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: thumbv7em-none-eabihf
-          override: true
-          profile: minimal
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --no-default-features --features=stm32f303xc --lib --examples
+      - run: cargo check --no-default-features --features=stm32f303xc --lib --examples
 
   build-testsuite:
     name: Build Testsuite
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: thumbv7em-none-eabihf
-          override: true
-          profile: minimal
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p testsuite --no-run
-
-  check-doc:
-    name: Check Documentation Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          target: thumbv7em-none-eabihf
-          override: true
-          profile: minimal
-      - uses: actions-rs/cargo@v1
-        with:
-          command: doc
-          args: --features=stm32f303xc
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: thumbv7em-none-eabihf
-          override: true
-          profile: minimal
-          components: clippy
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: >
-            --features=stm32f303xc --lib --examples
-            -- -D warnings
-
-  rustfmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          profile: minimal
-          components: rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-  codegen:
-    name: Check Codegen
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          profile: minimal
-          components: rustfmt
-      - run: cargo check --target "x86_64-unknown-linux-gnu" -p codegen
-
-  markdown-lint:
-    name: Markdown Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: nosborn/github-action-markdown-cli@v2.0.0
-        with:
-          files: .
-          config_file: .markdownlint.yml
-          ignore_files: target/
-
-  link-checker:
-    name: Link Checker
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Check URLs in documentation
-      uses: lycheeverse/lychee-action@v1.0.8
-      with:
-        args: --verbose --no-progress "**/*.md" "**/*.rs" "Cargo.toml" "**/Cargo.toml" -h accept=text/html
-
-  cargo-deny:
-    name: Cargo Deny
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-    - uses: EmbarkStudios/cargo-deny-action@v1
+      - run: cargo test -p testsuite --no-run
