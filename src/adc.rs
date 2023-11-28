@@ -133,7 +133,7 @@ where
 {
     /// Releases the common ADC peripheral
     pub fn free(self, _adcs: &<ADC as CommonInstance>::Childs) -> ADC {
-        cortex_m::interrupt::free(|_| {
+        critical_section::with(|_| {
             // SAFETY: Guaranteed to be the only instance left, which has control over the
             // `ADC`perpherals, and criticala section ensure that no race condition happens
             // on the `Bus` peripheral.
