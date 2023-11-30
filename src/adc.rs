@@ -7,7 +7,7 @@
 //! It can be built for the `STM32F3Discovery` running
 //! `cargo build --example adc --features=stm32f303xc`
 //!
-//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/adc.rs
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/adc.rs
 
 use core::ops::Deref;
 use core::{convert::TryInto, marker::PhantomData};
@@ -256,7 +256,7 @@ macro_rules! sp_pins {
                 ///
                 /// Code example can be seen in [examples/adc.rs].
                 ///
-                /// [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/adc.rs
+                /// [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/adc.rs
                 /// [RM0316]: https://www.st.com/resource/en/reference_manual/dm00094349.pdf
                 // FIXME(Sh3Rm4n): Soundness hole: Still mutliple sensor objects can be created.
                 // An idea might be to split out the sensors from CommonAdc similar to the

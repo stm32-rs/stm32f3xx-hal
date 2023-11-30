@@ -56,7 +56,7 @@ cortex-m-rt = { version = "0.7.3", features = ["device"] }
 # Panic behavior, see https://crates.io/keywords/panic-impl for alternatives
 panic-halt = "0.2.0"
 # Replace stm32f303xc with your target chip, see next section for more info
-stm32f3xx-hal = { version = "0.9.2", features = ["ld", "rt", "stm32f303xc"] }
+stm32f3xx-hal = { version = "0.10.0", features = ["ld", "rt", "stm32f303xc"] }
 ```
 
 We also need to tell Rust about target architecture and how to link our
