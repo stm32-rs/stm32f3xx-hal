@@ -196,6 +196,7 @@ pub mod dma;
 pub mod flash;
 pub mod gpio;
 pub mod i2c;
+pub mod i2cint;
 pub mod interrupts;
 pub mod prelude;
 pub mod pwm;
