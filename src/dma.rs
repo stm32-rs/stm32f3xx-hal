@@ -48,18 +48,22 @@ pub trait Target {
 /// An in-progress one-shot DMA transfer
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Transfer<B, C: Channel, T: Target> {
+pub struct Transfer<'t, B, C, T>
+where
+    // C: Channel,
+    T: 't + Target,
+{
     // This is always a `Some` outside of `drop`.
-    inner: Option<TransferInner<B, C, T>>,
+    inner: Option<TransferInner<'t, B, C, T>>,
 }
 
-impl<B, C: Channel, T: Target> Transfer<B, C, T> {
+impl<'t, B, C: Channel, T: Target> Transfer<'t, B, C, T> {
     /// Start a DMA write transfer.
     ///
     /// # Panics
     ///
     /// Panics if the buffer is longer than 65535 words.
-    pub fn start_write(mut buffer: B, mut channel: C, target: T) -> Self
+    pub fn start_write(mut buffer: B, mut channel: C, target: &'t mut T) -> Self
     where
         B: WriteBuffer + 'static,
         T: OnChannel<C>,
@@ -91,7 +95,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     /// # Panics
     ///
     /// Panics if the buffer is longer than 65535 words.
-    pub fn start_read(buffer: B, mut channel: C, target: T) -> Self
+    pub fn start_read(buffer: B, mut channel: C, target: &'t mut T) -> Self
     where
         B: ReadBuffer + 'static,
         T: OnChannel<C>,
@@ -124,7 +128,7 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     ///
     /// - the given buffer will be valid for the duration of the transfer
     /// - the DMA channel is configured correctly for the given target and buffer
-    unsafe fn start(buffer: B, mut channel: C, mut target: T) -> Self
+    unsafe fn start(buffer: B, mut channel: C, target: &'t mut T) -> Self
     where
         T: OnChannel<C>,
     {
@@ -159,42 +163,170 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     /// # Panics
     ///
     /// Panics no transfer is ongoing.
-    pub fn stop(mut self) -> (B, C, T) {
+    pub fn stop(mut self) -> (B, C) {
         let mut inner = crate::unwrap!(self.inner.take());
         inner.stop();
 
-        (inner.buffer, inner.channel, inner.target)
+        (inner.buffer, inner.channel)
     }
 
     /// Block until this transfer is done and return ownership over its parts
-    pub fn wait(self) -> (B, C, T) {
+    pub fn wait(self) -> (B, C) {
         while !self.is_complete() {}
 
         self.stop()
     }
 }
 
-impl<B, C: Channel, T: Target> Drop for Transfer<B, C, T> {
-    fn drop(&mut self) {
-        if let Some(inner) = self.inner.as_mut() {
-            inner.stop();
+impl<'t, BR, BW, CR, CW, T> Transfer<'t, (BR, BW), (CR, CW), T>
+where
+    CR: Channel,
+    CW: Channel,
+    T: Target,
+{
+    /// Start a DMA write transfer.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the buffer is longer than 65535 words.
+    // TODO: sort arguments (target at first)
+    pub fn start_transfer(
+        buffer_read: BR,
+        mut buffer_write: BW,
+        mut channel_read: CR,
+        mut channel_write: CW,
+        target: &'t mut T,
+    ) -> Self
+    where
+        BR: ReadBuffer + 'static,
+        BW: WriteBuffer + 'static,
+        T: OnChannel<CR> + OnChannel<CW>,
+    {
+        // TODO: ensure same buffer length
+        // TODO: ensure same word type
+
+        // SAFETY: We don't know the concrete type of `buffer` here, all
+        // we can use are its `WriteBuffer` methods. Hence the only `&mut self`
+        // method we can call is `write_buffer`, which is allowed by
+        // `WriteBuffer`'s safety requirements.
+        let (ptr, len) = unsafe { buffer_write.write_buffer() };
+        let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
+
+        // SAFETY: We are using the address of a 'static WriteBuffer here,
+        // which is guaranteed to be safe for DMA.
+        unsafe { channel_write.set_memory_address(ptr as u32, Increment::Enable) };
+        channel_write.set_transfer_length(len);
+        channel_write.set_word_size::<BW::Word>();
+        channel_write.set_direction(Direction::FromPeripheral);
+
+        // SAFETY: We don't know the concrete type of `buffer` here, all
+        // we can use are its `ReadBuffer` methods. Hence there are no
+        // `&mut self` methods we can call, so we are safe according to
+        // `ReadBuffer`'s safety requirements.
+        let (ptr, len) = unsafe { buffer_read.read_buffer() };
+        let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
+
+        // SAFETY: We are using the address of a 'static ReadBuffer here,
+        // which is guaranteed to be safe for DMA.
+        unsafe { channel_read.set_memory_address(ptr as u32, Increment::Enable) };
+        channel_read.set_transfer_length(len);
+        channel_read.set_word_size::<BR::Word>();
+        channel_read.set_direction(Direction::FromMemory);
+
+        crate::assert!(!channel_read.is_enabled() && !channel_write.is_enabled());
+
+        atomic::compiler_fence(Ordering::Release);
+
+        target.enable_dma();
+        channel_read.enable();
+        channel_write.enable();
+
+        Self {
+            inner: Some(TransferInner {
+                buffer: (buffer_read, buffer_write),
+                channel: (channel_read, channel_write),
+                target,
+            }),
         }
     }
+
+    /// Is this transfer complete?
+    ///
+    /// # Panics
+    ///
+    /// Panics if no transfer is ongoing.
+    pub fn is_complete(&self) -> bool {
+        let inner = crate::unwrap!(self.inner.as_ref());
+        defmt::dbg!(inner.channel.0.is_event_triggered(Event::Any));
+        defmt::dbg!(inner.channel.1.is_event_triggered(Event::Any));
+        inner.channel.0.is_event_triggered(Event::TransferComplete)
+            && inner.channel.1.is_event_triggered(Event::TransferComplete)
+    }
+
+    /// Stop this transfer and return ownership over its parts
+    ///
+    /// # Panics
+    ///
+    /// Panics no transfer is ongoing.
+    pub fn stop(mut self) -> ((BR, BW), (CR, CW)) {
+        let mut inner = crate::unwrap!(self.inner.take());
+        inner.stop();
+
+        (inner.buffer, inner.channel)
+    }
+
+    /// Block until this transfer is done and return ownership over its parts
+    pub fn wait(self) -> ((BR, BW), (CR, CW)) {
+        defmt::dbg!(self.inner.as_ref().unwrap().channel.0.is_enabled());
+        defmt::dbg!(self.inner.as_ref().unwrap().channel.1.is_enabled());
+        while !self.is_complete() {}
+
+        self.stop()
+    }
 }
+
+// TODO: Use different drops in case of one or both channels
+// impl<'t, B, C, T> Drop for Transfer<'t, B, C, T>
+// where
+//     C: Channel,
+//     T: Target,
+// {
+//     fn drop(&mut self) {
+//         if let Some(inner) = self.inner.as_mut() {
+//             inner.stop();
+//         }
+//     }
+// }
 
 /// This only exists so we can implement `Drop` for `Transfer`.
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct TransferInner<B, C, T> {
+struct TransferInner<'t, B, C, T> {
     buffer: B,
     channel: C,
-    target: T,
+    target: &'t mut T,
 }
 
-impl<B, C: Channel, T: Target> TransferInner<B, C, T> {
+impl<'t, B, C: Channel, T: Target> TransferInner<'t, B, C, T> {
     /// Stop this transfer
     fn stop(&mut self) {
         self.channel.disable();
+        self.target.disable_dma();
+
+        atomic::compiler_fence(Ordering::SeqCst);
+    }
+}
+
+impl<'t, B, CR, CW, T> TransferInner<'t, B, (CR, CW), T>
+where
+    CR: Channel,
+    CW: Channel,
+    T: Target,
+{
+    /// Stop this transfer
+    fn stop(&mut self) {
+        self.channel.0.disable();
+        self.channel.1.disable();
         self.target.disable_dma();
 
         atomic::compiler_fence(Ordering::SeqCst);
@@ -405,7 +537,7 @@ pub trait Channel: private::Channel {
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
-    fn configure_intterupt(&mut self, event: Event, enable: bool) {
+    fn configure_interrupt(&mut self, event: Event, enable: bool) {
         match event {
             Event::HalfTransfer => self.ch().cr.modify(|_, w| w.htie().bit(enable)),
             Event::TransferComplete => self.ch().cr.modify(|_, w| w.tcie().bit(enable)),
@@ -420,12 +552,12 @@ pub trait Channel: private::Channel {
 
     /// Enable the interrupt for the given [`Event`].
     fn enable_interrupt(&mut self, event: Event) {
-        self.configure_intterupt(event, true);
+        self.configure_interrupt(event, true);
     }
 
     /// Disable the interrupt for the given [`Event`].
     fn disable_interrupt(&mut self, event: Event) {
-        self.configure_intterupt(event, false);
+        self.configure_interrupt(event, false);
     }
 
     /// Start a transfer

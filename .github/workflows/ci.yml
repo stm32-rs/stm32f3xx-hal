@@ -44,7 +44,7 @@ jobs:
         with:
           toolchain: stable
           target: thumbv7em-none-eabihf
-      - run: cargo build --features=${{ matrix.mcu }} --lib --examples
+      - run: "cargo build --features=${{ matrix.mcu }}' rt ld cortex-m/critical-section-single-core' --lib --examples"
 
   check-minimal-feature-set:
     name: Check minimal feature set

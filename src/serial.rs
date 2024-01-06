@@ -861,7 +861,7 @@ where
     Usart: Instance + Dma,
 {
     /// Fill the buffer with received data using DMA.
-    pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
+    pub fn read_exact<B, C>(&mut self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
     where
         Self: dma::OnChannel<C>,
         B: dma::WriteBuffer<Word = u8> + 'static,
@@ -879,7 +879,7 @@ where
     }
 
     /// Transmit all data in the buffer using DMA.
-    pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
+    pub fn write_all<B, C>(&mut self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
     where
         Self: dma::OnChannel<C>,
         B: dma::ReadBuffer<Word = u8> + 'static,
@@ -894,6 +894,39 @@ where
         };
 
         dma::Transfer::start_read(buffer, channel, self)
+    }
+
+    pub fn transfer_exact<BW, BR, CR, CW>(
+        &mut self,
+        read_buffer: BR,
+        mut channel_read: CR,
+        write_buffer: BW,
+        mut channel_write: CW,
+    ) -> dma::Transfer<(BR, BW), (CR, CW), Self>
+    where
+        Self: dma::OnChannel<CR> + dma::OnChannel<CW>,
+        BR: dma::ReadBuffer<Word = u8> + 'static,
+        CR: dma::Channel,
+        BW: dma::WriteBuffer<Word = u8> + 'static,
+        CW: dma::Channel,
+    {
+        // SAFETY: TDR is valid peripheral address, safe to dereference and pass to the DMA
+        unsafe {
+            channel_write.set_peripheral_address(
+                core::ptr::addr_of!(self.usart.tdr) as u32,
+                dma::Increment::Disable,
+            );
+        };
+
+        // SAFETY: RDR is valid peripheral address, safe to dereference and pass to the DMA
+        unsafe {
+            channel_read.set_peripheral_address(
+                core::ptr::addr_of!(self.usart.rdr) as u32,
+                dma::Increment::Disable,
+            );
+        };
+
+        dma::Transfer::start_transfer(read_buffer, write_buffer, channel_read, channel_write, self)
     }
 }
 

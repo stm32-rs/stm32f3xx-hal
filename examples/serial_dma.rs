@@ -5,7 +5,8 @@
 #![no_std]
 #![no_main]
 
-use panic_semihosting as _;
+use defmt_rtt as _;
+use panic_probe as _;
 
 use cortex_m::{asm, singleton};
 use cortex_m_rt::entry;
@@ -40,8 +41,7 @@ fn main() -> ! {
             .pa10
             .into_af_push_pull(&mut gpioa.moder, &mut gpioa.otyper, &mut gpioa.afrh),
     );
-    let serial = Serial::new(dp.USART1, pins, 9600.Bd(), clocks, &mut rcc.apb2);
-    let (tx, rx) = serial.split();
+    let mut serial = Serial::new(dp.USART1, pins, 9600.Bd(), clocks, &mut rcc.apb2);
 
     let dma1 = dp.DMA1.split(&mut rcc.ahb);
 
@@ -57,23 +57,21 @@ fn main() -> ! {
     let (tx_channel, rx_channel) = (dma1.ch4, dma1.ch5);
 
     // start separate DMAs for sending and receiving the data
-    let sending = tx.write_all(tx_buf, tx_channel);
-    let receiving = rx.read_exact(rx_buf, rx_channel);
+    let transfer = serial.transfer_exact(rx_buf, rx_channel, tx_buf, tx_channel);
 
     // block until all data was transmitted and received
-    let (tx_buf, tx_channel, tx) = sending.wait();
-    let (rx_buf, rx_channel, rx) = receiving.wait();
+    let ((rx_buf, tx_buf), (rx_channel, tx_channel)) = transfer.wait();
+    // let transfer = serial.read_exact(rx_buf, rx_channel);
+    // let (rx_buf, rx_channel) = transfer.wait();
 
     assert_eq!(tx_buf, rx_buf);
 
     // After a transfer is finished its parts can be re-used for another one.
     tx_buf.copy_from_slice(b"hi again!");
 
-    let sending = tx.write_all(tx_buf, tx_channel);
-    let receiving = rx.read_exact(rx_buf, rx_channel);
+    let transfer = serial.transfer_exact(rx_buf, rx_channel, tx_buf, tx_channel);
 
-    let (tx_buf, ..) = sending.wait();
-    let (rx_buf, ..) = receiving.wait();
+    let ((rx_buf, tx_buf), _) = transfer.wait();
 
     assert_eq!(tx_buf, rx_buf);
 
