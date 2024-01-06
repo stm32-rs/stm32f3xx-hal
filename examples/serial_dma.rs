@@ -50,6 +50,7 @@ fn main() -> ! {
     // the buffer we are going to receive the transmitted data in
     let rx_buf = singleton!(: [u8; 9] = [0; 9]).unwrap();
 
+    // TODO: where to find this information and bind this information to serial implementation
     // DMA channel selection depends on the peripheral:
     // - USART1: TX = 4, RX = 5
     // - USART2: TX = 6, RX = 7
@@ -57,7 +58,7 @@ fn main() -> ! {
     let (tx_channel, rx_channel) = (dma1.ch4, dma1.ch5);
 
     // start separate DMAs for sending and receiving the data
-    let transfer = serial.transfer_exact(rx_buf, rx_channel, tx_buf, tx_channel);
+    let transfer = serial.transfer_exact(rx_buf, tx_channel, tx_buf, rx_channel);
 
     // block until all data was transmitted and received
     let ((rx_buf, tx_buf), (rx_channel, tx_channel)) = transfer.wait();

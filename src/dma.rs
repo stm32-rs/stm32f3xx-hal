@@ -180,8 +180,8 @@ impl<'t, B, C: Channel, T: Target> Transfer<'t, B, C, T> {
 
 impl<'t, BR, BW, CR, CW, T> Transfer<'t, (BR, BW), (CR, CW), T>
 where
-    CR: Channel,
-    CW: Channel,
+    CR: Channel, /*  + ReceiveChannel */
+    CW: Channel, /*  + TransmitChannel */
     T: Target,
 {
     /// Start a DMA write transfer.
@@ -189,7 +189,7 @@ where
     /// # Panics
     ///
     /// Panics if the buffer is longer than 65535 words.
-    // TODO: sort arguments (target at first)
+    // TODO: sort arguments (target at first, write at first (see embedded hal?))
     pub fn start_transfer(
         buffer_read: BR,
         mut buffer_write: BW,
@@ -203,7 +203,7 @@ where
         T: OnChannel<CR> + OnChannel<CW>,
     {
         // TODO: ensure same buffer length
-        // TODO: ensure same word type
+        // TODO: ensure same nord type
 
         // SAFETY: We don't know the concrete type of `buffer` here, all
         // we can use are its `WriteBuffer` methods. Hence the only `&mut self`
@@ -714,6 +714,10 @@ dma!( 2: { 1,2,3,4,5 } );
 
 /// Marker trait mapping DMA targets to their channels
 pub trait OnChannel<C: Channel>: Target + crate::private::Sealed {}
+// TODO: put this in serial mod
+// TODO: the naming is switched
+pub trait TransmitChannel: crate::private::Sealed {}
+pub trait ReceiveChannel: crate::private::Sealed {}
 
 macro_rules! on_channel {
     (
@@ -726,6 +730,11 @@ macro_rules! on_channel {
                 impl<Tx, Rx> crate::private::Sealed for serial::Serial<$USART, (Tx, Rx)> {}
                 impl<Tx, Rx> OnChannel<$dma::$TxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
                 impl<Tx, Rx> OnChannel<$dma::$RxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
+
+                impl crate::private::Sealed for $dma::$TxChannel {}
+                impl TransmitChannel for $dma::$TxChannel {}
+                impl crate::private::Sealed for $dma::$RxChannel {}
+                impl ReceiveChannel for $dma::$RxChannel {}
             )+
         )+
     };

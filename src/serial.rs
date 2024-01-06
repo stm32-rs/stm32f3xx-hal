@@ -865,7 +865,7 @@ where
     where
         Self: dma::OnChannel<C>,
         B: dma::WriteBuffer<Word = u8> + 'static,
-        C: dma::Channel,
+        C: dma::Channel + dma::ReceiveChannel,
     {
         // SAFETY: RDR is valid peripheral address, safe to dereference and pass to the DMA
         unsafe {
@@ -883,7 +883,7 @@ where
     where
         Self: dma::OnChannel<C>,
         B: dma::ReadBuffer<Word = u8> + 'static,
-        C: dma::Channel,
+        C: dma::Channel + dma::TransmitChannel,
     {
         // SAFETY: TDR is valid peripheral address, safe to dereference and pass to the DMA
         unsafe {
@@ -906,13 +906,13 @@ where
     where
         Self: dma::OnChannel<CR> + dma::OnChannel<CW>,
         BR: dma::ReadBuffer<Word = u8> + 'static,
-        CR: dma::Channel,
+        CR: dma::Channel + dma::TransmitChannel,
         BW: dma::WriteBuffer<Word = u8> + 'static,
-        CW: dma::Channel,
+        CW: dma::Channel + dma::ReceiveChannel,
     {
         // SAFETY: TDR is valid peripheral address, safe to dereference and pass to the DMA
         unsafe {
-            channel_write.set_peripheral_address(
+            channel_read.set_peripheral_address(
                 core::ptr::addr_of!(self.usart.tdr) as u32,
                 dma::Increment::Disable,
             );
@@ -920,7 +920,7 @@ where
 
         // SAFETY: RDR is valid peripheral address, safe to dereference and pass to the DMA
         unsafe {
-            channel_read.set_peripheral_address(
+            channel_write.set_peripheral_address(
                 core::ptr::addr_of!(self.usart.rdr) as u32,
                 dma::Increment::Disable,
             );
