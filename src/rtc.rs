@@ -5,7 +5,7 @@
 //!
 //! [ST AN4759]: https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h
 
-use crate::pac::{PWR, RTC};
+use crate::pac::{PWR, RTC, RCC};
 use crate::rcc::{Enable, APB1, BDCR};
 use core::convert::TryInto;
 use core::fmt;
@@ -20,6 +20,123 @@ pub enum Error {
     InvalidInputData,
     /// Invalid register data, failed to convert to rtcc Type
     InvalidRtcData,
+}
+
+/// RTC clock source
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[non_exhaustive]
+pub enum RtcClockSource {
+    /// Low Speed Internal Clock (LSI)
+    LSI,
+    /// Low Speed External Clock (LSE) - To turn off/on bypass for LSE, please use inner bool parameter LSE(false/true)
+    LSE(bool),
+}
+
+pub struct RtcBuilder {
+    pub(crate) rtc: RTC,
+    prediv_s: u16,
+    prediv_a: u8,
+    clock_source: RtcClockSource,
+    default: bool,
+}
+
+impl RtcBuilder {
+    /// Builder for RTC using both LSI and LSE clock sources,
+    /// by default LSE is used with configuration of 1Hz calendar clock.
+    ///
+    /// ### Example for LSE:
+    /// ```
+    /// use stm32f3xx_hal::{pac, rtc::{RtcBuilder, RtcClockSource}};
+    /// ...
+    /// let dp = pac::Peripherals::take().unwrap();
+    /// let rcc = pac.RCC.constrain();
+    /// let mut pwr = dp.PWR;
+    ///
+    /// let rtc = RtcBuilder::new(pac.RTC).build(&mut pwr, &mut rcc.apb1, &mut rcc.bdcr);
+    /// /// or
+    /// let rtc = RtcBuilder::new(pac.RTC)
+    /// .set_clock_source(RtcClockSource::LSE(true)).build(&mut pwr, &mut rcc.apb1, &mut rcc.bdcr);
+    /// ```
+    /// ### Example for LSI:
+    /// ````
+    /// let rtc = RtcBuilder::new(pac.RTC)
+    /// .set_clock_source(RtcClockSource::LSI).build(&mut pwr, &mut rcc.apb1, &mut rcc.bdcr);
+    /// ````
+    /// **This examples shows how to run RTC with LSI and LSE with 1Hz frequency. This means
+    /// that RTC will increase by 1 second every second.**
+    ///
+    /// If you want to change your clock source or prescalers please use
+    /// correct functions.
+    pub fn new(rtc: RTC) -> Self {
+        Self {
+            prediv_s: 255,
+            prediv_a: 127,
+            clock_source: RtcClockSource::LSE(false),
+            default: true,
+            rtc: rtc,
+        }
+    }
+
+    /// Set your prescaler "perediv_s"
+    ///
+    /// **Note:** Using deferent values than default will affect your RTC clock,
+    /// it can slow down or speed up RTC.
+    pub fn set_perediv_s(mut self, prediv_s: u16) -> Self {
+        self.default = false;
+        self.prediv_s = prediv_s;
+        self
+    }
+
+    /// Set your prescaler "perediv_a"
+    ///
+    /// **Note:** Using deferent values than default will affect your RTC clock,
+    /// it can slow down or speed up RTC.
+    pub fn set_perediv_a(mut self, prediv_a: u8) -> Self {
+        self.default = false;
+        self.prediv_a = prediv_a;
+        self
+    }
+
+    /// Please select your clock source. Selecting source of RTC clock will impact on
+    /// clock accuracy.
+    ///
+    /// If your using:
+    ///
+    /// - ***LSE*** - your clock will be accurate, but it is external peripheral, so might not have it.
+    ///
+    /// - ***LSI*** - your clock might be not accurate, but if you don't need super accurate clock you can use LSI.
+    /// It is build in microcontroller clock source.
+    pub fn set_clock_source(mut self, clock_source: RtcClockSource) -> Self {
+        self.clock_source = clock_source;
+        self
+    }
+
+    /// Build RTC ready for use
+    pub fn build(mut self, pwr: &mut PWR, apb1: &mut APB1, bdcr: &mut BDCR) -> Rtc {
+        match self.clock_source {
+            RtcClockSource::LSI => {
+                let cfg = match self.default {
+                    true => {
+                        Self {
+                            prediv_s: 319,
+                            prediv_a: 127,
+                            clock_source: RtcClockSource::LSI,
+                            default: true,
+                            rtc: self.rtc,
+                        }
+                    }
+                    false => {
+                        self
+                    }
+                };
+                Rtc::new_for_builder(cfg, apb1, bdcr, pwr)
+            }
+            RtcClockSource::LSE(bypass) => {
+                Rtc::new_for_builder(self, apb1, bdcr, pwr)
+            }
+        }
+    }
 }
 
 /// Real Time Clock peripheral
@@ -72,6 +189,31 @@ impl Rtc {
         result
     }
 
+    /// Constructor for RTC builder
+    pub(crate) fn new_for_builder(cfg: RtcBuilder, apb1: &mut APB1, bdcr: &mut BDCR, pwr: &mut PWR) -> Self {
+        let mut result = Self { rtc: cfg.rtc };
+
+        unlock(apb1, pwr);
+        match cfg.clock_source {
+            RtcClockSource::LSI => {
+                enable_lsi();
+                enable_rtc_with_lsi(bdcr);
+            }
+            RtcClockSource::LSE(bypass) => {
+                enable_lse(bdcr, bypass);
+                enable(bdcr);
+            }
+        }
+        result.set_24h_fmt();
+
+        result.rtc.prer.modify(|_, w| {
+            w.prediv_s().bits(cfg.prediv_s);
+            w.prediv_a().bits(cfg.prediv_a)
+        });
+
+        result
+    }
+
     /// Sets calendar clock to 24 hr format
     pub fn set_24h_fmt(&mut self) {
         self.rtc.cr.modify(|_, w| w.fmt().set_bit());
@@ -111,8 +253,8 @@ impl Rtc {
     /// this function is used to disable write protection
     /// when modifying an RTC register
     fn modify<F>(&mut self, mut closure: F)
-    where
-        F: FnMut(&mut RTC),
+        where
+            F: FnMut(&mut RTC),
     {
         // Disable write protection
         self.rtc.wpr.write(|w| w.key().bits(0xCA));
@@ -435,17 +577,35 @@ fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
     while bdcr.bdcr().read().lserdy().bit_is_clear() {}
 }
 
+/// Enable the low frequency internal oscillator (LSI) - potentially unsafe
+fn enable_lsi() {
+    let mut rcc = unsafe { &*RCC::ptr() };
+    rcc.csr.modify(|_, w| w.lsion().set_bit());
+    while rcc.csr.read().lsirdy().bit_is_clear() {}
+}
+
+/// Enable DBP
 fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
     // Enable the backup interface by setting PWREN
     PWR::enable(apb1);
-    pwr.cr.modify(|_, w| {
+    pwr.cr.modify(|_, w|
         w
             // Enable access to the backup registers
             .dbp()
             .set_bit()
-    });
+    );
 
     while pwr.cr.read().dbp().bit_is_clear() {}
+}
+
+/// Enable RTC withLow Speed Internal clock (LSI) as clock source.
+fn enable_rtc_with_lsi(bdcr: &mut BDCR) {
+    bdcr.bdcr().modify(|_, w| w.bdrst().enabled());
+    bdcr.bdcr().modify(|_, w| {
+        w.rtcsel().lsi();
+        w.rtcen().enabled();
+        w.bdrst().disabled()
+    });
 }
 
 fn enable(bdcr: &mut BDCR) {
