@@ -137,6 +137,8 @@ pub enum Event {
     // /// [`Serial::set_wakeup_from_stopmode_reason()`]
     // #[doc(alias = "WUF")]
     // WakeupFromStopMode,
+    /// Any of the above events occurred
+    Any,
 }
 
 /// Serial error
@@ -490,7 +492,8 @@ where
         self.configure_interrupt(event, Switch::Off);
     }
 
-    /// Enable or disable the interrupt for the specified [`Event`].
+    /// Enable or disable the interrupt for the specified [`Event`], if passing [`Event::Any`]
+    /// , it will be apply to all events.
     #[inline]
     pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Switch>) {
         // Do a round way trip to be convert Into<Switch> -> bool
@@ -513,7 +516,28 @@ where
             Event::ReceiverTimeout => self.usart.cr1.modify(|_, w| w.rtoie().bit(enable)),
             // Event::EndOfBlock => self.usart.cr1.modify(|_, w| w.eobie().bit(enable)),
             // Event::WakeupFromStopMode => self.usart.cr3.modify(|_, w| w.wufie().bit(enable)),
+            Event::Any => {
+                self.usart.cr1.modify(|_, w| {
+                    w.txeie().bit(enable);
+                    w.tcie().bit(enable);
+                    w.rxneie().bit(enable);
+                    w.peie().bit(enable);
+                    w.idleie().bit(enable);
+                    w.cmie().bit(enable);
+                    w.rtoie().bit(enable)
+                    // w.eobie().bit(enable);
+                });
+                self.usart.cr2.modify(|_, w| {
+                    w.lbdie().bit(enable)
+                });
+                self.usart.cr3.modify(|_, w| {
+                    w.ctsie().bit(enable);
+                    w.eie().bit(enable)
+                    // w.wufie().bit(enable);
+                })
+            }
         };
+
     }
 
     /// Enable or disable interrupt for the specified [`Event`]s.
@@ -550,6 +574,7 @@ where
             Event::ReceiverTimeout => self.usart.cr1.read().rtoie().is_enabled(),
             // Event::EndOfBlock => self.usart.cr1.read().eobie().is_enabled(),
             // Event::WakeupFromStopMode => self.usart.cr3.read().wufie().is_enabled(),
+            Event::Any => false,        // FIXME: should handle if any of previous cases
         }
     }
 
@@ -588,6 +613,8 @@ where
             Event::ReceiverTimeout => isr.rtof().bit(),
             // Event::EndOfBlock => isr.eobf().bit(),
             // Event::WakeupFromStopMode => isr.wuf().bit(),
+            Event::Any => isr.bits() != 0,      // TODO: should we return true if any of ISR bit is 1?
+
         }
     }
 
@@ -640,6 +667,21 @@ where
             // Do nothing with this event (only useful for Smartcard, which is not
             // supported right now)
             Event::TransmitDataRegisterEmtpy => w,
+            Event::Any => {
+                w.ctscf().clear();
+                w.tccf().clear();
+                w.orecf().clear();
+                w.idlecf().clear();
+                w.pecf().clear();
+                w.pecf().clear();
+                w.lbdcf().clear();
+                w.ncf().clear();
+                w.fecf().clear();
+                w.cmcf().clear();
+                w.rtocf().clear();
+                self.usart.rqr.write(|w| w.rxfrq().set_bit());
+                w
+            }
         });
     }
 
