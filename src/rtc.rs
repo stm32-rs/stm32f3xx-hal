@@ -103,7 +103,7 @@ impl RtcBuilder {
     ///
     /// If your using:
     ///
-    /// - ***LSE*** - your clock will be accurate, but it is external peripheral, so might not have it.
+    /// - ***LSE*** - your clock will be accurate, but it is external peripheral, so you might not have it.
     ///
     /// - ***LSI*** - your clock might be not accurate, but if you don't need super accurate clock you can use LSI.
     /// It is build in microcontroller clock source.
@@ -598,7 +598,7 @@ fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
     while pwr.cr.read().dbp().bit_is_clear() {}
 }
 
-/// Enable RTC withLow Speed Internal clock (LSI) as clock source.
+/// Enable RTC with Low Speed Internal clock (LSI) as clock source.
 fn enable_rtc_with_lsi(bdcr: &mut BDCR) {
     bdcr.bdcr().modify(|_, w| w.bdrst().enabled());
     bdcr.bdcr().modify(|_, w| {
