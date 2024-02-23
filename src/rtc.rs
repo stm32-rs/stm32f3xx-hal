@@ -5,7 +5,7 @@
 //!
 //! [ST AN4759]: https:/www.st.com%2Fresource%2Fen%2Fapplication_note%2Fdm00226326-using-the-hardware-realtime-clock-rtc-and-the-tamper-management-unit-tamp-with-stm32-microcontrollers-stmicroelectronics.pdf&usg=AOvVaw3PzvL2TfYtwS32fw-Uv37h
 
-use crate::pac::{PWR, RTC, RCC};
+use crate::pac::{PWR, RCC, RTC};
 use crate::rcc::{Enable, APB1, BDCR};
 use core::convert::TryInto;
 use core::fmt;
@@ -33,6 +33,7 @@ pub enum RtcClockSource {
     LSE(bool),
 }
 
+/// Builder struct for RTC
 pub struct RtcBuilder {
     pub(crate) rtc: RTC,
     prediv_s: u16,
@@ -41,6 +42,8 @@ pub struct RtcBuilder {
     default: bool,
 }
 
+/// Builder for RTC using both LSI and LSE clock sources,
+/// by default LSE is used with configuration of 1Hz calendar clock.
 impl RtcBuilder {
     /// Builder for RTC using both LSI and LSE clock sources,
     /// by default LSE is used with configuration of 1Hz calendar clock.
@@ -74,7 +77,7 @@ impl RtcBuilder {
             prediv_a: 127,
             clock_source: RtcClockSource::LSE(false),
             default: true,
-            rtc: rtc,
+            rtc,
         }
     }
 
@@ -113,28 +116,22 @@ impl RtcBuilder {
     }
 
     /// Build RTC ready for use
-    pub fn build(mut self, pwr: &mut PWR, apb1: &mut APB1, bdcr: &mut BDCR) -> Rtc {
+    pub fn build(self, pwr: &mut PWR, apb1: &mut APB1, bdcr: &mut BDCR) -> Rtc {
         match self.clock_source {
             RtcClockSource::LSI => {
                 let cfg = match self.default {
-                    true => {
-                        Self {
-                            prediv_s: 319,
-                            prediv_a: 127,
-                            clock_source: RtcClockSource::LSI,
-                            default: true,
-                            rtc: self.rtc,
-                        }
-                    }
-                    false => {
-                        self
-                    }
+                    true => Self {
+                        prediv_s: 319,
+                        prediv_a: 127,
+                        clock_source: RtcClockSource::LSI,
+                        default: true,
+                        rtc: self.rtc,
+                    },
+                    false => self,
                 };
                 Rtc::new_for_builder(cfg, apb1, bdcr, pwr)
             }
-            RtcClockSource::LSE(bypass) => {
-                Rtc::new_for_builder(self, apb1, bdcr, pwr)
-            }
+            RtcClockSource::LSE(_bypass) => Rtc::new_for_builder(self, apb1, bdcr, pwr),
         }
     }
 }
@@ -190,7 +187,12 @@ impl Rtc {
     }
 
     /// Constructor for RTC builder
-    pub(crate) fn new_for_builder(cfg: RtcBuilder, apb1: &mut APB1, bdcr: &mut BDCR, pwr: &mut PWR) -> Self {
+    pub(crate) fn new_for_builder(
+        cfg: RtcBuilder,
+        apb1: &mut APB1,
+        bdcr: &mut BDCR,
+        pwr: &mut PWR,
+    ) -> Self {
         let mut result = Self { rtc: cfg.rtc };
 
         unlock(apb1, pwr);
@@ -253,8 +255,8 @@ impl Rtc {
     /// this function is used to disable write protection
     /// when modifying an RTC register
     fn modify<F>(&mut self, mut closure: F)
-        where
-            F: FnMut(&mut RTC),
+    where
+        F: FnMut(&mut RTC),
     {
         // Disable write protection
         self.rtc.wpr.write(|w| w.key().bits(0xCA));
@@ -578,8 +580,11 @@ fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
 }
 
 /// Enable the low frequency internal oscillator (LSI) - potentially unsafe
+///
+/// # Safety
+/// Function potentially unsafe because of writing in to CSR
 fn enable_lsi() {
-    let mut rcc = unsafe { &*RCC::ptr() };
+    let rcc = unsafe { &*RCC::ptr() };
     rcc.csr.modify(|_, w| w.lsion().set_bit());
     while rcc.csr.read().lsirdy().bit_is_clear() {}
 }
@@ -588,12 +593,7 @@ fn enable_lsi() {
 fn unlock(apb1: &mut APB1, pwr: &mut PWR) {
     // Enable the backup interface by setting PWREN
     PWR::enable(apb1);
-    pwr.cr.modify(|_, w|
-        w
-            // Enable access to the backup registers
-            .dbp()
-            .set_bit()
-    );
+    pwr.cr.modify(|_, w| w.dbp().set_bit());
 
     while pwr.cr.read().dbp().bit_is_clear() {}
 }

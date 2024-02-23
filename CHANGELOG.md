@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-No changes.
+- Added RtcBuilder for rtc module
 
 ## [v0.10.0] - 2023-11-30
 
