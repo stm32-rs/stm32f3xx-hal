@@ -582,8 +582,10 @@ fn enable_lse(bdcr: &mut BDCR, bypass: bool) {
 /// Enable the low frequency internal oscillator (LSI) - potentially unsafe
 ///
 /// # Safety
-/// Function potentially unsafe because of writing in to CSR
+/// Function potentially unsafe because of writing into CSR
 fn enable_lsi() {
+    // SAFETY:
+    // potentially unsafe because of writing into CSR
     let rcc = unsafe { &*RCC::ptr() };
     rcc.csr.modify(|_, w| w.lsion().set_bit());
     while rcc.csr.read().lsirdy().bit_is_clear() {}
