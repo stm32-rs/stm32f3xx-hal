@@ -19,7 +19,7 @@
 //! let pa0 = gpioa.pa0.into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
 //! ```
 //!
-//! And finally, you can use the functions from the [InputPin] or [OutputPin] traits in
+//! And finally, you can use the functions from the [`InputPin`] or [`OutputPin`] traits in
 //! `embedded_hal`
 //!
 //! For a complete example, see [examples/toggle.rs]
@@ -30,18 +30,18 @@
 //!
 //! Each GPIO pin can be set to various modes by corresponding `into_...` method:
 //!
-//! - **Input**: The output buffer is disabled and the schmitt trigger input is activated
-//! - **Output**: Both the output buffer and the schmitt trigger input is enabled
-//!     - **PushPull**: Output which either drives the pin high or low
-//!     - **OpenDrain**: Output which leaves the gate floating, or pulls it to ground in drain
+//! - `Input`: The output buffer is disabled and the schmitt trigger input is activated
+//! - `Output`: Both the output buffer and the schmitt trigger input is enabled
+//!     - `PushPull`: Output which either drives the pin high or low
+//!     - `OpenDrain`: Output which leaves the gate floating, or pulls it to ground in drain
 //!     mode. Can be used as an input in the `open` configuration
-//! - **Alternate**: Pin mode required when the pin is driven by other peripherals. The schmitt
+//! - `Alternate`: Pin mode required when the pin is driven by other peripherals. The schmitt
 //! trigger input is activated. The Output buffer is automatically enabled and disabled by
 //! peripherals. Output behavior is same as the output mode
-//!     - **PushPull**: Output which either drives the pin high or low
-//!     - **OpenDrain**: Output which leaves the gate floating, or pulls it to ground in drain
+//!     - `PushPull`: Output which either drives the pin high or low
+//!     - `OpenDrain`: Output which leaves the gate floating, or pulls it to ground in drain
 //!     mode
-//! - **Analog**: Pin mode required for ADC, DAC, OPAMP, and COMP peripherals. It is also suitable
+//! - `Analog`: Pin mode required for ADC, DAC, OPAMP, and COMP peripherals. It is also suitable
 //! for minimize energy consumption as the output buffer and the schmitt trigger input is disabled
 //!
 //! ### Output Speed
@@ -58,7 +58,7 @@
 //!
 //! [InputPin]: embedded_hal::digital::v2::InputPin
 //! [OutputPin]: embedded_hal::digital::v2::OutputPin
-//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/toggle.rs
+//! [examples/toggle.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/toggle.rs
 
 use core::{convert::Infallible, marker::PhantomData};
 
@@ -66,12 +66,13 @@ use crate::{
     hal::digital::v2::OutputPin,
     pac::{Interrupt, EXTI},
     rcc::AHB,
-    Toggle,
+    Switch,
 };
 
 use crate::hal::digital::v2::{toggleable, InputPin, StatefulOutputPin};
 
 /// Extension trait to split a GPIO peripheral in independent pins and registers
+#[allow(clippy::module_name_repetitions)]
 pub trait GpioExt {
     /// The Parts to split the GPIO peripheral into
     type Parts;
@@ -180,13 +181,13 @@ impl defmt::Format for Gpiox {
     }
 }
 
-// # SAFETY
+// SAFETY:
 // As Gpiox uses `dyn GpioRegExt` pointer internally, `Send` is not auto-implemented.
 // But since GpioExt does only do atomic operations without side-effects we can assume
 // that it safe to `Send` this type.
 unsafe impl Send for Gpiox {}
 
-// # SAFETY
+// SAFETY:
 // As Gpiox uses `dyn GpioRegExt` pointer internally, `Sync` is not auto-implemented.
 // But since GpioExt does only do atomic operations without side-effects we can assume
 // that it safe to `Send` this type.
@@ -226,7 +227,6 @@ impl marker::Index for Ux {
 pub struct U<const X: u8>;
 
 impl<const X: u8> marker::Index for U<X> {
-    #[inline(always)]
     fn index(&self) -> u8 {
         X
     }
@@ -322,7 +322,7 @@ impl<Gpio, Index, Mode> crate::private::Sealed for Pin<Gpio, Index, Mode> {}
 ///
 /// See [examples/gpio_erased.rs] as an example.
 ///
-/// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/gpio_erased.rs
+/// [examples/gpio_erased.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/gpio_erased.rs
 pub type PXx<Mode> = Pin<Gpiox, Ux, Mode>;
 
 impl<Gpio, Mode, const X: u8> Pin<Gpio, U<X>, Mode> {
@@ -500,13 +500,13 @@ where
     type Error = Infallible;
 
     fn set_high(&mut self) -> Result<(), Self::Error> {
-        // NOTE(unsafe) atomic write to a stateless register
+        // SAFETY: atomic write to a stateless register
         unsafe { (*self.gpio.ptr()).set_high(self.index.index()) };
         Ok(())
     }
 
     fn set_low(&mut self) -> Result<(), Self::Error> {
-        // NOTE(unsafe) atomic write to a stateless register
+        // SAFETY: atomic write to a stateless register
         unsafe { (*self.gpio.ptr()).set_low(self.index.index()) };
         Ok(())
     }
@@ -525,7 +525,7 @@ where
     }
 
     fn is_low(&self) -> Result<bool, Self::Error> {
-        // NOTE(unsafe) atomic read with no side effects
+        // SAFETY: atomic read with no side effects
         Ok(unsafe { (*self.gpio.ptr()).is_low(self.index.index()) })
     }
 }
@@ -540,7 +540,7 @@ where
     }
 
     fn is_set_low(&self) -> Result<bool, Self::Error> {
-        // NOTE(unsafe) atomic read with no side effects
+        // SAFETY: atomic read with no side effects
         Ok(unsafe { (*self.gpio.ptr()).is_set_low(self.index.index()) })
     }
 }
@@ -606,9 +606,9 @@ where
         const BITWIDTH: u8 = 1;
         let index = self.index.index();
         let (rise, fall) = match edge {
-            Edge::Rising => (true as u32, false as u32),
-            Edge::Falling => (false as u32, true as u32),
-            Edge::RisingFalling => (true as u32, true as u32),
+            Edge::Rising => (u32::from(true), u32::from(false)),
+            Edge::Falling => (u32::from(false), u32::from(true)),
+            Edge::RisingFalling => (u32::from(true), u32::from(true)),
         };
         // SAFETY: Unguarded write to the register, but behind a &mut
         unsafe {
@@ -622,11 +622,11 @@ where
     /// # Note
     ///
     /// Remeber to also configure the interrupt pin on
-    /// the SysCfg site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
-    pub fn configure_interrupt(&mut self, exti: &mut EXTI, enable: impl Into<Toggle>) {
+    /// the `SysCfg` site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
+    pub fn configure_interrupt(&mut self, exti: &mut EXTI, enable: impl Into<Switch>) {
         const BITWIDTH: u8 = 1;
 
-        let enable: Toggle = enable.into();
+        let enable: Switch = enable.into();
         let enable: bool = enable.into();
 
         let index = self.index.index();
@@ -640,14 +640,14 @@ where
     /// # Note
     ///
     /// Remeber to also configure the interrupt pin on
-    /// the SysCfg site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
+    /// the `SysCfg` site, with [`crate::syscfg::SysCfg::select_exti_interrupt_source()`]
     pub fn enable_interrupt(&mut self, exti: &mut EXTI) {
-        self.configure_interrupt(exti, Toggle::On)
+        self.configure_interrupt(exti, Switch::On);
     }
 
     /// Disable external interrupts from this pin
     pub fn disable_interrupt(&mut self, exti: &mut EXTI) {
-        self.configure_interrupt(exti, Toggle::Off)
+        self.configure_interrupt(exti, Switch::Off);
     }
 
     /// Clear the interrupt pending bit for this pin
@@ -763,13 +763,13 @@ macro_rules! gpio_trait {
 
                 #[inline(always)]
                 fn set_high(&self, i: u8) {
-                    // NOTE(unsafe, write) atomic write to a stateless register
+                    // SAFETY: atomic write to a stateless register
                     unsafe { self.bsrr.write(|w| w.bits(1 << i)) };
                 }
 
                 #[inline(always)]
                 fn set_low(&self, i: u8) {
-                    // NOTE(unsafe, write) atomic write to a stateless register
+                    // SAFETY: atomic write to a stateless register
                     unsafe { self.bsrr.write(|w| w.bits(1 << (16 + i))) };
                 }
             }
@@ -777,7 +777,7 @@ macro_rules! gpio_trait {
     };
 }
 
-/// Implement private::{Moder, Ospeedr, Otyper, Pupdr} traits for each opaque register structs
+/// Implement `private::{Moder, Ospeedr, Otyper, Pupdr}` traits for each opaque register structs
 macro_rules! r_trait {
     (
         ($GPIOX:ident, $gpioy:ident::$xr:ident::$enum:ident, $bitwidth:expr);
@@ -792,6 +792,8 @@ macro_rules! r_trait {
                 #[inline]
                 fn $fn(&mut self, i: u8) {
                     let value = $gpioy::$xr::$enum::$VARIANT as u32;
+                    // SAFETY: The &mut abstracts all accesses to the register itself,
+                    // which makes sure that this register accesss is exclusive
                     unsafe { crate::modify_at!((*$GPIOX::ptr()).$xr, $bitwidth, i, value) };
                 }
             )+
@@ -931,6 +933,8 @@ macro_rules! gpio {
                 #[inline]
                 fn afx(&mut self, i: u8, x: u8) {
                     const BITWIDTH: u8 = 4;
+                    // SAFETY: the abstraction of AFRL should ensure exclusive access in addition
+                    // to the &mut exclusive reference
                     unsafe { crate::modify_at!((*$GPIOX::ptr()).afrh, BITWIDTH, i - 8, x as u32) };
                 }
             }
@@ -942,6 +946,8 @@ macro_rules! gpio {
                 #[inline]
                 fn afx(&mut self, i: u8, x: u8) {
                     const BITWIDTH: u8 = 4;
+                    // SAFETY: the abstraction of AFRL should ensure exclusive access in addition
+                    // to the &mut exclusive reference
                     unsafe { crate::modify_at!((*$GPIOX::ptr()).afrl, BITWIDTH, i, x as u32) };
                 }
             }
@@ -952,10 +958,10 @@ macro_rules! gpio {
             r_trait! {
                 ($GPIOX, $gpioy::moder::MODER15_A, 2);
                 impl Moder for MODER {
-                    fn input { INPUT }
-                    fn output { OUTPUT }
-                    fn alternate { ALTERNATE }
-                    fn analog { ANALOG }
+                    fn input { Input }
+                    fn output { Output }
+                    fn alternate { Alternate }
+                    fn analog { Analog }
                 }
             }
 
@@ -965,9 +971,9 @@ macro_rules! gpio {
             r_trait! {
                 ($GPIOX, $gpioy::ospeedr::OSPEEDR15_A, 2);
                 impl Ospeedr for OSPEEDR {
-                    fn low { LOWSPEED }
-                    fn medium { MEDIUMSPEED }
-                    fn high { HIGHSPEED }
+                    fn low { LowSpeed }
+                    fn medium { MediumSpeed }
+                    fn high { HighSpeed }
                 }
             }
 
@@ -977,8 +983,8 @@ macro_rules! gpio {
             r_trait! {
                 ($GPIOX, $gpioy::otyper::OT15_A, 1);
                 impl Otyper for OTYPER {
-                    fn push_pull { PUSHPULL }
-                    fn open_drain { OPENDRAIN }
+                    fn push_pull { PushPull }
+                    fn open_drain { OpenDrain }
                 }
             }
 
@@ -988,9 +994,9 @@ macro_rules! gpio {
             r_trait! {
                 ($GPIOX, $gpioy::pupdr::PUPDR15_A, 2);
                 impl Pupdr for PUPDR {
-                    fn floating { FLOATING }
-                    fn pull_up { PULLUP }
-                    fn pull_down { PULLDOWN }
+                    fn floating { Floating }
+                    fn pull_up { PullUp }
+                    fn pull_down { PullDown }
                 }
             }
         }

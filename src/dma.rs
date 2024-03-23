@@ -6,7 +6,7 @@
 //!
 //! An example how to use DMA for serial, can be found at [examples/serial_dma.rs]
 //!
-//! [examples/serial_dma.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/serial_dma.rs
+//! [examples/serial_dma.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/serial_dma.rs
 
 // To learn about most of the ideas implemented here, check out the DMA section
 // of the Embedonomicon: https://docs.rust-embedded.org/embedonomicon/dma.html
@@ -28,6 +28,7 @@ use core::{
 use enumset::EnumSetType;
 
 /// Extension trait to split a DMA peripheral into independent channels
+#[allow(clippy::module_name_repetitions)]
 pub trait DmaExt {
     /// The type to split the DMA into
     type Channels;
@@ -63,21 +64,26 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         B: WriteBuffer + 'static,
         T: OnChannel<C>,
     {
-        // NOTE(unsafe) We don't know the concrete type of `buffer` here, all
+        // SAFETY: We don't know the concrete type of `buffer` here, all
         // we can use are its `WriteBuffer` methods. Hence the only `&mut self`
         // method we can call is `write_buffer`, which is allowed by
         // `WriteBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.write_buffer() };
         let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
 
-        // NOTE(unsafe) We are using the address of a 'static WriteBuffer here,
+        // SAFETY: We are using the address of a 'static WriteBuffer here,
         // which is guaranteed to be safe for DMA.
         unsafe { channel.set_memory_address(ptr as u32, Increment::Enable) };
         channel.set_transfer_length(len);
         channel.set_word_size::<B::Word>();
         channel.set_direction(Direction::FromPeripheral);
 
-        unsafe { Self::start(buffer, channel, target) }
+        // SAFTEY: we take ownership of the buffer, which is 'static as well, so it lives long
+        // enough (at least longer that the DMA transfer itself)
+        #[allow(clippy::undocumented_unsafe_blocks)]
+        unsafe {
+            Self::start(buffer, channel, target)
+        }
     }
 
     /// Start a DMA read transfer.
@@ -90,21 +96,26 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
         B: ReadBuffer + 'static,
         T: OnChannel<C>,
     {
-        // NOTE(unsafe) We don't know the concrete type of `buffer` here, all
+        // SAFETY: We don't know the concrete type of `buffer` here, all
         // we can use are its `ReadBuffer` methods. Hence there are no
         // `&mut self` methods we can call, so we are safe according to
         // `ReadBuffer`'s safety requirements.
         let (ptr, len) = unsafe { buffer.read_buffer() };
         let len = crate::expect!(u16::try_from(len).ok(), "buffer is too large");
 
-        // NOTE(unsafe) We are using the address of a 'static ReadBuffer here,
+        // SAFETY: We are using the address of a 'static ReadBuffer here,
         // which is guaranteed to be safe for DMA.
         unsafe { channel.set_memory_address(ptr as u32, Increment::Enable) };
         channel.set_transfer_length(len);
         channel.set_word_size::<B::Word>();
         channel.set_direction(Direction::FromMemory);
 
-        unsafe { Self::start(buffer, channel, target) }
+        // SAFTEY: We take ownership of the buffer, which is 'static as well, so it lives long
+        // enough (at least longer that the DMA transfer itself)
+        #[allow(clippy::undocumented_unsafe_blocks)]
+        unsafe {
+            Self::start(buffer, channel, target)
+        }
     }
 
     /// # Safety
@@ -134,12 +145,20 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
     }
 
     /// Is this transfer complete?
+    ///
+    /// # Panics
+    ///
+    /// Panics if no transfer is ongoing.
     pub fn is_complete(&self) -> bool {
         let inner = crate::unwrap!(self.inner.as_ref());
         inner.channel.is_event_triggered(Event::TransferComplete)
     }
 
     /// Stop this transfer and return ownership over its parts
+    ///
+    /// # Panics
+    ///
+    /// Panics no transfer is ongoing.
     pub fn stop(mut self) -> (B, C, T) {
         let mut inner = crate::unwrap!(self.inner.take());
         inner.stop();
@@ -195,8 +214,8 @@ pub enum Increment {
 impl From<Increment> for cr::PINC_A {
     fn from(inc: Increment) -> Self {
         match inc {
-            Increment::Enable => cr::PINC_A::ENABLED,
-            Increment::Disable => cr::PINC_A::DISABLED,
+            Increment::Enable => cr::PINC_A::Enabled,
+            Increment::Disable => cr::PINC_A::Disabled,
         }
     }
 }
@@ -218,10 +237,10 @@ pub enum Priority {
 impl From<Priority> for cr::PL_A {
     fn from(prio: Priority) -> Self {
         match prio {
-            Priority::Low => cr::PL_A::LOW,
-            Priority::Medium => cr::PL_A::MEDIUM,
-            Priority::High => cr::PL_A::HIGH,
-            Priority::VeryHigh => cr::PL_A::VERYHIGH,
+            Priority::Low => cr::PL_A::Low,
+            Priority::Medium => cr::PL_A::Medium,
+            Priority::High => cr::PL_A::High,
+            Priority::VeryHigh => cr::PL_A::VeryHigh,
         }
     }
 }
@@ -239,8 +258,8 @@ pub enum Direction {
 impl From<Direction> for cr::DIR_A {
     fn from(dir: Direction) -> Self {
         match dir {
-            Direction::FromMemory => cr::DIR_A::FROMMEMORY,
-            Direction::FromPeripheral => cr::DIR_A::FROMPERIPHERAL,
+            Direction::FromMemory => cr::DIR_A::FromMemory,
+            Direction::FromPeripheral => cr::DIR_A::FromPeripheral,
         }
     }
 }
@@ -306,7 +325,10 @@ pub trait Channel: private::Channel {
     unsafe fn set_peripheral_address(&mut self, address: u32, inc: Increment) {
         crate::assert!(!self.is_enabled());
 
-        self.ch().par.write(|w| w.pa().bits(address));
+        // SAFETY: If the caller does ensure, that address is valid address, this should be safe
+        unsafe {
+            self.ch().par.write(|w| w.pa().bits(address));
+        }
         self.ch().cr.modify(|_, w| w.pinc().variant(inc.into()));
     }
 
@@ -326,7 +348,10 @@ pub trait Channel: private::Channel {
     unsafe fn set_memory_address(&mut self, address: u32, inc: Increment) {
         crate::assert!(!self.is_enabled());
 
-        self.ch().mar.write(|w| w.ma().bits(address));
+        // SAFETY: If the caller does ensure, that address is valid address, this should be safe
+        unsafe {
+            self.ch().mar.write(|w| w.ma().bits(address));
+        }
         self.ch().cr.modify(|_, w| w.minc().variant(inc.into()));
     }
 
@@ -359,12 +384,12 @@ pub trait Channel: private::Channel {
     ///
     /// Panics if the word size is not one of 8, 16, or 32 bits.
     fn set_word_size<W>(&mut self) {
-        use cr::PSIZE_A::*;
+        use cr::PSIZE_A::{Bits16, Bits32, Bits8};
 
         let psize = match mem::size_of::<W>() {
-            1 => BITS8,
-            2 => BITS16,
-            4 => BITS32,
+            1 => Bits8,
+            2 => Bits16,
+            4 => Bits32,
             #[cfg(not(feature = "defmt"))]
             s => core::panic!("unsupported word size: {:?}", s),
             #[cfg(feature = "defmt")]
@@ -501,35 +526,31 @@ macro_rules! dma {
 
                     impl private::Channel for $Ci {
                         fn ch(&self) -> &pac::dma1::CH {
-                            // NOTE(unsafe) $Ci grants exclusive access to this register
+                            // SAFETY: $Ci grants exclusive access to this register
                             unsafe { &(*$DMAx::ptr()).$chi }
                         }
                     }
 
                     impl Channel for $Ci {
                         fn is_event_triggered(&self, event: Event) -> bool {
-                            use Event::*;
-
-                            // NOTE(unsafe) atomic read
+                            // SAFETY: atomic read
                             let flags = unsafe { (*$DMAx::ptr()).isr.read() };
                             match event {
-                                HalfTransfer => flags.$htifi().bit_is_set(),
-                                TransferComplete => flags.$tcifi().bit_is_set(),
-                                TransferError => flags.$teifi().bit_is_set(),
-                                Any => flags.$gifi().bit_is_set(),
+                                Event::HalfTransfer => flags.$htifi().bit_is_set(),
+                                Event::TransferComplete => flags.$tcifi().bit_is_set(),
+                                Event::TransferError => flags.$teifi().bit_is_set(),
+                                Event::Any => flags.$gifi().bit_is_set(),
                             }
                         }
 
                         fn clear_event(&mut self, event: Event) {
-                            use Event::*;
-
-                            // NOTE(unsafe) atomic write to a stateless register
+                            // SAFETY: atomic write to a stateless register
                             unsafe {
                                 (*$DMAx::ptr()).ifcr.write(|w| match event {
-                                    HalfTransfer => w.$chtifi().set_bit(),
-                                    TransferComplete => w.$ctcifi().set_bit(),
-                                    TransferError => w.$cteifi().set_bit(),
-                                    Any => w.$cgifi().set_bit(),
+                                    Event::HalfTransfer => w.$chtifi().set_bit(),
+                                    Event::TransferComplete => w.$ctcifi().set_bit(),
+                                    Event::TransferError => w.$cteifi().set_bit(),
+                                    Event::Any => w.$cgifi().set_bit(),
                                 });
                             }
                         }
@@ -572,8 +593,6 @@ dma!( 2: { 1,2,3,4,5 } );
 /// Marker trait mapping DMA targets to their channels
 pub trait OnChannel<C: Channel>: Target + crate::private::Sealed {}
 
-use crate::serial::{RxPin, TxPin};
-
 macro_rules! on_channel {
     (
         $(
@@ -582,10 +601,6 @@ macro_rules! on_channel {
     ) => {
         $(
             $(
-                impl<Pin> crate::private::Sealed for serial::Tx<$USART, Pin> {}
-                impl<Pin> OnChannel<$dma::$TxChannel> for serial::Tx<$USART, Pin> where Pin: TxPin<$USART> {}
-                impl<Pin> crate::private::Sealed for serial::Rx<$USART, Pin> {}
-                impl<Pin> OnChannel<$dma::$RxChannel> for serial::Rx<$USART, Pin> where Pin: RxPin<$USART> {}
                 impl<Tx, Rx> crate::private::Sealed for serial::Serial<$USART, (Tx, Rx)> {}
                 impl<Tx, Rx> OnChannel<$dma::$TxChannel> for serial::Serial<$USART, (Tx, Rx)> {}
                 impl<Tx, Rx> OnChannel<$dma::$RxChannel> for serial::Serial<$USART, (Tx, Rx)> {}

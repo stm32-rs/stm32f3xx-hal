@@ -17,6 +17,7 @@ use hal::flash::FlashExt;
 use hal::gpio::GpioExt;
 use hal::pac;
 use hal::prelude::*;
+#[allow(deprecated)]
 use hal::pwm::{tim16, tim2, tim3, tim8};
 use hal::rcc::RccExt;
 
@@ -70,6 +71,7 @@ fn main() -> ! {
     // TIM3
     //
     // A four channel general purpose timer that's broadly available
+    #[allow(deprecated)]
     let tim3_channels = tim3(
         dp.TIM3,
         1280,    // resolution of duty cycle
@@ -119,6 +121,7 @@ fn main() -> ! {
     // TIM2
     //
     // A 32-bit timer, so we can set a larger resolution
+    #[allow(deprecated)]
     let tim2_channels = tim2(
         dp.TIM2,
         160000,  // resolution of duty cycle
@@ -134,6 +137,7 @@ fn main() -> ! {
     //
     // A single channel timer, so it doesn't return a tuple.  We can
     // just use it directly
+    #[allow(deprecated)]
     let mut tim16_ch1 = tim16(
         dp.TIM16,
         1280,    // resolution of duty cycle
@@ -148,6 +152,7 @@ fn main() -> ! {
     //
     // An advanced timer with complementary outputs, so we can output
     // to complementary pins (works just like standard pins)
+    #[allow(deprecated)]
     let tim8_channels = tim8(
         dp.TIM8,
         1280,       // resolution of duty cycle

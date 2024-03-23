@@ -155,6 +155,10 @@
   [examples/pwm.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.6.1/examples/pwm.rs
 */
 
+// FIXME: this PWM module needs refactoring to ensure that no UB / race conditiotns is caused by unsafe acces to
+// mmaped registers.
+#![allow(clippy::undocumented_unsafe_blocks)]
+
 use core::marker::PhantomData;
 
 use crate::{
@@ -162,7 +166,7 @@ use crate::{
     hal::PwmPin,
     pac::{TIM15, TIM16, TIM17, TIM2},
     rcc::{Clocks, Enable, Reset},
-    time::rate::*,
+    time::{fixed_point::FixedPoint, rate::Hertz},
 };
 
 #[cfg(any(
@@ -263,6 +267,7 @@ pub struct WithNPins {}
 /// If there are no pins supplied, it cannot be enabled.
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[allow(clippy::module_name_repetitions)]
 pub struct PwmChannel<X, T> {
     timx_chy: PhantomData<X>,
     pin_status: PhantomData<T>,
@@ -280,6 +285,8 @@ macro_rules! pwm_timer_private {
         /// a resolution of 9000.  This allows the servo to be set in increments
         /// of exactly one degree.
         #[allow(unused_parens)]
+        #[must_use]
+        #[deprecated(since = "0.10.0", note = "needs refactoring and might violate safety rules conflicting with the timer API")]
         pub fn $timx(tim: $TIMx, res: $res, freq: Hertz, clocks: &Clocks) -> ($(PwmChannel<$TIMx_CHy, NoPins>),+) {
             // Power the timer and reset it to ensure a clean state
             // We use unsafe here to abstract away this implementation detail
@@ -317,6 +324,7 @@ macro_rules! pwm_timer_private {
             tim.egr.write(|w| w.ug().set_bit());
 
             // Enable outputs (STM32 Break Timer Specific)
+            #[allow(clippy::redundant_closure_call)]
             $enable_break_timer(&tim);
 
             // Enable the Timer
@@ -366,6 +374,7 @@ macro_rules! pwm_channel_pin {
             /// is called.
             ///
             /// The pin is consumed and cannot be returned.
+            #[must_use]
             pub fn $output_to_pzv<Otype>(
                 self,
                 _p: $gpioz::$PZv<gpio::$AFw<Otype>>,
@@ -395,6 +404,7 @@ macro_rules! pwm_channel_pin {
             /// can be used (as long as they are compatible).
             ///
             /// The pin is consumed and cannot be returned.
+            #[must_use]
             pub fn $output_to_pzv<Otype>(
                 self,
                 _p: $gpioz::$PZv<gpio::$AFw<Otype>>,
@@ -552,12 +562,12 @@ macro_rules! pwm_pin_for_pwm_channel_private {
             }
 
             fn get_duty(&self) -> Self::Duty {
-                unsafe { (*$TIMx::ptr()).$ccrx.read().$ccrq().bits() }
+                unsafe { (*$TIMx::ptr()).$ccrx().read().$ccrq().bits() }
             }
 
             fn set_duty(&mut self, duty: Self::Duty) -> () {
                 unsafe {
-                    (*$TIMx::ptr()).$ccrx.modify(|_, w| w.$ccrq().bits(duty));
+                    (*$TIMx::ptr()).$ccrx().modify(|_, w| w.$ccrq().bits(duty));
                 }
             }
         }
@@ -1096,7 +1106,7 @@ macro_rules! tim5 {
 }
 
 // TODO: This timer is also present in stm32f378
-#[cfg(any(feature = "stm32f373"))]
+#[cfg(feature = "stm32f373")]
 tim5!();
 
 // TIM8

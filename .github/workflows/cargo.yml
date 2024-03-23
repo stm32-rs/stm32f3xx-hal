@@ -1,0 +1,25 @@
+name: rust format
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  merge_group:
+
+  check-doc:
+    name: Check Documentation Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          target: thumbv7em-none-eabihf
+      - run: cargo doc --features=stm32f303xc
+
+  cargo-deny:
+    name: Cargo Deny
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: EmbarkStudios/cargo-deny-action@v1

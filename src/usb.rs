@@ -6,7 +6,7 @@
 //!
 //! See [examples/usb_serial.rs] for a usage example.
 //!
-//! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/usb_serial.rs
+//! [examples/usb_serial.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/usb_serial.rs
 
 use core::fmt;
 
@@ -16,6 +16,7 @@ use stm32_usbd::UsbPeripheral;
 
 use crate::gpio;
 use crate::gpio::gpioa::{PA11, PA12};
+#[allow(clippy::module_name_repetitions)]
 pub use stm32_usbd::UsbBus;
 
 /// Trait implemented by all pins that can be the "D-" pin for the USB peripheral
@@ -75,10 +76,13 @@ where
     }
 }
 
+// SAFETY: Implementation of Peripheral is thread-safe by using cricitcal sections to ensure
+// mutually exclusive access to the USB peripheral
 unsafe impl<Dm: DmPin, Dp: DpPin> Sync for Peripheral<Dm, Dp> {}
 
+// SAFETY: The Peirpheral has the same register block layout as STM32 USBFS
 unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm, Dp> {
-    const REGISTERS: *const () = USB::ptr() as *const ();
+    const REGISTERS: *const () = USB::ptr().cast::<()>();
     const DP_PULL_UP_FEATURE: bool = false;
     const EP_MEMORY: *const () = 0x4000_6000 as _;
     #[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
@@ -91,7 +95,9 @@ unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm,
     const EP_MEMORY_ACCESS_2X16: bool = true;
 
     fn enable() {
-        cortex_m::interrupt::free(|_| unsafe {
+        // SAFETY: the cricitcal section ensures, that the RCC access to enable the USB peripheral
+        // is mutually exclusive
+        critical_section::with(|_| unsafe {
             // Enable USB peripheral
             USB::enable_unchecked();
             // Reset USB peripheral
@@ -107,8 +113,9 @@ unsafe impl<Dm: DmPin + Send, Dp: DpPin + Send> UsbPeripheral for Peripheral<Dm,
     }
 }
 
-/// Type of the UsbBus
+/// Type of the `UsbBus`
 #[cfg(any(feature = "stm32f303xb", feature = "stm32f303xc"))]
+#[allow(clippy::module_name_repetitions)]
 pub type UsbBusType<Dm = PA11<gpio::AF14<gpio::PushPull>>, Dp = PA12<gpio::AF14<gpio::PushPull>>> =
     UsbBus<Peripheral<Dm, Dp>>;
 

@@ -9,7 +9,7 @@
 //!
 //! A usage example of the can peripheral can be found at [examples/can.rs]
 //!
-//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/can.rs
+//! [examples/can.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/can.rs
 
 use crate::gpio::{gpioa, gpiob};
 use crate::gpio::{PushPull, AF9};
@@ -68,10 +68,12 @@ where
     }
 }
 
+// SAFETY: Can has ownership of the CAN peripheral and the pointer is pointing to the CAN peripheral
 unsafe impl<Tx, Rx> bxcan::Instance for Can<Tx, Rx> {
     const REGISTERS: *mut RegisterBlock = pac::CAN::ptr() as *mut _;
 }
 
+// SAFETY: The peripheral does own it's associated filter banks
 unsafe impl<Tx, Rx> bxcan::FilterOwner for Can<Tx, Rx> {
     const NUM_FILTER_BANKS: u8 = 28;
 }

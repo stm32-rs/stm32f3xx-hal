@@ -28,11 +28,7 @@ fn main() -> ! {
         .into_push_pull_output(&mut gpioa.moder, &mut gpioa.otyper);
 
     // set up dac1, data is twelve bits, aligned right
-    #[cfg(not(feature = "svd-f302"))]
     let mut dac1 = Dac::new(dp.DAC1, &mut rcc.apb1);
-
-    #[cfg(feature = "svd-f302")]
-    let mut dac1 = Dac::new(dp.DAC, &mut rcc.apb1);
 
     let mut led = true;
 

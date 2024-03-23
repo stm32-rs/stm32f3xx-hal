@@ -4,7 +4,7 @@
 //!
 //! A usage example of the i2c peripheral can be found at [examples/i2c_scanner.rs]
 //!
-//! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/i2c_scanner.rs
+//! [examples/i2c_scanner.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/i2c_scanner.rs
 
 use core::{convert::TryFrom, ops::Deref};
 
@@ -13,7 +13,10 @@ use crate::{
     hal::blocking::i2c::{Read, Write, WriteRead},
     pac::{i2c1::RegisterBlock, rcc::cfgr3::I2C1SW_A, I2C1, RCC},
     rcc::{self, Clocks},
-    time::rate::*,
+    time::{
+        fixed_point::FixedPoint,
+        rate::{Extensions, Hertz},
+    },
 };
 
 #[cfg(not(feature = "gpio-f333"))]
@@ -111,6 +114,10 @@ macro_rules! busy_wait {
 
 impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
     /// Configures the I2C peripheral to work in master mode
+    ///
+    /// # Panics
+    ///
+    /// Panics if frequency `freq` can not be configured for the periphery.
     pub fn new(
         i2c: I2C,
         pins: (SCL, SDA),
@@ -138,13 +145,13 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
         // t_SCL ~= t_SYNC1 + t_SYNC2 + t_SCLL + t_SCLH
         let i2cclk = I2C::clock(&clocks).0;
         let ratio = i2cclk / freq.integer() - 4;
-        let (presc, scll, sclh, sdadel, scldel) = if freq >= 100.kHz() {
+        let (presc, scl_low, scl_high, sdadel, scldel) = if freq >= 100.kHz() {
             // fast-mode or fast-mode plus
             // here we pick SCLL + 1 = 2 * (SCLH + 1)
             let presc = ratio / 387;
 
-            let sclh = ((ratio / (presc + 1)) - 3) / 3;
-            let scll = 2 * (sclh + 1) - 1;
+            let scl_high = ((ratio / (presc + 1)) - 3) / 3;
+            let scl_low = 2 * (scl_high + 1) - 1;
 
             let (sdadel, scldel) = if freq > 400.kHz() {
                 // fast-mode plus
@@ -160,40 +167,40 @@ impl<I2C, SCL, SDA> I2c<I2C, (SCL, SDA)> {
                 (sdadel, scldel)
             };
 
-            (presc, scll, sclh, sdadel, scldel)
+            (presc, scl_low, scl_high, sdadel, scldel)
         } else {
             // standard-mode
             // here we pick SCLL = SCLH
             let presc = ratio / 514;
 
-            let sclh = ((ratio / (presc + 1)) - 2) / 2;
-            let scll = sclh;
+            let scl_high = ((ratio / (presc + 1)) - 2) / 2;
+            let scl_low = scl_high;
 
             let sdadel = i2cclk / 2_000_000 / (presc + 1);
             let scldel = i2cclk / 800_000 / (presc + 1) - 1;
 
-            (presc, scll, sclh, sdadel, scldel)
+            (presc, scl_low, scl_high, sdadel, scldel)
         };
 
         crate::assert!(presc < 16);
         crate::assert!(scldel < 16);
         crate::assert!(sdadel < 16);
-        let sclh = crate::unwrap!(u8::try_from(sclh).ok());
-        let scll = crate::unwrap!(u8::try_from(scll).ok());
+        let scl_high = crate::unwrap!(u8::try_from(scl_high).ok());
+        let scl_low = crate::unwrap!(u8::try_from(scl_low).ok());
 
         // Configure for "fast mode" (400 KHz)
         // NOTE(write): writes all non-reserved bits.
         i2c.timingr.write(|w| {
             w.presc()
-                .bits(presc as u8)
+                .bits(crate::unwrap!(u8::try_from(presc)))
                 .sdadel()
-                .bits(sdadel as u8)
+                .bits(crate::unwrap!(u8::try_from(sdadel)))
                 .scldel()
-                .bits(scldel as u8)
+                .bits(crate::unwrap!(u8::try_from(scldel)))
                 .scll()
-                .bits(scll)
+                .bits(scl_low)
                 .sclh()
-                .bits(sclh)
+                .bits(scl_high)
         });
 
         // Enable the peripheral
@@ -243,15 +250,16 @@ where
             self.i2c.cr2.modify(|_, w| {
                 if i == 0 {
                     w.add10().bit7();
-                    w.sadd().bits((addr << 1) as u16);
+                    w.sadd()
+                        .bits(u16::from(crate::unwrap!(addr.checked_shl(1))));
                     w.rd_wrn().read();
                     w.start().start();
                 }
-                w.nbytes().bits(buffer.len() as u8);
-                if i != end {
-                    w.reload().not_completed()
-                } else {
+                w.nbytes().bits(crate::unwrap!(u8::try_from(buffer.len())));
+                if i == end {
                     w.reload().completed().autoend().automatic()
+                } else {
+                    w.reload().not_completed()
                 }
             });
 
@@ -294,7 +302,8 @@ where
             // 0 byte write
             self.i2c.cr2.modify(|_, w| {
                 w.add10().bit7();
-                w.sadd().bits((addr << 1) as u16);
+                w.sadd()
+                    .bits(u16::from(crate::unwrap!(addr.checked_shl(1))));
                 w.rd_wrn().write();
                 w.nbytes().bits(0);
                 w.reload().completed();
@@ -310,15 +319,16 @@ where
                 self.i2c.cr2.modify(|_, w| {
                     if i == 0 {
                         w.add10().bit7();
-                        w.sadd().bits((addr << 1) as u16);
+                        w.sadd()
+                            .bits(u16::from(crate::unwrap!(addr.checked_shl(1))));
                         w.rd_wrn().write();
                         w.start().start();
                     }
-                    w.nbytes().bits(bytes.len() as u8);
-                    if i != end {
-                        w.reload().not_completed()
-                    } else {
+                    w.nbytes().bits(crate::unwrap!(u8::try_from(bytes.len())));
+                    if i == end {
                         w.reload().completed().autoend().automatic()
+                    } else {
+                        w.reload().not_completed()
                     }
                 });
 
@@ -371,15 +381,16 @@ where
             self.i2c.cr2.modify(|_, w| {
                 if i == 0 {
                     w.add10().bit7();
-                    w.sadd().bits((addr << 1) as u16);
+                    w.sadd()
+                        .bits(u16::from(crate::unwrap!(addr.checked_shl(1))));
                     w.rd_wrn().write();
                     w.start().start();
                 }
-                w.nbytes().bits(bytes.len() as u8);
-                if i != end {
-                    w.reload().not_completed()
-                } else {
+                w.nbytes().bits(crate::unwrap!(u8::try_from(bytes.len())));
+                if i == end {
                     w.reload().completed().autoend().software()
+                } else {
+                    w.reload().not_completed()
                 }
             });
 
@@ -412,15 +423,16 @@ where
             self.i2c.cr2.modify(|_, w| {
                 if i == 0 {
                     w.add10().bit7();
-                    w.sadd().bits((addr << 1) as u16);
+                    w.sadd()
+                        .bits(u16::from(crate::unwrap!(addr.checked_shl(1))));
                     w.rd_wrn().read();
                     w.start().start();
                 }
-                w.nbytes().bits(buffer.len() as u8);
-                if i != end {
-                    w.reload().not_completed()
-                } else {
+                w.nbytes().bits(crate::unwrap!(u8::try_from(buffer.len())));
+                if i == end {
                     w.reload().completed().autoend().automatic()
+                } else {
+                    w.reload().not_completed()
                 }
             });
 
@@ -460,10 +472,10 @@ macro_rules! i2c {
         $(
             impl Instance for $I2CX {
                 fn clock(clocks: &Clocks) -> Hertz {
-                    // NOTE(unsafe) atomic read with no side effects
+                    // SAFETY: atomic read of valid pointer with no side effects
                     match unsafe { (*RCC::ptr()).cfgr3.read().$i2cXsw().variant() } {
-                        I2C1SW_A::HSI => crate::rcc::HSI,
-                        I2C1SW_A::SYSCLK => clocks.sysclk(),
+                        I2C1SW_A::Hsi => crate::rcc::HSI,
+                        I2C1SW_A::Sysclk => clocks.sysclk(),
                     }
                 }
             }

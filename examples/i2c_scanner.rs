@@ -46,8 +46,8 @@ fn main() -> ! {
         &mut rcc.apb1,
     );
 
-    hprintln!("Start i2c scanning...").expect("Error using hprintln.");
-    hprintln!().unwrap();
+    hprintln!("Start i2c scanning...");
+    hprintln!();
 
     for addr in 0x00_u8..0x80 {
         // Write the empty array and check the slave response.
@@ -63,8 +63,8 @@ fn main() -> ! {
         }
     }
 
-    hprintln!().unwrap();
-    hprintln!("Done!").unwrap();
+    hprintln!();
+    hprintln!("Done!");
 
     loop {
         asm::wfi();

@@ -4,10 +4,10 @@
 //!
 //! Check out [examples/adc.rs].
 //!
-//! It can be built for the STM32F3Discovery running
+//! It can be built for the `STM32F3Discovery` running
 //! `cargo build --example adc --features=stm32f303xc`
 //!
-//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/adc.rs
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/adc.rs
 
 use core::ops::Deref;
 use core::{convert::TryInto, marker::PhantomData};
@@ -30,18 +30,10 @@ use crate::{
     pac::{self, adc1, Interrupt},
     rcc::{Clocks, Enable, AHB},
     time::{duration::Microseconds, fixed_point::FixedPoint, rate::Hertz},
-    Toggle,
+    Switch,
 };
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "svd-f3x4")] {
-        use crate::pac::adc_common as adc1_2;
-
-        use adc1_2::ccr::CKMODE_A;
-    } else {
-        use crate::pac::{adc1_2, adc1_2::ccr::CKMODE_A};
-    }
-}
+use crate::pac::{adc1_2, adc1_2::ccr::CKMODE_A};
 
 #[cfg(feature = "enumset")]
 use enumset::{EnumSet, EnumSetType};
@@ -105,6 +97,7 @@ pub struct TemperatureSensor<ADC> {
 ///
 /// This peripheral can control different parts, like enabling internal sensors (like temperature sensor)
 /// or enable dual channel mode (which is not supported yet.)
+#[allow(clippy::module_name_repetitions)]
 pub struct CommonAdc<ADC> {
     reg: ADC,
 }
@@ -140,7 +133,7 @@ where
 {
     /// Releases the common ADC peripheral
     pub fn free(self, _adcs: &<ADC as CommonInstance>::Childs) -> ADC {
-        cortex_m::interrupt::free(|_| {
+        critical_section::with(|_| {
             // SAFETY: Guaranteed to be the only instance left, which has control over the
             // `ADC`perpherals, and criticala section ensure that no race condition happens
             // on the `Bus` peripheral.
@@ -263,7 +256,7 @@ macro_rules! sp_pins {
                 ///
                 /// Code example can be seen in [examples/adc.rs].
                 ///
-                /// [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/adc.rs
+                /// [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/adc.rs
                 /// [RM0316]: https://www.st.com/resource/en/reference_manual/dm00094349.pdf
                 // FIXME(Sh3Rm4n): Soundness hole: Still mutliple sensor objects can be created.
                 // An idea might be to split out the sensors from CommonAdc similar to the
@@ -356,7 +349,7 @@ where
     // TODO(Sh3Rm4n): Check against and integrate to DMA
     #[inline]
     pub fn data_register_address(&self) -> u32 {
-        &self.reg.dr as *const _ as u32
+        core::ptr::addr_of!(self.reg.dr) as u32
     }
 
     /// Manually start a conversion sequence.
@@ -365,7 +358,7 @@ where
     /// * The conversion mode is configured via [`Adc::set_conversion_mode`].
     #[inline]
     pub fn start_conversion(&mut self) {
-        self.reg.cr.modify(|_, w| w.adstart().start());
+        self.reg.cr.modify(|_, w| w.adstart().start_conversion());
     }
 
     /// Configure and convert the [`Adc`] instance into [`OneShot`] mode.
@@ -401,30 +394,23 @@ where
         if self.reg.cr.read().aden().bit()
             && (self.reg.cr.read().adstart().bit() || self.reg.cr.read().jadstart().bit())
         {
-            self.reg.cr.modify(|_, w| w.adstp().stop());
+            self.reg.cr.modify(|_, w| w.adstp().stop_conversion());
             // In auto-injection mode (JAUTO=1), setting ADSTP bit aborts both
             // regular and injected conversions (do not use JADSTP)
             if !self.reg.cfgr.read().jauto().is_enabled() {
-                #[cfg(not(feature = "svd-f301"))]
-                self.reg.cr.modify(|_, w| w.jadstp().stop());
-                #[cfg(feature = "svd-f301")]
-                self.reg.cr.modify(|_, w| w.jadst().set_bit());
+                self.reg.cr.modify(|_, w| w.jadstp().stop_conversion());
             }
-            #[cfg(not(feature = "svd-f301"))]
             while self.reg.cr.read().adstp().bit() || self.reg.cr.read().jadstp().bit() {}
-            // TODO(Sh3Rm4n): https://github.com/stm32-rs/stm32-rs/pull/696
-            #[cfg(feature = "svd-f301")]
-            while self.reg.cr.read().adstp().bit() || self.reg.cr.read().jadst().bit() {}
         }
 
         // Software is allowed to set ADDIS only when ADEN=1 and both ADSTART=0
         // and JADSTART=0 (which ensures that no conversion is ongoing)
-        if self.reg.cr.read().aden().is_enable() {
+        if self.reg.cr.read().aden().is_enabled() {
             // 2. Disable ADC
             // TODO(Sh3Rm4n): Use w.aaddis().disable() once https://github.com/stm32-rs/stm32-rs/pull/699 is merged
             self.reg.cr.modify(|_, w| w.addis().set_bit());
             // 3. Wait for ADC being disabled
-            while self.reg.cr.read().aden().is_enable() {}
+            while self.reg.cr.read().aden().is_enabled() {}
         }
 
         Adc {
@@ -475,9 +461,9 @@ where
         // ADRDY=1 was set.
         // This assumption is true, if the peripheral was initially enabled through
         // this method.
-        if !self.reg.cr.read().aden().is_enable() {
+        if !self.reg.cr.read().aden().is_enabled() {
             // Set ADEN=1
-            self.reg.cr.modify(|_, w| w.aden().enable());
+            self.reg.cr.modify(|_, w| w.aden().enabled());
             // Wait until ADRDY=1 (ADRDY is set after the ADC startup time). This can be
             // done using the associated interrupt (setting ADRDYIE=1).
             while self.reg.isr.read().adrdy().is_not_ready() {}
@@ -508,7 +494,7 @@ where
         // TODO(Sh3Rm4n): Would about concurrent calibrations between related ADCs?
         // int_ref: &mut VoltageInternalReference<ADC>,
     ) {
-        self.configure_voltage_regulator(Toggle::On, clocks);
+        self.configure_voltage_regulator(Switch::On, clocks);
 
         self.reg
             .cr
@@ -527,21 +513,21 @@ where
         asm::delay(cpu_cycles);
 
         // When the internal voltage regulator is disabled, the internal analog calibration is kept
-        self.configure_voltage_regulator(Toggle::Off, clocks);
+        self.configure_voltage_regulator(Switch::Off, clocks);
     }
 
     /// Enable the interal voltage generator Blocks until regulator is enabled.
-    fn configure_voltage_regulator(&mut self, toggle: impl Into<Toggle>, clocks: &Clocks) {
+    fn configure_voltage_regulator(&mut self, toggle: impl Into<Switch>, clocks: &Clocks) {
         let already_on = self.reg.cr.read().advregen().is_enabled();
         let toggle = toggle.into();
         self.reg.cr.modify(|_, w| w.advregen().intermediate());
         self.reg.cr.modify(|_, w| {
             w.advregen().variant(match toggle {
-                Toggle::On => adc1::cr::ADVREGEN_A::ENABLED,
-                Toggle::Off => adc1::cr::ADVREGEN_A::DISABLED,
+                Switch::On => adc1::cr::ADVREGEN_A::Enabled,
+                Switch::Off => adc1::cr::ADVREGEN_A::Disabled,
             })
         });
-        if toggle == Toggle::On && !already_on {
+        if toggle == Switch::On && !already_on {
             let wait = MAX_ADVREGEN_STARTUP.integer()
                 * clocks.sysclk().integer()
                 * <Microseconds as FixedPoint>::SCALING_FACTOR;
@@ -588,34 +574,34 @@ where
         let cfgr = self.reg.cfgr.read();
 
         match (cfgr.exten().variant(), cfgr.extsel().variant()) {
-            (EXTEN_A::DISABLED, _) | (_, None) => None,
+            (EXTEN_A::Disabled, _) | (_, None) => None,
             (edge, Some(ext)) => {
                 let edge = match edge {
-                    EXTEN_A::DISABLED => {
+                    EXTEN_A::Disabled => {
                         // SAFETY: This arm can not be reached, because of the
                         // (EXTEN_A::DISABLED, _) arm above.
                         unsafe { unreachable_unchecked() }
                     }
-                    EXTEN_A::RISINGEDGE => config::TriggerMode::RisingEdge,
-                    EXTEN_A::FALLINGEDGE => config::TriggerMode::FallingEdge,
-                    EXTEN_A::BOTHEDGES => config::TriggerMode::BothEdges,
+                    EXTEN_A::RisingEdge => config::TriggerMode::RisingEdge,
+                    EXTEN_A::FallingEdge => config::TriggerMode::FallingEdge,
+                    EXTEN_A::BothEdges => config::TriggerMode::BothEdges,
                 };
 
                 Some(match ext {
-                    EXTSEL_A::HRTIM_ADCTRG1 => ExternalTrigger::HrtimAdcTrg1(edge),
-                    EXTSEL_A::HRTIM_ADCTRG3 => ExternalTrigger::HrtimAdcTrg3(edge),
-                    EXTSEL_A::TIM1_CC1 => ExternalTrigger::Tim1Cc1(edge),
-                    EXTSEL_A::TIM1_CC2 => ExternalTrigger::Tim1Cc2(edge),
-                    EXTSEL_A::TIM1_CC3 => ExternalTrigger::Tim1Cc3(edge),
-                    EXTSEL_A::TIM2_CC2 => ExternalTrigger::Tim2Cc2(edge),
-                    EXTSEL_A::TIM3_TRGO => ExternalTrigger::Tim3Trgo(edge),
-                    EXTSEL_A::EXTI11 => ExternalTrigger::Exti11(edge),
-                    EXTSEL_A::TIM1_TRGO => ExternalTrigger::Tim1Trgo(edge),
-                    EXTSEL_A::TIM1_TRGO2 => ExternalTrigger::Tim1Trgo2(edge),
-                    EXTSEL_A::TIM2_TRGO => ExternalTrigger::Tim2Trgo(edge),
-                    EXTSEL_A::TIM6_TRGO => ExternalTrigger::Tim6Trgo(edge),
-                    EXTSEL_A::TIM15_TRGO => ExternalTrigger::Tim15Trgo(edge),
-                    EXTSEL_A::TIM3_CC4 => ExternalTrigger::Tim3Cc4(edge),
+                    EXTSEL_A::HrtimAdctrg1 => ExternalTrigger::HrtimAdcTrg1(edge),
+                    EXTSEL_A::HrtimAdctrg3 => ExternalTrigger::HrtimAdcTrg3(edge),
+                    EXTSEL_A::Tim1Cc1 => ExternalTrigger::Tim1Cc1(edge),
+                    EXTSEL_A::Tim1Cc2 => ExternalTrigger::Tim1Cc2(edge),
+                    EXTSEL_A::Tim1Cc3 => ExternalTrigger::Tim1Cc3(edge),
+                    EXTSEL_A::Tim2Cc2 => ExternalTrigger::Tim2Cc2(edge),
+                    EXTSEL_A::Tim3Trgo => ExternalTrigger::Tim3Trgo(edge),
+                    EXTSEL_A::Exti11 => ExternalTrigger::Exti11(edge),
+                    EXTSEL_A::Tim1Trgo => ExternalTrigger::Tim1Trgo(edge),
+                    EXTSEL_A::Tim1Trgo2 => ExternalTrigger::Tim1Trgo2(edge),
+                    EXTSEL_A::Tim2Trgo => ExternalTrigger::Tim2Trgo(edge),
+                    EXTSEL_A::Tim6Trgo => ExternalTrigger::Tim6Trgo(edge),
+                    EXTSEL_A::Tim15Trgo => ExternalTrigger::Tim15Trgo(edge),
+                    EXTSEL_A::Tim3Cc4 => ExternalTrigger::Tim3Cc4(edge),
                 })
             }
         }
@@ -632,24 +618,25 @@ where
             cfgr.discen().variant(),
             cfgr.discnum().bits(),
         ) {
-            (CONT_A::SINGLE, DISCEN_A::DISABLED, _) => config::ConversionMode::Single,
-            (CONT_A::CONTINUOUS, DISCEN_A::DISABLED, _) => config::ConversionMode::Continuous,
+            (CONT_A::Single, DISCEN_A::Disabled, _) => config::ConversionMode::Single,
+            (CONT_A::Continuous, DISCEN_A::Disabled, _) => config::ConversionMode::Continuous,
             // It is not possible to have both discontinuous mode and continuous mode enabled. In this
             // case (if DISCEN=1, CONT=1), the ADC behaves as if continuous mode was disabled.
             // [RM0316 15.3.20]
-            (_, DISCEN_A::ENABLED, n) => config::ConversionMode::Discontinuous(n),
+            (_, DISCEN_A::Enabled, n) => config::ConversionMode::Discontinuous(n),
         }
     }
 
     /// Get the current configured DMA mode.
     #[inline]
     pub fn dma_mode(&self) -> config::DmaMode {
-        let cfgr = self.reg.cfgr.read();
         use adc1::cfgr::{DMACFG_A, DMAEN_A};
+
+        let cfgr = self.reg.cfgr.read();
         match (cfgr.dmaen().variant(), cfgr.dmacfg().variant()) {
-            (DMAEN_A::DISABLED, _) => config::DmaMode::Disabled,
-            (DMAEN_A::ENABLED, DMACFG_A::ONESHOT) => config::DmaMode::OneShot,
-            (DMAEN_A::ENABLED, DMACFG_A::CIRCULAR) => config::DmaMode::Circular,
+            (DMAEN_A::Disabled, _) => config::DmaMode::Disabled,
+            (DMAEN_A::Enabled, DMACFG_A::OneShot) => config::DmaMode::OneShot,
+            (DMAEN_A::Enabled, DMACFG_A::Circular) => config::DmaMode::Circular,
         }
     }
 
@@ -684,7 +671,7 @@ where
     /// * Alternativly a conversino stop is signaled via the [`Event::EndOfConversion`] event.
     #[inline]
     pub fn is_conversion_ongoing(&self) -> bool {
-        self.reg.cr.read().adstart().is_start()
+        self.reg.cr.read().adstart().is_active()
     }
 
     /// Get the [`channel::Id`] at a specific [`config::Sequence`] position.
@@ -887,7 +874,7 @@ where
     /// Set the overrun mode
     #[inline]
     pub fn set_overrun_mode(&mut self, mode: config::OverrunMode) {
-        self.reg.cfgr.modify(|_, w| w.ovrmod().variant(mode.into()))
+        self.reg.cfgr.modify(|_, w| w.ovrmod().variant(mode.into()));
     }
 
     /// Sets the sampling resolution.
@@ -958,9 +945,9 @@ where
     pub fn set_dma_mode(&mut self, dma: config::DmaMode) {
         use adc1::cfgr::{DMACFG_A, DMAEN_A};
         let (en, mode) = match dma {
-            config::DmaMode::Disabled => (DMAEN_A::DISABLED, DMACFG_A::ONESHOT),
-            config::DmaMode::OneShot => (DMAEN_A::ENABLED, DMACFG_A::ONESHOT),
-            config::DmaMode::Circular => (DMAEN_A::ENABLED, DMACFG_A::CIRCULAR),
+            config::DmaMode::Disabled => (DMAEN_A::Disabled, DMACFG_A::OneShot),
+            config::DmaMode::OneShot => (DMAEN_A::Enabled, DMACFG_A::OneShot),
+            config::DmaMode::Circular => (DMAEN_A::Enabled, DMACFG_A::Circular),
         };
 
         self.reg
@@ -989,7 +976,7 @@ where
     pub fn stop_conversion(&mut self) {
         // If no conversion is ongoing, this may lead to the stop bit never beeing reset?
         if self.is_conversion_ongoing() {
-            self.reg.cr.modify(|_, w| w.adstp().stop());
+            self.reg.cr.modify(|_, w| w.adstp().stop_conversion());
         }
 
         while self.reg.cr.read().adstp().bit_is_set() {}
@@ -1038,23 +1025,26 @@ where
         }
 
         // Set the channel in the right sequence field
-        match sequence {
-            config::Sequence::One      => self.reg.sqr1.modify(|_, w| w.sq1().bits(channel.into())),
-            config::Sequence::Two      => self.reg.sqr1.modify(|_, w| w.sq2().bits(channel.into())),
-            config::Sequence::Three    => self.reg.sqr1.modify(|_, w| w.sq3().bits(channel.into())),
-            config::Sequence::Four     => self.reg.sqr1.modify(|_, w| w.sq4().bits(channel.into())),
-            config::Sequence::Five     => self.reg.sqr2.modify(|_, w| w.sq5().bits(channel.into())),
-            config::Sequence::Six      => self.reg.sqr2.modify(|_, w| w.sq6().bits(channel.into())),
-            config::Sequence::Seven    => self.reg.sqr2.modify(|_, w| w.sq7().bits(channel.into())),
-            config::Sequence::Eight    => self.reg.sqr2.modify(|_, w| w.sq8().bits(channel.into())),
-            config::Sequence::Nine     => self.reg.sqr2.modify(|_, w| w.sq9().bits(channel.into())),
-            config::Sequence::Ten      => self.reg.sqr3.modify(|_, w| w.sq10().bits(channel.into())),
-            config::Sequence::Eleven   => self.reg.sqr3.modify(|_, w| w.sq11().bits(channel.into())),
-            config::Sequence::Twelve   => self.reg.sqr3.modify(|_, w| w.sq12().bits(channel.into())),
-            config::Sequence::Thirteen => self.reg.sqr3.modify(|_, w| w.sq13().bits(channel.into())),
-            config::Sequence::Fourteen => self.reg.sqr3.modify(|_, w| w.sq14().bits(channel.into())),
-            config::Sequence::Fifteen  => self.reg.sqr4.modify(|_, w| w.sq15().bits(channel.into())),
-            config::Sequence::Sixteen  => self.reg.sqr4.modify(|_, w| w.sq16().bits(channel.into())),
+        // SAFETY: the channel.into() implementation ensures that those are valid values
+        unsafe {
+            match sequence {
+                config::Sequence::One      => self.reg.sqr1.modify(|_, w| w.sq1().bits(channel.into())),
+                config::Sequence::Two      => self.reg.sqr1.modify(|_, w| w.sq2().bits(channel.into())),
+                config::Sequence::Three    => self.reg.sqr1.modify(|_, w| w.sq3().bits(channel.into())),
+                config::Sequence::Four     => self.reg.sqr1.modify(|_, w| w.sq4().bits(channel.into())),
+                config::Sequence::Five     => self.reg.sqr2.modify(|_, w| w.sq5().bits(channel.into())),
+                config::Sequence::Six      => self.reg.sqr2.modify(|_, w| w.sq6().bits(channel.into())),
+                config::Sequence::Seven    => self.reg.sqr2.modify(|_, w| w.sq7().bits(channel.into())),
+                config::Sequence::Eight    => self.reg.sqr2.modify(|_, w| w.sq8().bits(channel.into())),
+                config::Sequence::Nine     => self.reg.sqr2.modify(|_, w| w.sq9().bits(channel.into())),
+                config::Sequence::Ten      => self.reg.sqr3.modify(|_, w| w.sq10().bits(channel.into())),
+                config::Sequence::Eleven   => self.reg.sqr3.modify(|_, w| w.sq11().bits(channel.into())),
+                config::Sequence::Twelve   => self.reg.sqr3.modify(|_, w| w.sq12().bits(channel.into())),
+                config::Sequence::Thirteen => self.reg.sqr3.modify(|_, w| w.sq13().bits(channel.into())),
+                config::Sequence::Fourteen => self.reg.sqr3.modify(|_, w| w.sq14().bits(channel.into())),
+                config::Sequence::Fifteen  => self.reg.sqr4.modify(|_, w| w.sq15().bits(channel.into())),
+                config::Sequence::Sixteen  => self.reg.sqr4.modify(|_, w| w.sq16().bits(channel.into())),
+            }
         }
     }
 
@@ -1105,7 +1095,7 @@ where
     /// the end of a single conversion of a "slot" is notfied via [`Event::EndOfConversion`].
     #[inline]
     pub fn set_sequence_length(&mut self, sequence: config::Sequence) {
-        self.reg.sqr1.modify(|_, w| w.l().bits(sequence.into()))
+        self.reg.sqr1.modify(|_, w| w.l().bits(sequence.into()));
     }
 
     // TODO(Sh3Rm4n): Implement, when injection mode is implemented.
@@ -1118,20 +1108,20 @@ where
     /// Enable the interrupt for the specified [`Event`].
     #[inline]
     pub fn enable_interrupt(&mut self, event: Event) {
-        self.configure_interrupt(event, Toggle::On);
+        self.configure_interrupt(event, Switch::On);
     }
 
     /// Disable the interrupt for the specified [`Event`].
     #[inline]
     pub fn disable_interrupt(&mut self, event: Event) {
-        self.configure_interrupt(event, Toggle::Off);
+        self.configure_interrupt(event, Switch::Off);
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
     #[inline]
-    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Toggle>) {
-        // Do a round way trip to be convert Into<Toggle> -> bool
-        let enable: Toggle = enable.into();
+    pub fn configure_interrupt(&mut self, event: Event, enable: impl Into<Switch>) {
+        // Do a round way trip to be convert Into<Switch> -> bool
+        let enable: Switch = enable.into();
         let enable: bool = enable.into();
         match event {
             Event::AdcReady => self.reg.ier.modify(|_, w| w.adrdyie().bit(enable)),
@@ -1140,16 +1130,16 @@ where
             Event::EndOfSequence => self.reg.ier.modify(|_, w| w.eosie().bit(enable)),
             Event::Overrun => self.reg.ier.modify(|_, w| w.ovrie().bit(enable)),
             Event::InjectedChannelEndOfConversion => {
-                self.reg.ier.modify(|_, w| w.jeocie().bit(enable))
+                self.reg.ier.modify(|_, w| w.jeocie().bit(enable));
             }
             Event::InjectedChannelEndOfSequence => {
-                self.reg.ier.modify(|_, w| w.jeosie().bit(enable))
+                self.reg.ier.modify(|_, w| w.jeosie().bit(enable));
             }
             Event::AnalogWatchdog1 => self.reg.ier.modify(|_, w| w.awd1ie().bit(enable)),
             Event::AnalogWatchdog2 => self.reg.ier.modify(|_, w| w.awd2ie().bit(enable)),
             Event::AnalogWatchdog3 => self.reg.ier.modify(|_, w| w.awd3ie().bit(enable)),
             Event::InjectedContextQueueOverfow => {
-                self.reg.ier.modify(|_, w| w.jqovfie().bit(enable))
+                self.reg.ier.modify(|_, w| w.jqovfie().bit(enable));
             }
         };
     }
@@ -1281,8 +1271,8 @@ where
         #[cfg(feature = "svd-f373")]
         self.set_scan(config::Scan::Disabled);
 
-        let is_eoc_enabled = self.is_interrupt_configured(Event::EndOfConversion);
-        let is_eos_enabled = self.is_interrupt_configured(Event::EndOfSequence);
+        let is_end_of_conversion_enabled = self.is_interrupt_configured(Event::EndOfConversion);
+        let is_end_of_sequence_enabled = self.is_interrupt_configured(Event::EndOfSequence);
         self.disable_interrupt(Event::EndOfConversion);
         self.disable_interrupt(Event::EndOfSequence);
 
@@ -1312,8 +1302,8 @@ where
         }
         self.set_sequence_length(seq_len);
 
-        self.configure_interrupt(Event::EndOfSequence, is_eos_enabled);
-        self.configure_interrupt(Event::EndOfConversion, is_eoc_enabled);
+        self.configure_interrupt(Event::EndOfSequence, is_end_of_sequence_enabled);
+        self.configure_interrupt(Event::EndOfConversion, is_end_of_conversion_enabled);
 
         #[cfg(feature = "svd-f373")]
         self.set_scan(config::Scan::Disabled);
@@ -1336,17 +1326,21 @@ where
 
     /// Synchronously record a single sample of `pin`.
     fn read(&mut self, _pin: &mut Pin) -> nb::Result<Word, Self::Error> {
+        // NOTE: as ADC is not configurable (`OneShot` does not implement `Configurable`), we can't
+        // use the public methods to configure the ADC but have to fallback to the lower level
+        // methods.
+
         // self.set_pin_sequence_position(config::Sequence::One, pin);
-        self.reg
-            .sqr1
-            .modify(|_, w| unsafe { w.sq1().bits(Pin::channel().into()) });
+        self.reg.sqr1.modify(|_, w|
+                // SAFETY: channel().into() ensure the right channel value
+                unsafe { w.sq1().bits(Pin::channel().into()) });
 
         // Wait for the sequence to complete
 
         // self.clear_events();
         self.reg.isr.reset();
         // self.start_conversion();
-        self.reg.cr.modify(|_, w| w.adstart().start());
+        self.reg.cr.modify(|_, w| w.adstart().start_conversion());
         // while !self.is_event_triggered(Event::EndOfConversion)
         //     && !self.is_event_triggered(Event::EndOfSequence)
         // {}
@@ -1440,20 +1434,6 @@ macro_rules! adc {
             );
         }
     };
-
-    // TODO(Sh3Rm4n): https://github.com/stm32-rs/stm32-rs/pull/696
-    ([ $(($A:literal, $ADC:ident, $INTERRUPT:path)),+ ]) => {
-        paste::paste! {
-            adc!(
-                $(
-                    [<ADC $A>]: (
-                        $ADC,
-                        $INTERRUPT
-                    ),
-                )+
-            );
-        }
-    };
 }
 
 macro_rules! adc_common {
@@ -1478,7 +1458,7 @@ macro_rules! adc_common {
                     // No clock can be set, so we have to fallback to a default.
                     if self.clock(clocks).is_none() {
                         self.ccr.modify(|_, w| w
-                            .ckmode().variant(CKMODE_A::SYNCDIV1)
+                            .ckmode().variant(CKMODE_A::SyncDiv1)
                         );
                     };
                 }
@@ -1497,31 +1477,31 @@ macro_rules! adc_common {
                         Some(pllclk) if !adc_pres.is_no_clock()  => {
                             pllclk
                                 / match adc_pres.variant() {
-                                    Some($ADCXYPRES_A::DIV1) => 1,
-                                    Some($ADCXYPRES_A::DIV2) => 2,
-                                    Some($ADCXYPRES_A::DIV4) => 4,
-                                    Some($ADCXYPRES_A::DIV6) => 6,
-                                    Some($ADCXYPRES_A::DIV8) => 8,
-                                    Some($ADCXYPRES_A::DIV10) => 10,
-                                    Some($ADCXYPRES_A::DIV12) => 12,
-                                    Some($ADCXYPRES_A::DIV16) => 16,
-                                    Some($ADCXYPRES_A::DIV32) => 32,
-                                    Some($ADCXYPRES_A::DIV64) => 64,
-                                    Some($ADCXYPRES_A::DIV128) => 128,
-                                    Some($ADCXYPRES_A::DIV256) => 256,
-                                    Some($ADCXYPRES_A::NOCLOCK) | None => 1,
+                                    Some($ADCXYPRES_A::Div1) => 1,
+                                    Some($ADCXYPRES_A::Div2) => 2,
+                                    Some($ADCXYPRES_A::Div4) => 4,
+                                    Some($ADCXYPRES_A::Div6) => 6,
+                                    Some($ADCXYPRES_A::Div8) => 8,
+                                    Some($ADCXYPRES_A::Div10) => 10,
+                                    Some($ADCXYPRES_A::Div12) => 12,
+                                    Some($ADCXYPRES_A::Div16) => 16,
+                                    Some($ADCXYPRES_A::Div32) => 32,
+                                    Some($ADCXYPRES_A::Div64) => 64,
+                                    Some($ADCXYPRES_A::Div128) => 128,
+                                    Some($ADCXYPRES_A::Div256) => 256,
+                                    Some($ADCXYPRES_A::NoClock) | None => 1,
                                 }
                         }
                         _ => {
                             clocks.sysclk()
                                 / match self.ccr.read().ckmode().variant() {
-                                    CKMODE_A::SYNCDIV1 => 1,
-                                    CKMODE_A::SYNCDIV2 => 2,
-                                    CKMODE_A::SYNCDIV4 => 4,
+                                    CKMODE_A::SyncDiv1 => 1,
+                                    CKMODE_A::SyncDiv2 => 2,
+                                    CKMODE_A::SyncDiv4 => 4,
                                     // Asynchronous should be enabled if PLL is on. If this line of
                                     // code is reached PLL is off. Indicate that, so fallbacks can
                                     // be set.
-                                    CKMODE_A::ASYNCHRONOUS => return None,
+                                    CKMODE_A::Asynchronous => return None,
                                 }
                         }
                     })
@@ -1581,7 +1561,7 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "svd-f301")] {
         adc_common!([(1, 1, 2)]);
         adc!([(1, 1, 2, Interrupt::ADC1_IRQ)]);
-    } else if #[cfg(not(feature = "svd-f3x4"))]{
+    } else {
         adc_common!([(1, 2)]);
         adc!([(1, 1, 2, Interrupt::ADC1_2)]);
     }
@@ -1591,18 +1571,8 @@ cfg_if::cfg_if! {
 // * stm32f373 will become complicated, because no ADC1_2
 
 // See https://stm32-rs.github.io/stm32-rs/stm32f/stm32f3/index.html for an overview
-#[cfg(any(feature = "svd-f302", feature = "svd-f303"))]
+#[cfg(any(feature = "svd-f302", feature = "svd-f303", feature = "svd-f3x4"))]
 adc!([(2, 1, 2, Interrupt::ADC1_2)]);
-
-// FIXME(Sh3Rm4n): https://github.com/stm32-rs/stm32-rs/pull/696
-// #[cfg(feature = "svd-f3x4")]
-cfg_if::cfg_if! {
-    if #[cfg(feature = "svd-f3x4")] {
-        adc!([(1, ADC_COMMON, Interrupt::ADC1_2)]);
-        adc!([(2, ADC_COMMON, Interrupt::ADC1_2)]);
-        adc_common!([(1, 2, ADC_COMMON)]);
-    }
-}
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "svd-f303")] {

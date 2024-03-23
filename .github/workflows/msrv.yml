@@ -1,0 +1,34 @@
+name: MSRV
+
+on:
+  pull_request:
+  merge_group:
+
+jobs:
+  # This is our MSRV. However this is only for documentation
+  # purposes and should be increased if newer features are used.
+  # This should not stop anyone from bumping the MSRV.
+  check-msrv:
+    name: Check MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.60.0
+          target: thumbv7em-none-eabihf
+      - run: cargo check --features=stm32f303xc,usb,rt,can,ld --lib
+
+  check-min-deps:
+    name: Check Minimal Dependency Versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+          target: thumbv7em-none-eabihf
+      - run: cargo +nightly update -Z minimal-versions
+      - run: cargo tree
+      - run: cargo check --features=stm32f303xc,usb,rt,can,ld --lib --examples
+

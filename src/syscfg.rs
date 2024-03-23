@@ -52,7 +52,6 @@ impl fmt::Debug for SysCfg {
 impl Deref for SysCfg {
     type Target = SYSCFG;
 
-    #[inline(always)]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -80,15 +79,17 @@ impl SysCfg {
     {
         const BITWIDTH: u8 = 4;
         let index = pin.index.index() % 4;
-        let extigpionr = pin.gpio.port_index() as u32;
-        match pin.index.index() {
-            // SAFETY: These are all unguarded writes directly to the register,
-            // without leveraging the safety of stm32f3 generated values.
-            0..=3 => unsafe { crate::modify_at!(self.exticr1, BITWIDTH, index, extigpionr) },
-            4..=7 => unsafe { crate::modify_at!(self.exticr2, BITWIDTH, index, extigpionr) },
-            8..=11 => unsafe { crate::modify_at!(self.exticr3, BITWIDTH, index, extigpionr) },
-            12..=15 => unsafe { crate::modify_at!(self.exticr4, BITWIDTH, index, extigpionr) },
-            _ => crate::unreachable!(),
-        };
+        let extigpionr = u32::from(pin.gpio.port_index());
+        // SAFETY: These are all unguarded writes directly to the register,
+        // without leveraging the safety of stm32f3 generated values.
+        unsafe {
+            match pin.index.index() {
+                0..=3 => crate::modify_at!(self.exticr1, BITWIDTH, index, extigpionr),
+                4..=7 => crate::modify_at!(self.exticr2, BITWIDTH, index, extigpionr),
+                8..=11 => crate::modify_at!(self.exticr3, BITWIDTH, index, extigpionr),
+                12..=15 => crate::modify_at!(self.exticr4, BITWIDTH, index, extigpionr),
+                _ => crate::unreachable!(),
+            };
+        }
     }
 }

@@ -1,0 +1,31 @@
+name: markdown
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  merge_group:
+
+jobs:
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nosborn/github-action-markdown-cli@v3.3.0
+        with:
+          files: .
+          config_file: .markdownlint.yml
+          ignore_files: target/
+
+  link-checker:
+    name: Link Checker
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    - name: Check URLs in documentation
+      uses: lycheeverse/lychee-action@v1.8.0
+      with:
+        args: --verbose --no-progress "**/*.md" "**/*.rs" "Cargo.toml" "**/Cargo.toml" -h accept=text/html
+

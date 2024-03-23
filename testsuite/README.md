@@ -4,7 +4,11 @@
 
 Tests are run via the integration test pattern and are executed on a target
 chip, rather than on a host system. First, install
-[probe-run](https://crates.io/crates/probe-run) via `cargo install probe-run`.
+[probe-rs](https://crates.io/crates/probe-rs) via
+
+```sh
+cargo install probe-rs --features cli
+```
 
 Currently the tests are written for the `stm32f303xc` with the STM32F3Discovery
 Board in mind. They expect that several pins are wired together as hinted in

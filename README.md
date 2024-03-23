@@ -4,7 +4,7 @@
 [![Crate](https://img.shields.io/crates/v/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
 [![Docs](https://docs.rs/stm32f3xx-hal/badge.svg)](https://docs.rs/stm32f3xx-hal)
 [![Crates.io](https://img.shields.io/crates/d/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
-![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.54+-blue.svg)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.60+-blue.svg)
 
 `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
 peripheral access API for the STMicro STM32F3 series microcontrollers. The
@@ -47,17 +47,16 @@ Almost all of the implementation was shamelessly adapted from the
 Cargo.toml:
 
 ```toml
-[package]
-# ...
-resolver = "2"
-
 [dependencies]
-cortex-m = "0.7.2"
-cortex-m-rt = { version = "0.6.13", features = ["device"] }
-# Panic behaviour, see https://crates.io/keywords/panic-impl for alternatives
+# Only set the critical section feature, if you are using a bare-metal platform
+# without any RTOS
+# See https://github.com/rust-embedded/critical-section for further details.
+cortex-m = { version = "0.7.4", features = ["critical-section-single-core"]}
+cortex-m-rt = { version = "0.7.3", features = ["device"] }
+# Panic behavior, see https://crates.io/keywords/panic-impl for alternatives
 panic-halt = "0.2.0"
 # Replace stm32f303xc with your target chip, see next section for more info
-stm32f3xx-hal = { version = "0.9.1", features = ["ld", "rt", "stm32f303xc"] }
+stm32f3xx-hal = { version = "0.10.0", features = ["ld", "rt", "stm32f303xc"] }
 ```
 
 We also need to tell Rust about target architecture and how to link our
@@ -139,7 +138,7 @@ See the [examples folder](examples) for more example programs.
 
 ## Minimum Supported Rust Version (MSRV)
 
-This crate is guaranteed to compile on stable Rust 1.54.0 and up. It *might*
+This crate is guaranteed to compile on stable Rust 1.60.0 and up. It *might*
 compile with older versions but that may change in any new patch release.
 
 <!-- This should not prevent anyone to use newer features. -->

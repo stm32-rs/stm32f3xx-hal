@@ -2,7 +2,7 @@
  # `stm32f3xx-hal`
 
  `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
- peripheral access API for the STMicro [STM32F3][stm] series microcontrollers.
+ peripheral access API for the `STMicro` [STM32F3][stm] series microcontrollers.
 
  ## Philosophie
 
@@ -63,12 +63,12 @@
  * stm32f373x8, stm32f373xb, stm32f373xc, stm32f378xc
  * stm32f334x4, stm32f334x6, stm32f334x8
 
- Example: The STM32F3Discovery board has a STM32F303VCT6 chip.
+ Example: The `STM32F3Discovery` board has a STM32F303VCT6 chip.
  So you need to specify `stm32f303xc` in your `Cargo.toml` (note that VC → xc).
 
  For more information, see the [README][].
 
- [README]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/README.md#selecting-the-right-chip
+ [README]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/README.md#selecting-the-right-chip
 
  ### `ld`
 
@@ -123,6 +123,9 @@
 #![no_std]
 #![allow(clippy::upper_case_acronyms)]
 #![warn(missing_docs)]
+#![warn(clippy::missing_safety_doc)]
+#![warn(clippy::undocumented_unsafe_blocks)]
+#![warn(unsafe_op_in_unsafe_fn)]
 #![deny(macro_use_extern_crate)]
 #![cfg_attr(nightly, deny(rustdoc::broken_intra_doc_links))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -267,31 +270,33 @@ cfg_if! {
     }
 }
 
-/// Toggle something on or off.
+/// Switch something on or off.
 ///
 /// Convenience enum and wrapper around a bool, which more explicit about the intention to enable
 /// or disable something, in comparison to `true` or `false`.
 // TODO: Maybe move to some mod like "util"?
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum Toggle {
-    /// Toggle something on / enable a thing.
+#[doc(alias = "Toggle")]
+pub enum Switch {
+    /// Switch something on / enable a thing.
     On,
-    /// Toggle something off / disable a thing.
+    /// Switch something off / disable a thing.
     Off,
 }
 
-impl From<Toggle> for bool {
-    fn from(toggle: Toggle) -> Self {
-        matches!(toggle, Toggle::On)
+impl From<Switch> for bool {
+    fn from(switch: Switch) -> Self {
+        matches!(switch, Switch::On)
     }
 }
 
-impl From<bool> for Toggle {
+impl From<bool> for Switch {
     fn from(b: bool) -> Self {
-        match b {
-            true => Toggle::On,
-            false => Toggle::Off,
+        if b {
+            Switch::On
+        } else {
+            Switch::Off
         }
     }
 }

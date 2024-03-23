@@ -17,6 +17,59 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - dma: Added `get_remaining_transfer_len` for the `Channel` trait
   to read the NDTR register.
 
+## [v0.10.0] - 2023-11-30
+
+### Breaking changes
+
+- Update `stm32f3` pac to v0.15.1 ([#335])
+- Update `bxcan` pac to v0.7.0 ([#335])
+- Remove `Toggle` enum and use `Switch` instead for better naming purposes
+- Fix undefined behavior in SPI implementation ([#346])
+  - Add `num_traits::PrimInt` bounds to `Word`
+- Remove `Serial::split`, which possibly creates two mutable references two
+  one Serial instance, which could've caused UB. The use case of this function
+  was hard to find out anyway. ([#351])
+- Remove `defmt-*` features (`defmt` feature is still available), to finalize
+  migration from `defmt-0.2.x` -> `defmt-0.3.x`. ([#349])
+- Removed implicit `stm32-usbd` feature (use `usb` instead) ([#349])
+
+### Added
+
+- Add missing ADC channels ([#337] & [#345])
+- Add many `#[must_use]` instances ([#347])
+
+### Fixed
+
+- Fix wrong timer frequency calculation and unexpected panics ([#338])
+- Fixed integer saturation in Timer::start, see [#342] ([#356])
+
+### Changed
+
+- The PWM implementation was deprecated. There is not yet an alternative
+  implementation, but it is hard to maintain the current implementation
+  and not easy to verify if it is really a safe implementation.
+  It is also not consistent with the rest of the crates API. ([#352])
+- Use [critical-section] crate instead of `interrupt_free`, which is not always
+  sound. ([#350])
+  It is also not consistent with the rest of the crates API.
+- The MSRV was bumped to 1.60 ([#349])
+
+[critical-section]: https://github.com/rust-embedded/critical-section
+
+## [v0.9.2] - 2023-02-20
+
+### Added
+
+- Add missing ADC channels ([#337])
+
+### Fixed
+
+- Fix wrong timer frequency calculation and unexpected panics ([#338])
+
+### Changed
+
+- The MSRV was bumped to 1.59 ([#340])
+
 ## [v0.9.1] - 2022-09-07
 
 ### Added
@@ -567,6 +620,19 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#356]: https://github.com/stm32-rs/stm32f3xx-hal/pull/356
+[#352]: https://github.com/stm32-rs/stm32f3xx-hal/pull/352
+[#351]: https://github.com/stm32-rs/stm32f3xx-hal/pull/351
+[#350]: https://github.com/stm32-rs/stm32f3xx-hal/pull/350
+[#349]: https://github.com/stm32-rs/stm32f3xx-hal/pull/349
+[#345]: https://github.com/stm32-rs/stm32f3xx-hal/pull/345
+[#346]: https://github.com/stm32-rs/stm32f3xx-hal/pull/346
+[#347]: https://github.com/stm32-rs/stm32f3xx-hal/pull/347
+[#342]: https://github.com/stm32-rs/stm32f3xx-hal/issues/342
+[#340]: https://github.com/stm32-rs/stm32f3xx-hal/pull/340
+[#338]: https://github.com/stm32-rs/stm32f3xx-hal/pull/338
+[#337]: https://github.com/stm32-rs/stm32f3xx-hal/pull/337
+[#335]: https://github.com/stm32-rs/stm32f3xx-hal/pull/335
 [#322]: https://github.com/stm32-rs/stm32f3xx-hal/pull/322
 [#318]: https://github.com/stm32-rs/stm32f3xx-hal/pull/318
 [#317]: https://github.com/stm32-rs/stm32f3xx-hal/pull/317
@@ -671,9 +737,9 @@ let clocks = rcc
 [#2]: https://github.com/stm32-rs/stm32f3xx-hal/pull/2
 
 <!-- cargo-release: latest tag -->
-[v0.9.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.9.1
+[v0.10.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.10.0
+[v0.9.2]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.9.2
 [v0.9.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.9.0
-[v0.8.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.1
 [v0.8.1]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.1
 [v0.8.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.8.0
 [v0.7.0]: https://github.com/stm32-rs/stm32f3xx-hal/releases/tag/v0.7.0

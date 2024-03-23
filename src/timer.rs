@@ -8,9 +8,7 @@
 //! Check out [examples/adc.rs], where a [`Periodic`] timer is used to wake
 //! up the main-loop regularly.
 //!
-//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.9.1/examples/adc.rs
-
-use core::convert::{From, TryFrom};
+//! [examples/adc.rs]: https://github.com/stm32-rs/stm32f3xx-hal/blob/v0.10.0/examples/adc.rs
 
 use crate::pac::{DCB, DWT};
 #[cfg(feature = "enumset")]
@@ -26,6 +24,7 @@ use crate::time::{duration, fixed_point::FixedPoint, rate::Hertz};
 mod interrupts;
 
 /// A monotonic nondecreasing timer.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Copy)]
 pub struct MonoTimer {
     frequency: Hertz,
@@ -57,11 +56,13 @@ impl MonoTimer {
     }
 
     /// Returns the frequency at which the monotonic timer is operating at
+    #[must_use]
     pub fn frequency(&self) -> Hertz {
         self.frequency
     }
 
     /// Returns an `Instant` corresponding to "now"
+    #[must_use]
     pub fn now(&self) -> Instant {
         Instant {
             now: DWT::cycle_count(),
@@ -78,6 +79,7 @@ pub struct Instant {
 
 impl Instant {
     /// Ticks elapsed since the `Instant` was created
+    #[must_use]
     pub fn elapsed(self) -> u32 {
         DWT::cycle_count().wrapping_sub(self.now)
     }
@@ -112,7 +114,7 @@ where
         TIM::enable(apb);
         TIM::reset(apb);
 
-        Timer { clocks, tim }
+        Timer { tim, clocks }
     }
 
     /// Stops the timer
@@ -279,13 +281,20 @@ where
         let timeout: Self::Time = timeout.into();
         let clock = TIM::clock(&self.clocks);
 
-        let ticks = clock.integer() * *timeout.scaling_factor() * timeout.integer();
+        let ticks = u64::from(clock.integer()).saturating_mul(u64::from(timeout.integer()))
+            * *timeout.scaling_factor();
 
-        let psc = crate::unwrap!(u16::try_from((ticks - 1) / (1 << 16)).ok());
-        self.tim.set_psc(psc);
+        let psc = ticks.saturating_sub(1) / (1 << 16);
+        self.tim.set_psc(crate::unwrap!(u16::try_from(psc).ok()));
 
-        let arr = crate::unwrap!(u16::try_from(ticks / u32::from(psc + 1)).ok());
-        self.tim.set_arr(arr);
+        let mut arr = ticks / psc.saturating_add(1);
+        // If the set frequency is to high to get a meaningful timer resolution,
+        // set arr to one, so the timer can at least do something and code waiting
+        // on it is not stuck.
+        if psc == 0 && arr == 0 {
+            arr = 1;
+        }
+        self.tim.set_arr(crate::unwrap!(u16::try_from(arr).ok()));
 
         // Ensure that the below procedure does not create an unexpected interrupt.
         let is_update_interrupt_active = self.is_interrupt_configured(Event::Update);
@@ -300,7 +309,7 @@ where
         self.clear_event(Event::Update);
 
         if is_update_interrupt_active {
-            self.configure_interrupt(Event::Update, true)
+            self.configure_interrupt(Event::Update, true);
         }
 
         // start counter
@@ -310,11 +319,11 @@ where
     /// Wait until [`Event::Update`] / the timer has elapsed
     /// and than clear the event.
     fn wait(&mut self) -> nb::Result<(), Void> {
-        if !self.tim.is_sr_uief_set() {
-            Err(nb::Error::WouldBlock)
-        } else {
+        if self.tim.is_sr_uief_set() {
             self.clear_event(Event::Update);
             Ok(())
+        } else {
+            Err(nb::Error::WouldBlock)
         }
     }
 }
@@ -431,9 +440,9 @@ macro_rules! timer {
 
             #[inline]
             fn set_arr(&mut self, arr: u16) {
-                // TODO (sh3rm4n)
-                // self.tim.arr.write(|w| { w.arr().bits(arr) });
-                self.arr.write(|w| unsafe { w.bits(u32::from(arr)) });
+                #[allow(unused_unsafe)]
+                // SAFETY: For easier compatibility between timers write to whole register
+                self.arr.write(|w| unsafe { w.arr().bits(arr.into()) });
             }
         }
     };
@@ -450,12 +459,12 @@ macro_rules! timer_var_clock {
                     match unsafe {(*RCC::ptr()).cfgr3.read().$timXsw().variant()} {
                         // PCLK2 is really the wrong name, as depending on the type of chip, it is
                         // pclk1 or pclk2. This distinction is however not made in stm32f3.
-                        crate::pac::rcc::cfgr3::TIM1SW_A::PCLK2 =>  {
+                        crate::pac::rcc::cfgr3::TIM1SW_A::Pclk2 =>  {
                             // Conditional mutliplier after APB prescaler is used.
                             // See RM0316 Fig 13.
                             <pac::$TIMX as rcc::BusTimerClock>::timer_clock(clocks)
                         }
-                        crate::pac::rcc::cfgr3::TIM1SW_A::PLL => {
+                        crate::pac::rcc::cfgr3::TIM1SW_A::Pll => {
                             if let Some(pllclk) = clocks.pllclk() {
                                 pllclk * 2
                             } else {

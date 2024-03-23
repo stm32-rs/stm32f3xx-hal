@@ -80,11 +80,11 @@ mod tests {
         unsafe {
             (*pac::RCC::ptr())
                 .cfgr2
-                .modify(|_, w| w.adc12pres().variant(pac::rcc::cfgr2::ADC12PRES_A::DIV64))
+                .modify(|_, w| w.adc12pres().variant(pac::rcc::cfgr2::ADC12PRES_A::Div64))
         };
         dp.ADC1_2
             .ccr
-            .modify(|_, w| w.ckmode().variant(pac::adc1_2::ccr::CKMODE_A::ASYNCHRONOUS));
+            .modify(|_, w| w.ckmode().variant(pac::adc1_2::ccr::CKMODE_A::Asynchronous));
         let mut common_adc = CommonAdc::new(dp.ADC1_2, &clocks, &mut rcc.ahb);
 
         defmt::info!(
@@ -399,10 +399,6 @@ fn ADC1_2() {
             .modify(|_, w| w.eos().clear().eoc().clear());
         (isr.eos(), isr.eoc())
     };
-    COUNTER
-        .0
-        .fetch_add(u32::from(eos.bits()), Ordering::Acquire);
-    COUNTER
-        .1
-        .fetch_add(u32::from(eoc.bits()), Ordering::Release);
+    COUNTER.0.fetch_add(u32::from(eos.bit()), Ordering::Acquire);
+    COUNTER.1.fetch_add(u32::from(eoc.bit()), Ordering::Release);
 }

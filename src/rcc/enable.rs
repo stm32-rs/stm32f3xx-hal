@@ -1,3 +1,4 @@
+#[allow(clippy::wildcard_imports)]
 use super::*;
 
 macro_rules! bus_enable {
@@ -121,9 +122,9 @@ bus! {
     ADC1_2 => (AHB, adc1en, adc1rst), // 28
 }
 
-#[cfg(feature = "svd-f3x4")]
+#[cfg(any(feature = "svd-f302", feature = "svd-f303", feature = "svd-f3x4"))]
 bus! {
-    ADC_COMMON => (AHB, adc12en, adc12rst),
+    ADC1_2 => (AHB, adc12en, adc12rst), // 28
 }
 
 #[cfg(any(feature = "svd-f302", feature = "svd-f303"))]
@@ -134,7 +135,6 @@ bus! {
     UART4 => (APB1, uart4en, uart4rst), // 19
     UART5 => (APB1, uart5en, uart5rst), // 20
     GPIOG => (AHB, iopgen, iopgrst), // 23
-    ADC1_2 => (AHB, adc12en, adc12rst), // 28
 }
 
 #[cfg(any(
@@ -147,19 +147,8 @@ bus! {
     TIM1 => (APB2, tim1en, tim1rst), // 11
 }
 
-#[cfg(any(
-    feature = "svd-f301",
-    feature = "svd-f303",
-    feature = "svd-f373",
-    feature = "svd-f3x4"
-))]
 bus! {
     DAC1 => (APB1, dac1en, dac1rst), // 29
-}
-
-#[cfg(any(feature = "svd-f302",))]
-bus! {
-    DAC => (APB1, dac1en, dac1rst), // 29
 }
 
 #[cfg(any(feature = "svd-f303", feature = "svd-f373", feature = "svd-f3x4"))]

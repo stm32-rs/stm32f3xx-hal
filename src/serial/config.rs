@@ -22,10 +22,10 @@ pub enum StopBits {
 impl From<StopBits> for STOP_A {
     fn from(stopbit: StopBits) -> Self {
         match stopbit {
-            StopBits::Stop0P5 => STOP_A::STOP0P5,
-            StopBits::Stop1 => STOP_A::STOP1,
-            StopBits::Stop1P5 => STOP_A::STOP1P5,
-            StopBits::Stop2 => STOP_A::STOP2,
+            StopBits::Stop0P5 => STOP_A::Stop0p5,
+            StopBits::Stop1 => STOP_A::Stop1,
+            StopBits::Stop1P5 => STOP_A::Stop1p5,
+            StopBits::Stop2 => STOP_A::Stop2,
         }
     }
 }
@@ -33,10 +33,10 @@ impl From<StopBits> for STOP_A {
 impl From<STOP_A> for StopBits {
     fn from(stopbit: STOP_A) -> Self {
         match stopbit {
-            STOP_A::STOP0P5 => StopBits::Stop0P5,
-            STOP_A::STOP1 => StopBits::Stop1,
-            STOP_A::STOP1P5 => StopBits::Stop1P5,
-            STOP_A::STOP2 => StopBits::Stop2,
+            STOP_A::Stop0p5 => StopBits::Stop0P5,
+            STOP_A::Stop1 => StopBits::Stop1,
+            STOP_A::Stop1p5 => StopBits::Stop1P5,
+            STOP_A::Stop2 => StopBits::Stop2,
         }
     }
 }
@@ -87,18 +87,21 @@ pub struct Config {
 
 impl Config {
     /// Sets the given baudrate.
+    #[must_use]
     pub fn baudrate(mut self, baudrate: impl Into<Baud>) -> Self {
         self.baudrate = baudrate.into();
         self
     }
 
     /// Sets the given parity.
+    #[must_use]
     pub fn parity(mut self, parity: Parity) -> Self {
         self.parity = parity;
         self
     }
 
     /// Sets the stop bits to `stopbits`.
+    #[must_use]
     pub fn stopbits(mut self, stopbits: StopBits) -> Self {
         self.stopbits = stopbits;
         self

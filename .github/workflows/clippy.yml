@@ -1,0 +1,21 @@
+name: clippy
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  merge_group:
+
+jobs:
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: thumbv7em-none-eabihf
+          components: clippy
+      - run: cargo clippy --features=stm32f303xc --lib --examples -- -D warnings
+

@@ -1,0 +1,20 @@
+name: rust format
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  merge_group:
+
+jobs:
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt
+      - run: cargo fmt --all --check
+
