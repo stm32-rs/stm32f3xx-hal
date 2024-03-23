@@ -68,6 +68,24 @@ No changes.
 ### Changed
 
 - The MSRV was bumped to 1.59 ([#340])
+### Changed
+
+- serial: The DMA functions `write_all` and `read_exact` now returns
+  the wrapper structs `SerialDmaTx` and `SerialDmaRx` instead of the direct
+  DMA transfer struct. These allow checking the USART ISR events
+  with `is_event_triggered` as well.
+
+### Fixed
+
+- serial: The previous DMA `write_all` implementation did use the DMA transfer completion
+  event to check for transfer completion, but MCU datasheet specifies that the TC
+  flag of the USART peripheral should be checked for transfer completion to avoid
+  corruption of the last transfer. This is now done by the new `SerialDmaTx` wrapper.
+
+## Added
+
+- serial: Public `is_event_triggered` method which allows to check for events
+  given an event and a USART reference.
 
 ## [v0.9.1] - 2022-09-07
 
