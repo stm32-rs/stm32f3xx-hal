@@ -172,6 +172,11 @@ impl<B, C: Channel, T: Target> Transfer<B, C, T> {
 
         self.stop()
     }
+
+    pub(crate) fn target(&self) -> &T {
+        let inner = crate::unwrap!(self.inner.as_ref());
+        &inner.target
+    }
 }
 
 impl<B, C: Channel, T: Target> Drop for Transfer<B, C, T> {

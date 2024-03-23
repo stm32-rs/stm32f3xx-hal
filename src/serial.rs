@@ -139,6 +139,28 @@ pub enum Event {
     // WakeupFromStopMode,
 }
 
+/// Check if an interrupt event happend.
+#[inline]
+pub fn is_event_triggered(uart: &impl Instance, event: Event) -> bool {
+    let isr = uart.isr.read();
+    match event {
+        Event::TransmitDataRegisterEmtpy => isr.txe().bit(),
+        Event::CtsInterrupt => isr.ctsif().bit(),
+        Event::TransmissionComplete => isr.tc().bit(),
+        Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit(),
+        Event::OverrunError => isr.ore().bit(),
+        Event::Idle => isr.idle().bit(),
+        Event::ParityError => isr.pe().bit(),
+        Event::LinBreak => isr.lbdf().bit(),
+        Event::NoiseError => isr.nf().bit(),
+        Event::FramingError => isr.fe().bit(),
+        Event::CharacterMatch => isr.cmf().bit(),
+        Event::ReceiverTimeout => isr.rtof().bit(),
+        // Event::EndOfBlock => isr.eobf().bit(),
+        // Event::WakeupFromStopMode => isr.wuf().bit(),
+    }
+}
+
 /// Serial error
 ///
 /// As these are status events, they can be converted to [`Event`]s, via [`Into`].
@@ -329,6 +351,144 @@ pub struct Serial<Usart, Pins> {
     usart: Usart,
     pins: Pins,
 }
+
+mod split {
+    use super::{is_event_triggered, Event, Instance};
+    /// Serial receiver
+    #[derive(Debug)]
+    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+    pub struct Rx<Usart, Pin> {
+        usart: Usart,
+        pub(crate) pin: Pin,
+    }
+
+    /// Serial transmitter
+    #[derive(Debug)]
+    #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+    pub struct Tx<Usart, Pin> {
+        usart: Usart,
+        pub(crate) pin: Pin,
+    }
+
+    impl<Usart, Pin> Tx<Usart, Pin>
+    where
+        Usart: Instance,
+        Pin: super::TxPin<Usart>,
+    {
+        pub(crate) fn new(usart: Usart, pin: Pin) -> Self {
+            Tx { usart, pin }
+        }
+
+        /// Destruct [`Tx`] to regain access to underlying USART and pin.
+        pub(crate) fn free(self) -> (Usart, Pin) {
+            (self.usart, self.pin)
+        }
+    }
+
+    impl<Usart, Pin> Tx<Usart, Pin>
+    where
+        Usart: Instance,
+    {
+        /// Get a reference to internal usart peripheral
+        ///
+        /// # Safety
+        ///
+        /// This is unsafe, because the creation of this struct
+        /// is only possible by splitting the the USART peripheral
+        /// into Tx and Rx, which are internally both pointing
+        /// to the same peripheral.
+        ///
+        /// Therefor, if getting a mutuable reference to the peripheral
+        /// or changing any of it's configuration, the exclusivity
+        /// is no longer guaranteed by the type system.
+        ///
+        /// Ensure that the Tx and Rx implemtation only do things with
+        /// the peripheral, which do not effect the other.
+        pub(crate) unsafe fn usart(&self) -> &Usart {
+            &self.usart
+        }
+
+        /// Get a reference to internal usart peripheral
+        ///
+        /// # Saftey
+        ///
+        /// Same as in [`Self::usart()`].
+        #[allow(dead_code)]
+        pub(crate) unsafe fn usart_mut(&mut self) -> &mut Usart {
+            &mut self.usart
+        }
+
+        /// Check if an interrupt event happend.
+        #[inline]
+        pub fn is_event_triggered(&self, event: Event) -> bool {
+            // Safety: We are only reading the ISR register here, which
+            // should not affect the RX half
+            is_event_triggered(unsafe { self.usart() }, event)
+        }
+    }
+
+    impl<Usart, Pin> Rx<Usart, Pin>
+    where
+        Usart: Instance,
+        Pin: super::RxPin<Usart>,
+    {
+        pub(crate) fn new(usart: Usart, pin: Pin) -> Self {
+            Rx { usart, pin }
+        }
+
+        /// Destruct [`Rx`] to regain access to the underlying pin.
+        ///
+        /// The USART is omitted, as it is returnend from Tx already to avoid
+        /// beeing able to crate a duplicate reference to the same underlying
+        /// peripheral.
+        pub(crate) fn free(self) -> Pin {
+            self.pin
+        }
+    }
+
+    impl<Usart, Pin> Rx<Usart, Pin>
+    where
+        Usart: Instance,
+    {
+        /// Get a reference to internal usart peripheral
+        ///
+        /// # Safety
+        ///
+        /// This is unsafe, because the creation of this struct
+        /// is only possible by splitting the the USART peripheral
+        /// into Tx and Rx, which are internally both pointing
+        /// to the same peripheral.
+        ///
+        /// Therefor, if getting a mutuable reference to the peripheral
+        /// or changing any of it's configuration, the exclusivity
+        /// is no longer guaranteed by the type system.
+        ///
+        /// Ensure that the Tx and Rx implemtation only do things with
+        /// the peripheral, which do not effect the other.
+        pub(crate) unsafe fn usart(&self) -> &Usart {
+            &self.usart
+        }
+
+        /// Get a reference to internal usart peripheral
+        ///
+        /// # Saftey
+        ///
+        /// Same as in [`Self::usart()`].
+        pub(crate) unsafe fn usart_mut(&mut self) -> &mut Usart {
+            &mut self.usart
+        }
+
+        /// Check if an interrupt event happend.
+        #[inline]
+        pub fn is_event_triggered(&self, event: Event) -> bool {
+            // Safety: We are only reading the ISR register here, which
+            // should not affect the TX half
+            is_event_triggered(unsafe { self.usart() }, event)
+        }
+    }
+}
+
+pub use split::{Rx, Tx};
 
 impl<Usart, Tx, Rx> Serial<Usart, (Tx, Rx)>
 where
@@ -572,23 +732,7 @@ where
     /// Check if an interrupt event happend.
     #[inline]
     pub fn is_event_triggered(&self, event: Event) -> bool {
-        let isr = self.usart.isr.read();
-        match event {
-            Event::TransmitDataRegisterEmtpy => isr.txe().bit(),
-            Event::CtsInterrupt => isr.ctsif().bit(),
-            Event::TransmissionComplete => isr.tc().bit(),
-            Event::ReceiveDataRegisterNotEmpty => isr.rxne().bit(),
-            Event::OverrunError => isr.ore().bit(),
-            Event::Idle => isr.idle().bit(),
-            Event::ParityError => isr.pe().bit(),
-            Event::LinBreak => isr.lbdf().bit(),
-            Event::NoiseError => isr.nf().bit(),
-            Event::FramingError => isr.fe().bit(),
-            Event::CharacterMatch => isr.cmf().bit(),
-            Event::ReceiverTimeout => isr.rtof().bit(),
-            // Event::EndOfBlock => isr.eobf().bit(),
-            // Event::WakeupFromStopMode => isr.wuf().bit(),
-        }
+        is_event_triggered(&self.usart, event)
     }
 
     /// Get an [`EnumSet`] of all fired interrupt events.
@@ -856,12 +1000,290 @@ impl<USART, TX, RX> blocking::serial::write::Default<u8> for Serial<USART, (TX, 
 {
 }
 
+impl<Usart, Pin> serial::Write<u8> for Tx<Usart, Pin>
+where
+    Usart: Instance,
+    Pin: TxPin<Usart>,
+{
+    // NOTE(Infallible) See section "29.7 USART interrupts"; the only possible errors during
+    // transmission are: clear to send (which is disabled in this case) errors and
+    // framing errors (which only occur in SmartCard mode); neither of these apply to
+    // our hardware configuration
+    type Error = Infallible;
+
+    fn flush(&mut self) -> nb::Result<(), Infallible> {
+        let isr = unsafe { self.usart().isr.read() };
+
+        if isr.tc().bit_is_set() {
+            Ok(())
+        } else {
+            Err(nb::Error::WouldBlock)
+        }
+    }
+
+    fn write(&mut self, byte: u8) -> nb::Result<(), Infallible> {
+        // NOTE(unsafe) atomic read with no side effects
+        let isr = unsafe { self.usart().isr.read() };
+
+        if isr.txe().bit_is_set() {
+            // NOTE(unsafe) atomic write to stateless register
+            unsafe { self.usart().tdr.write(|w| w.tdr().bits(u16::from(byte))) };
+            Ok(())
+        } else {
+            Err(nb::Error::WouldBlock)
+        }
+    }
+}
+
+impl<Usart, Pin> fmt::Write for Tx<Usart, Pin>
+where
+    Tx<Usart, Pin>: serial::Write<u8>,
+{
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        s.bytes()
+            .try_for_each(|c| nb::block!(self.write(c)))
+            .map_err(|_| fmt::Error)
+    }
+}
+
+impl<Usart, Pin> Rx<Usart, Pin>
+where
+    Usart: Instance + Dma,
+{
+    /// Fill the buffer with received data using DMA.
+    pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> SerialDmaRx<B, C, Self>
+    where
+        Self: dma::OnChannel<C>,
+        B: dma::WriteBuffer<Word = u8> + 'static,
+        C: dma::Channel,
+    {
+        // NOTE(unsafe) usage of a valid peripheral address
+        unsafe {
+            channel.set_peripheral_address(
+                &self.usart().rdr as *const _ as u32,
+                dma::Increment::Disable,
+            )
+        };
+
+        SerialDmaRx {
+            transfer: dma::Transfer::start_write(buffer, channel, self),
+        }
+    }
+}
+
+impl<Usart, Pin> blocking::serial::write::Default<u8> for Tx<Usart, Pin>
+where
+    Usart: Instance,
+    Pin: TxPin<Usart>,
+{
+}
+
+/// Thin wrapper struct over the DMA transfer struct.
+///
+/// This wrapper mostly exposes the [`dma::Transfer`] API but also also exposes
+/// an API to check for other USART ISR events during on-going transfers.
+pub struct SerialDmaRx<B: dma::WriteBuffer<Word = u8> + 'static, C: dma::Channel, T: dma::Target> {
+    transfer: dma::Transfer<B, C, T>,
+}
+
+impl<B, C, T> SerialDmaRx<B, C, T>
+where
+    B: dma::WriteBuffer<Word = u8>,
+    C: dma::Channel,
+    T: dma::Target,
+{
+    /// Call [`dma::Transfer::stop`].
+    pub fn stop(self) -> (B, C, T) {
+        self.transfer.stop()
+    }
+
+    /// Call [`dma::Transfer::is_complete`].
+    pub fn is_complete(&self) -> bool {
+        self.transfer.is_complete()
+    }
+
+    /// Call [`dma::Transfer::wait`].
+    pub fn wait(self) -> (B, C, T) {
+        self.transfer.wait()
+    }
+}
+
+impl<B, C, Usart, Pin> SerialDmaRx<B, C, Rx<Usart, Pin>>
+where
+    B: dma::WriteBuffer<Word = u8>,
+    C: dma::Channel,
+    Usart: Instance + Dma,
+    Pin: RxPin<Usart>,
+{
+    /// Check if an interrupt event happened.
+    pub fn is_event_triggered(&self, event: Event) -> bool {
+        self.transfer.target().is_event_triggered(event)
+    }
+}
+
+impl<B, C, Usart, Pins> SerialDmaRx<B, C, Serial<Usart, Pins>>
+where
+    B: dma::WriteBuffer<Word = u8>,
+    C: dma::Channel,
+    Usart: Instance + Dma,
+{
+    /// Check if an interrupt event happened.
+    pub fn is_event_triggered(&self, event: Event) -> bool {
+        self.transfer.target().is_event_triggered(event)
+    }
+}
+
+/// Thin wrapper struct over the DMA transfer struct.
+///
+/// This wrapper mostly exposes the [`dma::Transfer`] API but also implements
+/// some additional checks because the conditions for DMA transfer completion
+/// require that the USART TC ISR flag is set as well. It also exposes an API
+/// to check for other USART ISR events during ongoing transfers.
+pub struct SerialDmaTx<B: dma::ReadBuffer<Word = u8> + 'static, C: dma::Channel, T: dma::Target> {
+    transfer: dma::Transfer<B, C, T>,
+}
+
+impl<B, C, T> SerialDmaTx<B, C, T>
+where
+    B: dma::ReadBuffer<Word = u8>,
+    C: dma::Channel,
+    T: dma::Target,
+{
+    /// Calls [`dma::Transfer::stop`].
+    pub fn stop(self) -> (B, C, T) {
+        self.transfer.stop()
+    }
+}
+
+impl<B, C, Usart, Pin> SerialDmaTx<B, C, Tx<Usart, Pin>>
+where
+    Usart: Instance + Dma,
+    C: dma::Channel,
+    B: dma::ReadBuffer<Word = u8>,
+    Pin: TxPin<Usart>,
+{
+    /// Wrapper function which can be used to check transfer completion.
+    ///
+    /// In addition to checking the transfer completion of the DMA, it also checks that the
+    /// USART Transmission Complete flag was set by the hardware. According to RM0316 29.5.15, this
+    /// is required to avoid corrupting the last transmission before disabling the USART or entering
+    /// stop mode.
+    pub fn is_complete(&self) -> bool {
+        let target = self.transfer.target();
+        self.transfer.is_complete() && target.is_event_triggered(Event::TransmissionComplete)
+    }
+
+    /// Block until the transfer is complete. This function also uses
+    /// [`SerialDmaTx::is_complete`] to check that the USART TC flag was set by
+    /// the hardware.
+    pub fn wait(self) -> (B, C, Tx<Usart, Pin>) {
+        while !self.is_complete() {}
+        self.stop()
+    }
+
+    /// Check if an interrupt event happened.
+    pub fn is_event_triggered(&self, event: Event) -> bool {
+        self.transfer.target().is_event_triggered(event)
+    }
+}
+
+impl<B, C, Usart, Pins> SerialDmaTx<B, C, Serial<Usart, Pins>>
+where
+    Usart: Instance + Dma,
+    C: dma::Channel,
+    B: dma::ReadBuffer<Word = u8>,
+{
+    /// Wrapper function which can be used to check transfer completion.
+    ///
+    /// In addition to checking the transfer completion of the DMA, it also checks that the
+    /// USART Transmission Complete flag was set by the hardware. According to RM0316 29.5.15, this
+    /// is required to avoid corrupting the last transmission before disabling the USART or entering
+    /// stop mode.
+    pub fn is_complete(&self) -> bool {
+        let target = self.transfer.target();
+        self.transfer.is_complete() && target.is_event_triggered(Event::TransmissionComplete)
+    }
+
+    /// Block until the transfer is complete. This function also uses
+    /// [`SerialDmaTx::is_complete`] to check that the USART TC flag was set by
+    /// the hardware.
+    pub fn wait(self) -> (B, C, Serial<Usart, Pins>) {
+        while !self.is_complete() {}
+        self.stop()
+    }
+}
+
+impl<Usart, Pin> Tx<Usart, Pin>
+where
+    Usart: Instance + Dma,
+    Pin: TxPin<Usart>,
+{
+    /// Transmit all data in the buffer using DMA.
+    pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> SerialDmaTx<B, C, Self>
+    where
+        Self: dma::OnChannel<C>,
+        B: dma::ReadBuffer<Word = u8> + 'static,
+        C: dma::Channel,
+    {
+        // NOTE(unsafe) usage of a valid peripheral address
+        unsafe {
+            channel.set_peripheral_address(
+                &self.usart().tdr as *const _ as u32,
+                dma::Increment::Disable,
+            )
+        };
+
+        SerialDmaTx {
+            transfer: dma::Transfer::start_read(buffer, channel, self),
+        }
+    }
+}
+
+impl<Usart, Pin> dma::Target for Rx<Usart, Pin>
+where
+    Usart: Instance + Dma,
+{
+    fn enable_dma(&mut self) {
+        // NOTE(unsafe) critical section prevents races
+        interrupt::free(|_| unsafe {
+            self.usart().cr3.modify(|_, w| w.dmar().enabled());
+        });
+    }
+
+    fn disable_dma(&mut self) {
+        // NOTE(unsafe) critical section prevents races
+        interrupt::free(|_| unsafe {
+            self.usart().cr3.modify(|_, w| w.dmar().disabled());
+        });
+    }
+}
+
+impl<Usart, Pin> dma::Target for Tx<Usart, Pin>
+where
+    Usart: Instance + Dma,
+    Pin: TxPin<Usart>,
+{
+    fn enable_dma(&mut self) {
+        // NOTE(unsafe) critical section prevents races
+        interrupt::free(|_| unsafe {
+            self.usart().cr3.modify(|_, w| w.dmat().enabled());
+        });
+    }
+
+    fn disable_dma(&mut self) {
+        // NOTE(unsafe) critical section prevents races
+        interrupt::free(|_| unsafe {
+            self.usart().cr3.modify(|_, w| w.dmat().disabled());
+        });
+    }
+}
+
 impl<Usart, Pins> Serial<Usart, Pins>
 where
     Usart: Instance + Dma,
 {
     /// Fill the buffer with received data using DMA.
-    pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
+    pub fn read_exact<B, C>(self, buffer: B, mut channel: C) -> SerialDmaRx<B, C, Self>
     where
         Self: dma::OnChannel<C>,
         B: dma::WriteBuffer<Word = u8> + 'static,
@@ -875,11 +1297,13 @@ where
             );
         };
 
-        dma::Transfer::start_write(buffer, channel, self)
+        SerialDmaRx {
+            transfer: dma::Transfer::start_write(buffer, channel, self),
+        }
     }
 
     /// Transmit all data in the buffer using DMA.
-    pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> dma::Transfer<B, C, Self>
+    pub fn write_all<B, C>(self, buffer: B, mut channel: C) -> SerialDmaTx<B, C, Self>
     where
         Self: dma::OnChannel<C>,
         B: dma::ReadBuffer<Word = u8> + 'static,
@@ -893,7 +1317,9 @@ where
             );
         };
 
-        dma::Transfer::start_read(buffer, channel, self)
+        SerialDmaTx {
+            transfer: dma::Transfer::start_read(buffer, channel, self),
+        }
     }
 }
 
