@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-No changes.
+- dma: Added `get_remaining_transfer_len` for the `Channel` trait
+  to read the NDTR register.
 
 ## [v0.10.0] - 2023-11-30
 
