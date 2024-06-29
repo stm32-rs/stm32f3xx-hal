@@ -405,7 +405,14 @@ pub trait Channel: private::Channel {
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
+    #[deprecated(note = "Please use `configure_interrupt` instead.")]
+    #[inline(always)]
     fn configure_intterupt(&mut self, event: Event, enable: bool) {
+        self.configure_interrupt(event, enable)
+    }
+
+    /// Enable or disable the interrupt for the specified [`Event`].
+    fn configure_interrupt(&mut self, event: Event, enable: bool) {
         match event {
             Event::HalfTransfer => self.ch().cr.modify(|_, w| w.htie().bit(enable)),
             Event::TransferComplete => self.ch().cr.modify(|_, w| w.tcie().bit(enable)),
@@ -420,12 +427,12 @@ pub trait Channel: private::Channel {
 
     /// Enable the interrupt for the given [`Event`].
     fn enable_interrupt(&mut self, event: Event) {
-        self.configure_intterupt(event, true);
+        self.configure_interrupt(event, true);
     }
 
     /// Disable the interrupt for the given [`Event`].
     fn disable_interrupt(&mut self, event: Event) {
-        self.configure_intterupt(event, false);
+        self.configure_interrupt(event, false);
     }
 
     /// Start a transfer

@@ -317,7 +317,7 @@ where
     }
 
     /// Wait until [`Event::Update`] / the timer has elapsed
-    /// and than clear the event.
+    /// and then clear the event.
     fn wait(&mut self) -> nb::Result<(), Void> {
         if self.tim.is_sr_uief_set() {
             self.clear_event(Event::Update);
@@ -328,20 +328,24 @@ where
     }
 }
 
-/// Error if a [`Cancel`]-ble [`Timer`] was cancled already or never been started.
+/// Error if a [`Cancel`]-ble [`Timer`] was canceled already or never been started.
+#[deprecated(note = "Use `AlreadyCanceled` instead of `AlreadyCancled`.")]
+pub type AlreadyCancled = AlreadyCanceled;
+
+/// Error if a [`Cancel`]-ble [`Timer`] was canceled already or never been started.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct AlreadyCancled;
+pub struct AlreadyCanceled;
 
 impl<TIM> Cancel for Timer<TIM>
 where
     TIM: Instance,
 {
-    type Error = AlreadyCancled;
+    type Error = AlreadyCanceled;
     fn cancel(&mut self) -> Result<(), Self::Error> {
         // If timer is already stopped.
         if !self.tim.is_cr1_cen_set() {
-            return Err(AlreadyCancled);
+            return Err(AlreadyCanceled);
         }
         self.stop();
         Ok(())

@@ -15,7 +15,7 @@ use hal::hal::timer::Cancel;
 use hal::interrupts::InterruptNumber;
 use hal::rcc::{Clocks, APB1};
 use hal::time::{duration, fixed_point::FixedPoint};
-use hal::timer::{AlreadyCancled, Event, MonoTimer, Timer};
+use hal::timer::{AlreadyCanceled, Event, MonoTimer, Timer};
 use hal::{interrupt, pac, prelude::*};
 
 use pac::TIM2;
@@ -125,7 +125,7 @@ mod tests {
         state.delay.delay_ms(5u32);
 
         assert_eq!(timer.cancel(), Ok(()));
-        assert_eq!(timer.cancel(), Err(AlreadyCancled));
+        assert_eq!(timer.cancel(), Err(AlreadyCanceled));
         state.timer = Some(timer);
     }
 

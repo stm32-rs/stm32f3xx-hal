@@ -67,10 +67,10 @@ impl SysCfg {
     ///
     /// This means, that only on of `PA1`, `PB1`, `PC1`, ... can be activated.
     ///
-    /// For example, if first [`crate::gpio::gpioa::PA1`] and than [`crate::gpio::gpiob::PB1`]
+    /// For example, if first [`crate::gpio::gpioa::PA1`] and then [`crate::gpio::gpiob::PB1`]
     /// would be configured, the former configuration would be overwritten.
     ///
-    /// But configuring `PA1` and and `PB2` works!
+    /// But configuring `PA1` and `PB2` works!
     #[doc(alias = "enable_interrupt")]
     pub fn select_exti_interrupt_source<Gpio, Index, Mode>(&mut self, pin: &Pin<Gpio, Index, Mode>)
     where
