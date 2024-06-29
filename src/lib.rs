@@ -4,7 +4,7 @@
  `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
  peripheral access API for the `STMicro` [STM32F3][stm] series microcontrollers.
 
- ## Philosophie
+ ## Philosophy
 
  HAL (meaning **H**ardware **A**bstraction **L**ayer) is a generic term used in many contexts,
  but in the specific context of this crate, it is meant to abstract away the control exposed
