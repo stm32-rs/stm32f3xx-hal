@@ -4,7 +4,7 @@
 [![Crate](https://img.shields.io/crates/v/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
 [![Docs](https://docs.rs/stm32f3xx-hal/badge.svg)](https://docs.rs/stm32f3xx-hal)
 [![Crates.io](https://img.shields.io/crates/d/stm32f3xx-hal.svg)](https://crates.io/crates/stm32f3xx-hal)
-![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.60+-blue.svg)
+![Minimum Supported Rust Version](https://img.shields.io/badge/rustc-1.65+-blue.svg)
 
 `stm32f3xx-hal` contains a multi device hardware abstraction on top of the
 peripheral access API for the STMicro STM32F3 series microcontrollers. The
@@ -37,7 +37,9 @@ Almost all of the implementation was shamelessly adapted from the
 [`stm32f30x-hal`][] crate by Jorge Aparicio.
 
 [`stm32f3`]: https://crates.io/crates/stm32f3
+
 [`stm32f30x-hal`]: https://github.com/japaric/stm32f30x-hal
+
 [`embedded-hal`]: https://github.com/japaric/embedded-hal
 
 ## Getting Started
@@ -88,7 +90,7 @@ You can find a list [here, in the docs][chip-features].
 #### Note
 
 1. This features are mutually exclusive. Only one feature / chip variant can be
-chosen.
+   chosen.
 2. You **have** to choose exactly **one** feature to build this crate at all.
 
 [chip-features]: https://docs.rs/stm32f3xx-hal/latest/stm32f3xx_hal/#target-chip-selection
