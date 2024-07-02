@@ -16,7 +16,7 @@ documentation = "https://docs.rs/stm32f3xx-hal"
 version = "0.10.0"
 exclude = ["codegen", ".markdownlint.yml"]
 resolver = "2"
-rust-version = "1.60"
+rust-version = "1.65"
 
 [package.metadata.docs.rs]
 features = ["stm32f303xc", "rt", "usb", "can", "enumset"]
@@ -32,7 +32,7 @@ cfg-if = "1.0.0"
 cortex-m = "0.7.7"
 cortex-m-rt = "0.7.3"
 critical-section = "1.1.2"
-defmt = { version = ">=0.2.3, <0.4.0", optional = true }
+defmt = { version = ">=0.3.0, <0.4.0", optional = true }
 embedded-dma = "0.2.0"
 embedded-hal = { version = "0.2.7", features = ["unproven"] }
 embedded-time = "0.12.1"

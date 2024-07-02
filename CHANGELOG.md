@@ -14,7 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-No changes.
+### Changed
+
+- The MSRV was bumped to 1.65 ([#367])
 
 ## [v0.10.0] - 2023-11-30
 
@@ -619,6 +621,7 @@ let clocks = rcc
 [defmt]: https://github.com/knurling-rs/defmt
 [filter]: https://defmt.ferrous-systems.com/filtering.html
 
+[#367]: https://github.com/stm32-rs/stm32f3xx-hal/pull/367
 [#356]: https://github.com/stm32-rs/stm32f3xx-hal/pull/356
 [#352]: https://github.com/stm32-rs/stm32f3xx-hal/pull/352
 [#351]: https://github.com/stm32-rs/stm32f3xx-hal/pull/351
