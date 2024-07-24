@@ -68,10 +68,12 @@ fn main() -> ! {
     let mut serial = SerialPort::new(&usb_bus);
 
     let mut usb_dev = UsbDeviceBuilder::new(&usb_bus, UsbVidPid(0x16c0, 0x27dd))
-        .manufacturer("Fake company")
-        .product("Serial port")
-        .serial_number("TEST")
         .device_class(USB_CLASS_CDC)
+        .strings(&[StringDescriptors::default()
+            .serial_number("TEST_STM32_USB")
+            .manufacturer("Fake Company")
+            .product("Serial port product")])
+        .unwrap()
         .build();
 
     loop {

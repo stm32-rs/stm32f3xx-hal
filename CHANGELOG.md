@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## Unreleased
 
-No changes.
+- Update 'stm32-usbd' to v0.7.0 to make examples/usb_serial.rs work
 
 ## [v0.10.0] - 2023-11-30
 
