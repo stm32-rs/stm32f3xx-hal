@@ -34,9 +34,9 @@ pub enum Id {
     /// 0
     // FIXME: Can not configure on feature, because 0 is the reset value.
     #[cfg(feature = "stm32f373")]
-    Zero,
+    Zero = 0,
     /// 1
-    One,
+    One = 1,
     /// 2
     Two,
     /// 3

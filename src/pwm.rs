@@ -298,7 +298,7 @@ macro_rules! pwm_timer_private {
             }
 
             // enable auto reload preloader
-            tim.cr1.modify(|_, w| w.arpe().set_bit());
+            tim.cr1().modify(|_, w| w.arpe().set_bit());
 
             // Set the "resolution" of the duty cycle (ticks before restarting at 0)
             // Oddly this is unsafe for some timers and not others
@@ -306,7 +306,7 @@ macro_rules! pwm_timer_private {
             // NOTE(write): not all timers are documented in stm32f3, thus marked unsafe.
             // This write uses all bits of this register so there are no unknown side effects.
             #[allow(unused_unsafe)]
-            tim.arr.write(|w| unsafe {
+            tim.arr().write(|w| unsafe {
                 w.arr().bits(res)
             });
 
@@ -317,18 +317,18 @@ macro_rules! pwm_timer_private {
             let clock_freq = clocks.$pclkz().0 * if clocks.ppre1() == 1 { 1 } else { 2 };
             let prescale_factor = clock_freq / res as u32 / freq.integer();
             // NOTE(write): uses all bits of this register.
-            tim.psc.write(|w| w.psc().bits(prescale_factor as u16 - 1));
+            tim.psc().write(|w| w.psc().set(prescale_factor as u16 - 1));
 
             // Make the settings reload immediately
             // NOTE(write): write to a state-less register.
-            tim.egr.write(|w| w.ug().set_bit());
+            tim.egr().write(|w| w.ug().set_bit());
 
             // Enable outputs (STM32 Break Timer Specific)
             #[allow(clippy::redundant_closure_call)]
             $enable_break_timer(&tim);
 
             // Enable the Timer
-            tim.cr1.modify(|_, w| w.cen().set_bit());
+            tim.cr1().modify(|_, w| w.cen().set_bit());
 
             // TODO: Passing in the constructor is a bit silly,
             // is there an alternative approach to get this to repeat,
@@ -359,7 +359,7 @@ macro_rules! pwm_timer_with_break {
             $TIMx,
             $res,
             $pclkz,
-            |tim: &$TIMx| tim.bdtr.modify(|_, w| w.moe().set_bit()),
+            |tim: &$TIMx| tim.bdtr().modify(|_, w| w.moe().set_bit()),
             [$($TIMx_CHy),+],
             [$($x),+]
         );
@@ -544,7 +544,7 @@ macro_rules! pwm_pin_for_pwm_channel_private {
             fn disable(&mut self) {
                 unsafe {
                     (*$TIMx::ptr())
-                        .ccer
+                        .ccer()
                         .modify(|_, w| w.$ccx_enable().clear_bit());
                 }
             }
@@ -552,13 +552,13 @@ macro_rules! pwm_pin_for_pwm_channel_private {
             fn enable(&mut self) {
                 unsafe {
                     (*$TIMx::ptr())
-                        .ccer
+                        .ccer()
                         .modify(|_, w| w.$ccx_enable().set_bit());
                 }
             }
 
             fn get_max_duty(&self) -> Self::Duty {
-                unsafe { (*$TIMx::ptr()).arr.read().arr().bits() }
+                unsafe { (*$TIMx::ptr()).arr().read().arr().bits() }
             }
 
             fn get_duty(&self) -> Self::Duty {

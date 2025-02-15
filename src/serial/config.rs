@@ -1,11 +1,11 @@
 //! Types for configuring a serial interface.
 
-use crate::pac::usart1::cr2::STOP_A;
+use crate::pac::usart1::cr2::STOP;
 use crate::time::rate::{Baud, Extensions};
 
 /// Stop Bit configuration parameter for serial.
 ///
-/// Wrapper around [`STOP_A`]
+/// Wrapper around [`STOP`]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum StopBits {
@@ -19,24 +19,24 @@ pub enum StopBits {
     Stop2,
 }
 
-impl From<StopBits> for STOP_A {
+impl From<StopBits> for STOP {
     fn from(stopbit: StopBits) -> Self {
         match stopbit {
-            StopBits::Stop0P5 => STOP_A::Stop0p5,
-            StopBits::Stop1 => STOP_A::Stop1,
-            StopBits::Stop1P5 => STOP_A::Stop1p5,
-            StopBits::Stop2 => STOP_A::Stop2,
+            StopBits::Stop0P5 => STOP::Stop0p5,
+            StopBits::Stop1 => STOP::Stop1,
+            StopBits::Stop1P5 => STOP::Stop1p5,
+            StopBits::Stop2 => STOP::Stop2,
         }
     }
 }
 
-impl From<STOP_A> for StopBits {
-    fn from(stopbit: STOP_A) -> Self {
+impl From<STOP> for StopBits {
+    fn from(stopbit: STOP) -> Self {
         match stopbit {
-            STOP_A::Stop0p5 => StopBits::Stop0P5,
-            STOP_A::Stop1 => StopBits::Stop1,
-            STOP_A::Stop1p5 => StopBits::Stop1P5,
-            STOP_A::Stop2 => StopBits::Stop2,
+            STOP::Stop0p5 => StopBits::Stop0P5,
+            STOP::Stop1 => StopBits::Stop1,
+            STOP::Stop1p5 => StopBits::Stop1P5,
+            STOP::Stop2 => StopBits::Stop2,
         }
     }
 }

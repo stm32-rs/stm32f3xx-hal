@@ -556,7 +556,7 @@ where
 #[cfg(feature = "svd-f373")]
 macro_rules! reg_for_cpu {
     ($exti:expr, $xr:ident) => {
-        $exti.$xr
+        $exti.$xr()
     };
 }
 
@@ -565,7 +565,7 @@ macro_rules! reg_for_cpu {
 macro_rules! reg_for_cpu {
     ($exti:expr, $xr:ident) => {
         paste::paste! {
-            $exti.[<$xr 1>]
+            $exti.[<$xr 1>]()
         }
     };
 }
@@ -753,24 +753,24 @@ macro_rules! gpio_trait {
             impl GpioRegExt for crate::pac::$gpioy::RegisterBlock {
                 #[inline(always)]
                 fn is_low(&self, i: u8) -> bool {
-                    self.idr.read().bits() & (1 << i) == 0
+                    self.idr().read().idr(i).is_low()
                 }
 
                 #[inline(always)]
                 fn is_set_low(&self, i: u8) -> bool {
-                    self.odr.read().bits() & (1 << i) == 0
+                    self.odr().read().odr(i).is_low()
                 }
 
                 #[inline(always)]
                 fn set_high(&self, i: u8) {
                     // SAFETY: atomic write to a stateless register
-                    unsafe { self.bsrr.write(|w| w.bits(1 << i)) };
+                    self.bsrr().write(|w| w.bs(i).set_bit());
                 }
 
                 #[inline(always)]
                 fn set_low(&self, i: u8) {
                     // SAFETY: atomic write to a stateless register
-                    unsafe { self.bsrr.write(|w| w.bits(1 << (16 + i))) };
+                    self.bsrr().write(|w| w.br(i).set_bit());
                 }
             }
         )+
@@ -794,7 +794,7 @@ macro_rules! r_trait {
                     let value = $gpioy::$xr::$enum::$VARIANT as u32;
                     // SAFETY: The &mut abstracts all accesses to the register itself,
                     // which makes sure that this register accesss is exclusive
-                    unsafe { crate::modify_at!((*$GPIOX::ptr()).$xr, $bitwidth, i, value) };
+                    unsafe { crate::modify_at!((*$GPIOX::ptr()).$xr(), $bitwidth, i, value) };
                 }
             )+
         }
@@ -935,7 +935,7 @@ macro_rules! gpio {
                     const BITWIDTH: u8 = 4;
                     // SAFETY: the abstraction of AFRL should ensure exclusive access in addition
                     // to the &mut exclusive reference
-                    unsafe { crate::modify_at!((*$GPIOX::ptr()).afrh, BITWIDTH, i - 8, x as u32) };
+                    unsafe { crate::modify_at!((*$GPIOX::ptr()).afrh(), BITWIDTH, i - 8, x as u32) };
                 }
             }
 
@@ -948,7 +948,7 @@ macro_rules! gpio {
                     const BITWIDTH: u8 = 4;
                     // SAFETY: the abstraction of AFRL should ensure exclusive access in addition
                     // to the &mut exclusive reference
-                    unsafe { crate::modify_at!((*$GPIOX::ptr()).afrl, BITWIDTH, i, x as u32) };
+                    unsafe { crate::modify_at!((*$GPIOX::ptr()).afrl(), BITWIDTH, i, x as u32) };
                 }
             }
 
@@ -956,7 +956,7 @@ macro_rules! gpio {
             pub struct MODER(());
 
             r_trait! {
-                ($GPIOX, $gpioy::moder::MODER15_A, 2);
+                ($GPIOX, $gpioy::moder::MODER0, 2);
                 impl Moder for MODER {
                     fn input { Input }
                     fn output { Output }
@@ -969,7 +969,7 @@ macro_rules! gpio {
             pub struct OSPEEDR(());
 
             r_trait! {
-                ($GPIOX, $gpioy::ospeedr::OSPEEDR15_A, 2);
+                ($GPIOX, $gpioy::ospeedr::OSPEEDR0, 2);
                 impl Ospeedr for OSPEEDR {
                     fn low { LowSpeed }
                     fn medium { MediumSpeed }
@@ -981,7 +981,7 @@ macro_rules! gpio {
             pub struct OTYPER(());
 
             r_trait! {
-                ($GPIOX, $gpioy::otyper::OT15_A, 1);
+                ($GPIOX, $gpioy::otyper::OT0, 1);
                 impl Otyper for OTYPER {
                     fn push_pull { PushPull }
                     fn open_drain { OpenDrain }
@@ -992,7 +992,7 @@ macro_rules! gpio {
             pub struct PUPDR(());
 
             r_trait! {
-                ($GPIOX, $gpioy::pupdr::PUPDR15_A, 2);
+                ($GPIOX, $gpioy::pupdr::PUPDR0, 2);
                 impl Pupdr for PUPDR {
                     fn floating { Floating }
                     fn pull_up { PullUp }

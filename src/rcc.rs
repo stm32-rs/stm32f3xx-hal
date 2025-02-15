@@ -169,14 +169,14 @@ macro_rules! bus_struct {
                 fn enr(&self) -> &rcc::$EN {
                     // FIXME: this should still be shared carefully
                     // SAFETY: this proxy grants exclusive access to this register
-                    unsafe { &(*RCC::ptr()).$en }
+                    unsafe { &(*RCC::ptr()).$en() }
                 }
 
                 #[allow(unused)]
                 fn rstr(&self) -> &rcc::$RST {
                     // FIXME: this should still be shared carefully
                     // SAFETY: this proxy grants exclusive access to this register
-                    unsafe { &(*RCC::ptr()).$rst }
+                    unsafe { &(*RCC::ptr()).$rst() }
                 }
             }
         )+
@@ -334,7 +334,7 @@ mod usb_clocking {
         hse: Option<u32>,
         pclk1: u32,
         pll_config: &Option<PllConfig>,
-    ) -> (cfgr::USBPRE_A, bool) {
+    ) -> (cfgr::USBPRE, bool) {
         // the USB clock is only valid if an external crystal is used, the PLL is enabled, and the
         // PLL output frequency is a supported one.
         // usbpre == false: divide clock by 1.5, otherwise no division
@@ -343,16 +343,16 @@ mod usb_clocking {
         // problems. [RM0316 32.5.2]
         if pclk1 >= 10_000_000 {
             match (usb_ok, sysclk) {
-                (true, 72_000_000) => (cfgr::USBPRE_A::Div15, true),
-                (true, 48_000_000) => (cfgr::USBPRE_A::Div1, true),
-                _ => (cfgr::USBPRE_A::Div1, false),
+                (true, 72_000_000) => (cfgr::USBPRE::Div1_5, true),
+                (true, 48_000_000) => (cfgr::USBPRE::Div1, true),
+                _ => (cfgr::USBPRE::Div1, false),
             }
         } else {
-            (cfgr::USBPRE_A::Div1, false)
+            (cfgr::USBPRE::Div1, false)
         }
     }
 
-    pub(crate) fn set_usbpre(w: &mut cfgr::W, usb_prescale: cfgr::USBPRE_A) -> &mut cfgr::W {
+    pub(crate) fn set_usbpre(w: &mut cfgr::W, usb_prescale: cfgr::USBPRE) -> &mut cfgr::W {
         w.usbpre().variant(usb_prescale)
     }
 }
@@ -368,7 +368,7 @@ impl BDCR {
     #[must_use]
     pub(crate) fn bdcr(&mut self) -> &rcc::BDCR {
         // SAFETY: this proxy grants exclusive access to this register
-        unsafe { &(*RCC::ptr()).bdcr }
+        unsafe { &(*RCC::ptr()).bdcr() }
     }
 }
 
@@ -408,9 +408,9 @@ impl Default for CFGR {
 }
 
 pub(crate) struct PllConfig {
-    src: cfgr::PLLSRC_A,
-    mul: cfgr::PLLMUL_A,
-    div: Option<cfgr2::PREDIV_A>,
+    src: cfgr::PLLSRC,
+    mul: cfgr::PLLMUL,
+    div: Option<cfgr2::PREDIV>,
 }
 
 /// Determine the [greatest common divisor](https://en.wikipedia.org/wiki/Greatest_common_divisor)
@@ -428,46 +428,46 @@ fn gcd(mut a: u32, mut b: u32) -> u32 {
 }
 
 /// Convert pll multiplier into equivalent register field type
-fn into_pll_mul(mul: u8) -> cfgr::PLLMUL_A {
+fn into_pll_mul(mul: u8) -> cfgr::PLLMUL {
     match mul {
-        2 => cfgr::PLLMUL_A::Mul2,
-        3 => cfgr::PLLMUL_A::Mul3,
-        4 => cfgr::PLLMUL_A::Mul4,
-        5 => cfgr::PLLMUL_A::Mul5,
-        6 => cfgr::PLLMUL_A::Mul6,
-        7 => cfgr::PLLMUL_A::Mul7,
-        8 => cfgr::PLLMUL_A::Mul8,
-        9 => cfgr::PLLMUL_A::Mul9,
-        10 => cfgr::PLLMUL_A::Mul10,
-        11 => cfgr::PLLMUL_A::Mul11,
-        12 => cfgr::PLLMUL_A::Mul12,
-        13 => cfgr::PLLMUL_A::Mul13,
-        14 => cfgr::PLLMUL_A::Mul14,
-        15 => cfgr::PLLMUL_A::Mul15,
-        16 => cfgr::PLLMUL_A::Mul16,
+        2 => cfgr::PLLMUL::Mul2,
+        3 => cfgr::PLLMUL::Mul3,
+        4 => cfgr::PLLMUL::Mul4,
+        5 => cfgr::PLLMUL::Mul5,
+        6 => cfgr::PLLMUL::Mul6,
+        7 => cfgr::PLLMUL::Mul7,
+        8 => cfgr::PLLMUL::Mul8,
+        9 => cfgr::PLLMUL::Mul9,
+        10 => cfgr::PLLMUL::Mul10,
+        11 => cfgr::PLLMUL::Mul11,
+        12 => cfgr::PLLMUL::Mul12,
+        13 => cfgr::PLLMUL::Mul13,
+        14 => cfgr::PLLMUL::Mul14,
+        15 => cfgr::PLLMUL::Mul15,
+        16 => cfgr::PLLMUL::Mul16,
         _ => crate::unreachable!(),
     }
 }
 
 /// Convert pll divisor into equivalent register field type
-fn into_pre_div(div: u8) -> cfgr2::PREDIV_A {
+fn into_pre_div(div: u8) -> cfgr2::PREDIV {
     match div {
-        1 => cfgr2::PREDIV_A::Div1,
-        2 => cfgr2::PREDIV_A::Div2,
-        3 => cfgr2::PREDIV_A::Div3,
-        4 => cfgr2::PREDIV_A::Div4,
-        5 => cfgr2::PREDIV_A::Div5,
-        6 => cfgr2::PREDIV_A::Div6,
-        7 => cfgr2::PREDIV_A::Div7,
-        8 => cfgr2::PREDIV_A::Div8,
-        9 => cfgr2::PREDIV_A::Div9,
-        10 => cfgr2::PREDIV_A::Div10,
-        11 => cfgr2::PREDIV_A::Div11,
-        12 => cfgr2::PREDIV_A::Div12,
-        13 => cfgr2::PREDIV_A::Div13,
-        14 => cfgr2::PREDIV_A::Div14,
-        15 => cfgr2::PREDIV_A::Div15,
-        16 => cfgr2::PREDIV_A::Div16,
+        1 => cfgr2::PREDIV::Div1,
+        2 => cfgr2::PREDIV::Div2,
+        3 => cfgr2::PREDIV::Div3,
+        4 => cfgr2::PREDIV::Div4,
+        5 => cfgr2::PREDIV::Div5,
+        6 => cfgr2::PREDIV::Div6,
+        7 => cfgr2::PREDIV::Div7,
+        8 => cfgr2::PREDIV::Div8,
+        9 => cfgr2::PREDIV::Div9,
+        10 => cfgr2::PREDIV::Div10,
+        11 => cfgr2::PREDIV::Div11,
+        12 => cfgr2::PREDIV::Div12,
+        13 => cfgr2::PREDIV::Div13,
+        14 => cfgr2::PREDIV::Div14,
+        15 => cfgr2::PREDIV::Div15,
+        16 => cfgr2::PREDIV::Div16,
         _ => crate::unreachable!(),
     }
 }
@@ -653,9 +653,9 @@ impl CFGR {
         crate::assert!(sysclk <= 72_000_000);
 
         let pll_src = if self.hse.is_some() {
-            cfgr::PLLSRC_A::HseDivPrediv
+            cfgr::PLLSRC::HseDivPrediv
         } else {
-            cfgr::PLLSRC_A::HsiDiv2
+            cfgr::PLLSRC::HsiDiv2
         };
 
         // Convert into register bit field types
@@ -720,9 +720,9 @@ impl CFGR {
         // Select hardware clock source of the PLL
         // TODO Check whether HSI_DIV2 could be useful
         let pll_src = if self.hse.is_some() {
-            cfgr::PLLSRC_A::HseDivPrediv
+            cfgr::PLLSRC::HseDivPrediv
         } else {
-            cfgr::PLLSRC_A::HseDivPrediv
+            cfgr::PLLSRC::HseDivPrediv
         };
 
         // Convert into register bit field types
@@ -748,7 +748,7 @@ impl CFGR {
     /// This function does only chose the PLL if needed, otherwise it will use the oscillator clock as system clock.
     ///
     /// Calls [`CFGR::calc_pll`] internally.
-    fn get_sysclk(&self) -> (u32, cfgr::SW_A, Option<PllConfig>) {
+    fn get_sysclk(&self) -> (u32, cfgr::SW, Option<PllConfig>) {
         // If a sysclk is given, check if the PLL has to be used,
         // else select the system clock source, which is either HSI or HSE.
         match (self.sysclk, self.hse) {
@@ -758,20 +758,20 @@ impl CFGR {
             // directly from neither the internal rc (8 Mhz)  nor the external
             // Oscillator (max 32 Mhz), without using the PLL.
             (Some(sysclk), Some(hse)) if sysclk == hse && self.pll_bypass => {
-                (hse, cfgr::SW_A::Hse, None)
+                (hse, cfgr::SW::Hse, None)
             }
             // No need to use the PLL
             (Some(sysclk), None) if sysclk == HSI.integer() && self.pll_bypass => {
-                (HSI.integer(), cfgr::SW_A::Hsi, None)
+                (HSI.integer(), cfgr::SW::Hsi, None)
             }
             (Some(sysclk), _) => {
                 let (sysclk, pll_config) = self.calc_pll(sysclk);
-                (sysclk, cfgr::SW_A::Pll, Some(pll_config))
+                (sysclk, cfgr::SW::Pll, Some(pll_config))
             }
             // Use HSE as system clock
-            (None, Some(hse)) => (hse, cfgr::SW_A::Hse, None),
+            (None, Some(hse)) => (hse, cfgr::SW::Hse, None),
             // Use HSI as system clock
-            (None, None) => (HSI.integer(), cfgr::SW_A::Hsi, None),
+            (None, None) => (HSI.integer(), cfgr::SW::Hsi, None),
         }
     }
 
@@ -791,17 +791,17 @@ impl CFGR {
 
         let (hpre_bits, hpre) =
             self.hclk
-                .map_or((cfgr::HPRE_A::Div1, 1), |hclk| match sysclk / hclk {
+                .map_or((cfgr::HPRE::Div1, 1), |hclk| match sysclk / hclk {
                     0 => crate::unreachable!(),
-                    1 => (cfgr::HPRE_A::Div1, 1),
-                    2 => (cfgr::HPRE_A::Div2, 2),
-                    3..=5 => (cfgr::HPRE_A::Div4, 4),
-                    6..=11 => (cfgr::HPRE_A::Div8, 8),
-                    12..=39 => (cfgr::HPRE_A::Div16, 16),
-                    40..=95 => (cfgr::HPRE_A::Div64, 64),
-                    96..=191 => (cfgr::HPRE_A::Div128, 128),
-                    192..=383 => (cfgr::HPRE_A::Div256, 256),
-                    _ => (cfgr::HPRE_A::Div512, 512),
+                    1 => (cfgr::HPRE::Div1, 1),
+                    2 => (cfgr::HPRE::Div2, 2),
+                    3..=5 => (cfgr::HPRE::Div4, 4),
+                    6..=11 => (cfgr::HPRE::Div8, 8),
+                    12..=39 => (cfgr::HPRE::Div16, 16),
+                    40..=95 => (cfgr::HPRE::Div64, 64),
+                    96..=191 => (cfgr::HPRE::Div128, 128),
+                    192..=383 => (cfgr::HPRE::Div256, 256),
+                    _ => (cfgr::HPRE::Div512, 512),
                 });
 
         let hclk: u32 = sysclk / hpre;
@@ -810,13 +810,13 @@ impl CFGR {
 
         let (mut ppre1_bits, mut ppre1) =
             self.pclk1
-                .map_or((cfgr::PPRE1_A::Div1, 1), |pclk1| match hclk / pclk1 {
+                .map_or((cfgr::PPRE1::Div1, 1), |pclk1| match hclk / pclk1 {
                     0 => crate::unreachable!(),
-                    1 => (cfgr::PPRE1_A::Div1, 1),
-                    2 => (cfgr::PPRE1_A::Div2, 2),
-                    3..=5 => (cfgr::PPRE1_A::Div4, 4),
-                    6..=11 => (cfgr::PPRE1_A::Div8, 8),
-                    _ => (cfgr::PPRE1_A::Div16, 16),
+                    1 => (cfgr::PPRE1::Div1, 1),
+                    2 => (cfgr::PPRE1::Div2, 2),
+                    3..=5 => (cfgr::PPRE1::Div4, 4),
+                    6..=11 => (cfgr::PPRE1::Div8, 8),
+                    _ => (cfgr::PPRE1::Div16, 16),
                 });
 
         let mut pclk1 = hclk / u32::from(ppre1);
@@ -826,7 +826,7 @@ impl CFGR {
         // As hclk highest value is 72.MHz()
         // dividing by 2 should always be sufficient
         if self.pclk1.is_none() && pclk1 > 36_000_000 {
-            ppre1_bits = cfgr::PPRE1_A::Div2;
+            ppre1_bits = cfgr::PPRE1::Div2;
             ppre1 = 2;
             pclk1 = hclk / u32::from(ppre1);
         }
@@ -835,13 +835,13 @@ impl CFGR {
 
         let (ppre2_bits, ppre2) =
             self.pclk2
-                .map_or((cfgr::PPRE2_A::Div1, 1), |pclk2| match hclk / pclk2 {
+                .map_or((cfgr::PPRE1::Div1, 1), |pclk2| match hclk / pclk2 {
                     0 => crate::unreachable!(),
-                    1 => (cfgr::PPRE2_A::Div1, 1),
-                    2 => (cfgr::PPRE2_A::Div2, 2),
-                    3..=5 => (cfgr::PPRE2_A::Div4, 4),
-                    6..=11 => (cfgr::PPRE2_A::Div8, 8),
-                    _ => (cfgr::PPRE2_A::Div16, 16),
+                    1 => (cfgr::PPRE1::Div1, 1),
+                    2 => (cfgr::PPRE1::Div2, 2),
+                    3..=5 => (cfgr::PPRE1::Div4, 4),
+                    6..=11 => (cfgr::PPRE1::Div8, 8),
+                    _ => (cfgr::PPRE1::Div16, 16),
                 });
 
         let pclk2 = hclk / u32::from(ppre2);
@@ -868,18 +868,18 @@ impl CFGR {
 
         // enable HSE and wait for it to be ready
         if self.hse.is_some() {
-            rcc.cr.modify(|_, w| {
+            rcc.cr().modify(|_, w| {
                 w.hsebyp().bit(self.hse_bypass);
                 w.csson().bit(self.css);
                 w.hseon().on()
             });
 
-            while rcc.cr.read().hserdy().is_not_ready() {}
+            while rcc.cr().read().hserdy().is_not_ready() {}
         }
 
         // enable PLL and wait for it to be ready
         if let Some(pll_config) = pll_config {
-            rcc.cfgr.modify(|_, w| {
+            rcc.cfgr().modify(|_, w| {
                 w.pllmul()
                     .variant(pll_config.mul)
                     .pllsrc()
@@ -887,16 +887,16 @@ impl CFGR {
             });
 
             if let Some(pll_div) = pll_config.div {
-                rcc.cfgr2.modify(|_, w| w.prediv().variant(pll_div));
+                rcc.cfgr2().modify(|_, w| w.prediv().variant(pll_div));
             };
 
-            rcc.cr.modify(|_, w| w.pllon().on());
+            rcc.cr().modify(|_, w| w.pllon().on());
 
-            while rcc.cr.read().pllrdy().is_not_ready() {}
+            while rcc.cr().read().pllrdy().is_not_ready() {}
         };
 
         // set prescalers and clock source
-        rcc.cfgr.modify(|_, w| {
+        rcc.cfgr().modify(|_, w| {
             usb_clocking::set_usbpre(w, usbpre);
 
             w.ppre2()

@@ -18,7 +18,7 @@ impl Dac {
         DAC1::reset(apb1);
 
         // Enable channel 1.
-        regs.cr.modify(|_, w| w.en1().set_bit());
+        regs.cr().modify(|_, w| w.en1().set_bit());
 
         Self { regs }
     }
@@ -27,7 +27,7 @@ impl Dac {
     ///
     /// Only the low 12 bits of `data` will be used, the rest is ignored.
     pub fn write_data(&mut self, data: u16) {
-        self.regs.dhr12r1.write(|w| {
+        self.regs.dhr12r1().write(|w| {
             #[allow(unused_unsafe)]
             // SAFETY: Direct write to register for easier sharing between different stm32f3xx svd
             // generated API

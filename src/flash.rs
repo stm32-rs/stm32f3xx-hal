@@ -42,6 +42,6 @@ impl ACR {
     #[allow(clippy::unused_self)]
     pub(crate) fn acr(&mut self) -> &flash::ACR {
         // SAFETY: This proxy grants exclusive access to this register
-        unsafe { &(*FLASH::ptr()).acr }
+        unsafe { &(*FLASH::ptr()).acr() }
     }
 }

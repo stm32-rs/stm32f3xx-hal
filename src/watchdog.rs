@@ -11,14 +11,14 @@ use embedded_time::fixed_point::FixedPoint;
 
 use crate::hal::watchdog::{Watchdog, WatchdogEnable};
 
-use crate::pac::{iwdg::pr::PR_A, DBGMCU, IWDG};
+use crate::pac::{iwdg::pr::PR, DBGMCU, IWDG};
 use crate::time::duration::Milliseconds;
 use crate::time::rate::Kilohertz;
 
 /// Frequency of the watchdog peripheral clock
 const LSI: Kilohertz = Kilohertz(40);
 // const MAX_PRESCALER: u8 = 0b0111;
-const MAX_PRESCALER: PR_A = PR_A::DivideBy256;
+const MAX_PRESCALER: PR = PR::DivideBy256;
 const MAX_RELOAD: u32 = 0x0FFF;
 
 /// Independent Watchdog Peripheral
@@ -41,15 +41,15 @@ impl fmt::Debug for IndependentWatchDog {
     }
 }
 
-fn into_division_value(psc: PR_A) -> u32 {
+fn into_division_value(psc: PR) -> u32 {
     match psc {
-        PR_A::DivideBy4 => 4,
-        PR_A::DivideBy8 => 8,
-        PR_A::DivideBy16 => 16,
-        PR_A::DivideBy32 => 32,
-        PR_A::DivideBy64 => 64,
-        PR_A::DivideBy128 => 128,
-        PR_A::DivideBy256 | PR_A::DivideBy256bis => 256,
+        PR::DivideBy4 => 4,
+        PR::DivideBy8 => 8,
+        PR::DivideBy16 => 16,
+        PR::DivideBy32 => 32,
+        PR::DivideBy64 => 64,
+        PR::DivideBy128 => 128,
+        PR::DivideBy256 => 256,
     }
 }
 
@@ -66,13 +66,13 @@ impl IndependentWatchDog {
 
     /// Set the watchdog to stop when a breakpoint is hit while debugging
     pub fn stop_on_debug(&self, dbg: &DBGMCU, stop: bool) {
-        dbg.apb1_fz.modify(|_, w| w.dbg_iwdg_stop().bit(stop));
+        dbg.apb1_fz().modify(|_, w| w.dbg_iwdg_stop().bit(stop));
     }
 
     /// Find and setup the next best prescaler and reload value for the selected timeout
     fn setup(&self, timeout: Milliseconds) {
         let mut reload: u32 =
-            timeout.integer().saturating_mul(LSI.integer()) / into_division_value(PR_A::DivideBy4);
+            timeout.integer().saturating_mul(LSI.integer()) / into_division_value(PR::DivideBy4);
 
         // Reload is potentially to high to be stored in the register.
         // The goal of this loop is to find the maximum possible reload value,
@@ -97,10 +97,10 @@ impl IndependentWatchDog {
             reload /= 2;
         }
 
-        self.access_registers(|iwdg| {
-            iwdg.pr.modify(|_, w| w.pr().bits(psc));
+        self.access_registers(|iwdg| unsafe {
+            iwdg.pr().modify(|_, w| w.pr().bits(psc));
             #[allow(clippy::cast_possible_truncation)]
-            iwdg.rlr.modify(|_, w| w.rl().bits(reload as u16));
+            iwdg.rlr().modify(|_, w| w.rl().set(reload as u16));
         });
 
         // NOTE: As the watchdog can not be stopped once started,
@@ -125,21 +125,21 @@ impl IndependentWatchDog {
     #[must_use]
     pub fn interval(&self) -> Milliseconds {
         // If the prescaler was changed wait until the change procedure is finished.
-        while self.iwdg.sr.read().pvu().bit() {}
+        while self.iwdg.sr().read().pvu().bit() {}
 
-        let psc = self.iwdg.pr.read().pr().variant();
-        let reload = self.iwdg.rlr.read().rl().bits();
+        let psc = self.iwdg.pr().read().pr().variant();
+        let reload = self.iwdg.rlr().read().rl().bits();
 
         Milliseconds((into_division_value(psc) * u32::from(reload)) / LSI.integer())
     }
 
     fn access_registers<A, F: FnMut(&IWDG) -> A>(&self, mut f: F) -> A {
         // Unprotect write access to registers
-        self.iwdg.kr.write(|w| w.key().enable());
+        self.iwdg.kr().write(|w| w.key().unlock());
         let a = f(&self.iwdg);
 
         // Protect again
-        self.iwdg.kr.write(|w| w.key().reset());
+        self.iwdg.kr().write(|w| w.key().feed());
         a
     }
 }
@@ -150,12 +150,12 @@ impl WatchdogEnable for IndependentWatchDog {
     fn start<T: Into<Self::Time>>(&mut self, period: T) {
         self.setup(period.into());
 
-        self.iwdg.kr.write(|w| w.key().start());
+        self.iwdg.kr().write(|w| w.key().start());
     }
 }
 
 impl Watchdog for IndependentWatchDog {
     fn feed(&mut self) {
-        self.iwdg.kr.write(|w| w.key().reset());
+        self.iwdg.kr().write(|w| w.key().feed());
     }
 }

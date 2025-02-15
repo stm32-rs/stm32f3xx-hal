@@ -59,12 +59,12 @@ mod tests {
 
         // This is a workaround, so that the debugger will not disconnect imidiatly on asm::wfi();
         // https://github.com/probe-rs/probe-rs/issues/350#issuecomment-740550519
-        dp.DBGMCU.cr.modify(|_, w| {
+        dp.DBGMCU.cr().modify(|_, w| {
             w.dbg_sleep().set_bit();
             w.dbg_standby().set_bit();
             w.dbg_stop().set_bit()
         });
-        dp.RCC.ahbenr.modify(|_, w| w.dma1en().enabled());
+        dp.RCC.ahbenr().modify(|_, w| w.dma1en().enabled());
 
         let mut rcc = dp.RCC.constrain();
         let mut flash = dp.FLASH.constrain();
@@ -79,12 +79,12 @@ mod tests {
         // Slow down ADC
         unsafe {
             (*pac::RCC::ptr())
-                .cfgr2
-                .modify(|_, w| w.adc12pres().variant(pac::rcc::cfgr2::ADC12PRES_A::Div64))
+                .cfgr2()
+                .modify(|_, w| w.adc12pres().variant(pac::rcc::cfgr2::ADC12PRES::Div64))
         };
         dp.ADC1_2
-            .ccr
-            .modify(|_, w| w.ckmode().variant(pac::adc1_2::ccr::CKMODE_A::Asynchronous));
+            .ccr()
+            .modify(|_, w| w.ckmode().variant(pac::adc1_2::ccr::CKMODE::Asynchronous));
         let mut common_adc = CommonAdc::new(dp.ADC1_2, &clocks, &mut rcc.ahb);
 
         defmt::info!(
@@ -393,9 +393,9 @@ fn ADC1_2() {
     // SAFETY: Mutable access to the ADC1_2 peripheral, while knowing that
     // no-one can pre-empt the interrupt.
     let (eos, eoc) = unsafe {
-        let isr = &(*pac::ADC1::ptr()).isr.read();
+        let isr = &(*pac::ADC1::ptr()).isr().read();
         (*pac::ADC1::ptr())
-            .isr
+            .isr()
             .modify(|_, w| w.eos().clear().eoc().clear());
         (isr.eos(), isr.eoc())
     };

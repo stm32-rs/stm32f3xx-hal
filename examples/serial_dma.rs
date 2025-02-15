@@ -20,12 +20,12 @@ fn main() -> ! {
     // This is a workaround, so that the debugger will not disconnect
     // imidiatly on asm::wfi();
     // https://github.com/probe-rs/probe-rs/issues/350#issuecomment-740550519
-    dp.DBGMCU.cr.modify(|_, w| {
+    dp.DBGMCU.cr().modify(|_, w| {
         w.dbg_sleep().set_bit();
         w.dbg_standby().set_bit();
         w.dbg_stop().set_bit()
     });
-    dp.RCC.ahbenr.modify(|_, w| w.dma1en().enabled());
+    dp.RCC.ahbenr().modify(|_, w| w.dma1en().enabled());
 
     let mut rcc = dp.RCC.constrain();
     let clocks = rcc.cfgr.freeze(&mut flash.acr);

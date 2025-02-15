@@ -392,57 +392,57 @@ macro_rules! timer {
         impl CommonRegisterBlock for crate::pac::$TIMX {
             #[inline]
             fn set_cr1_cen(&mut self, enable: bool) {
-                self.cr1.modify(|_, w| w.cen().bit(enable));
+                self.cr1().modify(|_, w| w.cen().bit(enable));
             }
 
             #[inline]
             fn is_cr1_cen_set(&mut self) -> bool {
-                self.cr1.read().cen().bit()
+                self.cr1().read().cen().bit()
             }
 
             #[inline]
             fn set_dier_uie(&mut self, enable: bool) {
-                self.dier.modify(|_, w| w.uie().bit(enable));
+                self.dier().modify(|_, w| w.uie().bit(enable));
             }
 
             #[inline]
             fn is_dier_uie_set(&self) -> bool {
-                self.dier.read().uie().bit()
+                self.dier().read().uie().bit()
             }
 
             #[inline]
             fn clear_sr_uief(&mut self) {
-                self.sr.modify(|_, w| w.uif().clear())
+                self.sr().modify(|_, w| w.uif().clear());
             }
 
             #[inline]
             fn clear_sr(&mut self) {
                 // SAFETY: This atomic write clears all flags and ignores the reserverd bit fields.
-                self.sr.write(|w| unsafe { w.bits(0) });
+                self.sr().write(|w| unsafe { w.bits(0) });
             }
 
             #[inline]
             fn is_sr_uief_set(&self) -> bool {
-                self.sr.read().uif().is_update_pending()
+                self.sr().read().uif().is_update_pending()
             }
 
             #[inline]
             fn set_egr_ug(&mut self) {
                 // NOTE(write): uses all bits in this register.
-                self.egr.write(|w| w.ug().update());
+                self.egr().write(|w| w.ug().update());
             }
 
             #[inline]
             fn set_psc(&mut self, psc: u16) {
                 // NOTE(write): uses all bits in this register.
-                self.psc.write(|w| w.psc().bits(psc));
+                self.psc().write(|w| w.psc().set(psc));
             }
 
             #[inline]
             fn set_arr(&mut self, arr: u16) {
                 #[allow(unused_unsafe)]
                 // SAFETY: For easier compatibility between timers write to whole register
-                self.arr.write(|w| unsafe { w.arr().bits(arr.into()) });
+                self.arr().write(|w| unsafe { w.arr().bits(arr.into()) });
             }
         }
     };
@@ -456,15 +456,15 @@ macro_rules! timer_var_clock {
                 #[inline]
                 fn clock(clocks: &Clocks) -> Hertz {
                     // SAFETY: Atomic read with no side-effects.
-                    match unsafe {(*RCC::ptr()).cfgr3.read().$timXsw().variant()} {
+                    match unsafe {(*RCC::ptr()).cfgr3().read().$timXsw().variant()} {
                         // PCLK2 is really the wrong name, as depending on the type of chip, it is
                         // pclk1 or pclk2. This distinction is however not made in stm32f3.
-                        crate::pac::rcc::cfgr3::TIM1SW_A::Pclk2 =>  {
+                        crate::pac::rcc::cfgr3::TIM1SW::Pclk2 =>  {
                             // Conditional mutliplier after APB prescaler is used.
                             // See RM0316 Fig 13.
                             <pac::$TIMX as rcc::BusTimerClock>::timer_clock(clocks)
                         }
-                        crate::pac::rcc::cfgr3::TIM1SW_A::Pll => {
+                        crate::pac::rcc::cfgr3::TIM1SW::Pll => {
                             if let Some(pllclk) = clocks.pllclk() {
                                 pllclk * 2
                             } else {

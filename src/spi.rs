@@ -15,7 +15,7 @@ pub use crate::hal::spi::{Mode, Phase, Polarity};
 use crate::pac::SPI4;
 use crate::pac::{
     self, spi1,
-    spi1::cr2::{DS_A, FRXTH_A},
+    spi1::cr2::{DS, FRXTH},
     Interrupt, SPI1, SPI2, SPI3,
 };
 
@@ -24,7 +24,6 @@ use crate::{
     rcc::{self, Clocks},
     time::rate,
 };
-use num_traits::{AsPrimitive, PrimInt};
 
 /// SPI error
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -157,18 +156,18 @@ cfg_if::cfg_if! {
 pub trait Word {
     /// Returns the register configuration
     /// to set the word size
-    fn register_config() -> (FRXTH_A, DS_A);
+    fn register_config() -> (FRXTH, DS);
 }
 
 impl Word for u8 {
-    fn register_config() -> (FRXTH_A, DS_A) {
-        (FRXTH_A::Quarter, DS_A::EightBit)
+    fn register_config() -> (FRXTH, DS) {
+        (FRXTH::Quarter, DS::EightBit)
     }
 }
 
 impl Word for u16 {
-    fn register_config() -> (FRXTH_A, DS_A) {
-        (FRXTH_A::Half, DS_A::SixteenBit)
+    fn register_config() -> (FRXTH, DS) {
+        (FRXTH::Half, DS::SixteenBit)
     }
 }
 
@@ -219,7 +218,7 @@ impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
         SPI::reset(apb);
 
         let (frxth, ds) = WORD::register_config();
-        spi.cr2.write(|w| {
+        spi.cr2().write(|w| {
             w.frxth().variant(frxth);
             w.ds().variant(ds);
             // Slave Select output disabled
@@ -236,7 +235,7 @@ impl<SPI, Sck, Miso, Mosi, WORD> Spi<SPI, (Sck, Miso, Mosi), WORD> {
         // SSI: set nss high = master mode
         // CRCEN: hardware CRC calculation disabled
         // BIDIMODE: 2 line unidirectional (full duplex)
-        spi.cr1.write(|w| {
+        spi.cr1().write(|w| {
             w.mstr().master();
 
             match config.mode.phase {
@@ -298,26 +297,26 @@ where
 {
     /// Change the baud rate of the SPI
     pub fn reclock(&mut self, freq: impl Into<rate::Generic<u32>>, clocks: Clocks) {
-        self.spi.cr1.modify(|_, w| w.spe().disabled());
+        self.spi.cr1().modify(|_, w| w.spe().disabled());
 
-        self.spi.cr1.modify(|_, w| {
+        self.spi.cr1().modify(|_, w| {
             w.br().variant(Self::compute_baud_rate(clocks, freq.into()));
             w.spe().enabled()
         });
     }
 
-    fn compute_baud_rate(clocks: Clocks, freq: rate::Generic<u32>) -> spi1::cr1::BR_A {
-        use spi1::cr1::BR_A;
+    fn compute_baud_rate(clocks: Clocks, freq: rate::Generic<u32>) -> spi1::cr1::BR {
+        use spi1::cr1::BR;
         match SPI::clock(&clocks).0 / (freq.integer() * *freq.scaling_factor()) {
             0 => crate::unreachable!(),
-            1..=2 => BR_A::Div2,
-            3..=5 => BR_A::Div4,
-            6..=11 => BR_A::Div8,
-            12..=23 => BR_A::Div16,
-            24..=39 => BR_A::Div32,
-            40..=95 => BR_A::Div64,
-            96..=191 => BR_A::Div128,
-            _ => BR_A::Div256,
+            1..=2 => BR::Div2,
+            3..=5 => BR::Div4,
+            6..=11 => BR::Div8,
+            12..=23 => BR::Div16,
+            24..=39 => BR::Div32,
+            40..=95 => BR::Div64,
+            96..=191 => BR::Div128,
+            _ => BR::Div256,
         }
     }
 
@@ -331,6 +330,34 @@ where
     }
 }
 
+/// A trait for types that can be used as SPI words
+///
+/// This is typically [u8] and [u16]
+pub trait SpiWord {
+    /// Read word from SPI data register
+    fn read(r: &impl Instance) -> Self;
+
+    /// Write word to SPI data register
+    fn write(r: &impl Instance, data: Self);
+}
+
+macro_rules! impl_spi_word {
+    ($t:ty, $dr:ident) => {
+        impl SpiWord for $t {
+            fn read(r: &impl Instance) -> Self {
+                r.$dr().read().bits()
+            }
+
+            fn write(r: &impl Instance, data: Self) {
+                r.$dr().write(|w| w.dr().set(data));
+            }
+        }
+    };
+}
+
+impl_spi_word!(u16, dr);
+impl_spi_word!(u8, dr8);
+
 impl<SPI, Sck, Miso, Mosi, Word> FullDuplex<Word> for Spi<SPI, (Sck, Miso, Mosi), Word>
 where
     SPI: Instance,
@@ -338,13 +365,12 @@ where
     // SckPin could technically be omitted, though not advisable.
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
-    Word: PrimInt + Into<u32> + 'static,
-    u32: AsPrimitive<Word>,
+    Word: SpiWord,
 {
     type Error = Error;
 
     fn read(&mut self) -> nb::Result<Word, Error> {
-        let sr = self.spi.sr.read();
+        let sr = self.spi.sr().read();
 
         Err(if sr.ovr().is_overrun() {
             nb::Error::Other(Error::Overrun)
@@ -353,9 +379,8 @@ where
         } else if sr.crcerr().is_no_match() {
             nb::Error::Other(Error::Crc)
         } else if sr.rxne().is_not_empty() {
-            let read_ptr = core::ptr::addr_of!(self.spi.dr) as *const Word;
             // SAFETY: Read from register owned by this Spi struct
-            let value = unsafe { core::ptr::read_volatile(read_ptr) };
+            let value = SpiWord::read(&self.spi);
             return Ok(value);
         } else {
             nb::Error::WouldBlock
@@ -363,7 +388,7 @@ where
     }
 
     fn send(&mut self, word: Word) -> nb::Result<(), Error> {
-        let sr = self.spi.sr.read();
+        let sr = self.spi.sr().read();
 
         Err(if sr.ovr().is_overrun() {
             nb::Error::Other(Error::Overrun)
@@ -372,9 +397,8 @@ where
         } else if sr.crcerr().is_no_match() {
             nb::Error::Other(Error::Crc)
         } else if sr.txe().is_empty() {
-            let write_ptr = core::ptr::addr_of!(self.spi.dr) as *mut Word;
             // SAFETY: Write to register owned by this Spi struct
-            unsafe { core::ptr::write_volatile(write_ptr, word) };
+            SpiWord::write(&self.spi, word);
             return Ok(());
         } else {
             nb::Error::WouldBlock
@@ -387,8 +411,7 @@ where
     SPI: Instance,
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
-    Word: PrimInt + Into<u32> + 'static,
-    u32: AsPrimitive<Word>,
+    Word: SpiWord,
 {
 }
 
@@ -397,8 +420,7 @@ where
     SPI: Instance,
     Miso: MisoPin<SPI>,
     Mosi: MosiPin<SPI>,
-    Word: PrimInt + Into<u32> + 'static,
-    u32: AsPrimitive<Word>,
+    Word: SpiWord,
 {
 }
 

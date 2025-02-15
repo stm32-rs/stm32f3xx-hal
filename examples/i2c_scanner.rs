@@ -52,14 +52,14 @@ fn main() -> ! {
     for addr in 0x00_u8..0x80 {
         // Write the empty array and check the slave response.
         if VALID_ADDR_RANGE.contains(&addr) && i2c.write(addr, &[]).is_ok() {
-            hprint!("{:02x}", addr).unwrap();
+            hprint!("{:02x}", addr);
         } else {
-            hprint!("..").unwrap();
+            hprint!("..");
         }
         if addr % 0x10 == 0x0F {
-            hprintln!().unwrap();
+            hprintln!();
         } else {
-            hprint!(" ").unwrap();
+            hprint!(" ");
         }
     }
 

@@ -211,11 +211,11 @@ pub enum Increment {
     Disable,
 }
 
-impl From<Increment> for cr::PINC_A {
+impl From<Increment> for cr::PINC {
     fn from(inc: Increment) -> Self {
         match inc {
-            Increment::Enable => cr::PINC_A::Enabled,
-            Increment::Disable => cr::PINC_A::Disabled,
+            Increment::Enable => cr::PINC::Enabled,
+            Increment::Disable => cr::PINC::Disabled,
         }
     }
 }
@@ -234,13 +234,13 @@ pub enum Priority {
     VeryHigh,
 }
 
-impl From<Priority> for cr::PL_A {
+impl From<Priority> for cr::PL {
     fn from(prio: Priority) -> Self {
         match prio {
-            Priority::Low => cr::PL_A::Low,
-            Priority::Medium => cr::PL_A::Medium,
-            Priority::High => cr::PL_A::High,
-            Priority::VeryHigh => cr::PL_A::VeryHigh,
+            Priority::Low => cr::PL::Low,
+            Priority::Medium => cr::PL::Medium,
+            Priority::High => cr::PL::High,
+            Priority::VeryHigh => cr::PL::VeryHigh,
         }
     }
 }
@@ -255,11 +255,11 @@ pub enum Direction {
     FromPeripheral,
 }
 
-impl From<Direction> for cr::DIR_A {
+impl From<Direction> for cr::DIR {
     fn from(dir: Direction) -> Self {
         match dir {
-            Direction::FromMemory => cr::DIR_A::FromMemory,
-            Direction::FromPeripheral => cr::DIR_A::FromPeripheral,
+            Direction::FromMemory => cr::DIR::FromMemory,
+            Direction::FromPeripheral => cr::DIR::FromPeripheral,
         }
     }
 }
@@ -302,10 +302,10 @@ pub trait Channel: private::Channel {
     /// Reset the control registers of this channel.
     /// This stops any ongoing transfers.
     fn reset(&mut self) {
-        self.ch().cr.reset();
-        self.ch().ndtr.reset();
-        self.ch().par.reset();
-        self.ch().mar.reset();
+        self.ch().cr().reset();
+        self.ch().ndtr().reset();
+        self.ch().par().reset();
+        self.ch().mar().reset();
         self.clear_event(Event::Any);
     }
 
@@ -327,9 +327,9 @@ pub trait Channel: private::Channel {
 
         // SAFETY: If the caller does ensure, that address is valid address, this should be safe
         unsafe {
-            self.ch().par.write(|w| w.pa().bits(address));
+            self.ch().par().write(|w| w.pa().bits(address));
         }
-        self.ch().cr.modify(|_, w| w.pinc().variant(inc.into()));
+        self.ch().cr().modify(|_, w| w.pinc().variant(inc.into()));
     }
 
     /// Set the base address of the memory area from/to which
@@ -350,9 +350,9 @@ pub trait Channel: private::Channel {
 
         // SAFETY: If the caller does ensure, that address is valid address, this should be safe
         unsafe {
-            self.ch().mar.write(|w| w.ma().bits(address));
+            self.ch().mar().write(|w| w.ma().bits(address));
         }
-        self.ch().cr.modify(|_, w| w.minc().variant(inc.into()));
+        self.ch().cr().modify(|_, w| w.minc().variant(inc.into()));
     }
 
     /// Set the number of words to transfer.
@@ -365,7 +365,9 @@ pub trait Channel: private::Channel {
     fn set_transfer_length(&mut self, len: u16) {
         crate::assert!(!self.is_enabled());
 
-        self.ch().ndtr.write(|w| w.ndt().bits(len));
+        unsafe {
+            self.ch().ndtr().write(|w| w.ndt().bits(len));
+        }
     }
 
     /// Set the word size.
@@ -374,7 +376,7 @@ pub trait Channel: private::Channel {
     ///
     /// Panics if the word size is not one of 8, 16, or 32 bits.
     fn set_word_size<W>(&mut self) {
-        use cr::PSIZE_A::{Bits16, Bits32, Bits8};
+        use cr::PSIZE::{Bits16, Bits32, Bits8};
 
         let psize = match mem::size_of::<W>() {
             1 => Bits8,
@@ -386,7 +388,7 @@ pub trait Channel: private::Channel {
             _ => defmt::panic!("unsupported word size"),
         };
 
-        self.ch().cr.modify(|_, w| {
+        self.ch().cr().modify(|_, w| {
             w.psize().variant(psize);
             w.msize().variant(psize)
         });
@@ -395,27 +397,27 @@ pub trait Channel: private::Channel {
     /// Set the priority level of this channel
     fn set_priority_level(&mut self, priority: Priority) {
         let pl = priority.into();
-        self.ch().cr.modify(|_, w| w.pl().variant(pl));
+        self.ch().cr().modify(|_, w| w.pl().variant(pl));
     }
 
     /// Set the transfer direction
     fn set_direction(&mut self, direction: Direction) {
         let dir = direction.into();
-        self.ch().cr.modify(|_, w| w.dir().variant(dir));
+        self.ch().cr().modify(|_, w| w.dir().variant(dir));
     }
 
     /// Enable or disable the interrupt for the specified [`Event`].
     fn configure_intterupt(&mut self, event: Event, enable: bool) {
         match event {
-            Event::HalfTransfer => self.ch().cr.modify(|_, w| w.htie().bit(enable)),
-            Event::TransferComplete => self.ch().cr.modify(|_, w| w.tcie().bit(enable)),
-            Event::TransferError => self.ch().cr.modify(|_, w| w.teie().bit(enable)),
-            Event::Any => self.ch().cr.modify(|_, w| {
+            Event::HalfTransfer => self.ch().cr().modify(|_, w| w.htie().bit(enable)),
+            Event::TransferComplete => self.ch().cr().modify(|_, w| w.tcie().bit(enable)),
+            Event::TransferError => self.ch().cr().modify(|_, w| w.teie().bit(enable)),
+            Event::Any => self.ch().cr().modify(|_, w| {
                 w.htie().bit(enable);
                 w.tcie().bit(enable);
                 w.teie().bit(enable)
             }),
-        }
+        };
     }
 
     /// Enable the interrupt for the given [`Event`].
@@ -431,17 +433,17 @@ pub trait Channel: private::Channel {
     /// Start a transfer
     fn enable(&mut self) {
         self.clear_event(Event::Any);
-        self.ch().cr.modify(|_, w| w.en().enabled());
+        self.ch().cr().modify(|_, w| w.en().enabled());
     }
 
     /// Stop the current transfer
     fn disable(&mut self) {
-        self.ch().cr.modify(|_, w| w.en().disabled());
+        self.ch().cr().modify(|_, w| w.en().disabled());
     }
 
     /// Is there a transfer in progress on this channel?
     fn is_enabled(&self) -> bool {
-        self.ch().cr.read().en().is_enabled()
+        self.ch().cr().read().en().is_enabled()
     }
 }
 
@@ -460,9 +462,8 @@ macro_rules! dma {
         $DMAx:ident, $dmax:ident, $dmaxen:ident,
         channels: {
             $( $Ci:ident: (
+                $i:literal,
                 $chi:ident,
-                $htifi:ident, $tcifi:ident, $teifi:ident, $gifi:ident,
-                $chtifi:ident, $ctcifi:ident, $cteifi:ident, $cgifi:ident
             ), )+
         },
     ) => {
@@ -517,30 +518,30 @@ macro_rules! dma {
                     impl private::Channel for $Ci {
                         fn ch(&self) -> &pac::dma1::CH {
                             // SAFETY: $Ci grants exclusive access to this register
-                            unsafe { &(*$DMAx::ptr()).$chi }
+                            unsafe { &(*$DMAx::ptr()).ch($i) }
                         }
                     }
 
                     impl Channel for $Ci {
                         fn is_event_triggered(&self, event: Event) -> bool {
                             // SAFETY: atomic read
-                            let flags = unsafe { (*$DMAx::ptr()).isr.read() };
+                            let flags = unsafe { (*$DMAx::ptr()).isr().read() };
                             match event {
-                                Event::HalfTransfer => flags.$htifi().bit_is_set(),
-                                Event::TransferComplete => flags.$tcifi().bit_is_set(),
-                                Event::TransferError => flags.$teifi().bit_is_set(),
-                                Event::Any => flags.$gifi().bit_is_set(),
+                                Event::HalfTransfer => flags.htif($i).bit_is_set(),
+                                Event::TransferComplete => flags.tcif($i).bit_is_set(),
+                                Event::TransferError => flags.teif($i).bit_is_set(),
+                                Event::Any => flags.gif($i).bit_is_set(),
                             }
                         }
 
                         fn clear_event(&mut self, event: Event) {
                             // SAFETY: atomic write to a stateless register
                             unsafe {
-                                (*$DMAx::ptr()).ifcr.write(|w| match event {
-                                    Event::HalfTransfer => w.$chtifi().set_bit(),
-                                    Event::TransferComplete => w.$ctcifi().set_bit(),
-                                    Event::TransferError => w.$cteifi().set_bit(),
-                                    Event::Any => w.$cgifi().set_bit(),
+                                (*$DMAx::ptr()).ifcr().write(|w| match event {
+                                    Event::HalfTransfer => w.chtif($i).set_bit(),
+                                    Event::TransferComplete => w.ctcif($i).set_bit(),
+                                    Event::TransferError => w.cteif($i).set_bit(),
+                                    Event::Any => w.cgif($i).set_bit(),
                                 });
                             }
                         }
@@ -556,17 +557,9 @@ macro_rules! dma {
                 [<DMA $X>], [<dma $X>], [<dma $X en>],
                 channels: {
                     $(
-                        [<C $C>]:
-			(
+                        [<C $C>]: (
+                            $C,
                             [<ch $C>],
-                            [<htif $C>],
-                            [<tcif $C>],
-                            [<teif $C>],
-                            [<gif $C>],
-                            [<chtif $C>],
-                            [<ctcif $C>],
-                            [<cteif $C>],
-                            [<cgif $C>]
                         ),
                     )+
                 },
