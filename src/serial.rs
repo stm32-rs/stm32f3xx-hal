@@ -299,6 +299,13 @@ cfg_if! {
 }
 
 cfg_if! {
+    if #[cfg(feature="gpio-f373")] {
+        impl<Otype> TxPin<USART3> for gpiob::PB8<AF7<Otype>> {}
+        impl<Otype> RxPin<USART3> for gpiob::PB9<AF7<Otype>> {}
+    }
+}
+
+cfg_if! {
     if #[cfg(not(feature = "gpio-f373"))] {
         impl<Otype> TxPin<USART2> for gpioa::PA14<AF7<Otype>> {}
         impl<Otype> RxPin<USART2> for gpioa::PA15<AF7<Otype>> {}
