@@ -1142,7 +1142,7 @@ macro_rules! tim8 {
 
         //Pins
         pwm_channel1_pin!(TIM8, Tim8Ch1, output_to_pa15, gpioa::PA15<AF2>);
-        pwm_channel1_pin!(TIM8, Tim8Ch1, output_to_pb6, gpiob::PB6<AF2>);
+        pwm_channel1_pin!(TIM8, Tim8Ch1, output_to_pb6, gpiob::PB6<AF5>);
         pwm_channel1_pin!(TIM8, Tim8Ch1, output_to_pc6, gpioc::PC6<AF4>);
 
         pwm_channel1n_pin!(TIM8, Tim8Ch1, output_to_pa7, gpioa::PA7<AF4>);
